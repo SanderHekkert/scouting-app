@@ -1,15 +1,11 @@
 <script setup>
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { PlusIcon, PencilSquareIcon, TrashIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     members: Array,
-    leaders: {
-        type: Array,
-        default: () => [],
-    },
 });
 
 const showAddForm = ref(false);
@@ -42,42 +38,45 @@ const editForm = useForm({
     active: true,
 });
 
-const leaderNotes = reactive({});
-const leaderSavingId = ref(null);
-
 const memberSearchQuery = ref('');
-const leaderSearchQuery = ref('');
 
-function matchesNameQuery(firstName, lastName, rawQuery) {
+function matchesMultiFieldSearch(rawQuery, fieldValues) {
     const q = String(rawQuery ?? '').trim().toLowerCase();
     if (!q) {
         return true;
     }
-    const fn = String(firstName ?? '').toLowerCase();
-    const ln = String(lastName ?? '').toLowerCase();
-    const haystack = `${fn} ${ln}`.trim();
+    const haystack = fieldValues
+        .filter((v) => v != null && String(v).trim() !== '')
+        .map((v) => String(v).toLowerCase())
+        .join(' ');
     const parts = q.split(/\s+/).filter(Boolean);
     return parts.every((part) => haystack.includes(part));
 }
 
+function memberMatchesSearch(m, rawQuery) {
+    const bdayRaw =
+        m.birthday != null && m.birthday !== '' ? String(m.birthday).slice(0, 10) : '';
+    const bdayFmt = bdayRaw ? formatBirthday(m.birthday) : '';
+    const bdaySearch = bdayFmt !== '–' ? bdayFmt : '';
+
+    return matchesMultiFieldSearch(rawQuery, [
+        m.first_name,
+        m.last_name,
+        m.address,
+        m.phone_mother,
+        m.phone_father,
+        m.bijzonderheden,
+        m.age,
+        bdayRaw,
+        bdaySearch,
+        m.installed ? 'ja geïnstalleerd' : 'nee niet geïnstalleerd',
+        m.active === true ? 'actief' : '',
+        m.active === false ? 'inactief' : '',
+    ]);
+}
+
 const filteredMembers = computed(() =>
-    (props.members || []).filter((m) => matchesNameQuery(m.first_name, m.last_name, memberSearchQuery.value)),
-);
-
-const filteredLeaders = computed(() =>
-    (props.leaders || []).filter((l) => matchesNameQuery(l.first_name, l.last_name, leaderSearchQuery.value)),
-);
-
-watch(
-    () => props.leaders,
-    (leaders) => {
-        for (const l of leaders || []) {
-            if (l?.id != null) {
-                leaderNotes[l.id] = l.bijzonderheden ?? '';
-            }
-        }
-    },
-    { immediate: true, deep: true },
+    (props.members || []).filter((m) => memberMatchesSearch(m, memberSearchQuery.value)),
 );
 
 function toggleAddForm() {
@@ -182,32 +181,17 @@ function memberDisplayName(m) {
     return `${fn}${ln ? ` ${ln}` : ''}`.trim() || '–';
 }
 
-function saveLeaderBijzonderheden(leader) {
-    if (!leader?.id) return;
-    leaderSavingId.value = leader.id;
-    router.patch(
-        route('leaders.bijzonderheden', leader.id),
-        { bijzonderheden: leaderNotes[leader.id] ?? '' },
-        {
-            preserveScroll: true,
-            onFinish: () => {
-                leaderSavingId.value = null;
-            },
-        },
-    );
-}
-
 function yesNoInstalled(value) {
     return value ? 'Ja' : 'Nee';
 }
 </script>
 
 <template>
-    <Head title="Contacten" />
+    <Head title="Dolfijnen" />
     <AuthenticatedLayout>
         <template #header>
             <div class="flex w-full flex-wrap items-center justify-between gap-3">
-                <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Contacten</h2>
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Dolfijnen</h2>
                 <div class="flex flex-wrap items-center justify-end gap-2 sm:ms-auto">
                     <button
                         type="button"
@@ -456,13 +440,13 @@ function yesNoInstalled(value) {
                     class="mb-3 flex w-full flex-col gap-3 border-b border-gray-600 pb-2 sm:flex-row sm:items-center sm:justify-between"
                 >
                     <h3 class="text-lg font-semibold text-indigo-200">Dolfijnen</h3>
-                    <label class="sr-only" for="members-search">Zoeken op voornaam of achternaam</label>
+                    <label class="sr-only" for="members-search">Zoeken in alle contactvelden</label>
                     <input
                         id="members-search"
                         v-model="memberSearchQuery"
                         type="search"
                         autocomplete="off"
-                        placeholder="Zoek op voornaam of achternaam…"
+                        placeholder="Zoek op naam, adres, telefoon, bijzonderheden…"
                         class="w-full max-w-xs self-end rounded border border-gray-600 bg-gray-900 px-3 py-1.5 text-sm text-white placeholder:text-gray-500 sm:ms-auto"
                     />
                 </div>
@@ -472,149 +456,92 @@ function yesNoInstalled(value) {
                 <div v-else-if="!filteredMembers.length" class="py-6 text-center text-sm text-gray-500">
                     Geen resultaten voor deze zoekopdracht.
                 </div>
-                <table v-else class="w-full table-fixed text-sm text-white">
-                    <colgroup>
-                        <col class="w-[8%]" />
-                        <col class="w-[10%]" />
-                        <col class="w-[10%]" />
-                        <col class="w-[10%]" />
-                        <col class="w-[5%]" />
-                        <col class="w-[17%]" />
-                        <col class="w-[11%]" />
-                        <col class="w-[11%]" />
-                        <col class="w-[18%]" />
-                    </colgroup>
-                    <thead>
-                        <tr class="text-left text-gray-300">
-                            <th class="pb-2">Geïnstalleerd</th>
-                            <th class="pb-2">Voornaam</th>
-                            <th class="pb-2">Achternaam</th>
-                            <th class="pb-2">Verjaardag</th>
-                            <th class="pb-2">Leeftijd</th>
-                            <th class="pb-2">Adres</th>
-                            <th class="pb-2">Telefoon moeder</th>
-                            <th class="pb-2">Telefoon vader</th>
-                            <th class="pb-2 text-right sm:text-left">Acties</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr
-                            v-for="member in filteredMembers"
-                            :key="member.id"
-                            class="border-t border-gray-600"
-                            :class="{ 'bg-gray-900/50': editingMemberId === member.id }"
-                        >
-                            <td class="py-2 pr-2 align-top">{{ yesNoInstalled(member.installed) }}</td>
-                            <td class="pr-2 align-top">{{ dashIfEmpty(member.first_name) }}</td>
-                            <td class="pr-2 align-top">{{ dashIfEmpty(member.last_name) }}</td>
-                            <td class="pr-2 align-top whitespace-nowrap">{{ formatBirthday(member.birthday) }}</td>
-                            <td class="pr-2 align-top">{{ member.age ?? '–' }}</td>
-                            <td class="pr-2 align-top break-words">{{ dashIfEmpty(member.address) }}</td>
-                            <td class="pr-2 align-top break-words">{{ dashIfEmpty(member.phone_mother) }}</td>
-                            <td class="align-top break-words">{{ dashIfEmpty(member.phone_father) }}</td>
-                            <td class="py-2 align-top">
-                                <div class="flex flex-wrap items-center justify-end gap-2 sm:justify-start">
-                                    <button
-                                        type="button"
-                                        class="inline-flex items-center gap-1 rounded border border-gray-500 bg-gray-900 px-2 py-1 text-xs font-medium text-white hover:bg-gray-700"
-                                        @click="openEditForm(member)"
-                                    >
-                                        <PencilSquareIcon class="h-4 w-4" />
-                                        Bewerken
-                                    </button>
-                                    <button
-                                        type="button"
-                                        class="inline-flex items-center gap-1 rounded border border-red-800/60 bg-red-950/35 px-2 py-1 text-xs font-medium text-red-300 hover:bg-red-950/55"
-                                        @click="deleteMember(member)"
-                                    >
-                                        <TrashIcon class="h-4 w-4" />
-                                        Verwijderen
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="rounded-xl bg-gray-800 p-4 shadow-sm">
-                <div
-                    class="mb-3 flex w-full flex-col gap-3 border-b border-gray-600 pb-2 sm:flex-row sm:items-center sm:justify-between"
-                >
-                    <h3 class="text-lg font-semibold text-indigo-200">Leiding</h3>
-                    <label class="sr-only" for="leaders-search">Zoeken op voornaam of achternaam</label>
-                    <input
-                        id="leaders-search"
-                        v-model="leaderSearchQuery"
-                        type="search"
-                        autocomplete="off"
-                        placeholder="Zoek op voornaam of achternaam…"
-                        class="w-full max-w-xs self-end rounded border border-gray-600 bg-gray-900 px-3 py-1.5 text-sm text-white placeholder:text-gray-500 sm:ms-auto"
-                    />
+                <div v-else class="overflow-x-auto">
+                    <table class="w-full min-w-[72rem] table-fixed text-sm text-white">
+                        <colgroup>
+                            <col class="w-[8%]" />
+                            <col class="w-[15%]" />
+                            <col class="w-[9%]" />
+                            <col class="w-[10%]" />
+                            <col class="w-[9%]" />
+                            <col class="w-[5%]" />
+                            <col class="w-[18%]" />
+                            <col class="w-[10%]" />
+                            <col class="w-[10%]" />
+                            <col class="w-[6%]" />
+                        </colgroup>
+                        <thead>
+                            <tr class="text-left text-gray-300">
+                                <th class="pb-2">Geïnstalleerd</th>
+                                <th class="pb-2">Bijzonderheden</th>
+                                <th class="pb-2">Voornaam</th>
+                                <th class="pb-2">Achternaam</th>
+                                <th class="pb-2">Verjaardag</th>
+                                <th class="pb-2">Leeftijd</th>
+                                <th class="pb-2">Adres</th>
+                                <th class="pb-2">Telefoon moeder</th>
+                                <th class="pb-2">Telefoon vader</th>
+                                <th class="pb-2 text-right sm:text-left">Acties</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr
+                                v-for="member in filteredMembers"
+                                :key="member.id"
+                                class="border-t border-gray-600"
+                                :class="{ 'bg-gray-900/50': editingMemberId === member.id }"
+                            >
+                                <td class="py-2 pr-2 align-top">{{ yesNoInstalled(member.installed) }}</td>
+                                <td class="pr-2 align-top break-words">
+                                    <span v-if="member.bijzonderheden" class="line-clamp-2">{{ member.bijzonderheden }}</span>
+                                    <span v-else>–</span>
+                                </td>
+                                <td class="pr-2 align-top">{{ dashIfEmpty(member.first_name) }}</td>
+                                <td class="pr-2 align-top">{{ dashIfEmpty(member.last_name) }}</td>
+                                <td class="pr-2 align-top whitespace-nowrap">{{ formatBirthday(member.birthday) }}</td>
+                                <td class="pr-2 align-top">{{ member.age ?? '–' }}</td>
+                                <td class="pr-2 align-top break-words">{{ dashIfEmpty(member.address) }}</td>
+                                <td class="pr-2 align-top break-words">{{ dashIfEmpty(member.phone_mother) }}</td>
+                                <td class="align-top break-words">{{ dashIfEmpty(member.phone_father) }}</td>
+                                <td class="py-2 align-top">
+                                    <div class="flex flex-wrap items-center justify-end gap-2 sm:justify-start">
+                                        <button
+                                            type="button"
+                                            class="inline-flex items-center gap-1 rounded border border-gray-500 bg-gray-900 px-2 py-1 text-xs font-medium text-white hover:bg-gray-700"
+                                            @click="openEditForm(member)"
+                                        >
+                                            <PencilSquareIcon class="h-4 w-4" />
+                                            Bewerken
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="inline-flex items-center gap-1 rounded border border-red-800/60 bg-red-950/35 px-2 py-1 text-xs font-medium text-red-300 hover:bg-red-950/55"
+                                            @click="deleteMember(member)"
+                                        >
+                                            <TrashIcon class="h-4 w-4" />
+                                            Verwijderen
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
-                <div v-if="!props.leaders?.length" class="py-6 text-center text-sm text-gray-500">
-                    Nog geen leiding.
-                </div>
-                <div v-else-if="!filteredLeaders.length" class="py-6 text-center text-sm text-gray-500">
-                    Geen resultaten voor deze zoekopdracht.
-                </div>
-                <table v-else class="w-full table-fixed text-sm text-white">
-                    <colgroup>
-                        <col class="w-[10%]" />
-                        <col class="w-[12%]" />
-                        <col class="w-[20%]" />
-                        <col class="w-[10%]" />
-                        <col class="w-[12%]" />
-                        <col class="w-[10%]" />
-                        <col class="w-[13%]" />
-                        <col class="w-[13%]" />
-                    </colgroup>
-                    <thead>
-                        <tr class="text-left text-gray-300">
-                            <th class="pb-2">Naam</th>
-                            <th class="pb-2">Achternaam</th>
-                            <th class="pb-2">Adres</th>
-                            <th class="pb-2">Postcode</th>
-                            <th class="pb-2">Plaats</th>
-                            <th class="pb-2">Geboortedatum</th>
-                            <th class="pb-2">Telefoonnummer</th>
-                            <th class="pb-2">E-mail</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="leader in filteredLeaders" :key="leader.id" class="border-t border-gray-600">
-                            <td class="py-2 pr-2 align-top">{{ dashIfEmpty(leader.first_name) }}</td>
-                            <td class="pr-2 align-top">{{ dashIfEmpty(leader.last_name) }}</td>
-                            <td class="pr-2 align-top break-words">{{ dashIfEmpty(leader.address) }}</td>
-                            <td class="pr-2 align-top">{{ dashIfEmpty(leader.postal_code) }}</td>
-                            <td class="pr-2 align-top">{{ dashIfEmpty(leader.city) }}</td>
-                            <td class="pr-2 align-top whitespace-nowrap">{{ formatBirthday(leader.birthday) }}</td>
-                            <td class="pr-2 align-top">{{ dashIfEmpty(leader.phone_number) }}</td>
-                            <td class="align-top break-all">
-                                <a
-                                    v-if="leader.email"
-                                    :href="`mailto:${leader.email}`"
-                                    class="text-indigo-300 underline decoration-indigo-400/80 underline-offset-2 hover:text-indigo-200"
-                                >
-                                    {{ leader.email }}
-                                </a>
-                                <span v-else>–</span>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
             </div>
 
             <div class="rounded-xl bg-gray-800 p-5 shadow-sm">
                 <h3 class="border-b border-gray-600 pb-2 text-lg font-semibold text-indigo-200">Bijzonderheden</h3>
                 <p class="mt-2 text-xs text-gray-400">
-                    Allergiën, medicatie, dieet en andere aandachtspunten. Voor Dolfijnen kun je ook bewerken via het
-                    contactformulier hierboven.
+                    Allergiën, medicatie, dieet en andere aandachtspunten. Bewerken via het contactformulier hierboven.
+                    Voor leiding: menu Leiding.
                 </p>
 
                 <h4 class="mt-5 text-sm font-semibold uppercase tracking-wide text-gray-300">Dolfijnen</h4>
                 <div v-if="!props.members?.length" class="mt-2 py-4 text-center text-sm text-gray-500">
                     Nog geen contacten.
+                </div>
+                <div v-else-if="!filteredMembers.length" class="mt-2 py-4 text-center text-sm text-gray-500">
+                    Geen contacten die aan deze zoekopdracht voldoen.
                 </div>
                 <div v-else class="mt-2 overflow-x-auto">
                     <table class="w-full table-fixed text-sm text-white">
@@ -632,7 +559,7 @@ function yesNoInstalled(value) {
                         </thead>
                         <tbody>
                             <tr
-                                v-for="member in props.members"
+                                v-for="member in filteredMembers"
                                 :key="`bijz-${member.id}`"
                                 class="border-t border-gray-600"
                             >
@@ -656,42 +583,6 @@ function yesNoInstalled(value) {
                             </tr>
                         </tbody>
                     </table>
-                </div>
-
-                <h4 class="mt-8 text-sm font-semibold uppercase tracking-wide text-gray-300">Leiding</h4>
-                <div v-if="!props.leaders?.length" class="mt-2 py-4 text-center text-sm text-gray-500">
-                    Nog geen leiding.
-                </div>
-                <div v-else class="mt-3 space-y-4">
-                    <div
-                        v-for="leader in props.leaders"
-                        :key="`ldr-bijz-${leader.id}`"
-                        class="rounded-lg border border-gray-600 bg-gray-900/50 p-4"
-                    >
-                        <p class="text-sm font-medium text-white">
-                            {{
-                                [leader.first_name, leader.last_name].filter(Boolean).join(' ').trim() || '–'
-                            }}
-                        </p>
-                        <label :for="`leader-bijz-${leader.id}`" class="mt-2 block text-xs font-medium text-gray-400">
-                            Bijzonderheden
-                        </label>
-                        <textarea
-                            :id="`leader-bijz-${leader.id}`"
-                            v-model="leaderNotes[leader.id]"
-                            rows="3"
-                            placeholder="Allergiën, medicatie, dieet, andere aandachtspunten…"
-                            class="mt-1 w-full min-h-[4.5rem] rounded border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-white placeholder:text-gray-500"
-                        />
-                        <button
-                            type="button"
-                            class="mt-2 rounded bg-indigo-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
-                            :disabled="leaderSavingId === leader.id"
-                            @click="saveLeaderBijzonderheden(leader)"
-                        >
-                            Opslaan
-                        </button>
-                    </div>
                 </div>
             </div>
         </div>

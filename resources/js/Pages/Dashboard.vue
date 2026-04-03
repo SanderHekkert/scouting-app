@@ -55,7 +55,7 @@ function formatIsoToNl(iso) {
                     :href="route('members.index')"
                     class="text-sm font-medium text-indigo-700 hover:text-indigo-600 dark:text-indigo-300 dark:hover:text-indigo-200"
                 >
-                    Contacten →
+                    Dolfijnen →
                 </Link>
             </div>
         </template>
@@ -121,7 +121,7 @@ function formatIsoToNl(iso) {
                         <UsersIcon class="h-5 w-5" />
                     </span>
                     <div class="min-w-0">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Leden</p>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Dolfijnen</p>
                         <p class="mt-1 tabular-nums text-2xl font-bold">{{ memberCount }}</p>
                     </div>
                 </div>

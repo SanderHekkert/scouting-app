@@ -17,4 +17,11 @@ class Leader extends Model
         'email',
         'bijzonderheden',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'birthday' => 'date',
+        ];
+    }
 }

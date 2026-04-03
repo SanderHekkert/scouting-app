@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Leader;
 use App\Models\Member;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -18,10 +17,6 @@ class MemberController extends Controller
             'members' => Member::query()
                 ->orderByRaw('CASE WHEN age IS NULL THEN 1 ELSE 0 END')
                 ->orderByDesc('age')
-                ->orderBy('first_name')
-                ->orderBy('last_name')
-                ->get(),
-            'leaders' => Leader::query()
                 ->orderBy('first_name')
                 ->orderBy('last_name')
                 ->get(),

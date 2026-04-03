@@ -22,7 +22,8 @@ const userInitials = computed(() => {
 const links = [
     { label: 'Dashboard', route: 'dashboard' },
     { label: 'Agenda', route: 'events.index' },
-    { label: 'Contacten', route: 'members.index' },
+    { label: 'Dolfijnen', route: 'members.index' },
+    { label: 'Leiding', route: 'leaders.index' },
     { label: 'Tipper- & Topper opkomst', route: 'tipper-topper-opkomst.index' },
     { label: 'Vinindeling', route: 'pods.index' },
     { label: 'Belangrijke info', route: 'info-notes.index' },
@@ -39,7 +40,7 @@ const links = [
                 <h1 class="text-lg font-bold text-gray-900 dark:text-gray-100">
                     Fridtjof Nansen 12
                 </h1>
-                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Dolfijnen administratie</p>
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Dolfijnen Applicatie</p>
 
                 <nav class="mt-6 space-y-2">
                     <Link

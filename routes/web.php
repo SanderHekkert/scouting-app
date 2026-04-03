@@ -20,8 +20,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/tipper-topper-opkomst', TipperTopperOpkomstController::class)->name('tipper-topper-opkomst.index');
     Route::resource('events', EventController::class)->except(['create', 'show', 'edit']);
     Route::patch('/members/{member}/tipper-topper-opkomst', [MemberController::class, 'updateTipperTopperOpkomst'])->name('members.tipper-topper-opkomst');
-    Route::patch('/leaders/{leader}/bijzonderheden', [LeaderController::class, 'updateBijzonderheden'])->name('leaders.bijzonderheden');
     Route::resource('members', MemberController::class)->except(['create', 'show', 'edit']);
+    Route::resource('leaders', LeaderController::class)->except(['create', 'show', 'edit']);
     Route::resource('pods', PodController::class)->except(['create', 'show', 'edit']);
     Route::post('/pods/{pod}/members', [PodController::class, 'addMember'])->name('pods.members.store');
     Route::delete('/pod-memberships/{podMembership}', [PodController::class, 'removeMember'])->name('pods.members.destroy');
