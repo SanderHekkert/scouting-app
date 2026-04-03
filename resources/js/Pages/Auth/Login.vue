@@ -140,7 +140,7 @@ const submit = () => {
             </AuthShellCard>
 
             <p class="mt-8 text-center text-xs text-white/70">
-                © {{ new Date().getFullYear() }} Fridtjof Nansen 12
+                © {{ new Date().getFullYear() }} Fridtjof Nansen Groep 12
             </p>
         </div>
     </AppShellBackground>

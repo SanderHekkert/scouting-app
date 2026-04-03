@@ -50,6 +50,13 @@ const editForm = useForm({
 
 const memberSearchQuery = ref('');
 
+/** 'dolfijnen' = volledig overzicht, 'bijzonderheden' = focus op bijzonderheden-tabel */
+const membersTab = ref('dolfijnen');
+
+function memberHasBijzonderheden(m) {
+    return m?.bijzonderheden != null && String(m.bijzonderheden).trim() !== '';
+}
+
 function matchesMultiFieldSearch(rawQuery, fieldValues) {
     const q = String(rawQuery ?? '').trim().toLowerCase();
     if (!q) {
@@ -88,6 +95,23 @@ function memberMatchesSearch(m, rawQuery) {
 const filteredMembers = computed(() =>
     (props.members || []).filter((m) => memberMatchesSearch(m, memberSearchQuery.value)),
 );
+
+/** Kinderen met bijzonderheden bovenaan; daarna op achternaam, voornaam. */
+const sortedFilteredMembers = computed(() => {
+    const list = [...filteredMembers.value];
+    list.sort((a, b) => {
+        const ha = memberHasBijzonderheden(a);
+        const hb = memberHasBijzonderheden(b);
+        if (ha !== hb) {
+            return ha ? -1 : 1;
+        }
+        const sortKey = (m) =>
+            `${m.last_name ?? ''} ${m.first_name ?? ''}`.trim().toLowerCase() ||
+            `${m.first_name ?? ''}`.toLowerCase();
+        return sortKey(a).localeCompare(sortKey(b), 'nl', { sensitivity: 'base' });
+    });
+    return list;
+});
 
 function toggleAddForm() {
     showAddForm.value = !showAddForm.value;
@@ -216,7 +240,7 @@ function yesNoInstalled(value) {
                         @click="toggleAddForm"
                     >
                         <PlusIcon class="h-5 w-5" />
-                        Contact toevoegen
+                        Dolfijn toevoegen
                     </button>
                 </div>
             </div>
@@ -453,10 +477,43 @@ function yesNoInstalled(value) {
             </form>
 
             <div class="surface-brand-top rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-4">
+                <div class="mb-3 flex flex-wrap gap-1 border-b border-brand-blue/35" role="tablist" aria-label="Dolfijnen weergave">
+                    <button
+                        type="button"
+                        role="tab"
+                        :aria-selected="membersTab === 'dolfijnen'"
+                        class="rounded-t-lg px-4 py-2 text-sm font-semibold transition"
+                        :class="
+                            membersTab === 'dolfijnen'
+                                ? 'bg-brand-blue/15 text-brand-blue-dark dark:text-app-ink-dark'
+                                : 'text-app-muted hover:bg-brand-blue/10 hover:text-app-ink dark:text-app-muted-dark dark:hover:text-app-ink-dark'
+                        "
+                        @click="membersTab = 'dolfijnen'"
+                    >
+                        Dolfijnen
+                    </button>
+                    <button
+                        type="button"
+                        role="tab"
+                        :aria-selected="membersTab === 'bijzonderheden'"
+                        class="rounded-t-lg px-4 py-2 text-sm font-semibold transition"
+                        :class="
+                            membersTab === 'bijzonderheden'
+                                ? 'bg-brand-blue/15 text-brand-blue-dark dark:text-app-ink-dark'
+                                : 'text-app-muted hover:bg-brand-blue/10 hover:text-app-ink dark:text-app-muted-dark dark:hover:text-app-ink-dark'
+                        "
+                        @click="membersTab = 'bijzonderheden'"
+                    >
+                        Bijzonderheden
+                    </button>
+                </div>
+
                 <div
                     class="mb-3 flex w-full flex-col gap-3 border-b border-brand-blue/35 pb-2 sm:flex-row sm:items-center sm:justify-between"
                 >
-                    <h3 class="text-lg font-semibold text-app-ink dark:text-app-ink-dark">Overzicht</h3>
+                    <h3 class="text-lg font-semibold text-app-ink dark:text-app-ink-dark">
+                        {{ membersTab === 'dolfijnen' ? 'Overzicht' : 'Bijzonderheden' }}
+                    </h3>
                     <div class="flex w-full max-w-sm items-center gap-2 self-end sm:ms-auto">
                         <MagnifyingGlassIcon
                             class="h-5 w-5 shrink-0 text-app-muted dark:text-app-muted-dark"
@@ -473,21 +530,38 @@ function yesNoInstalled(value) {
                         />
                     </div>
                 </div>
+
+                <p
+                    v-if="membersTab === 'bijzonderheden'"
+                    class="mb-3 text-xs text-app-muted dark:text-app-muted-dark"
+                >
+                    Allergiën, medicatie, dieet en andere aandachtspunten. Bewerken via onderstaande knop of het formulier hierboven.
+                    Kinderen met ingevulde bijzonderheden staan bovenaan. Voor leiding: menu Leiding.
+                </p>
+
                 <div v-if="!props.members?.length" class="py-6 text-center text-sm text-app-muted dark:text-app-muted-dark">
                     Nog geen Dolfijnen.
                 </div>
                 <div v-else-if="!filteredMembers.length" class="py-6 text-center text-sm text-app-muted dark:text-app-muted-dark">
                     Geen resultaten voor deze zoekopdracht.
                 </div>
-                <div v-else class="space-y-2 md:space-y-0">
+
+                <div v-else-if="membersTab === 'dolfijnen'" class="space-y-2 md:space-y-0">
                     <div class="md:hidden space-y-2">
                         <Link
-                            v-for="member in filteredMembers"
+                            v-for="member in sortedFilteredMembers"
                             :key="`m-mob-${member.id}`"
                             :href="route('members.show', member.id)"
                             class="surface-brand-top flex items-center justify-between gap-3 rounded-xl border border-brand-blue/30 bg-app-panel px-4 py-3 text-app-ink shadow-sm dark:bg-app-panel-dark/95 dark:text-app-ink-dark active:bg-brand-blue/15"
                         >
-                            <span class="min-w-0 truncate font-medium">{{ memberDisplayName(member) }}</span>
+                            <span class="flex min-w-0 items-center gap-2 truncate">
+                                <span
+                                    v-if="memberHasBijzonderheden(member)"
+                                    class="h-2 w-2 shrink-0 rounded-full bg-brand-red"
+                                    title="Heeft bijzonderheden"
+                                />
+                                <span class="truncate font-medium">{{ memberDisplayName(member) }}</span>
+                            </span>
                             <ChevronRightIcon class="h-5 w-5 shrink-0 text-app-muted dark:text-app-muted-dark" aria-hidden="true" />
                         </Link>
                     </div>
@@ -511,7 +585,7 @@ function yesNoInstalled(value) {
                         </thead>
                         <tbody class="divide-y divide-brand-blue/25">
                             <tr
-                                v-for="member in filteredMembers"
+                                v-for="member in sortedFilteredMembers"
                                 :key="member.id"
                                 class="bg-brand-blue/5 transition-colors hover:bg-brand-blue/12 dark:bg-app-panel-dark/50 dark:hover:bg-brand-blue/15"
                                 :class="{ '!bg-brand-blue/15 dark:!bg-app-canvas-dark/90': editingMemberId === member.id }"
@@ -566,57 +640,68 @@ function yesNoInstalled(value) {
                     </table>
                     </div>
                 </div>
-            </div>
 
-            <div class="surface-brand-top hidden rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5 md:block">
-                <h3 class="border-b border-brand-blue/35 pb-2 text-lg font-semibold text-app-ink dark:text-app-ink-dark">Bijzonderheden</h3>
-                <p class="mt-2 text-xs text-app-muted dark:text-app-muted-dark">
-                    Allergiën, medicatie, dieet en andere aandachtspunten. Bewerken via het contactformulier hierboven.
-                    Voor leiding: menu Leiding.
-                </p>
-
-                <h4 class="mt-5 text-sm font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Dolfijnen</h4>
-                <div v-if="!props.members?.length" class="mt-2 py-4 text-center text-sm text-app-muted dark:text-app-muted-dark">
-                    Nog geen contacten.
-                </div>
-                <div v-else-if="!filteredMembers.length" class="mt-2 py-4 text-center text-sm text-app-muted dark:text-app-muted-dark">
-                    Geen contacten die aan deze zoekopdracht voldoen.
-                </div>
-                <div v-else class="surface-brand-top-lg mt-2 overflow-x-auto rounded-lg border border-brand-blue/25">
-                    <table class="w-full min-w-[40rem] border-collapse text-left text-sm text-app-ink dark:text-app-ink-dark">
-                        <thead class="border-b border-brand-blue/35 bg-app-sidebar dark:bg-app-canvas-dark/80">
-                            <tr class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
-                                <th scope="col" class="min-w-[8rem] px-3 py-2.5">Naam</th>
-                                <th scope="col" class="min-w-[16rem] px-3 py-2.5">Bijzonderheden</th>
-                                <th scope="col" class="min-w-[9rem] whitespace-nowrap px-3 py-2.5 text-end sm:text-start">
-                                    Acties
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-brand-blue/25">
-                            <tr
-                                v-for="member in filteredMembers"
-                                :key="`bijz-${member.id}`"
-                                class="bg-brand-blue/5 transition-colors hover:bg-brand-blue/12 dark:bg-app-panel-dark/50 dark:hover:bg-brand-blue/15"
+                <div v-else-if="membersTab === 'bijzonderheden'" class="space-y-2">
+                    <div class="md:hidden space-y-2">
+                        <div
+                            v-for="member in sortedFilteredMembers"
+                            :key="`bijz-mob-${member.id}`"
+                            class="surface-brand-top rounded-xl border border-brand-blue/30 bg-app-panel p-4 shadow-sm dark:bg-app-panel-dark/95"
+                        >
+                            <p class="font-medium text-app-ink dark:text-app-ink-dark">{{ memberDisplayName(member) }}</p>
+                            <p
+                                class="mt-2 whitespace-pre-wrap text-sm leading-snug text-app-ink dark:text-app-ink-dark"
                             >
-                                <td class="px-3 py-2.5 align-top font-medium text-app-ink dark:text-app-ink-dark">
-                                    {{ memberDisplayName(member) }}
-                                </td>
-                                <td class="px-3 py-2.5 align-top break-words leading-snug text-app-ink dark:text-app-ink-dark">
-                                    <span v-if="member.bijzonderheden" class="whitespace-pre-wrap">{{
-                                        member.bijzonderheden
-                                    }}</span>
-                                    <span v-else class="text-app-muted dark:text-app-muted-dark">–</span>
-                                </td>
-                                <td class="px-3 py-2.5 align-top">
-                                    <button type="button" class="btn-action-edit" @click="openEditForm(member)">
-                                        <PencilSquareIcon class="h-4 w-4 shrink-0" />
-                                        Bewerken
-                                    </button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                                <span v-if="memberHasBijzonderheden(member)">{{ member.bijzonderheden }}</span>
+                                <span v-else class="text-app-muted dark:text-app-muted-dark">—</span>
+                            </p>
+                            <button
+                                type="button"
+                                class="btn-action-edit mt-3"
+                                @click="openEditForm(member)"
+                            >
+                                <PencilSquareIcon class="h-4 w-4 shrink-0" />
+                                Bewerken
+                            </button>
+                        </div>
+                    </div>
+                    <div class="surface-brand-top-lg hidden overflow-x-auto rounded-lg border border-brand-blue/25 md:block">
+                        <table class="w-full min-w-[40rem] border-collapse text-left text-sm text-app-ink dark:text-app-ink-dark">
+                            <thead class="border-b border-brand-blue/35 bg-app-sidebar dark:bg-app-canvas-dark/80">
+                                <tr class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
+                                    <th scope="col" class="min-w-[8rem] px-3 py-2.5">Naam</th>
+                                    <th scope="col" class="min-w-[16rem] px-3 py-2.5">Bijzonderheden</th>
+                                    <th scope="col" class="min-w-[9rem] whitespace-nowrap px-3 py-2.5 text-end sm:text-start">
+                                        Acties
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-brand-blue/25">
+                                <tr
+                                    v-for="member in sortedFilteredMembers"
+                                    :key="`bijz-${member.id}`"
+                                    class="bg-brand-blue/5 transition-colors hover:bg-brand-blue/12 dark:bg-app-panel-dark/50 dark:hover:bg-brand-blue/15"
+                                    :class="{ '!bg-brand-blue/15 dark:!bg-app-canvas-dark/90': editingMemberId === member.id }"
+                                >
+                                    <td class="px-3 py-2.5 align-top font-medium text-app-ink dark:text-app-ink-dark">
+                                        {{ memberDisplayName(member) }}
+                                    </td>
+                                    <td class="px-3 py-2.5 align-top break-words leading-snug text-app-ink dark:text-app-ink-dark">
+                                        <span v-if="memberHasBijzonderheden(member)" class="whitespace-pre-wrap">{{
+                                            member.bijzonderheden
+                                        }}</span>
+                                        <span v-else class="text-app-muted dark:text-app-muted-dark">–</span>
+                                    </td>
+                                    <td class="px-3 py-2.5 align-top">
+                                        <button type="button" class="btn-action-edit" @click="openEditForm(member)">
+                                            <PencilSquareIcon class="h-4 w-4 shrink-0" />
+                                            Bewerken
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>

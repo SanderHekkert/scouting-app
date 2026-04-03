@@ -70,6 +70,29 @@ function sortedMemberships(memberships) {
     });
 }
 
+/** Per vin: Topper → Tipper → Vinleden (zoals besproken / seed-kolommen). */
+function podSections(memberships) {
+    const sorted = sortedMemberships(memberships ?? []);
+    const topper = sorted.filter((m) => m.role === 'Topper');
+    const tipper = sorted.filter((m) => m.role === 'Tipper');
+    const vinlids = sorted.filter((m) => m.role === 'Vinlid');
+    return [
+        { key: 'topper', label: 'Topper', items: topper },
+        { key: 'tipper', label: 'Tipper', items: tipper },
+        { key: 'vinlid', label: 'Vinleden', items: vinlids },
+    ];
+}
+
+function roleBadgeClass(role) {
+    if (role === 'Topper') {
+        return 'bg-brand-yellow/25 text-brand-blue-dark dark:bg-brand-yellow/35 dark:text-app-ink-dark';
+    }
+    if (role === 'Tipper') {
+        return 'bg-brand-blue/30 text-app-ink dark:text-app-ink-dark';
+    }
+    return 'bg-brand-green/25 text-brand-green dark:text-app-ink dark:text-app-ink-dark';
+}
+
 function submitLink() {
     if (!memberForm.pod_id) return;
     memberForm.post(route('pods.members.store', memberForm.pod_id), {
@@ -192,52 +215,71 @@ function memberOptionLabel(m) {
                 </p>
             </form>
 
-            <div class="grid gap-4 md:grid-cols-2">
+            <!-- Vier vaste kolommen (Narwals, Orinoco's, Tuimelaars, Grampers) op brede schermen -->
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4 xl:items-start">
                 <div
                     v-for="pod in pods"
                     :key="pod.id"
-                    class="surface-brand-top rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-4"
+                    class="surface-brand-top flex min-w-0 flex-col rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-4"
                 >
                     <h3 class="border-b border-brand-blue/35 pb-2 text-lg font-semibold text-app-ink dark:text-app-ink-dark">
                         {{ pod.name }}
                     </h3>
-                    <p v-if="!pod.memberships?.length" class="py-4 text-sm text-app-muted dark:text-app-muted-dark">
+
+                    <div v-if="!pod.memberships?.length" class="py-4 text-sm text-app-muted dark:text-app-muted-dark">
                         Nog geen leden in deze vin.
-                    </p>
-                    <ul v-else class="mt-3 space-y-2 text-sm">
-                        <li
-                            v-for="membership in sortedMemberships(pod.memberships)"
-                            :key="membership.id"
-                            class="flex items-start justify-between gap-2 border-t border-brand-blue/35 pt-2 first:border-t-0 first:pt-0"
+                    </div>
+
+                    <div v-else class="mt-3 flex flex-col gap-4 text-sm">
+                        <section
+                            v-for="section in podSections(pod.memberships)"
+                            :key="`${pod.id}-${section.key}`"
+                            class="min-w-0"
                         >
-                            <div class="min-w-0 text-app-ink dark:text-app-ink-dark">
-                                <span
-                                    class="mr-2 inline-block rounded px-2 py-0.5 text-xs font-semibold"
-                                    :class="{
-                                        'bg-brand-yellow/25 text-brand-blue-dark dark:bg-brand-yellow/35 dark:text-app-ink-dark': membership.role === 'Topper',
-                                        'bg-brand-blue/30 text-app-ink dark:text-app-ink-dark': membership.role === 'Tipper',
-                                        'bg-brand-green/25 text-brand-green dark:text-app-ink dark:text-app-ink-dark': membership.role !== 'Topper' && membership.role !== 'Tipper',
-                                    }"
+                            <h4 class="mb-2 text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
+                                {{ section.label }}
+                            </h4>
+                            <ul class="space-y-2">
+                                <li
+                                    v-for="membership in section.items"
+                                    :key="membership.id"
+                                    class="flex items-start justify-between gap-2"
                                 >
-                                    {{ membership.role }}
-                                </span>
-                                <span class="text-app-ink dark:text-app-ink-dark">
-                                    {{ membership.member?.first_name }} {{ membership.member?.last_name }}
-                                </span>
-                                <span v-if="membership.member?.age != null" class="text-app-muted dark:text-app-muted-dark">
-                                    ({{ membership.member.age }})
-                                </span>
-                            </div>
-                            <button
-                                type="button"
-                                class="btn-action-delete shrink-0"
-                                @click="removeMembership(membership)"
-                            >
-                                <TrashIcon class="h-4 w-4" />
-                                Verwijderen
-                            </button>
-                        </li>
-                    </ul>
+                                    <div class="min-w-0 text-app-ink dark:text-app-ink-dark">
+                                        <span
+                                            class="mr-2 inline-block rounded px-2 py-0.5 text-xs font-semibold"
+                                            :class="roleBadgeClass(membership.role)"
+                                        >
+                                            {{ membership.role }}
+                                        </span>
+                                        <span>
+                                            {{ membership.member?.first_name }} {{ membership.member?.last_name }}
+                                        </span>
+                                        <span
+                                            v-if="membership.member?.age != null"
+                                            class="text-app-muted dark:text-app-muted-dark"
+                                        >
+                                            ({{ membership.member.age }})
+                                        </span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        class="btn-action-delete shrink-0"
+                                        @click="removeMembership(membership)"
+                                    >
+                                        <TrashIcon class="h-4 w-4" />
+                                        Verwijderen
+                                    </button>
+                                </li>
+                                <li
+                                    v-if="!section.items.length"
+                                    class="text-app-muted dark:text-app-muted-dark"
+                                >
+                                    —
+                                </li>
+                            </ul>
+                        </section>
+                    </div>
                 </div>
             </div>
         </div>

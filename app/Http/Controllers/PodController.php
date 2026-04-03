@@ -16,16 +16,25 @@ class PodController extends Controller
      */
     public function index()
     {
+        /** Vaste volgorde zoals in de seed (kolommen Narwals → Orinoco's → Tuimelaars → Grampers). */
+        $podOrder = ['Narwals', "Orinoco's", 'Tuimelaars', 'Grampers'];
+
         $pods = Pod::query()
             ->with(['memberships' => function ($q) {
                 $q->with('member');
             }])
-            ->orderBy('name')
-            ->get();
+            ->get()
+            ->sortBy(function (Pod $pod) use ($podOrder): int {
+                $i = array_search($pod->name, $podOrder, true);
+
+                return $i !== false ? $i : 1000;
+            })
+            ->values();
 
         return Inertia::render('Pods/Index', [
             'pods' => $pods,
             'unassignedMembers' => Member::query()
+                ->where('active', true)
                 ->whereDoesntHave('podMemberships')
                 ->orderBy('first_name')
                 ->orderBy('last_name')
