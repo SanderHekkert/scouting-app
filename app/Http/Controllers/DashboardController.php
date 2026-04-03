@@ -6,6 +6,7 @@ use App\Models\Event;
 use App\Models\Leader;
 use App\Models\Member;
 use App\Models\TaskItem;
+use App\Models\User;
 use Carbon\Carbon;
 use Inertia\Inertia;
 
@@ -36,7 +37,122 @@ class DashboardController extends Controller
             'memberCount' => Member::count(),
             'leaderCount' => Leader::count(),
             'taskCount' => TaskItem::count(),
+            'leaderAbsenceChart' => $this->leaderAbsenceChart($today),
         ]);
+    }
+
+    /**
+     * Aantal keer dat een leidinglid genoemd wordt bij agenda-afwezigheden (vrij tekstveld).
+     * Gebruikt users.leader_name (scoutingnaam) als die via hetzelfde e-mailadres als de leider bekend is,
+     * anders de bestaande herkenning op voor-/achternaam.
+     *
+     * @return list<array{id: int, name: string, leader_name: ?string, absence_count: int}>
+     */
+    private function leaderAbsenceChart(Carbon $today): array
+    {
+        $events = Event::query()
+            ->whereDate('event_date', '<=', $today)
+            ->whereNotNull('absent')
+            ->pluck('absent');
+
+        $usersByEmail = User::query()
+            ->whereNotNull('email')
+            ->where('email', '!=', '')
+            ->get()
+            ->keyBy(fn (User $u) => mb_strtolower(trim($u->email)));
+
+        $rows = [];
+        foreach (
+            Leader::query()
+                ->orderBy('last_name')
+                ->orderBy('first_name')
+                ->get() as $leader
+        ) {
+            $full = trim(implode(' ', array_filter([
+                trim((string) $leader->first_name),
+                trim((string) $leader->last_name),
+            ])));
+            $first = trim((string) $leader->first_name);
+            $last = trim((string) $leader->last_name);
+
+            $emailKey = mb_strtolower(trim((string) $leader->email));
+            $scoutName = ($emailKey !== '' && isset($usersByEmail[$emailKey]))
+                ? trim((string) ($usersByEmail[$emailKey]->leader_name ?? ''))
+                : '';
+            $scoutName = $scoutName !== '' ? $scoutName : null;
+
+            $count = 0;
+            foreach ($events as $absent) {
+                $text = trim((string) $absent);
+                if ($text === '') {
+                    continue;
+                }
+                if ($this->absentTextMentionsInAgenda($text, $scoutName, $full, $first, $last)) {
+                    $count++;
+                }
+            }
+
+            $realName = $leader->full_name !== '' ? $leader->full_name : ('Leiding #'.$leader->id);
+            $chartLabel = $scoutName ?? $realName;
+
+            $rows[] = [
+                'id' => $leader->id,
+                'name' => $chartLabel,
+                'leader_name' => $scoutName,
+                'real_name' => $realName,
+                'absence_count' => $count,
+            ];
+        }
+
+        usort($rows, function (array $a, array $b) {
+            if ($a['absence_count'] !== $b['absence_count']) {
+                return $b['absence_count'] <=> $a['absence_count'];
+            }
+
+            return strcasecmp($a['name'], $b['name']);
+        });
+
+        return $rows;
+    }
+
+    /**
+     * Eén match per opkomst: eerst scoutingnaam (heel woord), anders burgerlijke naam-logica.
+     */
+    private function absentTextMentionsInAgenda(
+        string $absent,
+        ?string $scoutName,
+        string $full,
+        string $first,
+        string $last,
+    ): bool {
+        if ($scoutName !== null && $scoutName !== '') {
+            if (preg_match('/\b'.preg_quote($scoutName, '/').'\b/iu', $absent)) {
+                return true;
+            }
+        }
+
+        return $this->absentTextMentionsLeader($absent, $full, $first, $last);
+    }
+
+    private function absentTextMentionsLeader(string $absent, string $full, string $first, string $last): bool
+    {
+        if ($full !== '' && stripos($absent, $full) !== false) {
+            return true;
+        }
+
+        if ($first === '') {
+            return false;
+        }
+
+        if (! preg_match('/\b'.preg_quote($first, '/').'\b/iu', $absent)) {
+            return false;
+        }
+
+        if ($last === '') {
+            return true;
+        }
+
+        return stripos($absent, $last) !== false;
     }
 
     /**

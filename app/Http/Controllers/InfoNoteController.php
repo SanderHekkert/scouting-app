@@ -51,6 +51,26 @@ class InfoNoteController extends Controller
     }
 
     /**
+     * Snel één veld bijwerken (tabel + dubbelklik).
+     */
+    public function quickUpdate(Request $request, InfoNote $info_note)
+    {
+        if ($request->has('link')) {
+            $this->prepareLinkForValidation($request);
+        }
+
+        $data = $request->validate([
+            'category' => ['sometimes', 'required', 'string', 'max:255'],
+            'content' => ['sometimes', 'required', 'string'],
+            'link' => ['sometimes', 'nullable', 'string', 'max:2048', 'url'],
+        ]);
+
+        $info_note->update($data);
+
+        return back();
+    }
+
+    /**
      * Update the specified resource in storage.
      */
     public function update(Request $request, InfoNote $infoNote)

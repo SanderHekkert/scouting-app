@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Leader;
 use App\Models\TaskCategory;
 use App\Models\TaskItem;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -23,7 +23,7 @@ class TaskItemController extends Controller
             ->all();
 
         $tasks = TaskItem::query()
-            ->with('ownerUser:id,name')
+            ->with('ownerLeader:id,first_name,last_name')
             ->get()
             ->sortBy(function (TaskItem $task) use ($taskCategories) {
                 $categoryIndex = array_search($task->category, $taskCategories, true);
@@ -34,10 +34,19 @@ class TaskItemController extends Controller
                 ];
             })->values();
 
+        $leaders = Leader::query()
+            ->orderBy('last_name')
+            ->orderBy('first_name')
+            ->get(['id', 'first_name', 'last_name'])
+            ->map(fn (Leader $leader) => [
+                'id' => $leader->id,
+                'name' => $leader->full_name,
+            ]);
+
         return Inertia::render('TaskItems/Index', [
             'tasks' => $tasks,
             'taskCategories' => $taskCategories,
-            'users' => User::query()->orderBy('name')->get(['id', 'name']),
+            'leaders' => $leaders,
         ]);
     }
 
@@ -49,13 +58,14 @@ class TaskItemController extends Controller
         $data = $request->validate([
             'category' => ['required', 'string', Rule::exists('task_categories', 'name')],
             'title' => ['required', 'string', 'max:255'],
-            'owner_user_id' => ['nullable', 'integer', Rule::exists('users', 'id')],
+            'owner_leader_id' => ['nullable', 'integer', Rule::exists('leaders', 'id')],
             'description' => ['nullable', 'string'],
         ]);
 
         $data['owner'] = null;
-        if (! empty($data['owner_user_id'])) {
-            $data['owner'] = User::query()->whereKey($data['owner_user_id'])->value('name');
+        $data['owner_user_id'] = null;
+        if (! empty($data['owner_leader_id'])) {
+            $data['owner'] = Leader::query()->find($data['owner_leader_id'])?->full_name;
         }
 
         TaskItem::create($data);
@@ -71,18 +81,44 @@ class TaskItemController extends Controller
         $data = $request->validate([
             'category' => ['required', 'string', Rule::exists('task_categories', 'name')],
             'title' => ['required', 'string', 'max:255'],
-            'owner_user_id' => ['nullable', 'integer', Rule::exists('users', 'id')],
+            'owner_leader_id' => ['nullable', 'integer', Rule::exists('leaders', 'id')],
             'description' => ['nullable', 'string'],
         ]);
 
         $data['owner'] = null;
-        if (! empty($data['owner_user_id'])) {
-            $data['owner'] = User::query()->whereKey($data['owner_user_id'])->value('name');
+        $data['owner_user_id'] = null;
+        if (! empty($data['owner_leader_id'])) {
+            $data['owner'] = Leader::query()->find($data['owner_leader_id'])?->full_name;
         }
 
         $taskItem->update($data);
 
         return to_route('task-items.index');
+    }
+
+    /**
+     * Snel één veld bijwerken (tabel + dubbelklik / EditableTextCell).
+     */
+    public function quickUpdate(Request $request, TaskItem $taskItem)
+    {
+        $data = $request->validate([
+            'category' => ['sometimes', 'required', 'string', Rule::exists('task_categories', 'name')],
+            'title' => ['sometimes', 'required', 'string', 'max:255'],
+            'owner_leader_id' => ['sometimes', 'nullable', 'integer', Rule::exists('leaders', 'id')],
+            'description' => ['sometimes', 'nullable', 'string'],
+        ]);
+
+        if (array_key_exists('owner_leader_id', $data)) {
+            $data['owner_user_id'] = null;
+            $data['owner'] = null;
+            if (! empty($data['owner_leader_id'])) {
+                $data['owner'] = Leader::query()->find($data['owner_leader_id'])?->full_name;
+            }
+        }
+
+        $taskItem->update($data);
+
+        return back();
     }
 
     public function storeCategory(Request $request)

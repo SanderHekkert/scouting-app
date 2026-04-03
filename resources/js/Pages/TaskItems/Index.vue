@@ -1,12 +1,13 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { computed, ref } from 'vue';
+import EditableTextCell from '@/Components/EditableTextCell.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
-import { PlusIcon, PencilSquareIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import { PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     tasks: Array,
-    users: {
+    leaders: {
         type: Array,
         default: () => [],
     },
@@ -38,9 +39,7 @@ const groupedSections = computed(() => {
 });
 
 const showAddForm = ref(false);
-const showEditForm = ref(false);
 const showCategoryForm = ref(false);
-const editingTaskId = ref(null);
 
 const categoryForm = useForm({
     name: '',
@@ -49,20 +48,15 @@ const categoryForm = useForm({
 const form = useForm({
     category: defaultCategory(),
     title: '',
-    owner_user_id: '',
+    owner_leader_id: '',
     description: '',
 });
-const editForm = useForm({
-    category: defaultCategory(),
-    title: '',
-    owner_user_id: '',
-    description: '',
-});
+
+const taskFieldSaving = ref(null);
 
 function toggleAddForm() {
     showAddForm.value = !showAddForm.value;
     if (showAddForm.value) {
-        showEditForm.value = false;
         showCategoryForm.value = false;
         form.reset();
         form.category = defaultCategory();
@@ -73,29 +67,8 @@ function toggleCategoryForm() {
     showCategoryForm.value = !showCategoryForm.value;
     if (showCategoryForm.value) {
         showAddForm.value = false;
-        showEditForm.value = false;
         categoryForm.reset();
     }
-}
-
-function openEditForm(task) {
-    if (!task) return;
-    editingTaskId.value = task.id;
-    editForm.category = task.category ?? defaultCategory();
-    editForm.title = task.title;
-    editForm.owner_user_id = task.owner_user_id ? String(task.owner_user_id) : '';
-    editForm.description = task.description ?? '';
-    editForm.clearErrors();
-    showEditForm.value = true;
-    showAddForm.value = false;
-    showCategoryForm.value = false;
-}
-
-function closeEditForm() {
-    showEditForm.value = false;
-    editingTaskId.value = null;
-    editForm.reset();
-    editForm.category = defaultCategory();
 }
 
 function submitAdd() {
@@ -119,12 +92,35 @@ function submitCategory() {
     });
 }
 
-function submitEdit() {
-    if (!editingTaskId.value) return;
-    editForm.put(route('task-items.update', editingTaskId.value), {
+function isTaskFieldSaving(task, field) {
+    return taskFieldSaving.value === `${task.id}:${field}`;
+}
+
+function isTaskRowSaving(task) {
+    const key = taskFieldSaving.value;
+    return key != null && String(key).startsWith(`${task.id}:`);
+}
+
+function patchTaskField(task, field, raw) {
+    if (!task?.id) return;
+    let payload = {};
+    if (field === 'owner_leader_id') {
+        const s = raw === '' || raw == null ? null : Number(raw);
+        payload = { owner_leader_id: Number.isNaN(s) ? null : s };
+    } else if (field === 'category') {
+        payload = { category: raw };
+    } else if (field === 'title') {
+        payload = { title: raw ?? '' };
+    } else if (field === 'description') {
+        payload = { description: raw ?? '' };
+    } else {
+        return;
+    }
+    taskFieldSaving.value = `${task.id}:${field}`;
+    router.patch(route('task-items.quick-update', task.id), payload, {
         preserveScroll: true,
-        onSuccess: () => {
-            closeEditForm();
+        onFinish: () => {
+            taskFieldSaving.value = null;
         },
     });
 }
@@ -132,9 +128,6 @@ function submitEdit() {
 function deleteTask(task) {
     if (!task?.id) return;
     if (!confirm('Deze taak verwijderen?')) return;
-    if (editingTaskId.value === task.id) {
-        closeEditForm();
-    }
     router.delete(route('task-items.destroy', task.id), {
         preserveScroll: true,
     });
@@ -242,12 +235,12 @@ function deleteTask(task) {
                     </label>
                     <select
                         id="add-owner"
-                        v-model="form.owner_user_id"
+                        v-model="form.owner_leader_id"
                         class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                     >
                         <option value="">Geen toegewezen</option>
-                        <option v-for="user in users" :key="`add-user-${user.id}`" :value="String(user.id)">
-                            {{ user.name }}
+                        <option v-for="leader in leaders" :key="`add-leader-${leader.id}`" :value="String(leader.id)">
+                            {{ leader.name }}
                         </option>
                     </select>
 
@@ -279,101 +272,6 @@ function deleteTask(task) {
                 </p>
             </form>
 
-            <form
-                v-show="showEditForm"
-                class="surface-brand-top space-y-4 rounded-xl border border-brand-yellow/35 bg-app-panel shadow-sm dark:bg-app-panel-dark/95 p-5"
-                @submit.prevent="submitEdit"
-            >
-                <h3 class="text-base font-semibold text-app-ink dark:text-app-ink-dark">Taak bewerken</h3>
-                <p class="text-xs text-app-muted dark:text-app-muted-dark">
-                    Kies het kopje waar deze taak onder hoort, pas de teksten aan en klik op Bijwerken.
-                </p>
-                <div class="grid gap-4 sm:grid-cols-[8rem_1fr] sm:items-start">
-                    <span class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-1">
-                        Kopje
-                    </span>
-                    <div class="flex flex-wrap gap-2" role="radiogroup" aria-label="Verplaats taak naar ander kopje">
-                        <label
-                            v-for="cat in taskCategories"
-                            :key="`edit-${cat}`"
-                            class="cursor-pointer rounded-lg border px-3 py-2 text-sm transition"
-                            :class="
-                                editForm.category === cat
-                                    ? 'border-brand-blue bg-brand-blue/20 text-app-ink ring-2 ring-brand-blue/55 dark:border-brand-blue-light dark:bg-brand-blue/25 dark:text-app-ink-dark dark:ring-brand-blue/50'
-                                    : 'border-brand-blue/35 bg-white text-app-ink hover:border-brand-blue/55 dark:bg-app-canvas-dark dark:text-app-ink-dark dark:hover:border-brand-blue/55'
-                            "
-                        >
-                            <input
-                                v-model="editForm.category"
-                                type="radio"
-                                class="sr-only"
-                                :value="cat"
-                            />
-                            {{ cat }}
-                        </label>
-                    </div>
-
-                    <label for="edit-title" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Taak
-                    </label>
-                    <input
-                        id="edit-title"
-                        v-model="editForm.title"
-                        type="text"
-                        autocomplete="off"
-                        placeholder="bv. Agenda bijhouden"
-                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
-                    />
-
-                    <label for="edit-owner" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Wie
-                    </label>
-                    <select
-                        id="edit-owner"
-                        v-model="editForm.owner_user_id"
-                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                    >
-                        <option value="">Geen toegewezen</option>
-                        <option v-for="user in users" :key="`edit-user-${user.id}`" :value="String(user.id)">
-                            {{ user.name }}
-                        </option>
-                    </select>
-
-                    <label for="edit-description" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Uitleg
-                    </label>
-                    <textarea
-                        id="edit-description"
-                        v-model="editForm.description"
-                        rows="4"
-                        placeholder="Wat houdt deze taak in?"
-                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
-                    />
-
-                    <span class="hidden sm:block" aria-hidden="true" />
-                    <div class="flex flex-wrap gap-2">
-                        <button
-                            type="submit"
-                            class="rounded bg-brand-red px-5 py-2 text-sm font-medium text-white hover:bg-brand-red-dark disabled:opacity-50"
-                            :disabled="editForm.processing"
-                        >
-                            Bijwerken
-                        </button>
-                        <button
-                            type="button"
-                            class="rounded border border-brand-blue-light/50 px-5 py-2 text-sm font-medium text-app-ink dark:text-app-ink-dark transition hover:bg-brand-blue/20"
-                            @click="closeEditForm"
-                        >
-                            Annuleren
-                        </button>
-                    </div>
-                </div>
-                <p v-if="editForm.errors.category" class="text-sm text-red-400">{{ editForm.errors.category }}</p>
-                <p v-if="editForm.errors.title" class="text-sm text-red-400">
-                    {{ editForm.errors.title }}
-                </p>
-            </form>
-
             <div class="space-y-6">
                 <div
                     v-for="section in groupedSections"
@@ -388,13 +286,15 @@ function deleteTask(task) {
                     </div>
                     <table v-else class="w-full table-fixed text-sm text-app-ink dark:text-app-ink-dark">
                         <colgroup>
-                            <col class="w-[28%]" />
+                            <col class="w-[14%]" />
+                            <col class="w-[22%]" />
                             <col class="w-[18%]" />
-                            <col class="w-[39%]" />
-                            <col class="w-[15%]" />
+                            <col class="w-[36%]" />
+                            <col class="w-[10%]" />
                         </colgroup>
                         <thead>
                             <tr class="text-left text-app-muted dark:text-app-muted-dark">
+                                <th class="pb-2">Kopje</th>
                                 <th class="pb-2">Taak</th>
                                 <th class="pb-2">Wie</th>
                                 <th class="pb-2">Uitleg</th>
@@ -406,22 +306,63 @@ function deleteTask(task) {
                                 v-for="task in section.tasks"
                                 :key="task.id"
                                 class="border-t border-brand-blue/35"
-                                :class="{ 'bg-brand-blue/5 dark:bg-app-canvas-dark/80': editingTaskId === task.id }"
                             >
-                                <td class="py-2 pr-3 align-top">{{ task.title }}</td>
-                                <td class="pr-3 align-top">{{ task.owner_user?.name || task.owner || '-' }}</td>
-                                <td class="align-top whitespace-pre-wrap">{{ task.description }}</td>
+                                <td class="py-2 pr-2 align-top">
+                                    <label class="sr-only" :for="`task-cat-${task.id}`">Kopje</label>
+                                    <select
+                                        :id="`task-cat-${task.id}`"
+                                        class="w-full min-w-0 rounded border border-app-border bg-white px-2 py-1.5 text-app-ink shadow-sm outline-none focus:border-brand-blue dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
+                                        :value="task.category"
+                                        :disabled="isTaskRowSaving(task)"
+                                        @change="patchTaskField(task, 'category', $event.target.value)"
+                                    >
+                                        <option v-for="c in taskCategories" :key="`${task.id}-${c}`" :value="c">
+                                            {{ c }}
+                                        </option>
+                                    </select>
+                                </td>
+                                <td class="py-2 pr-3 align-top">
+                                    <EditableTextCell
+                                        :text="task.title || ''"
+                                        :multiline="false"
+                                        :saving="isTaskFieldSaving(task, 'title')"
+                                        @save="(v) => patchTaskField(task, 'title', v)"
+                                    />
+                                </td>
+                                <td class="pr-2 align-top">
+                                    <label class="sr-only" :for="`task-owner-${task.id}`">Wie</label>
+                                    <select
+                                        :id="`task-owner-${task.id}`"
+                                        class="w-full min-w-0 rounded border border-app-border bg-white px-2 py-1.5 text-app-ink shadow-sm outline-none focus:border-brand-blue dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
+                                        :value="task.owner_leader_id != null ? String(task.owner_leader_id) : ''"
+                                        :disabled="isTaskRowSaving(task)"
+                                        @change="
+                                            patchTaskField(task, 'owner_leader_id', $event.target.value || null)
+                                        "
+                                    >
+                                        <option value="">Geen toegewezen</option>
+                                        <option
+                                            v-for="leader in leaders"
+                                            :key="`row-leader-${task.id}-${leader.id}`"
+                                            :value="String(leader.id)"
+                                        >
+                                            {{ leader.name }}
+                                        </option>
+                                    </select>
+                                </td>
+                                <td class="align-top">
+                                    <EditableTextCell
+                                        :text="task.description || ''"
+                                        multiline
+                                        :saving="isTaskFieldSaving(task, 'description')"
+                                        @save="(v) => patchTaskField(task, 'description', v)"
+                                    />
+                                </td>
                                 <td class="py-2 align-top">
-                                    <div class="flex flex-wrap items-center justify-end gap-2 sm:justify-start">
-                                        <button type="button" class="btn-action-edit" @click="openEditForm(task)">
-                                            <PencilSquareIcon class="h-4 w-4" />
-                                            Bewerken
-                                        </button>
-                                        <button type="button" class="btn-action-delete" @click="deleteTask(task)">
-                                            <TrashIcon class="h-4 w-4" />
-                                            Verwijderen
-                                        </button>
-                                    </div>
+                                    <button type="button" class="btn-action-delete" @click="deleteTask(task)">
+                                        <TrashIcon class="h-4 w-4" />
+                                        Verwijderen
+                                    </button>
                                 </td>
                             </tr>
                         </tbody>

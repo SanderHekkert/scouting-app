@@ -1,4 +1,5 @@
 <script setup>
+import AgendaSubnav from '@/Components/AgendaSubnav.vue';
 import EditableTextCell from '@/Components/EditableTextCell.vue';
 import { ref } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
@@ -185,6 +186,18 @@ function isEventFieldSaving(event, field) {
             </form>
 
             <div class="surface-brand-top rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-4">
+                <AgendaSubnav />
+
+                <div class="mb-3 flex w-full flex-col gap-3 border-b border-brand-blue/35 pb-2 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                        <h3 class="text-lg font-semibold text-app-ink dark:text-app-ink-dark">Overzicht</h3>
+                        <p class="mt-0.5 text-xs text-app-muted dark:text-app-muted-dark">
+                            Alle agenda-items. Dubbelklik in een cel om te bewerken. Klik daarna buiten het veld om op te slaan.
+                            Esc annuleert.
+                        </p>
+                    </div>
+                </div>
+
                 <div v-if="!props.events?.length" class="py-6 text-center text-sm text-app-muted dark:text-app-muted-dark">
                     Nog geen agenda-items.
                 </div>

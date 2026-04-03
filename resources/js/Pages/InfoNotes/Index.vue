@@ -1,14 +1,13 @@
 <script setup>
 import { ref } from 'vue';
+import EditableTextCell from '@/Components/EditableTextCell.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
-import { PlusIcon, PencilSquareIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import { ArrowTopRightOnSquareIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({ notes: Array });
 
 const showAddForm = ref(false);
-const showEditForm = ref(false);
-const editingNoteId = ref(null);
 
 const form = useForm({
     category: '',
@@ -16,36 +15,14 @@ const form = useForm({
     link: '',
 });
 
-const editForm = useForm({
-    category: '',
-    content: '',
-    link: '',
-});
+const noteFieldSaving = ref(null);
 
 function toggleAddForm() {
     showAddForm.value = !showAddForm.value;
     if (showAddForm.value) {
-        showEditForm.value = false;
         form.reset();
         form.clearErrors();
     }
-}
-
-function openEditForm(note) {
-    if (!note) return;
-    editingNoteId.value = note.id;
-    editForm.category = note.category ?? '';
-    editForm.content = note.content ?? '';
-    editForm.link = note.link ?? '';
-    editForm.clearErrors();
-    showEditForm.value = true;
-    showAddForm.value = false;
-}
-
-function closeEditForm() {
-    showEditForm.value = false;
-    editingNoteId.value = null;
-    editForm.reset();
 }
 
 function submitAdd() {
@@ -58,22 +35,9 @@ function submitAdd() {
     });
 }
 
-function submitEdit() {
-    if (!editingNoteId.value) return;
-    editForm.put(route('info-notes.update', editingNoteId.value), {
-        preserveScroll: true,
-        onSuccess: () => {
-            closeEditForm();
-        },
-    });
-}
-
 function deleteNote(note) {
     if (!note?.id) return;
     if (!confirm('Deze notitie verwijderen?')) return;
-    if (editingNoteId.value === note.id) {
-        closeEditForm();
-    }
     router.delete(route('info-notes.destroy', note.id), {
         preserveScroll: true,
     });
@@ -87,6 +51,31 @@ function linkDisplayText(url) {
     } catch {
         return url;
     }
+}
+
+function isNoteFieldSaving(note, field) {
+    return noteFieldSaving.value === `${note.id}:${field}`;
+}
+
+function patchNoteField(note, field, raw) {
+    if (!note?.id) return;
+    let payload = {};
+    if (field === 'category') {
+        payload = { category: raw ?? '' };
+    } else if (field === 'content') {
+        payload = { content: raw ?? '' };
+    } else if (field === 'link') {
+        payload = { link: raw ?? '' };
+    } else {
+        return;
+    }
+    noteFieldSaving.value = `${note.id}:${field}`;
+    router.patch(route('info-notes.quick-update', note.id), payload, {
+        preserveScroll: true,
+        onFinish: () => {
+            noteFieldSaving.value = null;
+        },
+    });
 }
 </script>
 
@@ -167,69 +156,6 @@ function linkDisplayText(url) {
                 <p v-if="form.errors.link" class="text-sm text-red-400">{{ form.errors.link }}</p>
             </form>
 
-            <form
-                v-show="showEditForm"
-                class="surface-brand-top space-y-4 rounded-xl border border-brand-yellow/35 bg-app-panel shadow-sm dark:bg-app-panel-dark/95 p-5"
-                @submit.prevent="submitEdit"
-            >
-                <h3 class="text-base font-semibold text-app-ink dark:text-app-ink-dark">Info bewerken</h3>
-                <div class="grid gap-4 sm:grid-cols-[8rem_1fr] sm:items-start">
-                    <label for="edit-info-category" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Categorie
-                    </label>
-                    <input
-                        id="edit-info-category"
-                        v-model="editForm.category"
-                        type="text"
-                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                    />
-
-                    <label for="edit-info-content" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Inhoud
-                    </label>
-                    <textarea
-                        id="edit-info-content"
-                        v-model="editForm.content"
-                        rows="4"
-                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                    />
-
-                    <label for="edit-info-link" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Linkje
-                    </label>
-                    <input
-                        id="edit-info-link"
-                        v-model="editForm.link"
-                        type="text"
-                        inputmode="url"
-                        autocomplete="off"
-                        placeholder="https://…"
-                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
-                    />
-
-                    <span class="hidden sm:block" aria-hidden="true" />
-                    <div class="flex flex-wrap gap-2">
-                        <button
-                            type="submit"
-                            class="rounded bg-brand-red px-5 py-2 text-sm font-medium text-white hover:bg-brand-red-dark disabled:opacity-50"
-                            :disabled="editForm.processing"
-                        >
-                            Bijwerken
-                        </button>
-                        <button
-                            type="button"
-                            class="rounded border border-brand-blue-light/50 px-5 py-2 text-sm font-medium text-app-ink dark:text-app-ink-dark transition hover:bg-brand-blue/20"
-                            @click="closeEditForm"
-                        >
-                            Annuleren
-                        </button>
-                    </div>
-                </div>
-                <p v-if="editForm.errors.category" class="text-sm text-red-400">{{ editForm.errors.category }}</p>
-                <p v-if="editForm.errors.content" class="text-sm text-red-400">{{ editForm.errors.content }}</p>
-                <p v-if="editForm.errors.link" class="text-sm text-red-400">{{ editForm.errors.link }}</p>
-            </form>
-
             <div class="surface-brand-top rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-4">
                 <div v-if="!props.notes?.length" class="py-6 text-center text-sm text-app-muted dark:text-app-muted-dark">
                     Nog geen notities. Voeg er een toe via de knop rechtsboven.
@@ -254,35 +180,54 @@ function linkDisplayText(url) {
                             v-for="note in props.notes"
                             :key="note.id"
                             class="border-t border-brand-blue/35"
-                            :class="{ 'bg-brand-blue/5 dark:bg-app-canvas-dark/80': editingNoteId === note.id }"
                         >
-                            <td class="py-2 pr-3 align-top text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
-                                {{ note.category }}
-                            </td>
-                            <td class="align-top whitespace-pre-wrap">{{ note.content }}</td>
-                            <td class="py-2 align-top">
-                                <a
-                                    v-if="note.link"
-                                    :href="note.link"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    class="break-all text-brand-blue-light underline decoration-brand-blue-light/70 underline-offset-2 hover:text-brand-blue-dark dark:text-brand-blue-light dark:hover:text-app-ink-dark"
-                                >
-                                    {{ linkDisplayText(note.link) }}
-                                </a>
-                                <span v-else class="text-app-muted dark:text-app-muted-dark">—</span>
-                            </td>
-                            <td class="py-2 align-top">
-                                <div class="flex flex-wrap items-center justify-end gap-2 sm:justify-start">
-                                    <button type="button" class="btn-action-edit" @click="openEditForm(note)">
-                                        <PencilSquareIcon class="h-4 w-4" />
-                                        Bewerken
-                                    </button>
-                                    <button type="button" class="btn-action-delete" @click="deleteNote(note)">
-                                        <TrashIcon class="h-4 w-4" />
-                                        Verwijderen
-                                    </button>
+                            <td class="py-2 pr-3 align-top">
+                                <div class="text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
+                                    <EditableTextCell
+                                        :text="note.category ?? ''"
+                                        :multiline="false"
+                                        :saving="isNoteFieldSaving(note, 'category')"
+                                        @save="(v) => patchNoteField(note, 'category', v)"
+                                    />
                                 </div>
+                            </td>
+                            <td class="align-top">
+                                <EditableTextCell
+                                    :text="note.content ?? ''"
+                                    multiline
+                                    :saving="isNoteFieldSaving(note, 'content')"
+                                    @save="(v) => patchNoteField(note, 'content', v)"
+                                />
+                            </td>
+                            <td class="py-2 align-top">
+                                <div class="flex items-start gap-1.5">
+                                    <div class="min-w-0 flex-1">
+                                        <EditableTextCell
+                                            :text="note.link ?? ''"
+                                            :multiline="false"
+                                            :saving="isNoteFieldSaving(note, 'link')"
+                                            @save="(v) => patchNoteField(note, 'link', v)"
+                                        />
+                                    </div>
+                                    <a
+                                        v-if="note.link"
+                                        :href="note.link"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="mt-0.5 shrink-0 rounded p-0.5 text-brand-blue-light hover:bg-brand-blue/15 dark:text-brand-blue-light"
+                                        :title="`Openen: ${linkDisplayText(note.link)}`"
+                                        @click.stop
+                                    >
+                                        <ArrowTopRightOnSquareIcon class="h-4 w-4" aria-hidden="true" />
+                                        <span class="sr-only">Link openen</span>
+                                    </a>
+                                </div>
+                            </td>
+                            <td class="py-2 align-top">
+                                <button type="button" class="btn-action-delete" @click="deleteNote(note)">
+                                    <TrashIcon class="h-4 w-4" />
+                                    Verwijderen
+                                </button>
                             </td>
                         </tr>
                     </tbody>

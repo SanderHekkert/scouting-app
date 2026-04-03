@@ -21,39 +21,54 @@ const userInitials = computed(() => {
     return '?';
 });
 
-const links = [
+const mainNavItems = [
     { label: 'Dashboard', route: 'dashboard' },
-    { label: 'Agenda', route: 'events.index' },
-    { label: 'Jaar Thema', route: 'jaar-thema' },
-    { label: 'Leiding', route: 'leaders.index' },
-    { label: 'Belangrijke info', route: 'info-notes.index' },
-    { label: 'Taakverdeling', route: 'task-items.index' },
+    { label: 'Agenda', route: 'events.index', matchRoutes: ['events.*', 'jaar-thema'] },
+];
+
+/** Eén sidebar-link; subpagina’s bereik je via DolfijnenSubnav op de pagina zelf. */
+const dolfijnenNavItem = {
+    label: 'Dolfijnen',
+    route: 'members.index',
+    matchRoutes: [
+        'members.index',
+        'members.show',
+        'members.bijzonderheden',
+        'tipper-topper-opkomst.*',
+        'pods.*',
+    ],
+};
+
+const tailNavItems = [
+    { label: 'Leiding', route: 'leaders.index', matchRoutes: ['leaders.*'] },
+    { label: 'Belangrijke info', route: 'info-notes.index', matchRoutes: ['info-notes.*'] },
+    { label: 'Taakverdeling', route: 'task-items.index', matchRoutes: ['task-items.*', 'task-categories.*'] },
 ];
 
 const mobileMenuOpen = ref(false);
 
-/** Dolfijnen (+ subpagina’s) zitten niet in de sidebar; wel label op mobiel wanneer je daar bent. */
-function isDolfijnenSectionRoute() {
-    return (
-        route().current('members.index') ||
-        route().current('members.bijzonderheden') ||
-        route().current('members.show') ||
-        route().current('tipper-topper-opkomst.index') ||
-        route().current('pods.index')
-    );
-}
-
 function navItemIsActive(item) {
+    if (item.matchRoutes?.length) {
+        return item.matchRoutes.some((pattern) => route().current(pattern));
+    }
     return route().current(item.route);
 }
 
 const activeMobileLabel = computed(() => {
-    if (isDolfijnenSectionRoute()) {
-        return 'Dolfijnen';
+    if (navItemIsActive(dolfijnenNavItem)) {
+        return dolfijnenNavItem.label;
     }
-    const active = links.find((item) => route().current(item.route));
-    if (active) return active.label;
-    if (route().current('profile.edit')) return 'Profiel';
+    const inMain = mainNavItems.find((item) => navItemIsActive(item));
+    if (inMain) {
+        return inMain.label;
+    }
+    const inTail = tailNavItems.find((item) => navItemIsActive(item));
+    if (inTail) {
+        return inTail.label;
+    }
+    if (route().current('profile.edit')) {
+        return 'Profiel';
+    }
     return 'Menu';
 });
 
@@ -87,7 +102,33 @@ function closeMobileMenu() {
                         aria-label="Hoofdnavigatie"
                     >
                         <Link
-                            v-for="item in links"
+                            v-for="item in mainNavItems"
+                            :key="item.route"
+                            :href="route(item.route)"
+                            class="block shrink-0 rounded-lg px-3 py-2 text-sm font-medium transition"
+                            :class="
+                                navItemIsActive(item)
+                                    ? 'bg-brand-red/10 text-brand-red'
+                                    : 'text-slate-800 hover:bg-brand-blue/10'
+                            "
+                        >
+                            {{ item.label }}
+                        </Link>
+
+                        <Link
+                            :href="route(dolfijnenNavItem.route)"
+                            class="block shrink-0 rounded-lg px-3 py-2 text-sm font-medium transition"
+                            :class="
+                                navItemIsActive(dolfijnenNavItem)
+                                    ? 'bg-brand-red/10 text-brand-red'
+                                    : 'text-slate-800 hover:bg-brand-blue/10'
+                            "
+                        >
+                            {{ dolfijnenNavItem.label }}
+                        </Link>
+
+                        <Link
+                            v-for="item in tailNavItems"
                             :key="item.route"
                             :href="route(item.route)"
                             class="block shrink-0 rounded-lg px-3 py-2 text-sm font-medium transition"
@@ -153,9 +194,35 @@ function closeMobileMenu() {
                             </button>
                         </div>
                         <div v-if="mobileMenuOpen" class="pt-2">
-                            <nav class="grid grid-cols-2 gap-1">
+                            <nav class="flex max-h-[min(70vh,28rem)] flex-col gap-1 overflow-y-auto">
                                 <Link
-                                    v-for="item in links"
+                                    v-for="item in mainNavItems"
+                                    :key="`mobile-${item.route}`"
+                                    :href="route(item.route)"
+                                    class="rounded-lg px-3 py-2.5 text-xs font-medium transition"
+                                    :class="
+                                        navItemIsActive(item)
+                                            ? 'bg-brand-red/10 text-brand-red'
+                                            : 'text-slate-800 hover:bg-brand-blue/10'
+                                    "
+                                    @click="closeMobileMenu"
+                                >
+                                    {{ item.label }}
+                                </Link>
+                                <Link
+                                    :href="route(dolfijnenNavItem.route)"
+                                    class="rounded-lg px-3 py-2.5 text-xs font-medium transition"
+                                    :class="
+                                        navItemIsActive(dolfijnenNavItem)
+                                            ? 'bg-brand-red/10 text-brand-red'
+                                            : 'text-slate-800 hover:bg-brand-blue/10'
+                                    "
+                                    @click="closeMobileMenu"
+                                >
+                                    {{ dolfijnenNavItem.label }}
+                                </Link>
+                                <Link
+                                    v-for="item in tailNavItems"
                                     :key="`mobile-${item.route}`"
                                     :href="route(item.route)"
                                     class="rounded-lg px-3 py-2.5 text-xs font-medium transition"

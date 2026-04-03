@@ -14,11 +14,17 @@ class TaskItem extends Model
         'title',
         'owner',
         'owner_user_id',
+        'owner_leader_id',
         'description',
     ];
 
     public function ownerUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_user_id');
+    }
+
+    public function ownerLeader(): BelongsTo
+    {
+        return $this->belongsTo(Leader::class, 'owner_leader_id');
     }
 }

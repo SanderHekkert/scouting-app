@@ -36,7 +36,9 @@ Route::middleware('auth')->group(function () {
     Route::resource('pods', PodController::class)->except(['create', 'show', 'edit']);
     Route::post('/pods/{pod}/members', [PodController::class, 'addMember'])->name('pods.members.store');
     Route::delete('/pod-memberships/{podMembership}', [PodController::class, 'removeMember'])->name('pods.members.destroy');
+    Route::patch('/info-notes/{info_note}/fields', [InfoNoteController::class, 'quickUpdate'])->name('info-notes.quick-update');
     Route::resource('info-notes', InfoNoteController::class)->except(['create', 'show', 'edit']);
+    Route::patch('/task-items/{taskItem}/fields', [TaskItemController::class, 'quickUpdate'])->name('task-items.quick-update');
     Route::resource('task-items', TaskItemController::class)->except(['create', 'show', 'edit']);
     Route::post('/task-categories', [TaskItemController::class, 'storeCategory'])->name('task-categories.store');
 

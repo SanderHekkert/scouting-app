@@ -2,23 +2,46 @@
 import EditableTextCell from '@/Components/EditableTextCell.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import {
     CalendarDaysIcon,
     CakeIcon,
+    ChartBarIcon,
     ClipboardDocumentListIcon,
     UserGroupIcon,
     UsersIcon,
 } from '@heroicons/vue/24/outline';
 
-defineProps({
+const props = defineProps({
     todayEvents: { type: Array, default: () => [] },
     upcomingEvents: { type: Array, default: () => [] },
     upcomingBirthdays: { type: Array, default: () => [] },
     taskCount: { type: Number, default: 0 },
     memberCount: { type: Number, default: 0 },
     leaderCount: { type: Number, default: 0 },
+    leaderAbsenceChart: { type: Array, default: () => [] },
 });
+
+const maxAbsenceCount = computed(() =>
+    Math.max(0, ...(props.leaderAbsenceChart || []).map((r) => Number(r?.absence_count) || 0)),
+);
+
+function absenceBarWidth(count) {
+    const m = maxAbsenceCount.value;
+    const c = Number(count) || 0;
+    if (m === 0) {
+        return c === 0 ? '0%' : '100%';
+    }
+    return `${(c / m) * 100}%`;
+}
+
+/** Tooltip: burgerlijke naam als de staaf de scoutingnaam toont. */
+function absenceChartRowTitle(row) {
+    if (row?.leader_name && row?.real_name) {
+        return `${row.real_name} — scoutingnaam: ${row.leader_name}`;
+    }
+    return row?.real_name || row?.name || '';
+}
 
 function fullName(row) {
     const ln = row?.last_name ? String(row.last_name).trim() : '';
@@ -267,6 +290,60 @@ function saveEventTheme(ev, newTheme) {
                     <p v-else class="mt-6 text-center text-sm text-app-muted dark:text-app-muted-dark">Nog geen verjaardagen met datum in het systeem.</p>
                 </section>
             </div>
+
+            <section class="surface-brand-top rounded-xl border border-app-border bg-app-panel p-5 shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark">
+                <div class="flex flex-wrap items-center justify-between gap-3 border-b border-brand-blue/35 pb-3">
+                    <div class="flex items-center gap-2">
+                        <ChartBarIcon class="h-5 w-5 text-brand-blue dark:text-brand-blue-light" />
+                        <h3 class="text-base font-semibold text-brand-blue-dark dark:text-app-ink-dark">Afwezigheid leiding</h3>
+                    </div>
+                    <Link
+                        :href="route('events.index')"
+                        class="text-xs font-semibold text-brand-blue hover:text-brand-blue-dark dark:text-brand-blue-light dark:hover:text-app-ink-dark"
+                    >
+                        Agenda
+                    </Link>
+                </div>
+                <p class="mt-3 text-xs leading-relaxed text-app-muted dark:text-app-muted-dark">
+                    Staafdiagram op basis van het veld «Afwezig» bij opkomsten tot en met vandaag. Als er een account met
+                    scoutingnaam (kolom leader_name) bij de leider hoort, wordt die naam eerst in de tekst gezocht; anders
+                    geldt de herkenning op voor-/achternaam. In de grafiek staat waar mogelijk de scoutingnaam; hover voor
+                    de burgerlijke naam.
+                </p>
+                <div v-if="!props.leaderAbsenceChart?.length" class="mt-6 text-center text-sm text-app-muted dark:text-app-muted-dark">
+                    Nog geen leiding in het systeem.
+                </div>
+                <div
+                    v-else
+                    class="mt-4 space-y-2.5"
+                    role="list"
+                    aria-label="Aantal keer afwezig genoemd in de agenda per leidinglid"
+                >
+                    <div
+                        v-for="row in props.leaderAbsenceChart"
+                        :key="row.id"
+                        role="listitem"
+                        class="flex items-center gap-2 sm:gap-3"
+                    >
+                        <span
+                            class="w-[6.5rem] shrink-0 truncate text-xs font-medium text-app-ink sm:w-44 sm:text-sm dark:text-app-ink-dark"
+                            :title="absenceChartRowTitle(row)"
+                        >{{ row.name }}</span>
+                        <div
+                            class="h-6 min-w-0 flex-1 overflow-hidden rounded-md bg-slate-200/90 dark:bg-brand-blue/20"
+                            :aria-hidden="true"
+                        >
+                            <div
+                                class="h-full min-w-px rounded-md bg-gradient-to-r from-brand-blue to-brand-blue-light/90 dark:from-brand-blue-light dark:to-brand-blue-light/70"
+                                :style="{ width: absenceBarWidth(row.absence_count) }"
+                            />
+                        </div>
+                        <span class="w-7 shrink-0 tabular-nums text-end text-xs text-app-muted sm:w-8 sm:text-sm dark:text-app-muted-dark">{{
+                            row.absence_count
+                        }}</span>
+                    </div>
+                </div>
+            </section>
         </div>
     </AuthenticatedLayout>
 </template>
