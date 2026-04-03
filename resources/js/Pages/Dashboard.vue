@@ -4,6 +4,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import {
+    ArrowTopRightOnSquareIcon,
     CalendarDaysIcon,
     CakeIcon,
     ChartBarIcon,
@@ -83,6 +84,10 @@ function saveEventTheme(ev, newTheme) {
         },
     );
 }
+
+function agendaUrlForEvent(ev) {
+    return route('events.index', { event: ev.id });
+}
 </script>
 
 <template>
@@ -92,12 +97,6 @@ function saveEventTheme(ev, newTheme) {
         <template #header>
             <div class="flex w-full flex-wrap items-center justify-between gap-3">
                 <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Dashboard</h2>
-                <Link
-                    :href="route('members.index')"
-                    class="text-sm font-medium text-brand-blue hover:text-brand-blue-dark dark:text-brand-blue-light dark:hover:text-app-ink-dark"
-                >
-                    Dolfijnen →
-                </Link>
             </div>
         </template>
 
@@ -128,21 +127,31 @@ function saveEventTheme(ev, newTheme) {
                             <li
                                 v-for="ev in todayEvents"
                                 :key="ev.id"
-                                class="rounded-lg border border-app-border bg-white/90 px-3 py-2 text-sm shadow-sm dark:border-brand-blue/35 dark:bg-app-canvas-dark/80"
+                                class="flex gap-2 rounded-lg border border-app-border bg-white/90 px-3 py-2 text-sm shadow-sm dark:border-brand-blue/35 dark:bg-app-canvas-dark/80"
                             >
-                                <div class="font-semibold text-app-ink dark:text-app-ink-dark">
-                                    <EditableTextCell
-                                        :text="ev.theme || ''"
-                                        :saving="savingEventId === ev.id"
-                                        :multiline="false"
-                                        @save="(v) => saveEventTheme(ev, v)"
-                                    />
+                                <div class="min-w-0 flex-1">
+                                    <div class="font-semibold text-app-ink dark:text-app-ink-dark">
+                                        <EditableTextCell
+                                            :text="ev.theme || ''"
+                                            :saving="savingEventId === ev.id"
+                                            :multiline="false"
+                                            @save="(v) => saveEventTheme(ev, v)"
+                                        />
+                                    </div>
+                                    <p class="mt-0.5 text-xs text-app-muted dark:text-app-muted-dark">
+                                        <span v-if="ev.event_type">{{ ev.event_type }}</span>
+                                        <span v-if="ev.event_type && ev.program_by"> · </span>
+                                        <span v-if="ev.program_by">Programma: {{ ev.program_by }}</span>
+                                    </p>
                                 </div>
-                                <p class="mt-0.5 text-xs text-app-muted dark:text-app-muted-dark">
-                                    <span v-if="ev.event_type">{{ ev.event_type }}</span>
-                                    <span v-if="ev.event_type && ev.program_by"> · </span>
-                                    <span v-if="ev.program_by">Programma: {{ ev.program_by }}</span>
-                                </p>
+                                <Link
+                                    :href="agendaUrlForEvent(ev)"
+                                    class="mt-0.5 inline-flex shrink-0 touch-manipulation self-start rounded-md p-1 text-brand-blue hover:bg-brand-blue/10 hover:text-brand-blue-dark dark:text-brand-blue-light dark:hover:bg-brand-blue/15 dark:hover:text-app-ink-dark"
+                                    title="Deze opkomst in de agenda tonen"
+                                    aria-label="Deze opkomst in de agenda tonen"
+                                >
+                                    <ArrowTopRightOnSquareIcon class="h-5 w-5" />
+                                </Link>
                             </li>
                         </ul>
                         <Link
@@ -211,15 +220,17 @@ function saveEventTheme(ev, newTheme) {
                             class="flex gap-3 py-3 first:pt-0"
                             :class="{ 'rounded-lg bg-brand-blue/30 px-2 -mx-2 ring-1 ring-brand-blue/40': ev.is_today }"
                         >
-                            <div
-                                class="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-lg border text-center"
+                            <Link
+                                :href="agendaUrlForEvent(ev)"
+                                class="flex h-14 w-14 shrink-0 touch-manipulation flex-col items-center justify-center rounded-lg border text-center transition hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 focus-visible:ring-offset-app-panel dark:focus-visible:ring-offset-app-panel-dark"
                                 :class="ev.is_today
                                     ? 'border-brand-yellow/60 bg-brand-yellow-soft/55 text-app-ink dark:border-brand-yellow/50 dark:bg-brand-yellow/20 dark:text-app-ink-dark'
                                     : 'border-app-border bg-app-sidebar text-app-ink dark:border-brand-blue/35 dark:bg-app-canvas-dark dark:text-app-ink-dark'"
+                                title="Deze opkomst in de agenda tonen"
                             >
                                 <span class="text-[10px] font-bold uppercase leading-none text-app-muted dark:text-app-muted-dark">{{ ev.weekday }}</span>
                                 <span class="text-sm font-bold leading-tight">{{ ev.day_month }}</span>
-                            </div>
+                            </Link>
                             <div class="min-w-0 flex-1">
                                 <div class="font-medium text-app-ink dark:text-app-ink-dark">
                                     <EditableTextCell

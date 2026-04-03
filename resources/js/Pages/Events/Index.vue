@@ -1,14 +1,37 @@
 <script setup>
 import AgendaSubnav from '@/Components/AgendaSubnav.vue';
 import AgendaEventsTable from '@/Components/AgendaEventsTable.vue';
-import { ref } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, useForm, router } from '@inertiajs/vue3';
+import { Head, useForm, usePage, router } from '@inertiajs/vue3';
 import { PlusIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     events: Array,
 });
+
+const page = usePage();
+
+/** Query ?event=123: focus op die rij na navigatie vanaf dashboard */
+const highlightEventId = computed(() => {
+    const raw = page.url.includes('?') ? page.url.split('?')[1] : '';
+    const id = new URLSearchParams(raw).get('event');
+    const n = id ? Number.parseInt(id, 10) : NaN;
+    return Number.isFinite(n) ? n : null;
+});
+
+function scrollToHighlightedRow() {
+    const id = highlightEventId.value;
+    if (id == null) return;
+    nextTick(() => {
+        document.getElementById(`agenda-event-row-${id}`)?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+        });
+    });
+}
+
+watch(highlightEventId, scrollToHighlightedRow, { immediate: true });
 
 const showAddForm = ref(false);
 
@@ -202,6 +225,7 @@ function isEventFieldSaving(event, field) {
 
                 <AgendaEventsTable
                     :events="props.events"
+                    :highlight-event-id="highlightEventId"
                     :is-field-saving="isEventFieldSaving"
                     empty-message="Nog geen actuele opkomsten."
                     @patch-field="(ev, field, val) => patchEventField(ev, field, val)"

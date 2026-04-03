@@ -15,6 +15,11 @@ const props = defineProps({
         type: Function,
         required: true,
     },
+    /** Rij visueel benadrukken (bijv. na link vanaf dashboard ?event=id) */
+    highlightEventId: {
+        type: Number,
+        default: null,
+    },
 });
 
 const emit = defineEmits(['patch-field', 'delete']);
@@ -49,7 +54,12 @@ function patchField(event, field, raw) {
                 <tr
                     v-for="event in props.events"
                     :key="event.id"
-                    class="bg-brand-blue/5 transition-colors hover:bg-brand-blue/12 dark:bg-app-panel-dark/50 dark:hover:bg-brand-blue/15"
+                    :id="`agenda-event-row-${event.id}`"
+                    class="scroll-mt-24 bg-brand-blue/5 transition-colors hover:bg-brand-blue/12 dark:bg-app-panel-dark/50 dark:hover:bg-brand-blue/15"
+                    :class="{
+                        'relative z-0 ring-2 ring-brand-yellow/80 ring-offset-2 ring-offset-app-panel dark:ring-brand-yellow/70 dark:ring-offset-app-panel-dark':
+                            props.highlightEventId != null && Number(event.id) === props.highlightEventId,
+                    }"
                 >
                     <td class="px-3 py-2.5 align-top">
                         <EditableTextCell
