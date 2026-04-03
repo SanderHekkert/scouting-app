@@ -35,9 +35,11 @@ export default {
                     'sidebar-dark': '#081320',
                     border: '#a8c0da',
                     'border-dark': '#1a4070',
-                    muted: '#4a6078',
+                    /** Secundaire tekst (licht modus): donkergrijs i.p.v. blauwgrijs */
+                    muted: '#3f3f3f',
                     'muted-dark': '#8faabe',
-                    ink: '#071d36',
+                    /** Primaire tekst licht modus: zwart */
+                    ink: '#000000',
                     'ink-dark': '#e8f1fb',
                 },
             },

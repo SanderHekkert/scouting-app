@@ -167,15 +167,15 @@ function deleteTask(task) {
                 </div>
             </div>
         </template>
-        <div class="space-y-4 text-app-ink-dark">
+        <div class="space-y-4 text-app-ink dark:text-app-ink-dark">
             <form
                 v-show="showCategoryForm"
-                class="space-y-3 rounded-xl border border-brand-blue/20 bg-app-panel-dark p-5 shadow-sm"
+                class="space-y-3 rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5"
                 @submit.prevent="submitCategory"
             >
                 <h3 class="text-base font-semibold text-brand-yellow-soft">Nieuwe takenlijst</h3>
                 <div class="grid gap-4 sm:grid-cols-[8rem_1fr] sm:items-start">
-                    <label for="category-name" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
+                    <label for="category-name" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Naam
                     </label>
                     <input
@@ -183,7 +183,7 @@ function deleteTask(task) {
                         v-model="categoryForm.name"
                         type="text"
                         placeholder="Bijv. Materiaal"
-                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark placeholder:text-app-muted-dark"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
                     />
                     <span class="hidden sm:block" aria-hidden="true" />
                     <div>
@@ -201,12 +201,12 @@ function deleteTask(task) {
 
             <form
                 v-show="showAddForm"
-                class="space-y-4 rounded-xl border border-brand-blue/20 bg-app-panel-dark p-5 shadow-sm"
+                class="space-y-4 rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5"
                 @submit.prevent="submitAdd"
             >
                 <h3 class="text-base font-semibold text-brand-yellow-soft">Nieuwe taak</h3>
                 <div class="grid gap-4 sm:grid-cols-[8rem_1fr] sm:items-start">
-                    <span class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-1">
+                    <span class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-1">
                         Kopje
                     </span>
                     <div class="flex flex-wrap gap-2" role="radiogroup" aria-label="Kies kopje voor deze taak">
@@ -217,7 +217,7 @@ function deleteTask(task) {
                             :class="
                                 form.category === cat
                                     ? 'border-brand-yellow bg-brand-blue/45 text-white ring-2 ring-brand-yellow/70'
-                                    : 'border-brand-blue/35 bg-app-canvas-dark text-app-ink-dark hover:border-brand-blue/55'
+                                    : 'border-brand-blue/35 bg-white text-app-ink hover:border-brand-blue/55 dark:bg-app-canvas-dark dark:text-app-ink-dark dark:hover:border-brand-blue/55'
                             "
                         >
                             <input v-model="form.category" type="radio" class="sr-only" :value="cat" />
@@ -225,7 +225,7 @@ function deleteTask(task) {
                         </label>
                     </div>
 
-                    <label for="add-title" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
+                    <label for="add-title" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Taak
                     </label>
                     <input
@@ -234,16 +234,16 @@ function deleteTask(task) {
                         type="text"
                         autocomplete="off"
                         placeholder="bv. Agenda bijhouden"
-                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark placeholder:text-app-muted-dark"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
                     />
 
-                    <label for="add-owner" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
+                    <label for="add-owner" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Wie
                     </label>
                     <select
                         id="add-owner"
                         v-model="form.owner_user_id"
-                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                     >
                         <option value="">Geen toegewezen</option>
                         <option v-for="user in users" :key="`add-user-${user.id}`" :value="String(user.id)">
@@ -251,7 +251,7 @@ function deleteTask(task) {
                         </option>
                     </select>
 
-                    <label for="add-description" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
+                    <label for="add-description" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Uitleg
                     </label>
                     <textarea
@@ -259,7 +259,7 @@ function deleteTask(task) {
                         v-model="form.description"
                         rows="4"
                         placeholder="Wat houdt deze taak in?"
-                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark placeholder:text-app-muted-dark"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
                     />
 
                     <span class="hidden sm:block" aria-hidden="true" />
@@ -281,7 +281,7 @@ function deleteTask(task) {
 
             <form
                 v-show="showEditForm"
-                class="space-y-4 rounded-xl border border-brand-yellow/35 bg-app-panel-dark/95 p-5 shadow-sm"
+                class="space-y-4 rounded-xl border border-brand-yellow/35 bg-app-panel shadow-sm dark:bg-app-panel-dark/95 p-5"
                 @submit.prevent="submitEdit"
             >
                 <h3 class="text-base font-semibold text-amber-100">Taak bewerken</h3>
@@ -289,7 +289,7 @@ function deleteTask(task) {
                     Kies het kopje waar deze taak onder hoort, pas de teksten aan en klik op Bijwerken.
                 </p>
                 <div class="grid gap-4 sm:grid-cols-[8rem_1fr] sm:items-start">
-                    <span class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-1">
+                    <span class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-1">
                         Kopje
                     </span>
                     <div class="flex flex-wrap gap-2" role="radiogroup" aria-label="Verplaats taak naar ander kopje">
@@ -300,7 +300,7 @@ function deleteTask(task) {
                             :class="
                                 editForm.category === cat
                                     ? 'border-amber-400 bg-amber-950/40 text-amber-50 ring-2 ring-amber-400/70'
-                                    : 'border-brand-blue/35 bg-app-canvas-dark text-app-ink-dark hover:border-brand-blue/55'
+                                    : 'border-brand-blue/35 bg-white text-app-ink hover:border-brand-blue/55 dark:bg-app-canvas-dark dark:text-app-ink-dark dark:hover:border-brand-blue/55'
                             "
                         >
                             <input
@@ -313,7 +313,7 @@ function deleteTask(task) {
                         </label>
                     </div>
 
-                    <label for="edit-title" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
+                    <label for="edit-title" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Taak
                     </label>
                     <input
@@ -322,16 +322,16 @@ function deleteTask(task) {
                         type="text"
                         autocomplete="off"
                         placeholder="bv. Agenda bijhouden"
-                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark placeholder:text-app-muted-dark"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
                     />
 
-                    <label for="edit-owner" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
+                    <label for="edit-owner" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Wie
                     </label>
                     <select
                         id="edit-owner"
                         v-model="editForm.owner_user_id"
-                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                     >
                         <option value="">Geen toegewezen</option>
                         <option v-for="user in users" :key="`edit-user-${user.id}`" :value="String(user.id)">
@@ -339,7 +339,7 @@ function deleteTask(task) {
                         </option>
                     </select>
 
-                    <label for="edit-description" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
+                    <label for="edit-description" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Uitleg
                     </label>
                     <textarea
@@ -347,7 +347,7 @@ function deleteTask(task) {
                         v-model="editForm.description"
                         rows="4"
                         placeholder="Wat houdt deze taak in?"
-                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark placeholder:text-app-muted-dark"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
                     />
 
                     <span class="hidden sm:block" aria-hidden="true" />
@@ -361,7 +361,7 @@ function deleteTask(task) {
                         </button>
                         <button
                             type="button"
-                            class="rounded border border-brand-blue-light/50 px-5 py-2 text-sm font-medium text-app-ink-dark transition hover:bg-brand-blue/20"
+                            class="rounded border border-brand-blue-light/50 px-5 py-2 text-sm font-medium text-app-ink dark:text-app-ink-dark transition hover:bg-brand-blue/20"
                             @click="closeEditForm"
                         >
                             Annuleren
@@ -378,7 +378,7 @@ function deleteTask(task) {
                 <div
                     v-for="section in groupedSections"
                     :key="section.category"
-                    class="rounded-xl border border-brand-blue/20 bg-app-panel-dark p-4 shadow-sm"
+                    class="rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-4"
                 >
                     <h3 class="mb-3 border-b border-brand-blue/35 pb-2 text-lg font-semibold text-brand-yellow-soft">
                         {{ section.category }}
@@ -386,7 +386,7 @@ function deleteTask(task) {
                     <div v-if="section.tasks.length === 0" class="py-3 text-sm text-app-muted dark:text-app-muted-dark">
                         Geen taken in deze categorie.
                     </div>
-                    <table v-else class="w-full table-fixed text-sm text-app-ink-dark">
+                    <table v-else class="w-full table-fixed text-sm text-app-ink dark:text-app-ink-dark">
                         <colgroup>
                             <col class="w-[28%]" />
                             <col class="w-[18%]" />
@@ -394,7 +394,7 @@ function deleteTask(task) {
                             <col class="w-[15%]" />
                         </colgroup>
                         <thead>
-                            <tr class="text-left text-app-muted-dark">
+                            <tr class="text-left text-app-muted dark:text-app-muted-dark">
                                 <th class="pb-2">Taak</th>
                                 <th class="pb-2">Wie</th>
                                 <th class="pb-2">Uitleg</th>
@@ -415,7 +415,7 @@ function deleteTask(task) {
                                     <div class="flex flex-wrap items-center justify-end gap-2 sm:justify-start">
                                         <button
                                             type="button"
-                                            class="inline-flex items-center gap-1 rounded border border-brand-blue/40 bg-app-canvas-dark px-2 py-1 text-xs font-medium text-app-ink-dark transition hover:bg-brand-blue/25"
+                                            class="inline-flex items-center gap-1 rounded border border-brand-blue/40 bg-white px-2 py-1 text-xs font-medium text-app-ink dark:bg-app-canvas-dark dark:text-app-ink-dark transition hover:bg-brand-blue/25"
                                             @click="openEditForm(task)"
                                         >
                                             <PencilSquareIcon class="h-4 w-4" />

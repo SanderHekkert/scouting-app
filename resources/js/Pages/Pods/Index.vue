@@ -114,30 +114,30 @@ function memberOptionLabel(m) {
                 </div>
             </div>
         </template>
-        <div class="space-y-4 text-app-ink-dark">
+        <div class="space-y-4 text-app-ink dark:text-app-ink-dark">
             <form
                 v-show="showLinkForm"
-                class="grid gap-4 rounded-xl border border-brand-blue/20 bg-app-panel-dark p-5 shadow-sm md:grid-cols-2"
+                class="grid gap-4 rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5 md:grid-cols-2"
                 @submit.prevent="submitLink"
             >
                 <h3 class="text-base font-semibold text-brand-yellow-soft md:col-span-2">Dolfijn aan een vin koppelen</h3>
                 <div class="md:col-span-2 grid gap-4 sm:grid-cols-[7rem_1fr] sm:items-start">
-                    <label for="link-pod" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">Vin</label>
+                    <label for="link-pod" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Vin</label>
                     <select
                         id="link-pod"
                         v-model="memberForm.pod_id"
-                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                         required
                     >
                         <option value="" disabled>Kies vin</option>
                         <option v-for="pod in pods" :key="pod.id" :value="String(pod.id)">{{ pod.name }}</option>
                     </select>
 
-                    <label for="link-member" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">Dolfijn</label>
+                    <label for="link-member" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Dolfijn</label>
                     <select
                         id="link-member"
                         v-model="memberForm.member_id"
-                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                         required
                     >
                         <option value="" disabled>Kies Dolfijn</option>
@@ -153,11 +153,11 @@ function memberOptionLabel(m) {
                         Alle leden zitten al in een vin.
                     </p>
 
-                    <label for="link-role" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">Rol</label>
+                    <label for="link-role" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Rol</label>
                     <select
                         id="link-role"
                         v-model="memberForm.role"
-                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                     >
                         <option value="Topper" :disabled="podHasTopper">
                             Topper{{ podHasTopper ? ' (bezet)' : '' }}
@@ -178,7 +178,7 @@ function memberOptionLabel(m) {
                     </button>
                     <button
                         type="button"
-                        class="rounded border border-brand-blue-light/50 px-5 py-2 text-sm font-medium text-app-ink-dark transition hover:bg-brand-blue/20"
+                        class="rounded border border-brand-blue-light/50 px-5 py-2 text-sm font-medium text-app-ink dark:text-app-ink-dark transition hover:bg-brand-blue/20"
                         @click="toggleLinkForm"
                     >
                         Annuleren
@@ -196,12 +196,12 @@ function memberOptionLabel(m) {
                 <div
                     v-for="pod in pods"
                     :key="pod.id"
-                    class="rounded-xl border border-brand-blue/20 bg-app-panel-dark p-4 shadow-sm"
+                    class="rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-4"
                 >
                     <h3 class="border-b border-brand-blue/35 pb-2 text-lg font-semibold text-brand-yellow-soft">
                         {{ pod.name }}
                     </h3>
-                    <p v-if="!pod.memberships?.length" class="py-4 text-sm text-app-muted-dark">
+                    <p v-if="!pod.memberships?.length" class="py-4 text-sm text-app-muted dark:text-app-muted-dark">
                         Nog geen leden in deze vin.
                     </p>
                     <ul v-else class="mt-3 space-y-2 text-sm">
@@ -210,7 +210,7 @@ function memberOptionLabel(m) {
                             :key="membership.id"
                             class="flex items-start justify-between gap-2 border-t border-brand-blue/35 pt-2 first:border-t-0 first:pt-0"
                         >
-                            <div class="min-w-0 text-app-ink-dark">
+                            <div class="min-w-0 text-app-ink dark:text-app-ink-dark">
                                 <span
                                     class="mr-2 inline-block rounded px-2 py-0.5 text-xs font-semibold"
                                     :class="{
@@ -221,10 +221,10 @@ function memberOptionLabel(m) {
                                 >
                                     {{ membership.role }}
                                 </span>
-                                <span class="text-app-ink-dark">
+                                <span class="text-app-ink dark:text-app-ink-dark">
                                     {{ membership.member?.first_name }} {{ membership.member?.last_name }}
                                 </span>
-                                <span v-if="membership.member?.age != null" class="text-app-muted-dark">
+                                <span v-if="membership.member?.age != null" class="text-app-muted dark:text-app-muted-dark">
                                     ({{ membership.member.age }})
                                 </span>
                             </div>

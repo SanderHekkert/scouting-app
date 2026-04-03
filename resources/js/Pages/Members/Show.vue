@@ -54,54 +54,54 @@ function deleteMember() {
             </div>
         </template>
 
-        <div class="mx-auto max-w-lg space-y-4 text-app-ink-dark">
-            <div class="rounded-xl border border-brand-blue/20 bg-app-panel-dark p-5 shadow-sm">
+        <div class="mx-auto max-w-lg space-y-4 text-app-ink dark:text-app-ink-dark">
+            <div class="rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5">
                 <h2 class="border-b border-brand-blue/35 pb-3 text-xl font-semibold text-brand-yellow-soft">
                     {{ memberDisplayName(member) }}
                 </h2>
 
                 <dl class="mt-4 space-y-4">
                     <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted-dark">Geïnstalleerd</dt>
-                        <dd class="mt-1 text-sm text-app-ink-dark">{{ yesNo(member.installed) }}</dd>
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Geïnstalleerd</dt>
+                        <dd class="mt-1 text-sm text-app-ink dark:text-app-ink-dark">{{ yesNo(member.installed) }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted-dark">Actief</dt>
-                        <dd class="mt-1 text-sm text-app-ink-dark">{{ yesNo(member.active) }}</dd>
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Actief</dt>
+                        <dd class="mt-1 text-sm text-app-ink dark:text-app-ink-dark">{{ yesNo(member.active) }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted-dark">Bijzonderheden</dt>
-                        <dd class="mt-1 whitespace-pre-wrap text-sm text-app-ink-dark">
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Bijzonderheden</dt>
+                        <dd class="mt-1 whitespace-pre-wrap text-sm text-app-ink dark:text-app-ink-dark">
                             {{ dashIfEmpty(member.bijzonderheden) }}
                         </dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted-dark">Voornaam</dt>
-                        <dd class="mt-1 text-sm text-app-ink-dark">{{ dashIfEmpty(member.first_name) }}</dd>
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Voornaam</dt>
+                        <dd class="mt-1 text-sm text-app-ink dark:text-app-ink-dark">{{ dashIfEmpty(member.first_name) }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted-dark">Achternaam</dt>
-                        <dd class="mt-1 text-sm text-app-ink-dark">{{ dashIfEmpty(member.last_name) }}</dd>
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Achternaam</dt>
+                        <dd class="mt-1 text-sm text-app-ink dark:text-app-ink-dark">{{ dashIfEmpty(member.last_name) }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted-dark">Verjaardag</dt>
-                        <dd class="mt-1 text-sm text-app-ink-dark">{{ formatBirthday(member.birthday) }}</dd>
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Verjaardag</dt>
+                        <dd class="mt-1 text-sm text-app-ink dark:text-app-ink-dark">{{ formatBirthday(member.birthday) }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted-dark">Leeftijd</dt>
-                        <dd class="mt-1 text-sm text-app-ink-dark">{{ member.age ?? '–' }}</dd>
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Leeftijd</dt>
+                        <dd class="mt-1 text-sm text-app-ink dark:text-app-ink-dark">{{ member.age ?? '–' }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted-dark">Adres</dt>
-                        <dd class="mt-1 text-sm text-app-ink-dark">{{ dashIfEmpty(member.address) }}</dd>
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Adres</dt>
+                        <dd class="mt-1 text-sm text-app-ink dark:text-app-ink-dark">{{ dashIfEmpty(member.address) }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted-dark">Telefoon moeder</dt>
-                        <dd class="mt-1 text-sm text-app-ink-dark">{{ dashIfEmpty(member.phone_mother) }}</dd>
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Telefoon moeder</dt>
+                        <dd class="mt-1 text-sm text-app-ink dark:text-app-ink-dark">{{ dashIfEmpty(member.phone_mother) }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted-dark">Telefoon vader</dt>
-                        <dd class="mt-1 text-sm text-app-ink-dark">{{ dashIfEmpty(member.phone_father) }}</dd>
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Telefoon vader</dt>
+                        <dd class="mt-1 text-sm text-app-ink dark:text-app-ink-dark">{{ dashIfEmpty(member.phone_father) }}</dd>
                     </div>
                 </dl>
 

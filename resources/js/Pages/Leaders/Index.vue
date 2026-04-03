@@ -205,15 +205,15 @@ function dashIfEmpty(value) {
             </div>
         </template>
 
-        <div class="space-y-4 text-app-ink-dark">
+        <div class="space-y-4 text-app-ink dark:text-app-ink-dark">
             <form
                 v-show="showAddForm"
-                class="space-y-4 rounded-xl border border-brand-blue/20 bg-app-panel-dark p-5 shadow-sm"
+                class="space-y-4 rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5"
                 @submit.prevent="submitAdd"
             >
                 <h3 class="text-base font-semibold text-brand-yellow-soft">Nieuwe leiding</h3>
                 <div class="grid gap-4 sm:grid-cols-[10rem_1fr] sm:items-start">
-                    <label for="add-leader-first-name" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
+                    <label for="add-leader-first-name" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Voornaam
                     </label>
                     <input
@@ -221,10 +221,10 @@ function dashIfEmpty(value) {
                         v-model="form.first_name"
                         type="text"
                         autocomplete="given-name"
-                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark placeholder:text-app-muted-dark"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
                     />
 
-                    <label for="add-leader-last-name" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
+                    <label for="add-leader-last-name" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Achternaam
                     </label>
                     <input
@@ -232,10 +232,10 @@ function dashIfEmpty(value) {
                         v-model="form.last_name"
                         type="text"
                         autocomplete="family-name"
-                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark placeholder:text-app-muted-dark"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
                     />
 
-                    <label for="add-leader-address" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
+                    <label for="add-leader-address" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Adres
                     </label>
                     <input
@@ -243,10 +243,10 @@ function dashIfEmpty(value) {
                         v-model="form.address"
                         type="text"
                         autocomplete="street-address"
-                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark placeholder:text-app-muted-dark"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
                     />
 
-                    <label for="add-leader-postal" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
+                    <label for="add-leader-postal" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Postcode
                     </label>
                     <input
@@ -254,10 +254,10 @@ function dashIfEmpty(value) {
                         v-model="form.postal_code"
                         type="text"
                         autocomplete="postal-code"
-                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark placeholder:text-app-muted-dark"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
                     />
 
-                    <label for="add-leader-city" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
+                    <label for="add-leader-city" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Plaats
                     </label>
                     <input
@@ -265,20 +265,20 @@ function dashIfEmpty(value) {
                         v-model="form.city"
                         type="text"
                         autocomplete="address-level2"
-                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark placeholder:text-app-muted-dark"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
                     />
 
-                    <label for="add-leader-birthday" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
+                    <label for="add-leader-birthday" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Geboortedatum
                     </label>
                     <input
                         id="add-leader-birthday"
                         v-model="form.birthday"
                         type="date"
-                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                     />
 
-                    <label for="add-leader-phone" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
+                    <label for="add-leader-phone" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Telefoonnummer
                     </label>
                     <input
@@ -286,10 +286,10 @@ function dashIfEmpty(value) {
                         v-model="form.phone_number"
                         type="text"
                         autocomplete="tel"
-                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark placeholder:text-app-muted-dark"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
                     />
 
-                    <label for="add-leader-email" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
+                    <label for="add-leader-email" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         E-mail
                     </label>
                     <input
@@ -297,10 +297,10 @@ function dashIfEmpty(value) {
                         v-model="form.email"
                         type="email"
                         autocomplete="email"
-                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark placeholder:text-app-muted-dark"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
                     />
 
-                    <label for="add-leader-bijz" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
+                    <label for="add-leader-bijz" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Bijzonderheden
                     </label>
                     <textarea
@@ -308,7 +308,7 @@ function dashIfEmpty(value) {
                         v-model="form.bijzonderheden"
                         rows="3"
                         placeholder="Allergiën, medicatie, andere aandachtspunten…"
-                        class="min-h-[5rem] min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark placeholder:text-app-muted-dark"
+                        class="min-h-[5rem] min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
                     />
 
                     <span class="hidden sm:block" aria-hidden="true" />
@@ -329,12 +329,12 @@ function dashIfEmpty(value) {
 
             <form
                 v-show="showEditForm"
-                class="space-y-4 rounded-xl border border-brand-yellow/35 bg-app-panel-dark/95 p-5 shadow-sm"
+                class="space-y-4 rounded-xl border border-brand-yellow/35 bg-app-panel shadow-sm dark:bg-app-panel-dark/95 p-5"
                 @submit.prevent="submitEdit"
             >
                 <h3 class="text-base font-semibold text-amber-100">Leiding bewerken</h3>
                 <div class="grid gap-4 sm:grid-cols-[10rem_1fr] sm:items-start">
-                    <label for="edit-leader-first-name" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
+                    <label for="edit-leader-first-name" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Voornaam
                     </label>
                     <input
@@ -342,10 +342,10 @@ function dashIfEmpty(value) {
                         v-model="editForm.first_name"
                         type="text"
                         autocomplete="given-name"
-                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                     />
 
-                    <label for="edit-leader-last-name" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
+                    <label for="edit-leader-last-name" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Achternaam
                     </label>
                     <input
@@ -353,10 +353,10 @@ function dashIfEmpty(value) {
                         v-model="editForm.last_name"
                         type="text"
                         autocomplete="family-name"
-                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                     />
 
-                    <label for="edit-leader-address" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
+                    <label for="edit-leader-address" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Adres
                     </label>
                     <input
@@ -364,10 +364,10 @@ function dashIfEmpty(value) {
                         v-model="editForm.address"
                         type="text"
                         autocomplete="street-address"
-                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                     />
 
-                    <label for="edit-leader-postal" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
+                    <label for="edit-leader-postal" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Postcode
                     </label>
                     <input
@@ -375,10 +375,10 @@ function dashIfEmpty(value) {
                         v-model="editForm.postal_code"
                         type="text"
                         autocomplete="postal-code"
-                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                     />
 
-                    <label for="edit-leader-city" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
+                    <label for="edit-leader-city" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Plaats
                     </label>
                     <input
@@ -386,20 +386,20 @@ function dashIfEmpty(value) {
                         v-model="editForm.city"
                         type="text"
                         autocomplete="address-level2"
-                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                     />
 
-                    <label for="edit-leader-birthday" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
+                    <label for="edit-leader-birthday" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Geboortedatum
                     </label>
                     <input
                         id="edit-leader-birthday"
                         v-model="editForm.birthday"
                         type="date"
-                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                     />
 
-                    <label for="edit-leader-phone" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
+                    <label for="edit-leader-phone" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Telefoonnummer
                     </label>
                     <input
@@ -407,10 +407,10 @@ function dashIfEmpty(value) {
                         v-model="editForm.phone_number"
                         type="text"
                         autocomplete="tel"
-                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                     />
 
-                    <label for="edit-leader-email" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
+                    <label for="edit-leader-email" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         E-mail
                     </label>
                     <input
@@ -418,10 +418,10 @@ function dashIfEmpty(value) {
                         v-model="editForm.email"
                         type="email"
                         autocomplete="email"
-                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                     />
 
-                    <label for="edit-leader-bijz" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
+                    <label for="edit-leader-bijz" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Bijzonderheden
                     </label>
                     <textarea
@@ -429,7 +429,7 @@ function dashIfEmpty(value) {
                         v-model="editForm.bijzonderheden"
                         rows="3"
                         placeholder="Allergiën, medicatie, andere aandachtspunten…"
-                        class="min-h-[5rem] min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark placeholder:text-app-muted-dark"
+                        class="min-h-[5rem] min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
                     />
 
                     <span class="hidden sm:block" aria-hidden="true" />
@@ -443,7 +443,7 @@ function dashIfEmpty(value) {
                         </button>
                         <button
                             type="button"
-                            class="rounded border border-brand-blue-light/50 px-5 py-2 text-sm font-medium text-app-ink-dark transition hover:bg-brand-blue/20"
+                            class="rounded border border-brand-blue-light/50 px-5 py-2 text-sm font-medium text-app-ink dark:text-app-ink-dark transition hover:bg-brand-blue/20"
                             @click="closeEditForm"
                         >
                             Annuleren
@@ -455,14 +455,14 @@ function dashIfEmpty(value) {
                 </p>
             </form>
 
-            <div class="rounded-xl border border-brand-blue/20 bg-app-panel-dark p-4 shadow-sm">
+            <div class="rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-4">
                 <div
                     class="mb-3 flex w-full flex-col gap-3 border-b border-brand-blue/35 pb-2 sm:flex-row sm:items-center sm:justify-between"
                 >
                     <h3 class="text-lg font-semibold text-brand-yellow-soft">Overzicht</h3>
                     <div class="flex w-full max-w-sm items-center gap-2 self-end sm:ms-auto">
                         <MagnifyingGlassIcon
-                            class="h-5 w-5 shrink-0 text-app-muted-dark"
+                            class="h-5 w-5 shrink-0 text-app-muted dark:text-app-muted-dark"
                             aria-hidden="true"
                         />
                         <label class="sr-only" for="leaders-page-search">Zoeken in alle leidingvelden</label>
@@ -472,7 +472,7 @@ function dashIfEmpty(value) {
                             type="search"
                             autocomplete="off"
                             placeholder="Zoek op naam, adres, e-mail, bijzonderheden…"
-                            class="min-w-0 flex-1 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-sm text-app-ink-dark placeholder:text-app-muted-dark"
+                            class="min-w-0 flex-1 rounded border border-app-border bg-white px-3 py-2 text-sm text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
                         />
                     </div>
                 </div>
@@ -488,16 +488,16 @@ function dashIfEmpty(value) {
                             v-for="leader in filteredLeaders"
                             :key="`l-mob-${leader.id}`"
                             :href="route('leaders.show', leader.id)"
-                            class="flex items-center justify-between gap-3 rounded-xl border border-brand-blue/30 bg-app-panel-dark/95 px-4 py-3 text-app-ink-dark active:bg-brand-blue/15"
+                            class="flex items-center justify-between gap-3 rounded-xl border border-brand-blue/30 bg-app-panel px-4 py-3 text-app-ink shadow-sm dark:bg-app-panel-dark/95 dark:text-app-ink-dark active:bg-brand-blue/15"
                         >
                             <span class="min-w-0 truncate font-medium">{{ leaderListName(leader) }}</span>
-                            <ChevronRightIcon class="h-5 w-5 shrink-0 text-app-muted-dark" aria-hidden="true" />
+                            <ChevronRightIcon class="h-5 w-5 shrink-0 text-app-muted dark:text-app-muted-dark" aria-hidden="true" />
                         </Link>
                     </div>
                     <div class="hidden overflow-x-auto rounded-lg border border-brand-blue/25 md:block">
-                        <table class="w-full min-w-[64rem] border-collapse text-left text-sm text-app-ink-dark">
-                        <thead class="border-b border-brand-blue/35 bg-app-canvas-dark/80">
-                            <tr class="text-xs font-semibold uppercase tracking-wide text-app-muted-dark">
+                        <table class="w-full min-w-[64rem] border-collapse text-left text-sm text-app-ink dark:text-app-ink-dark">
+                        <thead class="border-b border-brand-blue/35 bg-app-sidebar dark:bg-app-canvas-dark/80">
+                            <tr class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Voornaam</th>
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Achternaam</th>
                                 <th scope="col" class="min-w-[12rem] px-3 py-2.5">Bijzonderheden</th>
@@ -526,26 +526,26 @@ function dashIfEmpty(value) {
                                     <span class="line-clamp-2 break-words">{{ dashIfEmpty(leader.last_name) }}</span>
                                 </td>
                                 <td class="max-w-[16rem] px-3 py-2.5 align-top break-words">
-                                    <span v-if="leader.bijzonderheden" class="line-clamp-2 text-app-ink-dark">{{
+                                    <span v-if="leader.bijzonderheden" class="line-clamp-2 text-app-ink dark:text-app-ink-dark">{{
                                         leader.bijzonderheden
                                     }}</span>
-                                    <span v-else class="text-app-muted-dark">–</span>
+                                    <span v-else class="text-app-muted dark:text-app-muted-dark">–</span>
                                 </td>
                                 <td class="px-3 py-2.5 align-top">
-                                    <span class="line-clamp-3 break-words text-app-ink-dark">{{
+                                    <span class="line-clamp-3 break-words text-app-ink dark:text-app-ink-dark">{{
                                         dashIfEmpty(leader.address)
                                     }}</span>
                                 </td>
-                                <td class="whitespace-nowrap px-3 py-2.5 align-top text-app-ink-dark">
+                                <td class="whitespace-nowrap px-3 py-2.5 align-top text-app-ink dark:text-app-ink-dark">
                                     {{ dashIfEmpty(leader.postal_code) }}
                                 </td>
                                 <td class="max-w-[9rem] px-3 py-2.5 align-top">
-                                    <span class="break-words text-app-ink-dark">{{ dashIfEmpty(leader.city) }}</span>
+                                    <span class="break-words text-app-ink dark:text-app-ink-dark">{{ dashIfEmpty(leader.city) }}</span>
                                 </td>
-                                <td class="whitespace-nowrap px-3 py-2.5 align-top tabular-nums text-app-ink-dark">
+                                <td class="whitespace-nowrap px-3 py-2.5 align-top tabular-nums text-app-ink dark:text-app-ink-dark">
                                     {{ formatBirthday(leader.birthday) }}
                                 </td>
-                                <td class="whitespace-nowrap px-3 py-2.5 align-top tabular-nums text-app-ink-dark">
+                                <td class="whitespace-nowrap px-3 py-2.5 align-top tabular-nums text-app-ink dark:text-app-ink-dark">
                                     {{ dashIfEmpty(leader.phone_number) }}
                                 </td>
                                 <td class="max-w-[14rem] px-3 py-2.5 align-top break-all">
@@ -556,13 +556,13 @@ function dashIfEmpty(value) {
                                     >
                                         {{ leader.email }}
                                     </a>
-                                    <span v-else class="text-app-muted-dark">–</span>
+                                    <span v-else class="text-app-muted dark:text-app-muted-dark">–</span>
                                 </td>
                                 <td class="px-3 py-2.5 align-top">
                                     <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end lg:justify-start">
                                         <button
                                             type="button"
-                                            class="inline-flex items-center justify-center gap-1 rounded border border-brand-blue/40 bg-app-canvas-dark px-2.5 py-1.5 text-xs font-medium text-app-ink-dark transition hover:bg-brand-blue/25"
+                                            class="inline-flex items-center justify-center gap-1 rounded border border-brand-blue/40 bg-white px-2.5 py-1.5 text-xs font-medium text-app-ink dark:bg-app-canvas-dark dark:text-app-ink-dark transition hover:bg-brand-blue/25"
                                             @click="openEditForm(leader)"
                                         >
                                             <PencilSquareIcon class="h-4 w-4 shrink-0" />

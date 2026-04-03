@@ -49,49 +49,49 @@ function deleteLeader() {
             </div>
         </template>
 
-        <div class="mx-auto max-w-lg space-y-4 text-app-ink-dark">
-            <div class="rounded-xl border border-brand-blue/20 bg-app-panel-dark p-5 shadow-sm">
+        <div class="mx-auto max-w-lg space-y-4 text-app-ink dark:text-app-ink-dark">
+            <div class="rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5">
                 <h2 class="border-b border-brand-blue/35 pb-3 text-xl font-semibold text-brand-yellow-soft">
                     {{ leaderDisplayName(leader) }}
                 </h2>
 
                 <dl class="mt-4 space-y-4">
                     <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted-dark">Voornaam</dt>
-                        <dd class="mt-1 text-sm text-app-ink-dark">{{ dashIfEmpty(leader.first_name) }}</dd>
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Voornaam</dt>
+                        <dd class="mt-1 text-sm text-app-ink dark:text-app-ink-dark">{{ dashIfEmpty(leader.first_name) }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted-dark">Achternaam</dt>
-                        <dd class="mt-1 text-sm text-app-ink-dark">{{ dashIfEmpty(leader.last_name) }}</dd>
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Achternaam</dt>
+                        <dd class="mt-1 text-sm text-app-ink dark:text-app-ink-dark">{{ dashIfEmpty(leader.last_name) }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted-dark">Bijzonderheden</dt>
-                        <dd class="mt-1 whitespace-pre-wrap text-sm text-app-ink-dark">
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Bijzonderheden</dt>
+                        <dd class="mt-1 whitespace-pre-wrap text-sm text-app-ink dark:text-app-ink-dark">
                             {{ dashIfEmpty(leader.bijzonderheden) }}
                         </dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted-dark">Adres</dt>
-                        <dd class="mt-1 text-sm text-app-ink-dark">{{ dashIfEmpty(leader.address) }}</dd>
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Adres</dt>
+                        <dd class="mt-1 text-sm text-app-ink dark:text-app-ink-dark">{{ dashIfEmpty(leader.address) }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted-dark">Postcode</dt>
-                        <dd class="mt-1 text-sm text-app-ink-dark">{{ dashIfEmpty(leader.postal_code) }}</dd>
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Postcode</dt>
+                        <dd class="mt-1 text-sm text-app-ink dark:text-app-ink-dark">{{ dashIfEmpty(leader.postal_code) }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted-dark">Plaats</dt>
-                        <dd class="mt-1 text-sm text-app-ink-dark">{{ dashIfEmpty(leader.city) }}</dd>
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Plaats</dt>
+                        <dd class="mt-1 text-sm text-app-ink dark:text-app-ink-dark">{{ dashIfEmpty(leader.city) }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted-dark">Geboortedatum</dt>
-                        <dd class="mt-1 text-sm text-app-ink-dark">{{ formatBirthday(leader.birthday) }}</dd>
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Geboortedatum</dt>
+                        <dd class="mt-1 text-sm text-app-ink dark:text-app-ink-dark">{{ formatBirthday(leader.birthday) }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted-dark">Telefoon</dt>
-                        <dd class="mt-1 text-sm text-app-ink-dark">{{ dashIfEmpty(leader.phone_number) }}</dd>
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Telefoon</dt>
+                        <dd class="mt-1 text-sm text-app-ink dark:text-app-ink-dark">{{ dashIfEmpty(leader.phone_number) }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted-dark">E-mail</dt>
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">E-mail</dt>
                         <dd class="mt-1 break-all text-sm">
                             <a
                                 v-if="leader.email"
@@ -100,7 +100,7 @@ function deleteLeader() {
                             >
                                 {{ leader.email }}
                             </a>
-                            <span v-else class="text-app-muted-dark">–</span>
+                            <span v-else class="text-app-muted dark:text-app-muted-dark">–</span>
                         </dd>
                     </div>
                 </dl>

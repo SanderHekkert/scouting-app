@@ -82,24 +82,24 @@ function setTipperTopperOpkomst(member, value) {
             <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Tipper- & Topper opkomst</h2>
         </template>
 
-        <div class="space-y-4 text-app-ink-dark">
-            <div class="rounded-xl border border-brand-blue/20 bg-app-panel-dark p-5 shadow-sm">
+        <div class="space-y-4 text-app-ink dark:text-app-ink-dark">
+            <div class="rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5">
                 <h3 class="border-b border-brand-blue/35 pb-2 text-lg font-semibold text-brand-yellow-soft">Dolfijnen</h3>
-                <p class="mt-2 text-xs text-app-muted-dark">
+                <p class="mt-2 text-xs text-app-muted dark:text-app-muted-dark">
                     Alle Dolfijnen staan hieronder. Ja’s bovenaan (laatste Ja het hoogst). Daarna nog geen keuze. Onderaan alle
                     Nee’s; wie het laatst op Nee is gezet, staat het laagst.
                 </p>
 
-                <div v-if="!props.members?.length" class="mt-6 py-10 text-center text-sm text-app-muted-dark">
+                <div v-if="!props.members?.length" class="mt-6 py-10 text-center text-sm text-app-muted dark:text-app-muted-dark">
                     Nog geen contacten.
                 </div>
                 <div v-else class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     <div
                         v-for="m in sortedMembers"
                         :key="m.id"
-                        class="rounded-lg border border-brand-blue/30 bg-app-canvas-dark/60 p-3"
+                        class="rounded-lg border border-brand-blue/30 bg-white p-3 shadow-sm dark:bg-app-canvas-dark/60"
                     >
-                        <p class="text-sm font-medium text-app-ink-dark">
+                        <p class="text-sm font-medium text-app-ink dark:text-app-ink-dark">
                             {{ memberDisplayName(m) }}
                         </p>
                         <div class="mt-2 flex flex-wrap gap-2">
@@ -109,7 +109,7 @@ function setTipperTopperOpkomst(member, value) {
                                 :class="
                                     m.tipper_topper_opkomst === true
                                         ? 'bg-emerald-700 text-white ring-2 ring-emerald-400/80'
-                                        : 'border border-brand-blue/40 bg-app-panel-dark text-app-ink-dark hover:bg-brand-blue/20'
+                                        : 'border border-brand-blue/40 bg-app-panel text-app-ink hover:bg-brand-blue/10 dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/20'
                                 "
                                 :disabled="opkomstSavingId === m.id"
                                 @click="setTipperTopperOpkomst(m, true)"
@@ -122,7 +122,7 @@ function setTipperTopperOpkomst(member, value) {
                                 :class="
                                     m.tipper_topper_opkomst === false
                                         ? 'bg-rose-900/80 text-rose-100 ring-2 ring-rose-500/70'
-                                        : 'border border-brand-blue/40 bg-app-panel-dark text-app-ink-dark hover:bg-brand-blue/20'
+                                        : 'border border-brand-blue/40 bg-app-panel text-app-ink hover:bg-brand-blue/10 dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/20'
                                 "
                                 :disabled="opkomstSavingId === m.id"
                                 @click="setTipperTopperOpkomst(m, false)"

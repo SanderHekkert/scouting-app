@@ -2,7 +2,13 @@
 import { computed, onMounted, ref } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
-import { ChevronRightIcon, PlusIcon, PencilSquareIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import {
+    ChevronRightIcon,
+    MagnifyingGlassIcon,
+    PlusIcon,
+    PencilSquareIcon,
+    TrashIcon,
+} from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     members: Array,
@@ -215,15 +221,15 @@ function yesNoInstalled(value) {
                 </div>
             </div>
         </template>
-        <div class="space-y-4 text-app-ink-dark">
+        <div class="space-y-4 text-app-ink dark:text-app-ink-dark">
             <form
                 v-show="showAddForm"
-                class="space-y-4 rounded-xl border border-brand-blue/20 bg-app-panel-dark p-5 shadow-sm"
+                class="space-y-4 rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5"
                 @submit.prevent="submitAdd"
             >
                 <h3 class="text-base font-semibold text-brand-yellow-soft">Nieuw contact</h3>
                 <div class="grid gap-4 sm:grid-cols-[10rem_1fr] sm:items-start">
-                    <label for="add-member-first-name" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
+                    <label for="add-member-first-name" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Voornaam
                     </label>
                     <input
@@ -231,10 +237,10 @@ function yesNoInstalled(value) {
                         v-model="form.first_name"
                         type="text"
                         autocomplete="given-name"
-                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark placeholder:text-app-muted-dark"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
                     />
 
-                    <label for="add-member-last-name" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
+                    <label for="add-member-last-name" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Achternaam
                     </label>
                     <input
@@ -242,20 +248,20 @@ function yesNoInstalled(value) {
                         v-model="form.last_name"
                         type="text"
                         autocomplete="family-name"
-                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark placeholder:text-app-muted-dark"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
                     />
 
-                    <label for="add-member-birthday" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
+                    <label for="add-member-birthday" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Geboortedatum
                     </label>
                     <input
                         id="add-member-birthday"
                         v-model="form.birthday"
                         type="date"
-                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                     />
 
-                    <label for="add-member-age" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
+                    <label for="add-member-age" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Leeftijd
                     </label>
                     <input
@@ -265,10 +271,10 @@ function yesNoInstalled(value) {
                         min="0"
                         max="99"
                         placeholder="Optioneel"
-                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark placeholder:text-app-muted-dark"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
                     />
 
-                    <label for="add-member-phone-mother" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
+                    <label for="add-member-phone-mother" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Telefoon moeder
                     </label>
                     <input
@@ -276,10 +282,10 @@ function yesNoInstalled(value) {
                         v-model="form.phone_mother"
                         type="text"
                         autocomplete="tel"
-                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark placeholder:text-app-muted-dark"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
                     />
 
-                    <label for="add-member-phone-father" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
+                    <label for="add-member-phone-father" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Telefoon vader
                     </label>
                     <input
@@ -287,10 +293,10 @@ function yesNoInstalled(value) {
                         v-model="form.phone_father"
                         type="text"
                         autocomplete="tel"
-                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark placeholder:text-app-muted-dark"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
                     />
 
-                    <label for="add-member-address" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
+                    <label for="add-member-address" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Adres
                     </label>
                     <input
@@ -298,10 +304,10 @@ function yesNoInstalled(value) {
                         v-model="form.address"
                         type="text"
                         autocomplete="street-address"
-                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark placeholder:text-app-muted-dark"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
                     />
 
-                    <label for="add-member-bijzonderheden" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
+                    <label for="add-member-bijzonderheden" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Bijzonderheden
                     </label>
                     <textarea
@@ -309,7 +315,7 @@ function yesNoInstalled(value) {
                         v-model="form.bijzonderheden"
                         rows="3"
                         placeholder="Allergiën, medicatie, dieet, andere aandachtspunten…"
-                        class="min-h-[5rem] min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark placeholder:text-app-muted-dark"
+                        class="min-h-[5rem] min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
                     />
 
                     <span class="hidden sm:block" aria-hidden="true" />
@@ -330,12 +336,12 @@ function yesNoInstalled(value) {
 
             <form
                 v-show="showEditForm"
-                class="space-y-4 rounded-xl border border-brand-yellow/35 bg-app-panel-dark/95 p-5 shadow-sm"
+                class="space-y-4 rounded-xl border border-brand-yellow/35 bg-app-panel shadow-sm dark:bg-app-panel-dark/95 p-5"
                 @submit.prevent="submitEdit"
             >
                 <h3 class="text-base font-semibold text-amber-100">Contact bewerken</h3>
                 <div class="grid gap-4 sm:grid-cols-[10rem_1fr] sm:items-start">
-                    <label for="edit-member-first-name" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
+                    <label for="edit-member-first-name" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Voornaam
                     </label>
                     <input
@@ -343,10 +349,10 @@ function yesNoInstalled(value) {
                         v-model="editForm.first_name"
                         type="text"
                         autocomplete="given-name"
-                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                     />
 
-                    <label for="edit-member-last-name" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
+                    <label for="edit-member-last-name" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Achternaam
                     </label>
                     <input
@@ -354,20 +360,20 @@ function yesNoInstalled(value) {
                         v-model="editForm.last_name"
                         type="text"
                         autocomplete="family-name"
-                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                     />
 
-                    <label for="edit-member-birthday" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
+                    <label for="edit-member-birthday" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Geboortedatum
                     </label>
                     <input
                         id="edit-member-birthday"
                         v-model="editForm.birthday"
                         type="date"
-                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                     />
 
-                    <label for="edit-member-age" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
+                    <label for="edit-member-age" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Leeftijd
                     </label>
                     <input
@@ -376,10 +382,10 @@ function yesNoInstalled(value) {
                         type="number"
                         min="0"
                         max="99"
-                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                     />
 
-                    <label for="edit-member-phone-mother" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
+                    <label for="edit-member-phone-mother" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Telefoon moeder
                     </label>
                     <input
@@ -387,10 +393,10 @@ function yesNoInstalled(value) {
                         v-model="editForm.phone_mother"
                         type="text"
                         autocomplete="tel"
-                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                     />
 
-                    <label for="edit-member-phone-father" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
+                    <label for="edit-member-phone-father" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Telefoon vader
                     </label>
                     <input
@@ -398,10 +404,10 @@ function yesNoInstalled(value) {
                         v-model="editForm.phone_father"
                         type="text"
                         autocomplete="tel"
-                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                     />
 
-                    <label for="edit-member-address" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
+                    <label for="edit-member-address" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Adres
                     </label>
                     <input
@@ -409,10 +415,10 @@ function yesNoInstalled(value) {
                         v-model="editForm.address"
                         type="text"
                         autocomplete="street-address"
-                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                     />
 
-                    <label for="edit-member-bijzonderheden" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
+                    <label for="edit-member-bijzonderheden" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Bijzonderheden
                     </label>
                     <textarea
@@ -420,7 +426,7 @@ function yesNoInstalled(value) {
                         v-model="editForm.bijzonderheden"
                         rows="3"
                         placeholder="Allergiën, medicatie, dieet, andere aandachtspunten…"
-                        class="min-h-[5rem] min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark placeholder:text-app-muted-dark"
+                        class="min-h-[5rem] min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
                     />
 
                     <span class="hidden sm:block" aria-hidden="true" />
@@ -434,7 +440,7 @@ function yesNoInstalled(value) {
                         </button>
                         <button
                             type="button"
-                            class="rounded border border-brand-blue-light/50 px-5 py-2 text-sm font-medium text-app-ink-dark transition hover:bg-brand-blue/20"
+                            class="rounded border border-brand-blue-light/50 px-5 py-2 text-sm font-medium text-app-ink dark:text-app-ink-dark transition hover:bg-brand-blue/20"
                             @click="closeEditForm"
                         >
                             Annuleren
@@ -446,20 +452,26 @@ function yesNoInstalled(value) {
                 </p>
             </form>
 
-            <div class="rounded-xl border border-brand-blue/20 bg-app-panel-dark p-4 shadow-sm">
+            <div class="rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-4">
                 <div
                     class="mb-3 flex w-full flex-col gap-3 border-b border-brand-blue/35 pb-2 sm:flex-row sm:items-center sm:justify-between"
                 >
-                    <h3 class="text-lg font-semibold text-brand-yellow-soft">Dolfijnen</h3>
-                    <label class="sr-only" for="members-search">Zoeken in alle contactvelden</label>
-                    <input
-                        id="members-search"
-                        v-model="memberSearchQuery"
-                        type="search"
-                        autocomplete="off"
-                        placeholder="Zoek op naam, adres, telefoon, bijzonderheden…"
-                        class="w-full max-w-xs self-end rounded border border-app-border-dark bg-app-canvas-dark px-3 py-1.5 text-sm text-app-ink-dark placeholder:text-app-muted-dark sm:ms-auto"
-                    />
+                    <h3 class="text-lg font-semibold text-brand-yellow-soft">Overzicht</h3>
+                    <div class="flex w-full max-w-sm items-center gap-2 self-end sm:ms-auto">
+                        <MagnifyingGlassIcon
+                            class="h-5 w-5 shrink-0 text-app-muted dark:text-app-muted-dark"
+                            aria-hidden="true"
+                        />
+                        <label class="sr-only" for="members-page-search">Zoeken in alle contactvelden</label>
+                        <input
+                            id="members-page-search"
+                            v-model="memberSearchQuery"
+                            type="search"
+                            autocomplete="off"
+                            placeholder="Zoek op naam, adres, telefoon, bijzonderheden…"
+                            class="min-w-0 flex-1 rounded border border-app-border bg-white px-3 py-2 text-sm text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
+                        />
+                    </div>
                 </div>
                 <div v-if="!props.members?.length" class="py-6 text-center text-sm text-app-muted dark:text-app-muted-dark">
                     Nog geen Dolfijnen.
@@ -473,75 +485,86 @@ function yesNoInstalled(value) {
                             v-for="member in filteredMembers"
                             :key="`m-mob-${member.id}`"
                             :href="route('members.show', member.id)"
-                            class="flex items-center justify-between gap-3 rounded-xl border border-brand-blue/30 bg-app-panel-dark/95 px-4 py-3 text-app-ink-dark active:bg-brand-blue/15"
+                            class="flex items-center justify-between gap-3 rounded-xl border border-brand-blue/30 bg-app-panel px-4 py-3 text-app-ink shadow-sm dark:bg-app-panel-dark/95 dark:text-app-ink-dark active:bg-brand-blue/15"
                         >
                             <span class="min-w-0 truncate font-medium">{{ memberDisplayName(member) }}</span>
                             <ChevronRightIcon class="h-5 w-5 shrink-0 text-app-muted dark:text-app-muted-dark" aria-hidden="true" />
                         </Link>
                     </div>
-                    <div class="hidden overflow-x-auto md:block">
-                        <table class="w-full min-w-[72rem] table-fixed text-sm text-app-ink-dark">
-                        <colgroup>
-                            <col class="w-[8%]" />
-                            <col class="w-[15%]" />
-                            <col class="w-[9%]" />
-                            <col class="w-[10%]" />
-                            <col class="w-[9%]" />
-                            <col class="w-[5%]" />
-                            <col class="w-[18%]" />
-                            <col class="w-[10%]" />
-                            <col class="w-[10%]" />
-                            <col class="w-[6%]" />
-                        </colgroup>
-                        <thead>
-                            <tr class="text-left text-app-muted-dark">
-                                <th class="pb-2">Geïnstalleerd</th>
-                                <th class="pb-2">Bijzonderheden</th>
-                                <th class="pb-2">Voornaam</th>
-                                <th class="pb-2">Achternaam</th>
-                                <th class="pb-2">Verjaardag</th>
-                                <th class="pb-2">Leeftijd</th>
-                                <th class="pb-2">Adres</th>
-                                <th class="pb-2">Telefoon moeder</th>
-                                <th class="pb-2">Telefoon vader</th>
-                                <th class="pb-2 text-right sm:text-left">Acties</th>
+                    <div class="hidden overflow-x-auto rounded-lg border border-brand-blue/25 md:block">
+                        <table class="w-full min-w-[72rem] border-collapse text-left text-sm text-app-ink dark:text-app-ink-dark">
+                        <thead class="border-b border-brand-blue/35 bg-app-sidebar dark:bg-app-canvas-dark/80">
+                            <tr class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
+                                <th scope="col" class="whitespace-nowrap px-3 py-2.5">Geïnstalleerd</th>
+                                <th scope="col" class="min-w-[12rem] px-3 py-2.5">Bijzonderheden</th>
+                                <th scope="col" class="whitespace-nowrap px-3 py-2.5">Voornaam</th>
+                                <th scope="col" class="whitespace-nowrap px-3 py-2.5">Achternaam</th>
+                                <th scope="col" class="whitespace-nowrap px-3 py-2.5">Verjaardag</th>
+                                <th scope="col" class="whitespace-nowrap px-3 py-2.5">Leeftijd</th>
+                                <th scope="col" class="min-w-[10rem] px-3 py-2.5">Adres</th>
+                                <th scope="col" class="min-w-[9rem] px-3 py-2.5">Telefoon moeder</th>
+                                <th scope="col" class="min-w-[9rem] px-3 py-2.5">Telefoon vader</th>
+                                <th scope="col" class="min-w-[11rem] whitespace-nowrap px-3 py-2.5 text-end sm:text-start">
+                                    Acties
+                                </th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody class="divide-y divide-brand-blue/25">
                             <tr
                                 v-for="member in filteredMembers"
                                 :key="member.id"
-                                class="border-t border-brand-blue/35"
-                                :class="{ 'bg-brand-blue/5 dark:bg-app-canvas-dark/80': editingMemberId === member.id }"
+                                class="bg-brand-blue/5 transition-colors hover:bg-brand-blue/12 dark:bg-app-panel-dark/50 dark:hover:bg-brand-blue/15"
+                                :class="{ '!bg-brand-blue/15 dark:!bg-app-canvas-dark/90': editingMemberId === member.id }"
                             >
-                                <td class="py-2 pr-2 align-top">{{ yesNoInstalled(member.installed) }}</td>
-                                <td class="pr-2 align-top break-words">
-                                    <span v-if="member.bijzonderheden" class="line-clamp-2">{{ member.bijzonderheden }}</span>
-                                    <span v-else>–</span>
+                                <td class="whitespace-nowrap px-3 py-2.5 align-top text-app-ink dark:text-app-ink-dark">
+                                    {{ yesNoInstalled(member.installed) }}
                                 </td>
-                                <td class="pr-2 align-top">{{ dashIfEmpty(member.first_name) }}</td>
-                                <td class="pr-2 align-top">{{ dashIfEmpty(member.last_name) }}</td>
-                                <td class="pr-2 align-top whitespace-nowrap">{{ formatBirthday(member.birthday) }}</td>
-                                <td class="pr-2 align-top">{{ member.age ?? '–' }}</td>
-                                <td class="pr-2 align-top break-words">{{ dashIfEmpty(member.address) }}</td>
-                                <td class="pr-2 align-top break-words">{{ dashIfEmpty(member.phone_mother) }}</td>
-                                <td class="align-top break-words">{{ dashIfEmpty(member.phone_father) }}</td>
-                                <td class="py-2 align-top">
-                                    <div class="flex flex-wrap items-center justify-end gap-2 sm:justify-start">
+                                <td class="max-w-[16rem] px-3 py-2.5 align-top break-words">
+                                    <span
+                                        v-if="member.bijzonderheden"
+                                        class="line-clamp-2 text-app-ink dark:text-app-ink-dark"
+                                    >{{ member.bijzonderheden }}</span>
+                                    <span v-else class="text-app-muted dark:text-app-muted-dark">–</span>
+                                </td>
+                                <td class="max-w-[10rem] px-3 py-2.5 align-top">
+                                    <span class="line-clamp-2 break-words">{{ dashIfEmpty(member.first_name) }}</span>
+                                </td>
+                                <td class="max-w-[10rem] px-3 py-2.5 align-top">
+                                    <span class="line-clamp-2 break-words">{{ dashIfEmpty(member.last_name) }}</span>
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-2.5 align-top tabular-nums text-app-ink dark:text-app-ink-dark">
+                                    {{ formatBirthday(member.birthday) }}
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-2.5 align-top tabular-nums text-app-ink dark:text-app-ink-dark">
+                                    {{ member.age ?? '–' }}
+                                </td>
+                                <td class="px-3 py-2.5 align-top">
+                                    <span class="line-clamp-3 break-words text-app-ink dark:text-app-ink-dark">{{
+                                        dashIfEmpty(member.address)
+                                    }}</span>
+                                </td>
+                                <td class="px-3 py-2.5 align-top tabular-nums text-app-ink dark:text-app-ink-dark">
+                                    <span class="break-words">{{ dashIfEmpty(member.phone_mother) }}</span>
+                                </td>
+                                <td class="px-3 py-2.5 align-top tabular-nums text-app-ink dark:text-app-ink-dark">
+                                    <span class="break-words">{{ dashIfEmpty(member.phone_father) }}</span>
+                                </td>
+                                <td class="px-3 py-2.5 align-top">
+                                    <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end lg:justify-start">
                                         <button
                                             type="button"
-                                            class="inline-flex items-center gap-1 rounded border border-brand-blue/40 bg-app-canvas-dark px-2 py-1 text-xs font-medium text-app-ink-dark transition hover:bg-brand-blue/25"
+                                            class="inline-flex items-center justify-center gap-1 rounded border border-brand-blue/40 bg-white px-2.5 py-1.5 text-xs font-medium text-app-ink dark:bg-app-canvas-dark dark:text-app-ink-dark transition hover:bg-brand-blue/25"
                                             @click="openEditForm(member)"
                                         >
-                                            <PencilSquareIcon class="h-4 w-4" />
+                                            <PencilSquareIcon class="h-4 w-4 shrink-0" />
                                             Bewerken
                                         </button>
                                         <button
                                             type="button"
-                                            class="inline-flex items-center gap-1 rounded border border-red-800/60 bg-red-950/35 px-2 py-1 text-xs font-medium text-red-300 hover:bg-red-950/55"
+                                            class="inline-flex items-center justify-center gap-1 rounded border border-red-800/60 bg-red-950/35 px-2.5 py-1.5 text-xs font-medium text-red-300 hover:bg-red-950/55"
                                             @click="deleteMember(member)"
                                         >
-                                            <TrashIcon class="h-4 w-4" />
+                                            <TrashIcon class="h-4 w-4 shrink-0" />
                                             Verwijderen
                                         </button>
                                     </div>
@@ -553,54 +576,53 @@ function yesNoInstalled(value) {
                 </div>
             </div>
 
-            <div class="hidden rounded-xl border border-brand-blue/20 bg-app-panel-dark p-5 shadow-sm md:block">
+            <div class="hidden rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5 md:block">
                 <h3 class="border-b border-brand-blue/35 pb-2 text-lg font-semibold text-brand-yellow-soft">Bijzonderheden</h3>
-                <p class="mt-2 text-xs text-app-muted-dark">
+                <p class="mt-2 text-xs text-app-muted dark:text-app-muted-dark">
                     Allergiën, medicatie, dieet en andere aandachtspunten. Bewerken via het contactformulier hierboven.
                     Voor leiding: menu Leiding.
                 </p>
 
-                <h4 class="mt-5 text-sm font-semibold uppercase tracking-wide text-app-muted-dark">Dolfijnen</h4>
+                <h4 class="mt-5 text-sm font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Dolfijnen</h4>
                 <div v-if="!props.members?.length" class="mt-2 py-4 text-center text-sm text-app-muted dark:text-app-muted-dark">
                     Nog geen contacten.
                 </div>
                 <div v-else-if="!filteredMembers.length" class="mt-2 py-4 text-center text-sm text-app-muted dark:text-app-muted-dark">
                     Geen contacten die aan deze zoekopdracht voldoen.
                 </div>
-                <div v-else class="mt-2 overflow-x-auto">
-                    <table class="w-full table-fixed text-sm text-app-ink-dark">
-                        <colgroup>
-                            <col class="w-[22%]" />
-                            <col class="w-[58%]" />
-                            <col class="w-[20%]" />
-                        </colgroup>
-                        <thead>
-                            <tr class="text-left text-app-muted-dark">
-                                <th class="pb-2">Naam</th>
-                                <th class="pb-2">Bijzonderheden</th>
-                                <th class="pb-2 text-right sm:text-left">Acties</th>
+                <div v-else class="mt-2 overflow-x-auto rounded-lg border border-brand-blue/25">
+                    <table class="w-full min-w-[40rem] border-collapse text-left text-sm text-app-ink dark:text-app-ink-dark">
+                        <thead class="border-b border-brand-blue/35 bg-app-sidebar dark:bg-app-canvas-dark/80">
+                            <tr class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
+                                <th scope="col" class="min-w-[8rem] px-3 py-2.5">Naam</th>
+                                <th scope="col" class="min-w-[16rem] px-3 py-2.5">Bijzonderheden</th>
+                                <th scope="col" class="min-w-[9rem] whitespace-nowrap px-3 py-2.5 text-end sm:text-start">
+                                    Acties
+                                </th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody class="divide-y divide-brand-blue/25">
                             <tr
                                 v-for="member in filteredMembers"
                                 :key="`bijz-${member.id}`"
-                                class="border-t border-brand-blue/35"
+                                class="bg-brand-blue/5 transition-colors hover:bg-brand-blue/12 dark:bg-app-panel-dark/50 dark:hover:bg-brand-blue/15"
                             >
-                                <td class="py-2 pr-2 align-top">{{ memberDisplayName(member) }}</td>
-                                <td class="pr-2 align-top break-words leading-snug text-app-ink-dark">
+                                <td class="px-3 py-2.5 align-top font-medium text-app-ink dark:text-app-ink-dark">
+                                    {{ memberDisplayName(member) }}
+                                </td>
+                                <td class="px-3 py-2.5 align-top break-words leading-snug text-app-ink dark:text-app-ink-dark">
                                     <span v-if="member.bijzonderheden" class="whitespace-pre-wrap">{{
                                         member.bijzonderheden
                                     }}</span>
-                                    <span v-else class="text-app-muted-dark">–</span>
+                                    <span v-else class="text-app-muted dark:text-app-muted-dark">–</span>
                                 </td>
-                                <td class="align-top">
+                                <td class="px-3 py-2.5 align-top">
                                     <button
                                         type="button"
-                                        class="inline-flex items-center gap-1 rounded border border-brand-blue/40 bg-app-canvas-dark px-2 py-1 text-xs font-medium text-app-ink-dark transition hover:bg-brand-blue/25"
+                                        class="inline-flex items-center justify-center gap-1 rounded border border-brand-blue/40 bg-white px-2.5 py-1.5 text-xs font-medium text-app-ink dark:bg-app-canvas-dark dark:text-app-ink-dark transition hover:bg-brand-blue/25"
                                         @click="openEditForm(member)"
                                     >
-                                        <PencilSquareIcon class="h-4 w-4" />
+                                        <PencilSquareIcon class="h-4 w-4 shrink-0" />
                                         Bewerken
                                     </button>
                                 </td>

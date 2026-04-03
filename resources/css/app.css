@@ -6,7 +6,7 @@
 @layer base {
     ::selection {
         background-color: rgb(0 104 183 / 0.2);
-        color: #071d36;
+        color: #000000;
     }
 
     @media (prefers-color-scheme: dark) {
