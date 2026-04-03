@@ -59,6 +59,44 @@ class EventController extends Controller
     }
 
     /**
+     * Partial update (bv. dashboard: alleen thema aanpassen).
+     */
+    public function updateTheme(Request $request, Event $event)
+    {
+        $data = $request->validate([
+            'theme' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $event->update($data);
+
+        return back();
+    }
+
+    /**
+     * Snel één agenda-veld bijwerken vanuit de tabel (EditableTextCell).
+     */
+    public function quickUpdate(Request $request, Event $event)
+    {
+        $data = $request->validate([
+            'theme' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'event_date' => ['sometimes', 'date'],
+            'event_type' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'activity' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'program_by' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'absent' => ['sometimes', 'nullable', 'string'],
+            'notes' => ['sometimes', 'nullable', 'string'],
+        ]);
+
+        if (array_key_exists('theme', $data) && $data['theme'] === null) {
+            $data['theme'] = '';
+        }
+
+        $event->update($data);
+
+        return back();
+    }
+
+    /**
      * Remove the specified resource from storage.
      */
     public function destroy(Event $event)

@@ -1,6 +1,8 @@
 <script setup>
+import EditableTextCell from '@/Components/EditableTextCell.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
+import { ref } from 'vue';
 import {
     CalendarDaysIcon,
     CakeIcon,
@@ -41,6 +43,22 @@ function formatIsoToNl(iso) {
     if (parts.length !== 3) return s;
     const [y, m, d] = parts;
     return `${d}-${m}-${y}`;
+}
+
+const savingEventId = ref(null);
+
+function saveEventTheme(ev, newTheme) {
+    savingEventId.value = ev.id;
+    router.patch(
+        route('events.update-theme', ev.id),
+        { theme: newTheme },
+        {
+            preserveScroll: true,
+            onFinish: () => {
+                savingEventId.value = null;
+            },
+        },
+    );
 }
 </script>
 
@@ -89,7 +107,14 @@ function formatIsoToNl(iso) {
                                 :key="ev.id"
                                 class="rounded-lg border border-app-border bg-white/90 px-3 py-2 text-sm shadow-sm dark:border-brand-blue/35 dark:bg-app-canvas-dark/80"
                             >
-                                <p class="font-semibold text-app-ink dark:text-app-ink-dark">{{ ev.theme }}</p>
+                                <div class="font-semibold text-app-ink dark:text-app-ink-dark">
+                                    <EditableTextCell
+                                        :text="ev.theme || ''"
+                                        :saving="savingEventId === ev.id"
+                                        :multiline="false"
+                                        @save="(v) => saveEventTheme(ev, v)"
+                                    />
+                                </div>
                                 <p class="mt-0.5 text-xs text-app-muted dark:text-app-muted-dark">
                                     <span v-if="ev.event_type">{{ ev.event_type }}</span>
                                     <span v-if="ev.event_type && ev.program_by"> · </span>
@@ -173,7 +198,14 @@ function formatIsoToNl(iso) {
                                 <span class="text-sm font-bold leading-tight">{{ ev.day_month }}</span>
                             </div>
                             <div class="min-w-0 flex-1">
-                                <p class="font-medium text-app-ink dark:text-app-ink-dark">{{ ev.theme }}</p>
+                                <div class="font-medium text-app-ink dark:text-app-ink-dark">
+                                    <EditableTextCell
+                                        :text="ev.theme || ''"
+                                        :saving="savingEventId === ev.id"
+                                        :multiline="false"
+                                        @save="(v) => saveEventTheme(ev, v)"
+                                    />
+                                </div>
                                 <p class="mt-0.5 text-xs text-app-muted dark:text-app-muted-dark">
                                     <template v-if="ev.is_today">
                                         <span class="font-semibold text-app-ink dark:text-app-ink-dark">Vandaag</span>

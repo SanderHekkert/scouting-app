@@ -1,14 +1,9 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, nextTick, onMounted, ref } from 'vue';
+import EditableTextCell from '@/Components/EditableTextCell.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
-import {
-    ChevronRightIcon,
-    MagnifyingGlassIcon,
-    PlusIcon,
-    PencilSquareIcon,
-    TrashIcon,
-} from '@heroicons/vue/24/outline';
+import { ChevronRightIcon, MagnifyingGlassIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     members: Array,
@@ -19,23 +14,10 @@ const props = defineProps({
 });
 
 const showAddForm = ref(false);
-const showEditForm = ref(false);
-const editingMemberId = ref(null);
+const rowHighlightMemberId = ref(null);
+const memberInlineOpen = ref({ key: '', nonce: 0 });
 
 const form = useForm({
-    installed: true,
-    first_name: '',
-    last_name: '',
-    birthday: '',
-    age: '',
-    address: '',
-    phone_mother: '',
-    phone_father: '',
-    bijzonderheden: '',
-    active: true,
-});
-
-const editForm = useForm({
     installed: true,
     first_name: '',
     last_name: '',
@@ -115,7 +97,7 @@ const sortedFilteredMembers = computed(() => {
 function toggleAddForm() {
     showAddForm.value = !showAddForm.value;
     if (showAddForm.value) {
-        showEditForm.value = false;
+        rowHighlightMemberId.value = null;
         form.reset();
         form.installed = true;
         form.active = true;
@@ -123,37 +105,25 @@ function toggleAddForm() {
     }
 }
 
-function openEditForm(member) {
+/** Opent direct de juiste tabelcel (dubbelklik-gedrag via EditableTextCell). */
+function requestMemberInlineEdit(member, field = 'first_name') {
     if (!member) return;
-    editingMemberId.value = member.id;
-    editForm.installed = Boolean(member.installed);
-    editForm.first_name = member.first_name ?? '';
-    editForm.last_name = member.last_name ?? '';
-    editForm.birthday = member.birthday ? String(member.birthday).slice(0, 10) : '';
-    editForm.age = member.age != null ? String(member.age) : '';
-    editForm.address = member.address ?? '';
-    editForm.phone_mother = member.phone_mother ?? '';
-    editForm.phone_father = member.phone_father ?? '';
-    editForm.bijzonderheden = member.bijzonderheden ?? '';
-    editForm.active = Boolean(member.active);
-    editForm.clearErrors();
-    showEditForm.value = true;
     showAddForm.value = false;
-}
-
-function closeEditForm() {
-    showEditForm.value = false;
-    editingMemberId.value = null;
-    editForm.reset();
-    editForm.installed = true;
-    editForm.active = true;
+    rowHighlightMemberId.value = member.id;
+    memberInlineOpen.value = {
+        key: `${member.id}:${field}`,
+        nonce: memberInlineOpen.value.nonce + 1,
+    };
+    nextTick(() => {
+        document.getElementById(`member-row-${member.id}`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    });
 }
 
 onMounted(() => {
     const id = props.open_edit_member_id;
     if (!id) return;
     const m = props.members?.find((x) => x.id === id);
-    if (m) openEditForm(m);
+    if (m) requestMemberInlineEdit(m, 'first_name');
 });
 
 function normalizeMemberFields(data) {
@@ -178,23 +148,11 @@ function submitAdd() {
         });
 }
 
-function submitEdit() {
-    if (!editingMemberId.value) return;
-    editForm
-        .transform((d) => normalizeMemberFields(d))
-        .put(route('members.update', editingMemberId.value), {
-            preserveScroll: true,
-            onSuccess: () => {
-                closeEditForm();
-            },
-        });
-}
-
 function deleteMember(member) {
     if (!member?.id) return;
     if (!confirm('Dit contact verwijderen?')) return;
-    if (editingMemberId.value === member.id) {
-        closeEditForm();
+    if (rowHighlightMemberId.value === member.id) {
+        rowHighlightMemberId.value = null;
     }
     router.delete(route('members.destroy', member.id), {
         preserveScroll: true,
@@ -210,19 +168,73 @@ function formatBirthday(value) {
     return `${d}-${m}-${y}`;
 }
 
-function dashIfEmpty(value) {
-    if (value == null || String(value).trim() === '') return '–';
-    return value;
-}
-
 function memberDisplayName(m) {
     const fn = m?.first_name ?? '';
     const ln = m?.last_name ?? '';
     return `${fn}${ln ? ` ${ln}` : ''}`.trim() || '–';
 }
 
-function yesNoInstalled(value) {
-    return value ? 'Ja' : 'Nee';
+const installedSavingId = ref(null);
+
+function setMemberInstalled(member, value) {
+    if (!member?.id || Boolean(member.installed) === value) {
+        return;
+    }
+    installedSavingId.value = member.id;
+    router.patch(
+        route('members.update-installed', member.id),
+        { installed: value },
+        {
+            preserveScroll: true,
+            onFinish: () => {
+                installedSavingId.value = null;
+            },
+        },
+    );
+}
+
+function installedToggleClass(member, isJa) {
+    const on = isJa ? Boolean(member.installed) : !member.installed;
+    if (on) {
+        return isJa
+            ? 'bg-emerald-700 text-white ring-2 ring-emerald-400/80'
+            : 'bg-rose-900/80 text-rose-100 ring-2 ring-rose-500/70';
+    }
+    return 'border border-brand-blue/40 bg-app-panel text-app-ink hover:bg-brand-blue/10 dark:border-brand-blue/45 dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/20';
+}
+
+const memberFieldSaving = ref(null);
+
+function normalizeMemberQuickPayload(field, raw) {
+    if (field === 'age') {
+        const s = String(raw ?? '').trim();
+        if (s === '') {
+            return { age: null };
+        }
+        const n = Number.parseInt(s, 10);
+        return { age: Number.isNaN(n) ? null : n };
+    }
+    if (field === 'birthday') {
+        const s = String(raw ?? '').trim();
+        return { birthday: s === '' ? null : s };
+    }
+    return { [field]: raw ?? '' };
+}
+
+function patchMemberField(member, field, raw) {
+    const payload = normalizeMemberQuickPayload(field, raw);
+    const k = Object.keys(payload)[0];
+    memberFieldSaving.value = `${member.id}:${k}`;
+    router.patch(route('members.quick-update', member.id), payload, {
+        preserveScroll: true,
+        onFinish: () => {
+            memberFieldSaving.value = null;
+        },
+    });
+}
+
+function isMemberFieldSaving(member, field) {
+    return memberFieldSaving.value === `${member.id}:${field}`;
 }
 </script>
 
@@ -357,124 +369,6 @@ function yesNoInstalled(value) {
                 </p>
             </form>
 
-            <form
-                v-show="showEditForm"
-                class="surface-brand-top space-y-4 rounded-xl border border-brand-yellow/35 bg-app-panel shadow-sm dark:bg-app-panel-dark/95 p-5"
-                @submit.prevent="submitEdit"
-            >
-                <h3 class="text-base font-semibold text-app-ink dark:text-app-ink-dark">Contact bewerken</h3>
-                <div class="grid gap-4 sm:grid-cols-[10rem_1fr] sm:items-start">
-                    <label for="edit-member-first-name" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Voornaam
-                    </label>
-                    <input
-                        id="edit-member-first-name"
-                        v-model="editForm.first_name"
-                        type="text"
-                        autocomplete="given-name"
-                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                    />
-
-                    <label for="edit-member-last-name" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Achternaam
-                    </label>
-                    <input
-                        id="edit-member-last-name"
-                        v-model="editForm.last_name"
-                        type="text"
-                        autocomplete="family-name"
-                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                    />
-
-                    <label for="edit-member-birthday" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Geboortedatum
-                    </label>
-                    <input
-                        id="edit-member-birthday"
-                        v-model="editForm.birthday"
-                        type="date"
-                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                    />
-
-                    <label for="edit-member-age" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Leeftijd
-                    </label>
-                    <input
-                        id="edit-member-age"
-                        v-model="editForm.age"
-                        type="number"
-                        min="0"
-                        max="99"
-                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                    />
-
-                    <label for="edit-member-phone-mother" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Telefoon moeder
-                    </label>
-                    <input
-                        id="edit-member-phone-mother"
-                        v-model="editForm.phone_mother"
-                        type="text"
-                        autocomplete="tel"
-                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                    />
-
-                    <label for="edit-member-phone-father" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Telefoon vader
-                    </label>
-                    <input
-                        id="edit-member-phone-father"
-                        v-model="editForm.phone_father"
-                        type="text"
-                        autocomplete="tel"
-                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                    />
-
-                    <label for="edit-member-address" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Adres
-                    </label>
-                    <input
-                        id="edit-member-address"
-                        v-model="editForm.address"
-                        type="text"
-                        autocomplete="street-address"
-                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                    />
-
-                    <label for="edit-member-bijzonderheden" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Bijzonderheden
-                    </label>
-                    <textarea
-                        id="edit-member-bijzonderheden"
-                        v-model="editForm.bijzonderheden"
-                        rows="3"
-                        placeholder="Allergiën, medicatie, dieet, andere aandachtspunten…"
-                        class="min-h-[5rem] min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
-                    />
-
-                    <span class="hidden sm:block" aria-hidden="true" />
-                    <div class="flex flex-wrap gap-2">
-                        <button
-                            type="submit"
-                            class="rounded bg-brand-red px-5 py-2 text-sm font-medium text-white hover:bg-brand-red-dark disabled:opacity-50"
-                            :disabled="editForm.processing"
-                        >
-                            Bijwerken
-                        </button>
-                        <button
-                            type="button"
-                            class="rounded border border-brand-blue-light/50 px-5 py-2 text-sm font-medium text-app-ink dark:text-app-ink-dark transition hover:bg-brand-blue/20"
-                            @click="closeEditForm"
-                        >
-                            Annuleren
-                        </button>
-                    </div>
-                </div>
-                <p v-for="err in Object.values(editForm.errors)" :key="`e-${String(err)}`" class="text-sm text-red-400">
-                    {{ err }}
-                </p>
-            </form>
-
             <div class="surface-brand-top rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-4">
                 <div class="mb-3 flex flex-wrap gap-1 border-b border-brand-blue/35" role="tablist" aria-label="Dolfijnen weergave">
                     <Link
@@ -534,7 +428,7 @@ function yesNoInstalled(value) {
                     v-if="membersTab === 'bijzonderheden'"
                     class="mb-3 text-xs text-app-muted dark:text-app-muted-dark"
                 >
-                    Allergiën, medicatie, dieet en andere aandachtspunten. Bewerken via onderstaande knop of het formulier hierboven.
+                    Allergiën, medicatie, dieet en andere aandachtspunten. Dubbelklik in een cel om te bewerken.
                     Kinderen met ingevulde bijzonderheden staan bovenaan. Voor leiding: menu Leiding.
                 </p>
 
@@ -547,33 +441,58 @@ function yesNoInstalled(value) {
 
                 <div v-else-if="membersTab === 'dolfijnen'" class="space-y-2 md:space-y-0">
                     <div class="md:hidden space-y-2">
-                        <Link
+                        <div
                             v-for="member in sortedFilteredMembers"
                             :key="`m-mob-${member.id}`"
-                            :href="route('members.show', member.id)"
-                            class="surface-brand-top flex items-center justify-between gap-3 rounded-xl border border-brand-blue/30 bg-app-panel px-4 py-3 text-app-ink shadow-sm dark:bg-app-panel-dark/95 dark:text-app-ink-dark active:bg-brand-blue/15"
+                            class="surface-brand-top rounded-xl border border-brand-blue/30 bg-app-panel px-4 py-3 text-app-ink shadow-sm dark:bg-app-panel-dark/95 dark:text-app-ink-dark"
                         >
-                            <span class="flex min-w-0 items-center gap-2 truncate">
-                                <span
-                                    v-if="memberHasBijzonderheden(member)"
-                                    class="h-2 w-2 shrink-0 rounded-full bg-brand-red"
-                                    title="Heeft bijzonderheden"
-                                />
-                                <span class="truncate font-medium">{{ memberDisplayName(member) }}</span>
-                            </span>
-                            <ChevronRightIcon class="h-5 w-5 shrink-0 text-app-muted dark:text-app-muted-dark" aria-hidden="true" />
-                        </Link>
+                            <Link
+                                :href="route('members.show', member.id)"
+                                class="flex items-center justify-between gap-3 rounded-lg active:bg-brand-blue/15"
+                            >
+                                <span class="flex min-w-0 items-center gap-2 truncate">
+                                    <span
+                                        v-if="memberHasBijzonderheden(member)"
+                                        class="h-2 w-2 shrink-0 rounded-full bg-brand-red"
+                                        title="Heeft bijzonderheden"
+                                    />
+                                    <span class="truncate font-medium">{{ memberDisplayName(member) }}</span>
+                                </span>
+                                <ChevronRightIcon class="h-5 w-5 shrink-0 text-app-muted dark:text-app-muted-dark" aria-hidden="true" />
+                            </Link>
+                            <div class="mt-3 flex flex-wrap items-center gap-2 border-t border-brand-blue/25 pt-3 dark:border-brand-blue/35" @click.stop>
+                                <span class="text-xs font-semibold text-app-muted dark:text-app-muted-dark">Geïnstalleerd</span>
+                                <button
+                                    type="button"
+                                    class="rounded px-3 py-1 text-xs font-semibold transition disabled:opacity-50"
+                                    :class="installedToggleClass(member, true)"
+                                    :disabled="installedSavingId === member.id"
+                                    @click="setMemberInstalled(member, true)"
+                                >
+                                    Ja
+                                </button>
+                                <button
+                                    type="button"
+                                    class="rounded px-3 py-1 text-xs font-semibold transition disabled:opacity-50"
+                                    :class="installedToggleClass(member, false)"
+                                    :disabled="installedSavingId === member.id"
+                                    @click="setMemberInstalled(member, false)"
+                                >
+                                    Nee
+                                </button>
+                            </div>
+                        </div>
                     </div>
                     <div class="surface-brand-top-lg hidden overflow-x-auto rounded-lg border border-brand-blue/25 md:block">
                         <table class="w-full min-w-[72rem] border-collapse text-left text-sm text-app-ink dark:text-app-ink-dark">
                         <thead class="border-b border-brand-blue/35 bg-app-sidebar dark:bg-app-canvas-dark/80">
                             <tr class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Geïnstalleerd</th>
-                                <th scope="col" class="min-w-[12rem] px-3 py-2.5">Bijzonderheden</th>
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Voornaam</th>
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Achternaam</th>
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Verjaardag</th>
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Leeftijd</th>
+                                <th scope="col" class="min-w-[12rem] px-3 py-2.5">Bijzonderheden</th>
                                 <th scope="col" class="min-w-[10rem] px-3 py-2.5">Adres</th>
                                 <th scope="col" class="min-w-[9rem] px-3 py-2.5">Telefoon moeder</th>
                                 <th scope="col" class="min-w-[9rem] px-3 py-2.5">Telefoon vader</th>
@@ -585,54 +504,127 @@ function yesNoInstalled(value) {
                         <tbody class="divide-y divide-brand-blue/25">
                             <tr
                                 v-for="member in sortedFilteredMembers"
+                                :id="`member-row-${member.id}`"
                                 :key="member.id"
                                 class="bg-brand-blue/5 transition-colors hover:bg-brand-blue/12 dark:bg-app-panel-dark/50 dark:hover:bg-brand-blue/15"
-                                :class="{ '!bg-brand-blue/15 dark:!bg-app-canvas-dark/90': editingMemberId === member.id }"
+                                :class="{ '!bg-brand-blue/15 dark:!bg-app-canvas-dark/90': rowHighlightMemberId === member.id }"
                             >
                                 <td class="whitespace-nowrap px-3 py-2.5 align-top text-app-ink dark:text-app-ink-dark">
-                                    {{ yesNoInstalled(member.installed) }}
-                                </td>
-                                <td class="max-w-[16rem] px-3 py-2.5 align-top break-words">
-                                    <span
-                                        v-if="member.bijzonderheden"
-                                        class="line-clamp-2 text-app-ink dark:text-app-ink-dark"
-                                    >{{ member.bijzonderheden }}</span>
-                                    <span v-else class="text-app-muted dark:text-app-muted-dark">–</span>
-                                </td>
-                                <td class="max-w-[10rem] px-3 py-2.5 align-top">
-                                    <span class="line-clamp-2 break-words">{{ dashIfEmpty(member.first_name) }}</span>
-                                </td>
-                                <td class="max-w-[10rem] px-3 py-2.5 align-top">
-                                    <span class="line-clamp-2 break-words">{{ dashIfEmpty(member.last_name) }}</span>
-                                </td>
-                                <td class="whitespace-nowrap px-3 py-2.5 align-top tabular-nums text-app-ink dark:text-app-ink-dark">
-                                    {{ formatBirthday(member.birthday) }}
-                                </td>
-                                <td class="whitespace-nowrap px-3 py-2.5 align-top tabular-nums text-app-ink dark:text-app-ink-dark">
-                                    {{ member.age ?? '–' }}
-                                </td>
-                                <td class="px-3 py-2.5 align-top">
-                                    <span class="line-clamp-3 break-words text-app-ink dark:text-app-ink-dark">{{
-                                        dashIfEmpty(member.address)
-                                    }}</span>
-                                </td>
-                                <td class="px-3 py-2.5 align-top tabular-nums text-app-ink dark:text-app-ink-dark">
-                                    <span class="break-words">{{ dashIfEmpty(member.phone_mother) }}</span>
-                                </td>
-                                <td class="px-3 py-2.5 align-top tabular-nums text-app-ink dark:text-app-ink-dark">
-                                    <span class="break-words">{{ dashIfEmpty(member.phone_father) }}</span>
-                                </td>
-                                <td class="px-3 py-2.5 align-top">
-                                    <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end lg:justify-start">
-                                        <button type="button" class="btn-action-edit" @click="openEditForm(member)">
-                                            <PencilSquareIcon class="h-4 w-4 shrink-0" />
-                                            Bewerken
+                                    <div class="flex flex-wrap gap-1.5">
+                                        <button
+                                            type="button"
+                                            class="rounded px-2.5 py-1 text-xs font-semibold transition disabled:opacity-50"
+                                            :class="installedToggleClass(member, true)"
+                                            :disabled="installedSavingId === member.id"
+                                            @click="setMemberInstalled(member, true)"
+                                        >
+                                            Ja
                                         </button>
-                                        <button type="button" class="btn-action-delete" @click="deleteMember(member)">
-                                            <TrashIcon class="h-4 w-4 shrink-0" />
-                                            Verwijderen
+                                        <button
+                                            type="button"
+                                            class="rounded px-2.5 py-1 text-xs font-semibold transition disabled:opacity-50"
+                                            :class="installedToggleClass(member, false)"
+                                            :disabled="installedSavingId === member.id"
+                                            @click="setMemberInstalled(member, false)"
+                                        >
+                                            Nee
                                         </button>
                                     </div>
+                                </td>
+                                <td class="max-w-[10rem] px-3 py-2.5 align-top">
+                                    <EditableTextCell
+                                        :text="member.first_name || ''"
+                                        :multiline="false"
+                                        :cell-key="`${member.id}:first_name`"
+                                        :open-request-key="memberInlineOpen.key"
+                                        :open-request-nonce="memberInlineOpen.nonce"
+                                        :saving="isMemberFieldSaving(member, 'first_name')"
+                                        @save="(v) => patchMemberField(member, 'first_name', v)"
+                                    />
+                                </td>
+                                <td class="max-w-[10rem] px-3 py-2.5 align-top">
+                                    <EditableTextCell
+                                        :text="member.last_name || ''"
+                                        :multiline="false"
+                                        :cell-key="`${member.id}:last_name`"
+                                        :open-request-key="memberInlineOpen.key"
+                                        :open-request-nonce="memberInlineOpen.nonce"
+                                        :saving="isMemberFieldSaving(member, 'last_name')"
+                                        @save="(v) => patchMemberField(member, 'last_name', v)"
+                                    />
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-2.5 align-top tabular-nums text-app-ink dark:text-app-ink-dark">
+                                    <EditableTextCell
+                                        :text="member.birthday ? String(member.birthday).slice(0, 10) : ''"
+                                        input-kind="date"
+                                        :multiline="false"
+                                        :cell-key="`${member.id}:birthday`"
+                                        :open-request-key="memberInlineOpen.key"
+                                        :open-request-nonce="memberInlineOpen.nonce"
+                                        :saving="isMemberFieldSaving(member, 'birthday')"
+                                        @save="(v) => patchMemberField(member, 'birthday', v)"
+                                    />
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-2.5 align-top tabular-nums text-app-ink dark:text-app-ink-dark">
+                                    <EditableTextCell
+                                        :text="member.age != null ? String(member.age) : ''"
+                                        :multiline="false"
+                                        :cell-key="`${member.id}:age`"
+                                        :open-request-key="memberInlineOpen.key"
+                                        :open-request-nonce="memberInlineOpen.nonce"
+                                        :saving="isMemberFieldSaving(member, 'age')"
+                                        @save="(v) => patchMemberField(member, 'age', v)"
+                                    />
+                                </td>
+                                <td class="max-w-[16rem] px-3 py-2.5 align-top break-words">
+                                    <EditableTextCell
+                                        :text="member.bijzonderheden || ''"
+                                        multiline
+                                        :cell-key="`${member.id}:bijzonderheden`"
+                                        :open-request-key="memberInlineOpen.key"
+                                        :open-request-nonce="memberInlineOpen.nonce"
+                                        :saving="isMemberFieldSaving(member, 'bijzonderheden')"
+                                        @save="(v) => patchMemberField(member, 'bijzonderheden', v)"
+                                    />
+                                </td>
+                                <td class="px-3 py-2.5 align-top">
+                                    <EditableTextCell
+                                        :text="member.address || ''"
+                                        multiline
+                                        :cell-key="`${member.id}:address`"
+                                        :open-request-key="memberInlineOpen.key"
+                                        :open-request-nonce="memberInlineOpen.nonce"
+                                        :saving="isMemberFieldSaving(member, 'address')"
+                                        @save="(v) => patchMemberField(member, 'address', v)"
+                                    />
+                                </td>
+                                <td class="px-3 py-2.5 align-top tabular-nums text-app-ink dark:text-app-ink-dark">
+                                    <EditableTextCell
+                                        :text="member.phone_mother || ''"
+                                        :multiline="false"
+                                        :cell-key="`${member.id}:phone_mother`"
+                                        :open-request-key="memberInlineOpen.key"
+                                        :open-request-nonce="memberInlineOpen.nonce"
+                                        :saving="isMemberFieldSaving(member, 'phone_mother')"
+                                        @save="(v) => patchMemberField(member, 'phone_mother', v)"
+                                    />
+                                </td>
+                                <td class="px-3 py-2.5 align-top tabular-nums text-app-ink dark:text-app-ink-dark">
+                                    <EditableTextCell
+                                        :text="member.phone_father || ''"
+                                        :multiline="false"
+                                        :cell-key="`${member.id}:phone_father`"
+                                        :open-request-key="memberInlineOpen.key"
+                                        :open-request-nonce="memberInlineOpen.nonce"
+                                        :saving="isMemberFieldSaving(member, 'phone_father')"
+                                        @save="(v) => patchMemberField(member, 'phone_father', v)"
+                                    />
+                                </td>
+                                <td class="px-3 py-2.5 align-top">
+                                    <button type="button" class="btn-action-delete" @click="deleteMember(member)">
+                                        <TrashIcon class="h-4 w-4 shrink-0" />
+                                        Verwijderen
+                                    </button>
                                 </td>
                             </tr>
                         </tbody>
@@ -648,54 +640,48 @@ function yesNoInstalled(value) {
                             class="surface-brand-top rounded-xl border border-brand-blue/30 bg-app-panel p-4 shadow-sm dark:bg-app-panel-dark/95"
                         >
                             <p class="font-medium text-app-ink dark:text-app-ink-dark">{{ memberDisplayName(member) }}</p>
-                            <p
-                                class="mt-2 whitespace-pre-wrap text-sm leading-snug text-app-ink dark:text-app-ink-dark"
-                            >
-                                <span v-if="memberHasBijzonderheden(member)">{{ member.bijzonderheden }}</span>
-                                <span v-else class="text-app-muted dark:text-app-muted-dark">—</span>
-                            </p>
-                            <button
-                                type="button"
-                                class="btn-action-edit mt-3"
-                                @click="openEditForm(member)"
-                            >
-                                <PencilSquareIcon class="h-4 w-4 shrink-0" />
-                                Bewerken
-                            </button>
+                            <div class="mt-2 text-sm leading-snug" @click.stop>
+                                <EditableTextCell
+                                    :text="member.bijzonderheden || ''"
+                                    multiline
+                                    :cell-key="`${member.id}:bijzonderheden`"
+                                    :open-request-key="memberInlineOpen.key"
+                                    :open-request-nonce="memberInlineOpen.nonce"
+                                    :saving="isMemberFieldSaving(member, 'bijzonderheden')"
+                                    @save="(v) => patchMemberField(member, 'bijzonderheden', v)"
+                                />
+                            </div>
                         </div>
                     </div>
                     <div class="surface-brand-top-lg hidden overflow-x-auto rounded-lg border border-brand-blue/25 md:block">
-                        <table class="w-full min-w-[40rem] border-collapse text-left text-sm text-app-ink dark:text-app-ink-dark">
+                        <table class="w-full min-w-[28rem] border-collapse text-left text-sm text-app-ink dark:text-app-ink-dark">
                             <thead class="border-b border-brand-blue/35 bg-app-sidebar dark:bg-app-canvas-dark/80">
                                 <tr class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
                                     <th scope="col" class="min-w-[8rem] px-3 py-2.5">Naam</th>
                                     <th scope="col" class="min-w-[16rem] px-3 py-2.5">Bijzonderheden</th>
-                                    <th scope="col" class="min-w-[9rem] whitespace-nowrap px-3 py-2.5 text-end sm:text-start">
-                                        Acties
-                                    </th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-brand-blue/25">
                                 <tr
                                     v-for="member in sortedFilteredMembers"
+                                    :id="`member-row-${member.id}`"
                                     :key="`bijz-${member.id}`"
                                     class="bg-brand-blue/5 transition-colors hover:bg-brand-blue/12 dark:bg-app-panel-dark/50 dark:hover:bg-brand-blue/15"
-                                    :class="{ '!bg-brand-blue/15 dark:!bg-app-canvas-dark/90': editingMemberId === member.id }"
+                                    :class="{ '!bg-brand-blue/15 dark:!bg-app-canvas-dark/90': rowHighlightMemberId === member.id }"
                                 >
                                     <td class="px-3 py-2.5 align-top font-medium text-app-ink dark:text-app-ink-dark">
                                         {{ memberDisplayName(member) }}
                                     </td>
                                     <td class="px-3 py-2.5 align-top break-words leading-snug text-app-ink dark:text-app-ink-dark">
-                                        <span v-if="memberHasBijzonderheden(member)" class="whitespace-pre-wrap">{{
-                                            member.bijzonderheden
-                                        }}</span>
-                                        <span v-else class="text-app-muted dark:text-app-muted-dark">–</span>
-                                    </td>
-                                    <td class="px-3 py-2.5 align-top">
-                                        <button type="button" class="btn-action-edit" @click="openEditForm(member)">
-                                            <PencilSquareIcon class="h-4 w-4 shrink-0" />
-                                            Bewerken
-                                        </button>
+                                        <EditableTextCell
+                                            :text="member.bijzonderheden || ''"
+                                            multiline
+                                            :cell-key="`${member.id}:bijzonderheden`"
+                                            :open-request-key="memberInlineOpen.key"
+                                            :open-request-nonce="memberInlineOpen.nonce"
+                                            :saving="isMemberFieldSaving(member, 'bijzonderheden')"
+                                            @save="(v) => patchMemberField(member, 'bijzonderheden', v)"
+                                        />
                                     </td>
                                 </tr>
                             </tbody>

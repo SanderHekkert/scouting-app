@@ -18,12 +18,18 @@ Route::get('/', function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
-    Route::get('/jaar-thema', YearThemeController::class)->name('jaar-thema');
+    Route::get('/jaar-thema', [YearThemeController::class, 'index'])->name('jaar-thema');
+    Route::patch('/jaar-thema/entries/{yearThemeEntry}', [YearThemeController::class, 'updateEntry'])->name('jaar-thema.entries.update');
     Route::get('/tipper-topper-opkomst', TipperTopperOpkomstController::class)->name('tipper-topper-opkomst.index');
+    Route::patch('/events/{event}/theme', [EventController::class, 'updateTheme'])->name('events.update-theme');
+    Route::patch('/events/{event}/fields', [EventController::class, 'quickUpdate'])->name('events.quick-update');
     Route::resource('events', EventController::class)->except(['create', 'show', 'edit']);
+    Route::patch('/members/{member}/installed', [MemberController::class, 'updateInstalled'])->name('members.update-installed');
+    Route::patch('/members/{member}/fields', [MemberController::class, 'quickUpdate'])->name('members.quick-update');
     Route::patch('/members/{member}/tipper-topper-opkomst', [MemberController::class, 'updateTipperTopperOpkomst'])->name('members.tipper-topper-opkomst');
     Route::get('/members/bijzonderheden', [MemberController::class, 'indexBijzonderheden'])->name('members.bijzonderheden');
     Route::get('/members/{member}', [MemberController::class, 'show'])->name('members.show');
+    Route::patch('/leaders/{leader}/fields', [LeaderController::class, 'quickUpdate'])->name('leaders.quick-update');
     Route::get('/leaders/{leader}', [LeaderController::class, 'show'])->name('leaders.show');
     Route::resource('members', MemberController::class)->except(['create', 'show', 'edit']);
     Route::resource('leaders', LeaderController::class)->except(['create', 'show', 'edit']);

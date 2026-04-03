@@ -1,11 +1,33 @@
 <script setup>
+import EditableTextCell from '@/Components/EditableTextCell.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ChevronLeftIcon, PencilSquareIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import { ChevronLeftIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import { ref } from 'vue';
 
 const props = defineProps({
     leader: { type: Object, required: true },
 });
+
+const detailFieldSaving = ref(null);
+
+function patchLeaderShowField(field, raw) {
+    detailFieldSaving.value = field;
+    router.patch(
+        route('leaders.quick-update', props.leader.id),
+        { [field]: raw ?? '' },
+        {
+            preserveScroll: true,
+            onFinish: () => {
+                detailFieldSaving.value = null;
+            },
+        },
+    );
+}
+
+function isLeaderShowSaving(field) {
+    return detailFieldSaving.value === field;
+}
 
 function formatBirthday(value) {
     if (value == null || value === '') return '–';
@@ -25,8 +47,6 @@ function leaderDisplayName(l) {
     const parts = [l?.first_name, l?.last_name].filter(Boolean);
     return parts.join(' ').trim() || '–';
 }
-
-const editIndexUrl = `${route('leaders.index')}?edit=${props.leader.id}`;
 
 function deleteLeader() {
     if (!confirm('Deze leiding verwijderen?')) return;
@@ -58,29 +78,69 @@ function deleteLeader() {
                 <dl class="mt-4 space-y-4">
                     <div>
                         <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Voornaam</dt>
-                        <dd class="mt-1 text-sm text-app-ink dark:text-app-ink-dark">{{ dashIfEmpty(leader.first_name) }}</dd>
+                        <dd class="mt-1 text-sm text-app-ink dark:text-app-ink-dark">
+                            <EditableTextCell
+                                :text="leader.first_name || ''"
+                                :multiline="false"
+                                :saving="isLeaderShowSaving('first_name')"
+                                @save="(v) => patchLeaderShowField('first_name', v)"
+                            />
+                        </dd>
                     </div>
                     <div>
                         <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Achternaam</dt>
-                        <dd class="mt-1 text-sm text-app-ink dark:text-app-ink-dark">{{ dashIfEmpty(leader.last_name) }}</dd>
+                        <dd class="mt-1 text-sm text-app-ink dark:text-app-ink-dark">
+                            <EditableTextCell
+                                :text="leader.last_name || ''"
+                                :multiline="false"
+                                :saving="isLeaderShowSaving('last_name')"
+                                @save="(v) => patchLeaderShowField('last_name', v)"
+                            />
+                        </dd>
                     </div>
                     <div>
                         <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Bijzonderheden</dt>
-                        <dd class="mt-1 whitespace-pre-wrap text-sm text-app-ink dark:text-app-ink-dark">
-                            {{ dashIfEmpty(leader.bijzonderheden) }}
+                        <dd class="mt-1 text-sm text-app-ink dark:text-app-ink-dark">
+                            <EditableTextCell
+                                :text="leader.bijzonderheden || ''"
+                                multiline
+                                :saving="isLeaderShowSaving('bijzonderheden')"
+                                @save="(v) => patchLeaderShowField('bijzonderheden', v)"
+                            />
                         </dd>
                     </div>
                     <div>
                         <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Adres</dt>
-                        <dd class="mt-1 text-sm text-app-ink dark:text-app-ink-dark">{{ dashIfEmpty(leader.address) }}</dd>
+                        <dd class="mt-1 text-sm text-app-ink dark:text-app-ink-dark">
+                            <EditableTextCell
+                                :text="leader.address || ''"
+                                multiline
+                                :saving="isLeaderShowSaving('address')"
+                                @save="(v) => patchLeaderShowField('address', v)"
+                            />
+                        </dd>
                     </div>
                     <div>
                         <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Postcode</dt>
-                        <dd class="mt-1 text-sm text-app-ink dark:text-app-ink-dark">{{ dashIfEmpty(leader.postal_code) }}</dd>
+                        <dd class="mt-1 text-sm text-app-ink dark:text-app-ink-dark">
+                            <EditableTextCell
+                                :text="leader.postal_code || ''"
+                                :multiline="false"
+                                :saving="isLeaderShowSaving('postal_code')"
+                                @save="(v) => patchLeaderShowField('postal_code', v)"
+                            />
+                        </dd>
                     </div>
                     <div>
                         <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Plaats</dt>
-                        <dd class="mt-1 text-sm text-app-ink dark:text-app-ink-dark">{{ dashIfEmpty(leader.city) }}</dd>
+                        <dd class="mt-1 text-sm text-app-ink dark:text-app-ink-dark">
+                            <EditableTextCell
+                                :text="leader.city || ''"
+                                :multiline="false"
+                                :saving="isLeaderShowSaving('city')"
+                                @save="(v) => patchLeaderShowField('city', v)"
+                            />
+                        </dd>
                     </div>
                     <div>
                         <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Geboortedatum</dt>
@@ -88,28 +148,29 @@ function deleteLeader() {
                     </div>
                     <div>
                         <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Telefoon</dt>
-                        <dd class="mt-1 text-sm text-app-ink dark:text-app-ink-dark">{{ dashIfEmpty(leader.phone_number) }}</dd>
+                        <dd class="mt-1 text-sm text-app-ink dark:text-app-ink-dark">
+                            <EditableTextCell
+                                :text="leader.phone_number || ''"
+                                :multiline="false"
+                                :saving="isLeaderShowSaving('phone_number')"
+                                @save="(v) => patchLeaderShowField('phone_number', v)"
+                            />
+                        </dd>
                     </div>
                     <div>
                         <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">E-mail</dt>
-                        <dd class="mt-1 break-all text-sm">
-                            <a
-                                v-if="leader.email"
-                                :href="`mailto:${leader.email}`"
-                                class="text-brand-blue-light underline decoration-brand-blue-light/70 underline-offset-2 hover:text-brand-blue-dark dark:text-brand-blue-light dark:hover:text-app-ink-dark"
-                            >
-                                {{ leader.email }}
-                            </a>
-                            <span v-else class="text-app-muted dark:text-app-muted-dark">–</span>
+                        <dd class="mt-1 break-all text-sm text-app-ink dark:text-app-ink-dark">
+                            <EditableTextCell
+                                :text="leader.email || ''"
+                                :multiline="false"
+                                :saving="isLeaderShowSaving('email')"
+                                @save="(v) => patchLeaderShowField('email', v)"
+                            />
                         </dd>
                     </div>
                 </dl>
 
                 <div class="mt-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                    <Link :href="editIndexUrl" class="btn-action-edit btn-action-edit--lg">
-                        <PencilSquareIcon class="h-5 w-5" />
-                        Bewerken
-                    </Link>
                     <button type="button" class="btn-action-delete btn-action-delete--lg" @click="deleteLeader">
                         <TrashIcon class="h-5 w-5" />
                         Verwijderen

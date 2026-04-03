@@ -28,6 +28,36 @@ class LeaderController extends Controller
         ]);
     }
 
+    /**
+     * Snel één veld bijwerken (tabel / detail + EditableTextCell).
+     */
+    public function quickUpdate(Request $request, Leader $leader)
+    {
+        if ($request->has('email') && $request->input('email') === '') {
+            $request->merge(['email' => null]);
+        }
+
+        $data = $request->validate([
+            'first_name' => ['sometimes', 'required', 'string', 'max:255'],
+            'last_name' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'address' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'postal_code' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'city' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'birthday' => ['sometimes', 'nullable', 'date'],
+            'phone_number' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'email' => ['sometimes', 'nullable', 'string', 'max:255', 'email'],
+            'bijzonderheden' => ['sometimes', 'nullable', 'string', 'max:65535'],
+        ]);
+
+        if (array_key_exists('birthday', $data) && empty($data['birthday'])) {
+            $data['birthday'] = null;
+        }
+
+        $leader->update($data);
+
+        return back();
+    }
+
     public function store(Request $request)
     {
         $data = $request->validate([

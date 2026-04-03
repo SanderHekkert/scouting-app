@@ -70,6 +70,27 @@ class MemberController extends Controller
     }
 
     /**
+     * Snel één tekstveld bijwerken (tabel / detail + EditableTextCell).
+     */
+    public function quickUpdate(Request $request, Member $member)
+    {
+        $data = $request->validate([
+            'first_name' => ['sometimes', 'required', 'string', 'max:255'],
+            'last_name' => ['sometimes', 'required', 'string', 'max:255'],
+            'birthday' => ['sometimes', 'nullable', 'date'],
+            'address' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'phone_mother' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'phone_father' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'bijzonderheden' => ['sometimes', 'nullable', 'string', 'max:65535'],
+            'age' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:99'],
+        ]);
+
+        $member->update($data);
+
+        return back();
+    }
+
+    /**
      * Update the specified resource in storage.
      */
     public function update(Request $request, Member $member)
@@ -91,6 +112,17 @@ class MemberController extends Controller
         $data['active'] = $request->boolean('active', true);
 
         $member->update($data);
+
+        return back();
+    }
+
+    public function updateInstalled(Request $request, Member $member)
+    {
+        $validated = $request->validate([
+            'installed' => ['required', 'boolean'],
+        ]);
+
+        $member->update(['installed' => $validated['installed']]);
 
         return back();
     }

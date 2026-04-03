@@ -1,14 +1,9 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, nextTick, onMounted, ref } from 'vue';
+import EditableTextCell from '@/Components/EditableTextCell.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
-import {
-    ChevronRightIcon,
-    MagnifyingGlassIcon,
-    PlusIcon,
-    PencilSquareIcon,
-    TrashIcon,
-} from '@heroicons/vue/24/outline';
+import { ChevronRightIcon, MagnifyingGlassIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     leaders: {
@@ -22,22 +17,10 @@ const props = defineProps({
 });
 
 const showAddForm = ref(false);
-const showEditForm = ref(false);
-const editingLeaderId = ref(null);
+const rowHighlightLeaderId = ref(null);
+const leaderInlineOpen = ref({ key: '', nonce: 0 });
 
 const form = useForm({
-    first_name: '',
-    last_name: '',
-    address: '',
-    postal_code: '',
-    city: '',
-    birthday: '',
-    phone_number: '',
-    email: '',
-    bijzonderheden: '',
-});
-
-const editForm = useForm({
     first_name: '',
     last_name: '',
     address: '',
@@ -91,40 +74,30 @@ const filteredLeaders = computed(() =>
 function toggleAddForm() {
     showAddForm.value = !showAddForm.value;
     if (showAddForm.value) {
-        showEditForm.value = false;
+        rowHighlightLeaderId.value = null;
         form.reset();
         form.clearErrors();
     }
 }
 
-function openEditForm(leader) {
+function requestLeaderInlineEdit(leader, field = 'first_name') {
     if (!leader) return;
-    editingLeaderId.value = leader.id;
-    editForm.first_name = leader.first_name ?? '';
-    editForm.last_name = leader.last_name ?? '';
-    editForm.address = leader.address ?? '';
-    editForm.postal_code = leader.postal_code ?? '';
-    editForm.city = leader.city ?? '';
-    editForm.birthday = leader.birthday ? String(leader.birthday).slice(0, 10) : '';
-    editForm.phone_number = leader.phone_number ?? '';
-    editForm.email = leader.email ?? '';
-    editForm.bijzonderheden = leader.bijzonderheden ?? '';
-    editForm.clearErrors();
-    showEditForm.value = true;
     showAddForm.value = false;
-}
-
-function closeEditForm() {
-    showEditForm.value = false;
-    editingLeaderId.value = null;
-    editForm.reset();
+    rowHighlightLeaderId.value = leader.id;
+    leaderInlineOpen.value = {
+        key: `${leader.id}:${field}`,
+        nonce: leaderInlineOpen.value.nonce + 1,
+    };
+    nextTick(() => {
+        document.getElementById(`leader-row-${leader.id}`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    });
 }
 
 onMounted(() => {
     const id = props.open_edit_leader_id;
     if (!id) return;
     const l = props.leaders?.find((x) => x.id === id);
-    if (l) openEditForm(l);
+    if (l) requestLeaderInlineEdit(l, 'first_name');
 });
 
 function leaderListName(l) {
@@ -152,23 +125,11 @@ function submitAdd() {
     });
 }
 
-function submitEdit() {
-    if (!editingLeaderId.value) return;
-    editForm
-        .transform((d) => normalizeLeaderPayload(d))
-        .put(route('leaders.update', editingLeaderId.value), {
-            preserveScroll: true,
-            onSuccess: () => {
-                closeEditForm();
-            },
-        });
-}
-
 function deleteLeader(leader) {
     if (!leader?.id) return;
     if (!confirm('Deze leiding verwijderen?')) return;
-    if (editingLeaderId.value === leader.id) {
-        closeEditForm();
+    if (rowHighlightLeaderId.value === leader.id) {
+        rowHighlightLeaderId.value = null;
     }
     router.delete(route('leaders.destroy', leader.id), {
         preserveScroll: true,
@@ -184,9 +145,30 @@ function formatBirthday(value) {
     return `${d}-${m}-${y}`;
 }
 
-function dashIfEmpty(value) {
-    if (value == null || String(value).trim() === '') return '–';
-    return value;
+const leaderFieldSaving = ref(null);
+
+function normalizeLeaderQuickPayload(field, raw) {
+    if (field === 'birthday') {
+        const s = String(raw ?? '').trim();
+        return { birthday: s === '' ? null : s };
+    }
+    return { [field]: raw ?? '' };
+}
+
+function patchLeaderField(leader, field, raw) {
+    const payload = normalizeLeaderQuickPayload(field, raw);
+    const k = Object.keys(payload)[0];
+    leaderFieldSaving.value = `${leader.id}:${k}`;
+    router.patch(route('leaders.quick-update', leader.id), payload, {
+        preserveScroll: true,
+        onFinish: () => {
+            leaderFieldSaving.value = null;
+        },
+    });
+}
+
+function isLeaderFieldSaving(leader, field) {
+    return leaderFieldSaving.value === `${leader.id}:${field}`;
 }
 </script>
 
@@ -331,134 +313,6 @@ function dashIfEmpty(value) {
                 </p>
             </form>
 
-            <form
-                v-show="showEditForm"
-                class="surface-brand-top space-y-4 rounded-xl border border-brand-yellow/35 bg-app-panel shadow-sm dark:bg-app-panel-dark/95 p-5"
-                @submit.prevent="submitEdit"
-            >
-                <h3 class="text-base font-semibold text-app-ink dark:text-app-ink-dark">Leiding bewerken</h3>
-                <div class="grid gap-4 sm:grid-cols-[10rem_1fr] sm:items-start">
-                    <label for="edit-leader-first-name" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Voornaam
-                    </label>
-                    <input
-                        id="edit-leader-first-name"
-                        v-model="editForm.first_name"
-                        type="text"
-                        autocomplete="given-name"
-                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                    />
-
-                    <label for="edit-leader-last-name" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Achternaam
-                    </label>
-                    <input
-                        id="edit-leader-last-name"
-                        v-model="editForm.last_name"
-                        type="text"
-                        autocomplete="family-name"
-                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                    />
-
-                    <label for="edit-leader-address" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Adres
-                    </label>
-                    <input
-                        id="edit-leader-address"
-                        v-model="editForm.address"
-                        type="text"
-                        autocomplete="street-address"
-                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                    />
-
-                    <label for="edit-leader-postal" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Postcode
-                    </label>
-                    <input
-                        id="edit-leader-postal"
-                        v-model="editForm.postal_code"
-                        type="text"
-                        autocomplete="postal-code"
-                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                    />
-
-                    <label for="edit-leader-city" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Plaats
-                    </label>
-                    <input
-                        id="edit-leader-city"
-                        v-model="editForm.city"
-                        type="text"
-                        autocomplete="address-level2"
-                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                    />
-
-                    <label for="edit-leader-birthday" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Geboortedatum
-                    </label>
-                    <input
-                        id="edit-leader-birthday"
-                        v-model="editForm.birthday"
-                        type="date"
-                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                    />
-
-                    <label for="edit-leader-phone" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Telefoonnummer
-                    </label>
-                    <input
-                        id="edit-leader-phone"
-                        v-model="editForm.phone_number"
-                        type="text"
-                        autocomplete="tel"
-                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                    />
-
-                    <label for="edit-leader-email" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        E-mail
-                    </label>
-                    <input
-                        id="edit-leader-email"
-                        v-model="editForm.email"
-                        type="email"
-                        autocomplete="email"
-                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                    />
-
-                    <label for="edit-leader-bijz" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Bijzonderheden
-                    </label>
-                    <textarea
-                        id="edit-leader-bijz"
-                        v-model="editForm.bijzonderheden"
-                        rows="3"
-                        placeholder="Allergiën, medicatie, andere aandachtspunten…"
-                        class="min-h-[5rem] min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
-                    />
-
-                    <span class="hidden sm:block" aria-hidden="true" />
-                    <div class="flex flex-wrap gap-2">
-                        <button
-                            type="submit"
-                            class="rounded bg-brand-red px-5 py-2 text-sm font-medium text-white hover:bg-brand-red-dark disabled:opacity-50"
-                            :disabled="editForm.processing"
-                        >
-                            Bijwerken
-                        </button>
-                        <button
-                            type="button"
-                            class="rounded border border-brand-blue-light/50 px-5 py-2 text-sm font-medium text-app-ink dark:text-app-ink-dark transition hover:bg-brand-blue/20"
-                            @click="closeEditForm"
-                        >
-                            Annuleren
-                        </button>
-                    </div>
-                </div>
-                <p v-for="err in Object.values(editForm.errors)" :key="`e-${String(err)}`" class="text-sm text-red-400">
-                    {{ err }}
-                </p>
-            </form>
-
             <div class="surface-brand-top rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-4">
                 <div
                     class="mb-3 flex w-full flex-col gap-3 border-b border-brand-blue/35 pb-2 sm:flex-row sm:items-center sm:justify-between"
@@ -488,13 +342,15 @@ function dashIfEmpty(value) {
                 </div>
                 <div v-else class="space-y-2 md:space-y-0">
                     <div class="md:hidden space-y-2">
-                        <Link
+                        <div
                             v-for="leader in filteredLeaders"
                             :key="`l-mob-${leader.id}`"
-                            :href="route('leaders.show', leader.id)"
-                            class="surface-brand-top flex flex-col gap-1.5 rounded-xl border border-brand-blue/30 bg-app-panel px-4 py-3 text-app-ink shadow-sm dark:bg-app-panel-dark/95 dark:text-app-ink-dark active:bg-brand-blue/15"
+                            class="surface-brand-top flex flex-col rounded-xl border border-brand-blue/30 bg-app-panel px-4 py-3 text-app-ink shadow-sm dark:bg-app-panel-dark/95 dark:text-app-ink-dark"
                         >
-                            <div class="flex items-start justify-between gap-3">
+                            <Link
+                                :href="route('leaders.show', leader.id)"
+                                class="flex items-start justify-between gap-3 rounded-lg active:bg-brand-blue/15"
+                            >
                                 <span class="flex min-w-0 items-center gap-2">
                                     <span
                                         v-if="leaderHasBijzonderheden(leader)"
@@ -504,14 +360,22 @@ function dashIfEmpty(value) {
                                     <span class="min-w-0 font-medium leading-snug">{{ leaderListName(leader) }}</span>
                                 </span>
                                 <ChevronRightIcon class="mt-0.5 h-5 w-5 shrink-0 text-app-muted dark:text-app-muted-dark" aria-hidden="true" />
-                            </div>
-                            <p
-                                v-if="leaderHasBijzonderheden(leader)"
-                                class="line-clamp-3 pl-4 text-sm leading-snug text-app-muted dark:text-app-muted-dark"
+                            </Link>
+                            <div
+                                class="mt-2 border-t border-brand-blue/25 pt-2 text-sm dark:border-brand-blue/35"
+                                @click.stop
                             >
-                                {{ leader.bijzonderheden }}
-                            </p>
-                        </Link>
+                                <EditableTextCell
+                                    :text="leader.bijzonderheden || ''"
+                                    multiline
+                                    :cell-key="`${leader.id}:bijzonderheden`"
+                                    :open-request-key="leaderInlineOpen.key"
+                                    :open-request-nonce="leaderInlineOpen.nonce"
+                                    :saving="isLeaderFieldSaving(leader, 'bijzonderheden')"
+                                    @save="(v) => patchLeaderField(leader, 'bijzonderheden', v)"
+                                />
+                            </div>
+                        </div>
                     </div>
                     <div class="surface-brand-top-lg hidden overflow-x-auto rounded-lg border border-brand-blue/25 md:block">
                         <table class="w-full min-w-[64rem] border-collapse text-left text-sm text-app-ink dark:text-app-ink-dark">
@@ -534,60 +398,116 @@ function dashIfEmpty(value) {
                         <tbody class="divide-y divide-brand-blue/25">
                             <tr
                                 v-for="leader in filteredLeaders"
+                                :id="`leader-row-${leader.id}`"
                                 :key="leader.id"
                                 class="bg-brand-blue/5 transition-colors hover:bg-brand-blue/12 dark:bg-app-panel-dark/50 dark:hover:bg-brand-blue/15"
-                                :class="{ '!bg-brand-blue/15 dark:!bg-app-canvas-dark/90': editingLeaderId === leader.id }"
+                                :class="{ '!bg-brand-blue/15 dark:!bg-app-canvas-dark/90': rowHighlightLeaderId === leader.id }"
                             >
                                 <td class="max-w-[10rem] px-3 py-2.5 align-top">
-                                    <span class="line-clamp-2 break-words">{{ dashIfEmpty(leader.first_name) }}</span>
+                                    <EditableTextCell
+                                        :text="leader.first_name || ''"
+                                        :multiline="false"
+                                        :cell-key="`${leader.id}:first_name`"
+                                        :open-request-key="leaderInlineOpen.key"
+                                        :open-request-nonce="leaderInlineOpen.nonce"
+                                        :saving="isLeaderFieldSaving(leader, 'first_name')"
+                                        @save="(v) => patchLeaderField(leader, 'first_name', v)"
+                                    />
                                 </td>
                                 <td class="max-w-[10rem] px-3 py-2.5 align-top">
-                                    <span class="line-clamp-2 break-words">{{ dashIfEmpty(leader.last_name) }}</span>
+                                    <EditableTextCell
+                                        :text="leader.last_name || ''"
+                                        :multiline="false"
+                                        :cell-key="`${leader.id}:last_name`"
+                                        :open-request-key="leaderInlineOpen.key"
+                                        :open-request-nonce="leaderInlineOpen.nonce"
+                                        :saving="isLeaderFieldSaving(leader, 'last_name')"
+                                        @save="(v) => patchLeaderField(leader, 'last_name', v)"
+                                    />
                                 </td>
                                 <td class="max-w-[16rem] px-3 py-2.5 align-top break-words">
-                                    <span v-if="leader.bijzonderheden" class="line-clamp-2 text-app-ink dark:text-app-ink-dark">{{
-                                        leader.bijzonderheden
-                                    }}</span>
-                                    <span v-else class="text-app-muted dark:text-app-muted-dark">–</span>
+                                    <EditableTextCell
+                                        :text="leader.bijzonderheden || ''"
+                                        multiline
+                                        :cell-key="`${leader.id}:bijzonderheden`"
+                                        :open-request-key="leaderInlineOpen.key"
+                                        :open-request-nonce="leaderInlineOpen.nonce"
+                                        :saving="isLeaderFieldSaving(leader, 'bijzonderheden')"
+                                        @save="(v) => patchLeaderField(leader, 'bijzonderheden', v)"
+                                    />
                                 </td>
                                 <td class="px-3 py-2.5 align-top">
-                                    <span class="line-clamp-3 break-words text-app-ink dark:text-app-ink-dark">{{
-                                        dashIfEmpty(leader.address)
-                                    }}</span>
+                                    <EditableTextCell
+                                        :text="leader.address || ''"
+                                        multiline
+                                        :cell-key="`${leader.id}:address`"
+                                        :open-request-key="leaderInlineOpen.key"
+                                        :open-request-nonce="leaderInlineOpen.nonce"
+                                        :saving="isLeaderFieldSaving(leader, 'address')"
+                                        @save="(v) => patchLeaderField(leader, 'address', v)"
+                                    />
                                 </td>
                                 <td class="whitespace-nowrap px-3 py-2.5 align-top text-app-ink dark:text-app-ink-dark">
-                                    {{ dashIfEmpty(leader.postal_code) }}
+                                    <EditableTextCell
+                                        :text="leader.postal_code || ''"
+                                        :multiline="false"
+                                        :cell-key="`${leader.id}:postal_code`"
+                                        :open-request-key="leaderInlineOpen.key"
+                                        :open-request-nonce="leaderInlineOpen.nonce"
+                                        :saving="isLeaderFieldSaving(leader, 'postal_code')"
+                                        @save="(v) => patchLeaderField(leader, 'postal_code', v)"
+                                    />
                                 </td>
                                 <td class="max-w-[9rem] px-3 py-2.5 align-top">
-                                    <span class="break-words text-app-ink dark:text-app-ink-dark">{{ dashIfEmpty(leader.city) }}</span>
+                                    <EditableTextCell
+                                        :text="leader.city || ''"
+                                        :multiline="false"
+                                        :cell-key="`${leader.id}:city`"
+                                        :open-request-key="leaderInlineOpen.key"
+                                        :open-request-nonce="leaderInlineOpen.nonce"
+                                        :saving="isLeaderFieldSaving(leader, 'city')"
+                                        @save="(v) => patchLeaderField(leader, 'city', v)"
+                                    />
                                 </td>
                                 <td class="whitespace-nowrap px-3 py-2.5 align-top tabular-nums text-app-ink dark:text-app-ink-dark">
-                                    {{ formatBirthday(leader.birthday) }}
+                                    <EditableTextCell
+                                        :text="leader.birthday ? String(leader.birthday).slice(0, 10) : ''"
+                                        input-kind="date"
+                                        :multiline="false"
+                                        :cell-key="`${leader.id}:birthday`"
+                                        :open-request-key="leaderInlineOpen.key"
+                                        :open-request-nonce="leaderInlineOpen.nonce"
+                                        :saving="isLeaderFieldSaving(leader, 'birthday')"
+                                        @save="(v) => patchLeaderField(leader, 'birthday', v)"
+                                    />
                                 </td>
                                 <td class="whitespace-nowrap px-3 py-2.5 align-top tabular-nums text-app-ink dark:text-app-ink-dark">
-                                    {{ dashIfEmpty(leader.phone_number) }}
+                                    <EditableTextCell
+                                        :text="leader.phone_number || ''"
+                                        :multiline="false"
+                                        :cell-key="`${leader.id}:phone_number`"
+                                        :open-request-key="leaderInlineOpen.key"
+                                        :open-request-nonce="leaderInlineOpen.nonce"
+                                        :saving="isLeaderFieldSaving(leader, 'phone_number')"
+                                        @save="(v) => patchLeaderField(leader, 'phone_number', v)"
+                                    />
                                 </td>
                                 <td class="max-w-[14rem] px-3 py-2.5 align-top break-all">
-                                    <a
-                                        v-if="leader.email"
-                                        :href="`mailto:${leader.email}`"
-                                        class="text-brand-blue-light underline decoration-brand-blue-light/70 underline-offset-2 hover:text-brand-blue-dark dark:text-brand-blue-light dark:hover:text-app-ink-dark"
-                                    >
-                                        {{ leader.email }}
-                                    </a>
-                                    <span v-else class="text-app-muted dark:text-app-muted-dark">–</span>
+                                    <EditableTextCell
+                                        :text="leader.email || ''"
+                                        :multiline="false"
+                                        :cell-key="`${leader.id}:email`"
+                                        :open-request-key="leaderInlineOpen.key"
+                                        :open-request-nonce="leaderInlineOpen.nonce"
+                                        :saving="isLeaderFieldSaving(leader, 'email')"
+                                        @save="(v) => patchLeaderField(leader, 'email', v)"
+                                    />
                                 </td>
                                 <td class="px-3 py-2.5 align-top">
-                                    <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end lg:justify-start">
-                                        <button type="button" class="btn-action-edit" @click="openEditForm(leader)">
-                                            <PencilSquareIcon class="h-4 w-4 shrink-0" />
-                                            Bewerken
-                                        </button>
-                                        <button type="button" class="btn-action-delete" @click="deleteLeader(leader)">
-                                            <TrashIcon class="h-4 w-4 shrink-0" />
-                                            Verwijderen
-                                        </button>
-                                    </div>
+                                    <button type="button" class="btn-action-delete" @click="deleteLeader(leader)">
+                                        <TrashIcon class="h-4 w-4 shrink-0" />
+                                        Verwijderen
+                                    </button>
                                 </td>
                             </tr>
                         </tbody>

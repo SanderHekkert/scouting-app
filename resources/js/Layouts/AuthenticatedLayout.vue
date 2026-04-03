@@ -26,7 +26,6 @@ const links = [
     { label: 'Agenda', route: 'events.index' },
     { label: 'Jaar Thema', route: 'jaar-thema' },
     { label: 'Dolfijnen', route: 'members.index' },
-    { label: 'Bijzonderheden', route: 'members.bijzonderheden' },
     { label: 'Leiding', route: 'leaders.index' },
     { label: 'Tipper- & Topper opkomst', route: 'tipper-topper-opkomst.index' },
     { label: 'Vinindeling', route: 'pods.index' },
@@ -36,8 +35,14 @@ const links = [
 
 const mobileMenuOpen = ref(false);
 
+function navItemIsActive(item) {
+    if (route().current(item.route)) return true;
+    if (item.route === 'members.index' && route().current('members.bijzonderheden')) return true;
+    return false;
+}
+
 const activeMobileLabel = computed(() => {
-    const active = links.find((item) => route().current(item.route));
+    const active = links.find((item) => navItemIsActive(item));
     if (active) return active.label;
     if (route().current('profile.edit')) return 'Profiel';
     return 'Menu';
@@ -77,7 +82,7 @@ function closeMobileMenu() {
                             :key="item.route"
                             :href="route(item.route)"
                             class="block shrink-0 rounded-lg px-3 py-2 text-sm font-medium transition"
-                            :class="route().current(item.route) ? 'bg-brand-red/10 text-brand-red' : 'text-slate-800 hover:bg-brand-blue/10'"
+                            :class="navItemIsActive(item) ? 'bg-brand-red/10 text-brand-red' : 'text-slate-800 hover:bg-brand-blue/10'"
                         >
                             {{ item.label }}
                         </Link>
@@ -141,8 +146,8 @@ function closeMobileMenu() {
                                     :key="`mobile-${item.route}`"
                                     :href="route(item.route)"
                                     class="rounded-lg px-3 py-2.5 text-xs font-medium transition"
-                                    :class="route().current(item.route) ? 'bg-brand-red/10 text-brand-red' : 'text-slate-800 hover:bg-brand-blue/10'"
-                                    @click="closeMobileMenu"
+                            :class="navItemIsActive(item) ? 'bg-brand-red/10 text-brand-red' : 'text-slate-800 hover:bg-brand-blue/10'"
+                            @click="closeMobileMenu"
                                 >
                                     {{ item.label }}
                                 </Link>
