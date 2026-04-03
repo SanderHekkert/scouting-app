@@ -64,7 +64,7 @@ const submit = () => {
                 <span
                     class="text-center text-xs font-medium uppercase tracking-[0.2em] text-brand-yellow-soft/90"
                 >
-                    Fridtjof Nansen 12
+                    Fridtjof Nansen Groep 12
                 </span>
             </Link>
 

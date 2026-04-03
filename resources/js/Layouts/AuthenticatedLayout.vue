@@ -58,7 +58,7 @@ function closeMobileMenu() {
                     <ApplicationLogo class="max-h-14 max-w-[13rem]" />
                 </Link>
                 <p class="text-lg font-bold leading-tight text-brand-blue-dark dark:text-brand-yellow-soft">
-                    Fridtjof Nansen 12
+                    Fridtjof Nansen Groep 12
                 </p>
                 <p class="mt-1 text-xs text-app-muted dark:text-app-muted-dark">Dolfijnen Applicatie</p>
 
