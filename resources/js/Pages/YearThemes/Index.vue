@@ -11,10 +11,10 @@ defineProps({
 </script>
 
 <template>
-    <Head title="JaarThema" />
+    <Head title="Jaar Thema" />
     <AuthenticatedLayout>
         <template #header>
-            <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">JaarThema</h2>
+            <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Jaar Thema</h2>
         </template>
 
         <div class="surface-brand-top rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-4 text-app-ink dark:text-app-ink-dark">
