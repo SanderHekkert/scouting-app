@@ -18,7 +18,7 @@ const rowHighlightMemberId = ref(null);
 const memberInlineOpen = ref({ key: '', nonce: 0 });
 
 const form = useForm({
-    installed: true,
+    installed: false,
     first_name: '',
     last_name: '',
     birthday: '',
@@ -99,8 +99,6 @@ function toggleAddForm() {
     if (showAddForm.value) {
         rowHighlightMemberId.value = null;
         form.reset();
-        form.installed = true;
-        form.active = true;
         form.clearErrors();
     }
 }
@@ -141,8 +139,6 @@ function submitAdd() {
             preserveScroll: true,
             onSuccess: () => {
                 form.reset();
-                form.installed = true;
-                form.active = true;
                 showAddForm.value = false;
             },
         });
@@ -276,13 +272,14 @@ function isMemberFieldSaving(member, field) {
                     />
 
                     <label for="add-member-last-name" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Achternaam
+                        Achternaam <span class="font-normal text-app-muted dark:text-app-muted-dark">(optioneel)</span>
                     </label>
                     <input
                         id="add-member-last-name"
                         v-model="form.last_name"
                         type="text"
                         autocomplete="family-name"
+                        placeholder="Optioneel"
                         class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
                     />
 

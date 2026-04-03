@@ -51,7 +51,7 @@ class MemberController extends Controller
         $data = $request->validate([
             'installed' => ['nullable', 'boolean'],
             'first_name' => ['required', 'string', 'max:255'],
-            'last_name' => ['required', 'string', 'max:255'],
+            'last_name' => ['nullable', 'string', 'max:255'],
             'birthday' => ['nullable', 'date'],
             'age' => ['nullable', 'integer', 'min:0', 'max:99'],
             'address' => ['nullable', 'string', 'max:255'],
@@ -63,6 +63,7 @@ class MemberController extends Controller
 
         $data['installed'] = $request->boolean('installed');
         $data['active'] = $request->boolean('active', true);
+        $data['last_name'] = trim((string) ($data['last_name'] ?? ''));
 
         Member::create($data);
 
@@ -76,7 +77,7 @@ class MemberController extends Controller
     {
         $data = $request->validate([
             'first_name' => ['sometimes', 'required', 'string', 'max:255'],
-            'last_name' => ['sometimes', 'required', 'string', 'max:255'],
+            'last_name' => ['sometimes', 'nullable', 'string', 'max:255'],
             'birthday' => ['sometimes', 'nullable', 'date'],
             'address' => ['sometimes', 'nullable', 'string', 'max:255'],
             'phone_mother' => ['sometimes', 'nullable', 'string', 'max:255'],
@@ -84,6 +85,10 @@ class MemberController extends Controller
             'bijzonderheden' => ['sometimes', 'nullable', 'string', 'max:65535'],
             'age' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:99'],
         ]);
+
+        if (array_key_exists('last_name', $data)) {
+            $data['last_name'] = trim((string) ($data['last_name'] ?? ''));
+        }
 
         $member->update($data);
 
@@ -98,7 +103,7 @@ class MemberController extends Controller
         $data = $request->validate([
             'installed' => ['nullable', 'boolean'],
             'first_name' => ['required', 'string', 'max:255'],
-            'last_name' => ['required', 'string', 'max:255'],
+            'last_name' => ['nullable', 'string', 'max:255'],
             'birthday' => ['nullable', 'date'],
             'age' => ['nullable', 'integer', 'min:0', 'max:99'],
             'address' => ['nullable', 'string', 'max:255'],
@@ -110,6 +115,7 @@ class MemberController extends Controller
 
         $data['installed'] = $request->boolean('installed');
         $data['active'] = $request->boolean('active', true);
+        $data['last_name'] = trim((string) ($data['last_name'] ?? ''));
 
         $member->update($data);
 
