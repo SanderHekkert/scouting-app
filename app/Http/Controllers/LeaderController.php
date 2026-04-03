@@ -8,13 +8,23 @@ use Inertia\Inertia;
 
 class LeaderController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $editId = $request->integer('edit');
+
         return Inertia::render('Leaders/Index', [
             'leaders' => Leader::query()
                 ->orderBy('first_name')
                 ->orderBy('last_name')
                 ->get(),
+            'open_edit_leader_id' => $editId > 0 ? $editId : null,
+        ]);
+    }
+
+    public function show(Leader $leader)
+    {
+        return Inertia::render('Leaders/Show', [
+            'leader' => $leader,
         ]);
     }
 

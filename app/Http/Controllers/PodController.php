@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Member;
 use App\Models\Pod;
 use App\Models\PodMembership;
-use App\Models\Member;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;

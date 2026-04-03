@@ -11,8 +11,10 @@ class MemberController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
+        $editId = $request->integer('edit');
+
         return Inertia::render('Members/Index', [
             'members' => Member::query()
                 ->orderByRaw('CASE WHEN age IS NULL THEN 1 ELSE 0 END')
@@ -20,6 +22,14 @@ class MemberController extends Controller
                 ->orderBy('first_name')
                 ->orderBy('last_name')
                 ->get(),
+            'open_edit_member_id' => $editId > 0 ? $editId : null,
+        ]);
+    }
+
+    public function show(Member $member)
+    {
+        return Inertia::render('Members/Show', [
+            'member' => $member,
         ]);
     }
 

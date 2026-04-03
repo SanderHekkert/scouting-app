@@ -54,7 +54,7 @@ class TaskItemController extends Controller
         ]);
 
         $data['owner'] = null;
-        if (!empty($data['owner_user_id'])) {
+        if (! empty($data['owner_user_id'])) {
             $data['owner'] = User::query()->whereKey($data['owner_user_id'])->value('name');
         }
 
@@ -76,7 +76,7 @@ class TaskItemController extends Controller
         ]);
 
         $data['owner'] = null;
-        if (!empty($data['owner_user_id'])) {
+        if (! empty($data['owner_user_id'])) {
             $data['owner'] = User::query()->whereKey($data['owner_user_id'])->value('name');
         }
 

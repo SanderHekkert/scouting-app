@@ -1,11 +1,15 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, useForm, router } from '@inertiajs/vue3';
-import { PlusIcon, PencilSquareIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import { Head, Link, useForm, router } from '@inertiajs/vue3';
+import { ChevronRightIcon, PlusIcon, PencilSquareIcon, TrashIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     members: Array,
+    open_edit_member_id: {
+        type: Number,
+        default: null,
+    },
 });
 
 const showAddForm = ref(false);
@@ -115,6 +119,13 @@ function closeEditForm() {
     editForm.installed = true;
     editForm.active = true;
 }
+
+onMounted(() => {
+    const id = props.open_edit_member_id;
+    if (!id) return;
+    const m = props.members?.find((x) => x.id === id);
+    if (m) openEditForm(m);
+});
 
 function normalizeMemberFields(data) {
     return {
@@ -456,8 +467,20 @@ function yesNoInstalled(value) {
                 <div v-else-if="!filteredMembers.length" class="py-6 text-center text-sm text-gray-500">
                     Geen resultaten voor deze zoekopdracht.
                 </div>
-                <div v-else class="overflow-x-auto">
-                    <table class="w-full min-w-[72rem] table-fixed text-sm text-white">
+                <div v-else class="space-y-2 md:space-y-0">
+                    <div class="md:hidden space-y-2">
+                        <Link
+                            v-for="member in filteredMembers"
+                            :key="`m-mob-${member.id}`"
+                            :href="route('members.show', member.id)"
+                            class="flex items-center justify-between gap-3 rounded-xl border border-gray-600 bg-gray-800/90 px-4 py-3 text-white active:bg-gray-700"
+                        >
+                            <span class="min-w-0 truncate font-medium">{{ memberDisplayName(member) }}</span>
+                            <ChevronRightIcon class="h-5 w-5 shrink-0 text-gray-500" aria-hidden="true" />
+                        </Link>
+                    </div>
+                    <div class="hidden overflow-x-auto md:block">
+                        <table class="w-full min-w-[72rem] table-fixed text-sm text-white">
                         <colgroup>
                             <col class="w-[8%]" />
                             <col class="w-[15%]" />
@@ -526,10 +549,11 @@ function yesNoInstalled(value) {
                             </tr>
                         </tbody>
                     </table>
+                    </div>
                 </div>
             </div>
 
-            <div class="rounded-xl bg-gray-800 p-5 shadow-sm">
+            <div class="hidden rounded-xl bg-gray-800 p-5 shadow-sm md:block">
                 <h3 class="border-b border-gray-600 pb-2 text-lg font-semibold text-indigo-200">Bijzonderheden</h3>
                 <p class="mt-2 text-xs text-gray-400">
                     Allergiën, medicatie, dieet en andere aandachtspunten. Bewerken via het contactformulier hierboven.

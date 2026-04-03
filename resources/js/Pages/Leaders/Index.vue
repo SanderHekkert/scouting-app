@@ -1,8 +1,9 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, useForm, router } from '@inertiajs/vue3';
+import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import {
+    ChevronRightIcon,
     MagnifyingGlassIcon,
     PlusIcon,
     PencilSquareIcon,
@@ -13,6 +14,10 @@ const props = defineProps({
     leaders: {
         type: Array,
         default: () => [],
+    },
+    open_edit_leader_id: {
+        type: Number,
+        default: null,
     },
 });
 
@@ -113,6 +118,17 @@ function closeEditForm() {
     showEditForm.value = false;
     editingLeaderId.value = null;
     editForm.reset();
+}
+
+onMounted(() => {
+    const id = props.open_edit_leader_id;
+    if (!id) return;
+    const l = props.leaders?.find((x) => x.id === id);
+    if (l) openEditForm(l);
+});
+
+function leaderListName(l) {
+    return [l.first_name, l.last_name].filter(Boolean).join(' ').trim() || '–';
 }
 
 function normalizeLeaderPayload(data) {
@@ -466,8 +482,20 @@ function dashIfEmpty(value) {
                 <div v-else-if="!filteredLeaders.length" class="py-6 text-center text-sm text-gray-500">
                     Geen resultaten voor deze zoekopdracht.
                 </div>
-                <div v-else class="overflow-x-auto rounded-lg border border-gray-700/80">
-                    <table class="w-full min-w-[64rem] border-collapse text-left text-sm text-white">
+                <div v-else class="space-y-2 md:space-y-0">
+                    <div class="md:hidden space-y-2">
+                        <Link
+                            v-for="leader in filteredLeaders"
+                            :key="`l-mob-${leader.id}`"
+                            :href="route('leaders.show', leader.id)"
+                            class="flex items-center justify-between gap-3 rounded-xl border border-gray-600 bg-gray-800/90 px-4 py-3 text-white active:bg-gray-700"
+                        >
+                            <span class="min-w-0 truncate font-medium">{{ leaderListName(leader) }}</span>
+                            <ChevronRightIcon class="h-5 w-5 shrink-0 text-gray-500" aria-hidden="true" />
+                        </Link>
+                    </div>
+                    <div class="hidden overflow-x-auto rounded-lg border border-gray-700/80 md:block">
+                        <table class="w-full min-w-[64rem] border-collapse text-left text-sm text-white">
                         <thead class="border-b border-gray-600 bg-gray-900/60">
                             <tr class="text-xs font-semibold uppercase tracking-wide text-gray-400">
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Voornaam</th>
@@ -553,6 +581,7 @@ function dashIfEmpty(value) {
                             </tr>
                         </tbody>
                     </table>
+                    </div>
                 </div>
             </div>
         </div>

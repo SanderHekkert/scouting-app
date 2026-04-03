@@ -152,7 +152,6 @@ function formatIsoToNl(iso) {
                             <CalendarDaysIcon class="h-5 w-5 text-indigo-300" />
                             <h3 class="text-base font-semibold text-indigo-100">Komende opkomsten</h3>
                         </div>
-                        <span class="text-xs text-gray-500"> max. 5 </span>
                     </div>
                     <ul
                         v-if="upcomingEvents?.length"
@@ -199,7 +198,6 @@ function formatIsoToNl(iso) {
                             <CakeIcon class="h-5 w-5 text-pink-300" />
                             <h3 class="text-base font-semibold text-pink-100">Komende verjaardagen</h3>
                         </div>
-                        <span class="text-xs text-gray-500"> incl. leiding · max. 5 </span>
                     </div>
                     <ul
                         v-if="upcomingBirthdays?.length"

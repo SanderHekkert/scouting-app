@@ -20,6 +20,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/tipper-topper-opkomst', TipperTopperOpkomstController::class)->name('tipper-topper-opkomst.index');
     Route::resource('events', EventController::class)->except(['create', 'show', 'edit']);
     Route::patch('/members/{member}/tipper-topper-opkomst', [MemberController::class, 'updateTipperTopperOpkomst'])->name('members.tipper-topper-opkomst');
+    Route::get('/members/{member}', [MemberController::class, 'show'])->name('members.show');
+    Route::get('/leaders/{leader}', [LeaderController::class, 'show'])->name('leaders.show');
     Route::resource('members', MemberController::class)->except(['create', 'show', 'edit']);
     Route::resource('leaders', LeaderController::class)->except(['create', 'show', 'edit']);
     Route::resource('pods', PodController::class)->except(['create', 'show', 'edit']);
