@@ -46,7 +46,7 @@ function deleteMember() {
             <div class="flex flex-wrap items-center gap-3">
                 <Link
                     :href="route('members.index')"
-                    class="inline-flex items-center gap-1 text-sm font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
+                    class="inline-flex items-center gap-1 text-sm font-medium text-brand-red hover:text-brand-red-dark dark:text-brand-blue-light dark:hover:text-brand-yellow-soft"
                 >
                     <ChevronLeftIcon class="h-5 w-5" />
                     Terug naar Dolfijnen
@@ -54,61 +54,61 @@ function deleteMember() {
             </div>
         </template>
 
-        <div class="mx-auto max-w-lg space-y-4 text-white">
-            <div class="rounded-xl bg-gray-800 p-5 shadow-sm">
-                <h2 class="border-b border-gray-600 pb-3 text-xl font-semibold text-indigo-200">
+        <div class="mx-auto max-w-lg space-y-4 text-app-ink-dark">
+            <div class="rounded-xl border border-brand-blue/20 bg-app-panel-dark p-5 shadow-sm">
+                <h2 class="border-b border-brand-blue/35 pb-3 text-xl font-semibold text-brand-yellow-soft">
                     {{ memberDisplayName(member) }}
                 </h2>
 
                 <dl class="mt-4 space-y-4">
                     <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-gray-500">Geïnstalleerd</dt>
-                        <dd class="mt-1 text-sm text-gray-100">{{ yesNo(member.installed) }}</dd>
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted-dark">Geïnstalleerd</dt>
+                        <dd class="mt-1 text-sm text-app-ink-dark">{{ yesNo(member.installed) }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-gray-500">Actief</dt>
-                        <dd class="mt-1 text-sm text-gray-100">{{ yesNo(member.active) }}</dd>
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted-dark">Actief</dt>
+                        <dd class="mt-1 text-sm text-app-ink-dark">{{ yesNo(member.active) }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-gray-500">Bijzonderheden</dt>
-                        <dd class="mt-1 whitespace-pre-wrap text-sm text-gray-200">
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted-dark">Bijzonderheden</dt>
+                        <dd class="mt-1 whitespace-pre-wrap text-sm text-app-ink-dark">
                             {{ dashIfEmpty(member.bijzonderheden) }}
                         </dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-gray-500">Voornaam</dt>
-                        <dd class="mt-1 text-sm text-gray-100">{{ dashIfEmpty(member.first_name) }}</dd>
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted-dark">Voornaam</dt>
+                        <dd class="mt-1 text-sm text-app-ink-dark">{{ dashIfEmpty(member.first_name) }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-gray-500">Achternaam</dt>
-                        <dd class="mt-1 text-sm text-gray-100">{{ dashIfEmpty(member.last_name) }}</dd>
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted-dark">Achternaam</dt>
+                        <dd class="mt-1 text-sm text-app-ink-dark">{{ dashIfEmpty(member.last_name) }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-gray-500">Verjaardag</dt>
-                        <dd class="mt-1 text-sm text-gray-100">{{ formatBirthday(member.birthday) }}</dd>
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted-dark">Verjaardag</dt>
+                        <dd class="mt-1 text-sm text-app-ink-dark">{{ formatBirthday(member.birthday) }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-gray-500">Leeftijd</dt>
-                        <dd class="mt-1 text-sm text-gray-100">{{ member.age ?? '–' }}</dd>
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted-dark">Leeftijd</dt>
+                        <dd class="mt-1 text-sm text-app-ink-dark">{{ member.age ?? '–' }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-gray-500">Adres</dt>
-                        <dd class="mt-1 text-sm text-gray-100">{{ dashIfEmpty(member.address) }}</dd>
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted-dark">Adres</dt>
+                        <dd class="mt-1 text-sm text-app-ink-dark">{{ dashIfEmpty(member.address) }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-gray-500">Telefoon moeder</dt>
-                        <dd class="mt-1 text-sm text-gray-100">{{ dashIfEmpty(member.phone_mother) }}</dd>
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted-dark">Telefoon moeder</dt>
+                        <dd class="mt-1 text-sm text-app-ink-dark">{{ dashIfEmpty(member.phone_mother) }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-gray-500">Telefoon vader</dt>
-                        <dd class="mt-1 text-sm text-gray-100">{{ dashIfEmpty(member.phone_father) }}</dd>
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted-dark">Telefoon vader</dt>
+                        <dd class="mt-1 text-sm text-app-ink-dark">{{ dashIfEmpty(member.phone_father) }}</dd>
                     </div>
                 </dl>
 
                 <div class="mt-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                     <Link
                         :href="editIndexUrl"
-                        class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-500"
+                        class="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-red px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-red-dark"
                     >
                         <PencilSquareIcon class="h-5 w-5" />
                         Bewerken

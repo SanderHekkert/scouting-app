@@ -2,16 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Global readability override: convert dark/black text to white. */
+/* @apply ondersteunt geen /opacity op custom nested colors (brand.blue); daarom expliciete waarden. */
 @layer base {
-    .text-black,
-    .text-gray-900,
-    .text-gray-800,
-    .text-gray-700,
-    .text-gray-600,
-    .text-zinc-900,
-    .text-zinc-800,
-    .text-zinc-700 {
-        color: #ffffff !important;
+    ::selection {
+        background-color: rgb(0 104 183 / 0.2);
+        color: #071d36;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        ::selection {
+            background-color: rgb(255 242 0 / 0.25);
+            color: #e8f1fb;
+        }
     }
 }

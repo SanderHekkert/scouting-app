@@ -88,7 +88,7 @@ class PodController extends Controller
 
         if ($existingElsewhere) {
             throw ValidationException::withMessages([
-                'member_id' => 'Dit lid zit al in een andere vin.',
+                'member_id' => 'Deze Dolfijn zit al in een andere vin.',
             ]);
         }
 

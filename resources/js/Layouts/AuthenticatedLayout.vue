@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue';
+import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import { Link, usePage } from '@inertiajs/vue3';
 
 const page = usePage();
@@ -45,15 +46,21 @@ function closeMobileMenu() {
 </script>
 
 <template>
-    <div class="min-h-screen bg-gray-100 dark:bg-gray-900">
+    <div class="min-h-screen bg-app-canvas dark:bg-app-canvas-dark">
         <div class="flex min-h-screen">
             <aside
-                class="sticky top-0 hidden h-screen w-72 shrink-0 flex-col overflow-y-auto border-r border-gray-200 bg-white p-5 shadow-sm md:flex dark:border-gray-700 dark:bg-gray-800"
+                class="sticky top-0 hidden h-screen w-72 shrink-0 flex-col overflow-y-auto border-r border-app-border bg-app-sidebar p-5 shadow-sm md:flex dark:border-app-border-dark dark:bg-app-sidebar-dark"
             >
-                <h1 class="text-lg font-bold text-gray-900 dark:text-gray-100">
+                <Link
+                    :href="route('dashboard')"
+                    class="mb-3 block rounded-lg outline-none transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-brand-blue/80"
+                >
+                    <ApplicationLogo class="max-h-14 max-w-[13rem]" />
+                </Link>
+                <p class="text-lg font-bold leading-tight text-brand-blue-dark dark:text-brand-yellow-soft">
                     Fridtjof Nansen 12
-                </h1>
-                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Dolfijnen Applicatie</p>
+                </p>
+                <p class="mt-1 text-xs text-app-muted dark:text-app-muted-dark">Dolfijnen Applicatie</p>
 
                 <nav class="mt-6 space-y-2">
                     <Link
@@ -61,28 +68,28 @@ function closeMobileMenu() {
                         :key="item.route"
                         :href="route(item.route)"
                         class="block rounded-lg px-3 py-2 text-sm font-medium transition"
-                        :class="route().current(item.route) ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700'"
+                        :class="route().current(item.route) ? 'bg-brand-red/10 text-brand-red dark:bg-brand-blue/25 dark:text-brand-yellow-soft' : 'text-app-ink hover:bg-brand-blue/10 dark:text-app-ink-dark dark:hover:bg-brand-blue/15'"
                     >
                         {{ item.label }}
                     </Link>
                 </nav>
 
-                <div class="mt-10 border-t border-gray-200 pt-4 dark:border-gray-700">
+                <div class="mt-10 border-t border-app-border pt-4 dark:border-app-border-dark">
                     <Link
                         :href="route('profile.edit')"
-                        class="flex items-center gap-3 rounded-lg p-2 transition hover:bg-gray-100 dark:hover:bg-gray-700"
+                        class="flex items-center gap-3 rounded-lg p-2 transition hover:bg-brand-blue/10 dark:hover:bg-brand-blue/15"
                     >
                         <span
-                            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-sm font-semibold text-white"
+                            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-blue text-sm font-semibold text-white"
                             aria-hidden="true"
                         >
                             {{ userInitials }}
                         </span>
                         <span class="min-w-0 flex-1 text-left">
-                            <span class="block truncate text-sm font-medium text-gray-800 dark:text-gray-200">{{
+                            <span class="block truncate text-sm font-medium text-app-ink dark:text-app-ink-dark">{{
                                 $page.props.auth.user.name
                             }}</span>
-                            <span class="block truncate text-xs text-gray-500 dark:text-gray-400">{{
+                            <span class="block truncate text-xs text-app-muted dark:text-app-muted-dark">{{
                                 $page.props.auth.user.email
                             }}</span>
                         </span>
@@ -92,16 +99,27 @@ function closeMobileMenu() {
 
             <main class="flex-1 p-4 md:p-6">
                 <div class="mb-4 md:hidden">
-                    <div class="sticky top-2 z-40 rounded-xl border border-gray-200 bg-white/95 p-2 shadow-sm backdrop-blur dark:border-gray-700 dark:bg-gray-800/95">
-                        <button
-                            type="button"
-                            class="flex w-full items-center justify-between rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm font-medium text-gray-800 transition hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100 dark:hover:bg-gray-700"
-                            :aria-expanded="mobileMenuOpen"
-                            @click="mobileMenuOpen = !mobileMenuOpen"
-                        >
-                            <span class="truncate">{{ activeMobileLabel }}</span>
-                            <span class="text-xs text-gray-500 dark:text-gray-400">{{ mobileMenuOpen ? 'Sluiten' : 'Menu' }}</span>
-                        </button>
+                    <div class="sticky top-2 z-40 rounded-xl border border-app-border bg-app-panel/95 p-2 shadow-sm backdrop-blur dark:border-app-border-dark dark:bg-app-panel-dark/95">
+                        <div class="mb-2 flex items-center gap-2">
+                            <Link
+                                :href="route('dashboard')"
+                                class="shrink-0 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-brand-blue/80"
+                                @click="closeMobileMenu"
+                            >
+                                <ApplicationLogo class="max-h-10 max-w-[6.5rem]" />
+                            </Link>
+                            <button
+                                type="button"
+                                class="flex min-h-[2.75rem] flex-1 items-center justify-between rounded-lg border border-app-border bg-app-sidebar px-3 py-2 text-sm font-medium text-app-ink transition hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/15"
+                                :aria-expanded="mobileMenuOpen"
+                                @click="mobileMenuOpen = !mobileMenuOpen"
+                            >
+                                <span class="min-w-0 truncate">{{ activeMobileLabel }}</span>
+                                <span class="shrink-0 text-xs text-app-muted dark:text-app-muted-dark">
+                                    {{ mobileMenuOpen ? 'Sluiten' : 'Menu' }}
+                                </span>
+                            </button>
+                        </div>
                         <div v-if="mobileMenuOpen" class="pt-2">
                             <nav class="grid grid-cols-2 gap-1">
                                 <Link
@@ -109,7 +127,7 @@ function closeMobileMenu() {
                                     :key="`mobile-${item.route}`"
                                     :href="route(item.route)"
                                     class="rounded-lg px-3 py-2.5 text-xs font-medium transition"
-                                    :class="route().current(item.route) ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700'"
+                                    :class="route().current(item.route) ? 'bg-brand-red/10 text-brand-red dark:bg-brand-blue/25 dark:text-brand-yellow-soft' : 'text-app-ink hover:bg-brand-blue/10 dark:text-app-ink-dark dark:hover:bg-brand-blue/15'"
                                     @click="closeMobileMenu"
                                 >
                                     {{ item.label }}
@@ -117,7 +135,7 @@ function closeMobileMenu() {
                                 <Link
                                     :href="route('profile.edit')"
                                     class="rounded-lg px-3 py-2.5 text-xs font-medium transition"
-                                    :class="route().current('profile.edit') ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700'"
+                                    :class="route().current('profile.edit') ? 'bg-brand-red/10 text-brand-red dark:bg-brand-blue/25 dark:text-brand-yellow-soft' : 'text-app-ink hover:bg-brand-blue/10 dark:text-app-ink-dark dark:hover:bg-brand-blue/15'"
                                     @click="closeMobileMenu"
                                 >
                                     Profiel
@@ -128,7 +146,7 @@ function closeMobileMenu() {
                 </div>
                 <header
                     v-if="$slots.header"
-                    class="mb-6 w-full rounded-xl bg-white p-5 shadow-sm dark:bg-gray-800"
+                    class="mb-6 w-full rounded-xl border border-app-border bg-app-panel p-5 shadow-sm dark:border-app-border-dark dark:bg-app-panel-dark"
                 >
                     <slot name="header" />
                 </header>

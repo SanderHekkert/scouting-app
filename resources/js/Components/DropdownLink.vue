@@ -12,7 +12,7 @@ defineProps({
 <template>
     <Link
         :href="href"
-        class="block w-full px-4 py-2 text-start text-sm leading-5 text-gray-700 transition duration-150 ease-in-out hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:text-gray-300 dark:hover:bg-gray-800 dark:focus:bg-gray-800"
+        class="block w-full px-4 py-2 text-start text-sm leading-5 text-app-ink transition duration-150 ease-in-out hover:bg-brand-blue/10 focus:bg-brand-blue/10 focus:outline-none dark:text-app-ink-dark dark:hover:bg-brand-blue/20 dark:focus:bg-brand-blue/20"
     >
         <slot />
     </Link>

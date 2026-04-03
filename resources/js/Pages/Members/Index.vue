@@ -202,11 +202,11 @@ function yesNoInstalled(value) {
     <AuthenticatedLayout>
         <template #header>
             <div class="flex w-full flex-wrap items-center justify-between gap-3">
-                <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Dolfijnen</h2>
+                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Dolfijnen</h2>
                 <div class="flex flex-wrap items-center justify-end gap-2 sm:ms-auto">
                     <button
                         type="button"
-                        class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-gray-100 px-3 py-2 text-sm font-medium text-gray-900 hover:bg-gray-200 dark:border-gray-600 dark:bg-gray-900 dark:text-white dark:hover:bg-gray-700"
+                        class="inline-flex items-center gap-2 rounded-lg border border-app-border bg-app-panel px-3 py-2 text-sm font-medium text-app-ink shadow-sm transition hover:border-brand-blue/40 hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:border-brand-blue/45 dark:hover:bg-brand-blue/15"
                         @click="toggleAddForm"
                     >
                         <PlusIcon class="h-5 w-5" />
@@ -215,15 +215,15 @@ function yesNoInstalled(value) {
                 </div>
             </div>
         </template>
-        <div class="space-y-4 text-white">
+        <div class="space-y-4 text-app-ink-dark">
             <form
                 v-show="showAddForm"
-                class="space-y-4 rounded-xl bg-gray-800 p-5 shadow-sm"
+                class="space-y-4 rounded-xl border border-brand-blue/20 bg-app-panel-dark p-5 shadow-sm"
                 @submit.prevent="submitAdd"
             >
-                <h3 class="text-base font-semibold text-white">Nieuw contact</h3>
+                <h3 class="text-base font-semibold text-brand-yellow-soft">Nieuw contact</h3>
                 <div class="grid gap-4 sm:grid-cols-[10rem_1fr] sm:items-start">
-                    <label for="add-member-first-name" class="text-sm font-semibold tracking-wide text-gray-300 sm:pt-2.5">
+                    <label for="add-member-first-name" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
                         Voornaam
                     </label>
                     <input
@@ -231,10 +231,10 @@ function yesNoInstalled(value) {
                         v-model="form.first_name"
                         type="text"
                         autocomplete="given-name"
-                        class="min-w-0 rounded border border-gray-600 bg-gray-900 px-3 py-2 text-white placeholder:text-gray-500"
+                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark placeholder:text-app-muted-dark"
                     />
 
-                    <label for="add-member-last-name" class="text-sm font-semibold tracking-wide text-gray-300 sm:pt-2.5">
+                    <label for="add-member-last-name" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
                         Achternaam
                     </label>
                     <input
@@ -242,20 +242,20 @@ function yesNoInstalled(value) {
                         v-model="form.last_name"
                         type="text"
                         autocomplete="family-name"
-                        class="min-w-0 rounded border border-gray-600 bg-gray-900 px-3 py-2 text-white placeholder:text-gray-500"
+                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark placeholder:text-app-muted-dark"
                     />
 
-                    <label for="add-member-birthday" class="text-sm font-semibold tracking-wide text-gray-300 sm:pt-2.5">
+                    <label for="add-member-birthday" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
                         Geboortedatum
                     </label>
                     <input
                         id="add-member-birthday"
                         v-model="form.birthday"
                         type="date"
-                        class="min-w-0 rounded border border-gray-600 bg-gray-900 px-3 py-2 text-white"
+                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark"
                     />
 
-                    <label for="add-member-age" class="text-sm font-semibold tracking-wide text-gray-300 sm:pt-2.5">
+                    <label for="add-member-age" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
                         Leeftijd
                     </label>
                     <input
@@ -265,10 +265,10 @@ function yesNoInstalled(value) {
                         min="0"
                         max="99"
                         placeholder="Optioneel"
-                        class="min-w-0 rounded border border-gray-600 bg-gray-900 px-3 py-2 text-white placeholder:text-gray-500"
+                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark placeholder:text-app-muted-dark"
                     />
 
-                    <label for="add-member-phone-mother" class="text-sm font-semibold tracking-wide text-gray-300 sm:pt-2.5">
+                    <label for="add-member-phone-mother" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
                         Telefoon moeder
                     </label>
                     <input
@@ -276,10 +276,10 @@ function yesNoInstalled(value) {
                         v-model="form.phone_mother"
                         type="text"
                         autocomplete="tel"
-                        class="min-w-0 rounded border border-gray-600 bg-gray-900 px-3 py-2 text-white placeholder:text-gray-500"
+                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark placeholder:text-app-muted-dark"
                     />
 
-                    <label for="add-member-phone-father" class="text-sm font-semibold tracking-wide text-gray-300 sm:pt-2.5">
+                    <label for="add-member-phone-father" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
                         Telefoon vader
                     </label>
                     <input
@@ -287,10 +287,10 @@ function yesNoInstalled(value) {
                         v-model="form.phone_father"
                         type="text"
                         autocomplete="tel"
-                        class="min-w-0 rounded border border-gray-600 bg-gray-900 px-3 py-2 text-white placeholder:text-gray-500"
+                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark placeholder:text-app-muted-dark"
                     />
 
-                    <label for="add-member-address" class="text-sm font-semibold tracking-wide text-gray-300 sm:pt-2.5">
+                    <label for="add-member-address" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
                         Adres
                     </label>
                     <input
@@ -298,10 +298,10 @@ function yesNoInstalled(value) {
                         v-model="form.address"
                         type="text"
                         autocomplete="street-address"
-                        class="min-w-0 rounded border border-gray-600 bg-gray-900 px-3 py-2 text-white placeholder:text-gray-500"
+                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark placeholder:text-app-muted-dark"
                     />
 
-                    <label for="add-member-bijzonderheden" class="text-sm font-semibold tracking-wide text-gray-300 sm:pt-2.5">
+                    <label for="add-member-bijzonderheden" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
                         Bijzonderheden
                     </label>
                     <textarea
@@ -309,14 +309,14 @@ function yesNoInstalled(value) {
                         v-model="form.bijzonderheden"
                         rows="3"
                         placeholder="Allergiën, medicatie, dieet, andere aandachtspunten…"
-                        class="min-h-[5rem] min-w-0 rounded border border-gray-600 bg-gray-900 px-3 py-2 text-white placeholder:text-gray-500"
+                        class="min-h-[5rem] min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark placeholder:text-app-muted-dark"
                     />
 
                     <span class="hidden sm:block" aria-hidden="true" />
                     <div>
                         <button
                             type="submit"
-                            class="rounded bg-indigo-600 px-5 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+                            class="rounded bg-brand-red px-5 py-2 text-sm font-medium text-white hover:bg-brand-red-dark disabled:opacity-50"
                             :disabled="form.processing"
                         >
                             Opslaan
@@ -330,12 +330,12 @@ function yesNoInstalled(value) {
 
             <form
                 v-show="showEditForm"
-                class="space-y-4 rounded-xl border border-amber-900/40 bg-gray-800/90 p-5 shadow-sm"
+                class="space-y-4 rounded-xl border border-brand-yellow/35 bg-app-panel-dark/95 p-5 shadow-sm"
                 @submit.prevent="submitEdit"
             >
                 <h3 class="text-base font-semibold text-amber-100">Contact bewerken</h3>
                 <div class="grid gap-4 sm:grid-cols-[10rem_1fr] sm:items-start">
-                    <label for="edit-member-first-name" class="text-sm font-semibold tracking-wide text-gray-300 sm:pt-2.5">
+                    <label for="edit-member-first-name" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
                         Voornaam
                     </label>
                     <input
@@ -343,10 +343,10 @@ function yesNoInstalled(value) {
                         v-model="editForm.first_name"
                         type="text"
                         autocomplete="given-name"
-                        class="min-w-0 rounded border border-gray-600 bg-gray-900 px-3 py-2 text-white"
+                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark"
                     />
 
-                    <label for="edit-member-last-name" class="text-sm font-semibold tracking-wide text-gray-300 sm:pt-2.5">
+                    <label for="edit-member-last-name" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
                         Achternaam
                     </label>
                     <input
@@ -354,20 +354,20 @@ function yesNoInstalled(value) {
                         v-model="editForm.last_name"
                         type="text"
                         autocomplete="family-name"
-                        class="min-w-0 rounded border border-gray-600 bg-gray-900 px-3 py-2 text-white"
+                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark"
                     />
 
-                    <label for="edit-member-birthday" class="text-sm font-semibold tracking-wide text-gray-300 sm:pt-2.5">
+                    <label for="edit-member-birthday" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
                         Geboortedatum
                     </label>
                     <input
                         id="edit-member-birthday"
                         v-model="editForm.birthday"
                         type="date"
-                        class="min-w-0 rounded border border-gray-600 bg-gray-900 px-3 py-2 text-white"
+                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark"
                     />
 
-                    <label for="edit-member-age" class="text-sm font-semibold tracking-wide text-gray-300 sm:pt-2.5">
+                    <label for="edit-member-age" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
                         Leeftijd
                     </label>
                     <input
@@ -376,10 +376,10 @@ function yesNoInstalled(value) {
                         type="number"
                         min="0"
                         max="99"
-                        class="min-w-0 rounded border border-gray-600 bg-gray-900 px-3 py-2 text-white"
+                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark"
                     />
 
-                    <label for="edit-member-phone-mother" class="text-sm font-semibold tracking-wide text-gray-300 sm:pt-2.5">
+                    <label for="edit-member-phone-mother" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
                         Telefoon moeder
                     </label>
                     <input
@@ -387,10 +387,10 @@ function yesNoInstalled(value) {
                         v-model="editForm.phone_mother"
                         type="text"
                         autocomplete="tel"
-                        class="min-w-0 rounded border border-gray-600 bg-gray-900 px-3 py-2 text-white"
+                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark"
                     />
 
-                    <label for="edit-member-phone-father" class="text-sm font-semibold tracking-wide text-gray-300 sm:pt-2.5">
+                    <label for="edit-member-phone-father" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
                         Telefoon vader
                     </label>
                     <input
@@ -398,10 +398,10 @@ function yesNoInstalled(value) {
                         v-model="editForm.phone_father"
                         type="text"
                         autocomplete="tel"
-                        class="min-w-0 rounded border border-gray-600 bg-gray-900 px-3 py-2 text-white"
+                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark"
                     />
 
-                    <label for="edit-member-address" class="text-sm font-semibold tracking-wide text-gray-300 sm:pt-2.5">
+                    <label for="edit-member-address" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
                         Adres
                     </label>
                     <input
@@ -409,10 +409,10 @@ function yesNoInstalled(value) {
                         v-model="editForm.address"
                         type="text"
                         autocomplete="street-address"
-                        class="min-w-0 rounded border border-gray-600 bg-gray-900 px-3 py-2 text-white"
+                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark"
                     />
 
-                    <label for="edit-member-bijzonderheden" class="text-sm font-semibold tracking-wide text-gray-300 sm:pt-2.5">
+                    <label for="edit-member-bijzonderheden" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
                         Bijzonderheden
                     </label>
                     <textarea
@@ -420,21 +420,21 @@ function yesNoInstalled(value) {
                         v-model="editForm.bijzonderheden"
                         rows="3"
                         placeholder="Allergiën, medicatie, dieet, andere aandachtspunten…"
-                        class="min-h-[5rem] min-w-0 rounded border border-gray-600 bg-gray-900 px-3 py-2 text-white placeholder:text-gray-500"
+                        class="min-h-[5rem] min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark placeholder:text-app-muted-dark"
                     />
 
                     <span class="hidden sm:block" aria-hidden="true" />
                     <div class="flex flex-wrap gap-2">
                         <button
                             type="submit"
-                            class="rounded bg-indigo-600 px-5 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+                            class="rounded bg-brand-red px-5 py-2 text-sm font-medium text-white hover:bg-brand-red-dark disabled:opacity-50"
                             :disabled="editForm.processing"
                         >
                             Bijwerken
                         </button>
                         <button
                             type="button"
-                            class="rounded border border-gray-500 px-5 py-2 text-sm font-medium text-white hover:bg-gray-700"
+                            class="rounded border border-brand-blue-light/50 px-5 py-2 text-sm font-medium text-app-ink-dark transition hover:bg-brand-blue/20"
                             @click="closeEditForm"
                         >
                             Annuleren
@@ -446,11 +446,11 @@ function yesNoInstalled(value) {
                 </p>
             </form>
 
-            <div class="rounded-xl bg-gray-800 p-4 shadow-sm">
+            <div class="rounded-xl border border-brand-blue/20 bg-app-panel-dark p-4 shadow-sm">
                 <div
-                    class="mb-3 flex w-full flex-col gap-3 border-b border-gray-600 pb-2 sm:flex-row sm:items-center sm:justify-between"
+                    class="mb-3 flex w-full flex-col gap-3 border-b border-brand-blue/35 pb-2 sm:flex-row sm:items-center sm:justify-between"
                 >
-                    <h3 class="text-lg font-semibold text-indigo-200">Dolfijnen</h3>
+                    <h3 class="text-lg font-semibold text-brand-yellow-soft">Dolfijnen</h3>
                     <label class="sr-only" for="members-search">Zoeken in alle contactvelden</label>
                     <input
                         id="members-search"
@@ -458,13 +458,13 @@ function yesNoInstalled(value) {
                         type="search"
                         autocomplete="off"
                         placeholder="Zoek op naam, adres, telefoon, bijzonderheden…"
-                        class="w-full max-w-xs self-end rounded border border-gray-600 bg-gray-900 px-3 py-1.5 text-sm text-white placeholder:text-gray-500 sm:ms-auto"
+                        class="w-full max-w-xs self-end rounded border border-app-border-dark bg-app-canvas-dark px-3 py-1.5 text-sm text-app-ink-dark placeholder:text-app-muted-dark sm:ms-auto"
                     />
                 </div>
-                <div v-if="!props.members?.length" class="py-6 text-center text-sm text-gray-500">
+                <div v-if="!props.members?.length" class="py-6 text-center text-sm text-app-muted dark:text-app-muted-dark">
                     Nog geen Dolfijnen.
                 </div>
-                <div v-else-if="!filteredMembers.length" class="py-6 text-center text-sm text-gray-500">
+                <div v-else-if="!filteredMembers.length" class="py-6 text-center text-sm text-app-muted dark:text-app-muted-dark">
                     Geen resultaten voor deze zoekopdracht.
                 </div>
                 <div v-else class="space-y-2 md:space-y-0">
@@ -473,14 +473,14 @@ function yesNoInstalled(value) {
                             v-for="member in filteredMembers"
                             :key="`m-mob-${member.id}`"
                             :href="route('members.show', member.id)"
-                            class="flex items-center justify-between gap-3 rounded-xl border border-gray-600 bg-gray-800/90 px-4 py-3 text-white active:bg-gray-700"
+                            class="flex items-center justify-between gap-3 rounded-xl border border-brand-blue/30 bg-app-panel-dark/95 px-4 py-3 text-app-ink-dark active:bg-brand-blue/15"
                         >
                             <span class="min-w-0 truncate font-medium">{{ memberDisplayName(member) }}</span>
-                            <ChevronRightIcon class="h-5 w-5 shrink-0 text-gray-500" aria-hidden="true" />
+                            <ChevronRightIcon class="h-5 w-5 shrink-0 text-app-muted dark:text-app-muted-dark" aria-hidden="true" />
                         </Link>
                     </div>
                     <div class="hidden overflow-x-auto md:block">
-                        <table class="w-full min-w-[72rem] table-fixed text-sm text-white">
+                        <table class="w-full min-w-[72rem] table-fixed text-sm text-app-ink-dark">
                         <colgroup>
                             <col class="w-[8%]" />
                             <col class="w-[15%]" />
@@ -494,7 +494,7 @@ function yesNoInstalled(value) {
                             <col class="w-[6%]" />
                         </colgroup>
                         <thead>
-                            <tr class="text-left text-gray-300">
+                            <tr class="text-left text-app-muted-dark">
                                 <th class="pb-2">Geïnstalleerd</th>
                                 <th class="pb-2">Bijzonderheden</th>
                                 <th class="pb-2">Voornaam</th>
@@ -511,8 +511,8 @@ function yesNoInstalled(value) {
                             <tr
                                 v-for="member in filteredMembers"
                                 :key="member.id"
-                                class="border-t border-gray-600"
-                                :class="{ 'bg-gray-900/50': editingMemberId === member.id }"
+                                class="border-t border-brand-blue/35"
+                                :class="{ 'bg-brand-blue/5 dark:bg-app-canvas-dark/80': editingMemberId === member.id }"
                             >
                                 <td class="py-2 pr-2 align-top">{{ yesNoInstalled(member.installed) }}</td>
                                 <td class="pr-2 align-top break-words">
@@ -530,7 +530,7 @@ function yesNoInstalled(value) {
                                     <div class="flex flex-wrap items-center justify-end gap-2 sm:justify-start">
                                         <button
                                             type="button"
-                                            class="inline-flex items-center gap-1 rounded border border-gray-500 bg-gray-900 px-2 py-1 text-xs font-medium text-white hover:bg-gray-700"
+                                            class="inline-flex items-center gap-1 rounded border border-brand-blue/40 bg-app-canvas-dark px-2 py-1 text-xs font-medium text-app-ink-dark transition hover:bg-brand-blue/25"
                                             @click="openEditForm(member)"
                                         >
                                             <PencilSquareIcon class="h-4 w-4" />
@@ -553,29 +553,29 @@ function yesNoInstalled(value) {
                 </div>
             </div>
 
-            <div class="hidden rounded-xl bg-gray-800 p-5 shadow-sm md:block">
-                <h3 class="border-b border-gray-600 pb-2 text-lg font-semibold text-indigo-200">Bijzonderheden</h3>
-                <p class="mt-2 text-xs text-gray-400">
+            <div class="hidden rounded-xl border border-brand-blue/20 bg-app-panel-dark p-5 shadow-sm md:block">
+                <h3 class="border-b border-brand-blue/35 pb-2 text-lg font-semibold text-brand-yellow-soft">Bijzonderheden</h3>
+                <p class="mt-2 text-xs text-app-muted-dark">
                     Allergiën, medicatie, dieet en andere aandachtspunten. Bewerken via het contactformulier hierboven.
                     Voor leiding: menu Leiding.
                 </p>
 
-                <h4 class="mt-5 text-sm font-semibold uppercase tracking-wide text-gray-300">Dolfijnen</h4>
-                <div v-if="!props.members?.length" class="mt-2 py-4 text-center text-sm text-gray-500">
+                <h4 class="mt-5 text-sm font-semibold uppercase tracking-wide text-app-muted-dark">Dolfijnen</h4>
+                <div v-if="!props.members?.length" class="mt-2 py-4 text-center text-sm text-app-muted dark:text-app-muted-dark">
                     Nog geen contacten.
                 </div>
-                <div v-else-if="!filteredMembers.length" class="mt-2 py-4 text-center text-sm text-gray-500">
+                <div v-else-if="!filteredMembers.length" class="mt-2 py-4 text-center text-sm text-app-muted dark:text-app-muted-dark">
                     Geen contacten die aan deze zoekopdracht voldoen.
                 </div>
                 <div v-else class="mt-2 overflow-x-auto">
-                    <table class="w-full table-fixed text-sm text-white">
+                    <table class="w-full table-fixed text-sm text-app-ink-dark">
                         <colgroup>
                             <col class="w-[22%]" />
                             <col class="w-[58%]" />
                             <col class="w-[20%]" />
                         </colgroup>
                         <thead>
-                            <tr class="text-left text-gray-300">
+                            <tr class="text-left text-app-muted-dark">
                                 <th class="pb-2">Naam</th>
                                 <th class="pb-2">Bijzonderheden</th>
                                 <th class="pb-2 text-right sm:text-left">Acties</th>
@@ -585,19 +585,19 @@ function yesNoInstalled(value) {
                             <tr
                                 v-for="member in filteredMembers"
                                 :key="`bijz-${member.id}`"
-                                class="border-t border-gray-600"
+                                class="border-t border-brand-blue/35"
                             >
                                 <td class="py-2 pr-2 align-top">{{ memberDisplayName(member) }}</td>
-                                <td class="pr-2 align-top break-words leading-snug text-gray-200">
+                                <td class="pr-2 align-top break-words leading-snug text-app-ink-dark">
                                     <span v-if="member.bijzonderheden" class="whitespace-pre-wrap">{{
                                         member.bijzonderheden
                                     }}</span>
-                                    <span v-else class="text-gray-500">–</span>
+                                    <span v-else class="text-app-muted-dark">–</span>
                                 </td>
                                 <td class="align-top">
                                     <button
                                         type="button"
-                                        class="inline-flex items-center gap-1 rounded border border-gray-500 bg-gray-900 px-2 py-1 text-xs font-medium text-white hover:bg-gray-700"
+                                        class="inline-flex items-center gap-1 rounded border border-brand-blue/40 bg-app-canvas-dark px-2 py-1 text-xs font-medium text-app-ink-dark transition hover:bg-brand-blue/25"
                                         @click="openEditForm(member)"
                                     >
                                         <PencilSquareIcon class="h-4 w-4" />

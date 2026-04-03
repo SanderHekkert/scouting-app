@@ -97,11 +97,11 @@ function deleteEvent(event) {
     <AuthenticatedLayout>
         <template #header>
             <div class="flex w-full flex-wrap items-center justify-between gap-3">
-                <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Agenda</h2>
+                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Agenda</h2>
                 <div class="flex flex-wrap items-center justify-end gap-2 sm:ms-auto">
                     <button
                         type="button"
-                        class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-gray-100 px-3 py-2 text-sm font-medium text-gray-900 hover:bg-gray-200 dark:border-gray-600 dark:bg-gray-900 dark:text-white dark:hover:bg-gray-700"
+                        class="inline-flex items-center gap-2 rounded-lg border border-app-border bg-app-panel px-3 py-2 text-sm font-medium text-app-ink shadow-sm transition hover:border-brand-blue/40 hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:border-brand-blue/45 dark:hover:bg-brand-blue/15"
                         @click="toggleAddForm"
                     >
                         <PlusIcon class="h-5 w-5" />
@@ -110,15 +110,15 @@ function deleteEvent(event) {
                 </div>
             </div>
         </template>
-        <div class="space-y-4 text-white">
+        <div class="space-y-4 text-app-ink-dark">
             <form
                 v-show="showAddForm"
-                class="space-y-4 rounded-xl bg-gray-800 p-5 shadow-sm"
+                class="space-y-4 rounded-xl border border-brand-blue/20 bg-app-panel-dark p-5 shadow-sm"
                 @submit.prevent="submitAdd"
             >
-                <h3 class="text-base font-semibold text-white">Nieuw agenda-item</h3>
+                <h3 class="text-base font-semibold text-brand-yellow-soft">Nieuw agenda-item</h3>
                 <div class="grid gap-4 sm:grid-cols-[8rem_1fr] sm:items-start">
-                    <label for="add-event-theme" class="text-sm font-semibold tracking-wide text-gray-300 sm:pt-2.5">
+                    <label for="add-event-theme" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
                         Thema
                     </label>
                     <input
@@ -126,20 +126,20 @@ function deleteEvent(event) {
                         v-model="form.theme"
                         type="text"
                         placeholder="bv. Europa"
-                        class="min-w-0 rounded border border-gray-600 bg-gray-900 px-3 py-2 text-white placeholder:text-gray-500"
+                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark placeholder:text-app-muted-dark"
                     />
 
-                    <label for="add-event-date" class="text-sm font-semibold tracking-wide text-gray-300 sm:pt-2.5">
+                    <label for="add-event-date" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
                         Datum
                     </label>
                     <input
                         id="add-event-date"
                         v-model="form.event_date"
                         type="date"
-                        class="min-w-0 rounded border border-gray-600 bg-gray-900 px-3 py-2 text-white"
+                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark"
                     />
 
-                    <label for="add-event-type" class="text-sm font-semibold tracking-wide text-gray-300 sm:pt-2.5">
+                    <label for="add-event-type" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
                         Type opkomst
                     </label>
                     <input
@@ -147,10 +147,10 @@ function deleteEvent(event) {
                         v-model="form.event_type"
                         type="text"
                         placeholder="Normale opkomst"
-                        class="min-w-0 rounded border border-gray-600 bg-gray-900 px-3 py-2 text-white placeholder:text-gray-500"
+                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark placeholder:text-app-muted-dark"
                     />
 
-                    <label for="add-event-activity" class="text-sm font-semibold tracking-wide text-gray-300 sm:pt-2.5">
+                    <label for="add-event-activity" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
                         Activiteit
                     </label>
                     <input
@@ -158,10 +158,10 @@ function deleteEvent(event) {
                         v-model="form.activity"
                         type="text"
                         placeholder="Wat ga je doen?"
-                        class="min-w-0 rounded border border-gray-600 bg-gray-900 px-3 py-2 text-white placeholder:text-gray-500"
+                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark placeholder:text-app-muted-dark"
                     />
 
-                    <label for="add-event-program-by" class="text-sm font-semibold tracking-wide text-gray-300 sm:pt-2.5">
+                    <label for="add-event-program-by" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
                         Programma door
                     </label>
                     <input
@@ -169,10 +169,10 @@ function deleteEvent(event) {
                         v-model="form.program_by"
                         type="text"
                         placeholder="Naam"
-                        class="min-w-0 rounded border border-gray-600 bg-gray-900 px-3 py-2 text-white placeholder:text-gray-500"
+                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark placeholder:text-app-muted-dark"
                     />
 
-                    <label for="add-event-absent" class="text-sm font-semibold tracking-wide text-gray-300 sm:pt-2.5">
+                    <label for="add-event-absent" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
                         Afwezig
                     </label>
                     <input
@@ -180,10 +180,10 @@ function deleteEvent(event) {
                         v-model="form.absent"
                         type="text"
                         placeholder="Namen"
-                        class="min-w-0 rounded border border-gray-600 bg-gray-900 px-3 py-2 text-white placeholder:text-gray-500"
+                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark placeholder:text-app-muted-dark"
                     />
 
-                    <label for="add-event-notes" class="text-sm font-semibold tracking-wide text-gray-300 sm:pt-2.5">
+                    <label for="add-event-notes" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
                         Bijzonderheden
                     </label>
                     <textarea
@@ -191,14 +191,14 @@ function deleteEvent(event) {
                         v-model="form.notes"
                         rows="3"
                         placeholder="Optioneel"
-                        class="min-w-0 rounded border border-gray-600 bg-gray-900 px-3 py-2 text-white placeholder:text-gray-500"
+                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark placeholder:text-app-muted-dark"
                     />
 
                     <span class="hidden sm:block" aria-hidden="true" />
                     <div>
                         <button
                             type="submit"
-                            class="rounded bg-indigo-600 px-5 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+                            class="rounded bg-brand-red px-5 py-2 text-sm font-medium text-white hover:bg-brand-red-dark disabled:opacity-50"
                             :disabled="form.processing"
                         >
                             Opslaan
@@ -212,93 +212,93 @@ function deleteEvent(event) {
 
             <form
                 v-show="showEditForm"
-                class="space-y-4 rounded-xl border border-amber-900/40 bg-gray-800/90 p-5 shadow-sm"
+                class="space-y-4 rounded-xl border border-brand-yellow/35 bg-app-panel-dark/95 p-5 shadow-sm"
                 @submit.prevent="submitEdit"
             >
                 <h3 class="text-base font-semibold text-amber-100">Agenda-item bewerken</h3>
                 <div class="grid gap-4 sm:grid-cols-[8rem_1fr] sm:items-start">
-                    <label for="edit-event-theme" class="text-sm font-semibold tracking-wide text-gray-300 sm:pt-2.5">
+                    <label for="edit-event-theme" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
                         Thema
                     </label>
                     <input
                         id="edit-event-theme"
                         v-model="editForm.theme"
                         type="text"
-                        class="min-w-0 rounded border border-gray-600 bg-gray-900 px-3 py-2 text-white"
+                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark"
                     />
 
-                    <label for="edit-event-date" class="text-sm font-semibold tracking-wide text-gray-300 sm:pt-2.5">
+                    <label for="edit-event-date" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
                         Datum
                     </label>
                     <input
                         id="edit-event-date"
                         v-model="editForm.event_date"
                         type="date"
-                        class="min-w-0 rounded border border-gray-600 bg-gray-900 px-3 py-2 text-white"
+                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark"
                     />
 
-                    <label for="edit-event-type" class="text-sm font-semibold tracking-wide text-gray-300 sm:pt-2.5">
+                    <label for="edit-event-type" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
                         Type opkomst
                     </label>
                     <input
                         id="edit-event-type"
                         v-model="editForm.event_type"
                         type="text"
-                        class="min-w-0 rounded border border-gray-600 bg-gray-900 px-3 py-2 text-white"
+                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark"
                     />
 
-                    <label for="edit-event-activity" class="text-sm font-semibold tracking-wide text-gray-300 sm:pt-2.5">
+                    <label for="edit-event-activity" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
                         Activiteit
                     </label>
                     <input
                         id="edit-event-activity"
                         v-model="editForm.activity"
                         type="text"
-                        class="min-w-0 rounded border border-gray-600 bg-gray-900 px-3 py-2 text-white"
+                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark"
                     />
 
-                    <label for="edit-event-program-by" class="text-sm font-semibold tracking-wide text-gray-300 sm:pt-2.5">
+                    <label for="edit-event-program-by" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
                         Programma door
                     </label>
                     <input
                         id="edit-event-program-by"
                         v-model="editForm.program_by"
                         type="text"
-                        class="min-w-0 rounded border border-gray-600 bg-gray-900 px-3 py-2 text-white"
+                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark"
                     />
 
-                    <label for="edit-event-absent" class="text-sm font-semibold tracking-wide text-gray-300 sm:pt-2.5">
+                    <label for="edit-event-absent" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
                         Afwezig
                     </label>
                     <input
                         id="edit-event-absent"
                         v-model="editForm.absent"
                         type="text"
-                        class="min-w-0 rounded border border-gray-600 bg-gray-900 px-3 py-2 text-white"
+                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark"
                     />
 
-                    <label for="edit-event-notes" class="text-sm font-semibold tracking-wide text-gray-300 sm:pt-2.5">
+                    <label for="edit-event-notes" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
                         Bijzonderheden
                     </label>
                     <textarea
                         id="edit-event-notes"
                         v-model="editForm.notes"
                         rows="3"
-                        class="min-w-0 rounded border border-gray-600 bg-gray-900 px-3 py-2 text-white"
+                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark"
                     />
 
                     <span class="hidden sm:block" aria-hidden="true" />
                     <div class="flex flex-wrap gap-2">
                         <button
                             type="submit"
-                            class="rounded bg-indigo-600 px-5 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+                            class="rounded bg-brand-red px-5 py-2 text-sm font-medium text-white hover:bg-brand-red-dark disabled:opacity-50"
                             :disabled="editForm.processing"
                         >
                             Bijwerken
                         </button>
                         <button
                             type="button"
-                            class="rounded border border-gray-500 px-5 py-2 text-sm font-medium text-white hover:bg-gray-700"
+                            class="rounded border border-brand-blue-light/50 px-5 py-2 text-sm font-medium text-app-ink-dark transition hover:bg-brand-blue/20"
                             @click="closeEditForm"
                         >
                             Annuleren
@@ -310,11 +310,11 @@ function deleteEvent(event) {
                 </p>
             </form>
 
-            <div class="rounded-xl bg-gray-800 p-4 shadow-sm">
-                <div v-if="!props.events?.length" class="py-6 text-center text-sm text-gray-500">
+            <div class="rounded-xl border border-brand-blue/20 bg-app-panel-dark p-4 shadow-sm">
+                <div v-if="!props.events?.length" class="py-6 text-center text-sm text-app-muted dark:text-app-muted-dark">
                     Nog geen agenda-items.
                 </div>
-                <table v-else class="w-full table-fixed text-sm text-white">
+                <table v-else class="w-full table-fixed text-sm text-app-ink-dark">
                     <colgroup>
                         <col class="w-[20%]" />
                         <col class="w-[14%]" />
@@ -323,7 +323,7 @@ function deleteEvent(event) {
                         <col class="w-[20%]" />
                     </colgroup>
                     <thead>
-                        <tr class="text-left text-gray-300">
+                        <tr class="text-left text-app-muted-dark">
                             <th class="pb-2">Thema</th>
                             <th class="pb-2">Datum</th>
                             <th class="pb-2">Type</th>
@@ -335,8 +335,8 @@ function deleteEvent(event) {
                         <tr
                             v-for="event in props.events"
                             :key="event.id"
-                            class="border-t border-gray-600"
-                            :class="{ 'bg-gray-900/50': editingEventId === event.id }"
+                            class="border-t border-brand-blue/35"
+                            :class="{ 'bg-brand-blue/5 dark:bg-app-canvas-dark/80': editingEventId === event.id }"
                         >
                             <td class="py-2 pr-2 align-top">{{ event.theme }}</td>
                             <td class="pr-2 align-top whitespace-nowrap">{{ event.event_date }}</td>
@@ -346,7 +346,7 @@ function deleteEvent(event) {
                                 <div class="flex flex-wrap items-center justify-end gap-2 sm:justify-start">
                                     <button
                                         type="button"
-                                        class="inline-flex items-center gap-1 rounded border border-gray-500 bg-gray-900 px-2 py-1 text-xs font-medium text-white hover:bg-gray-700"
+                                        class="inline-flex items-center gap-1 rounded border border-brand-blue/40 bg-app-canvas-dark px-2 py-1 text-xs font-medium text-app-ink-dark transition hover:bg-brand-blue/25"
                                         @click="openEditForm(event)"
                                     >
                                         <PencilSquareIcon class="h-4 w-4" />

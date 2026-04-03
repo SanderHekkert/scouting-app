@@ -95,11 +95,11 @@ function linkDisplayText(url) {
     <AuthenticatedLayout>
         <template #header>
             <div class="flex w-full flex-wrap items-center justify-between gap-3">
-                <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Belangrijke info</h2>
+                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Belangrijke info</h2>
                 <div class="flex flex-wrap items-center justify-end gap-2 sm:ms-auto">
                     <button
                         type="button"
-                        class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-gray-100 px-3 py-2 text-sm font-medium text-gray-900 hover:bg-gray-200 dark:border-gray-600 dark:bg-gray-900 dark:text-white dark:hover:bg-gray-700"
+                        class="inline-flex items-center gap-2 rounded-lg border border-app-border bg-app-panel px-3 py-2 text-sm font-medium text-app-ink shadow-sm transition hover:border-brand-blue/40 hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:border-brand-blue/45 dark:hover:bg-brand-blue/15"
                         @click="toggleAddForm"
                     >
                         <PlusIcon class="h-5 w-5" />
@@ -108,15 +108,15 @@ function linkDisplayText(url) {
                 </div>
             </div>
         </template>
-        <div class="space-y-4 text-white">
+        <div class="space-y-4 text-app-ink-dark">
             <form
                 v-show="showAddForm"
-                class="space-y-4 rounded-xl bg-gray-800 p-5 shadow-sm"
+                class="space-y-4 rounded-xl border border-brand-blue/20 bg-app-panel-dark p-5 shadow-sm"
                 @submit.prevent="submitAdd"
             >
-                <h3 class="text-base font-semibold text-white">Nieuwe info</h3>
+                <h3 class="text-base font-semibold text-brand-yellow-soft">Nieuwe info</h3>
                 <div class="grid gap-4 sm:grid-cols-[8rem_1fr] sm:items-start">
-                    <label for="add-info-category" class="text-sm font-semibold tracking-wide text-gray-300 sm:pt-2.5">
+                    <label for="add-info-category" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
                         Categorie
                     </label>
                     <input
@@ -124,10 +124,10 @@ function linkDisplayText(url) {
                         v-model="form.category"
                         type="text"
                         placeholder="Bijv. Kamp, Ouder contact"
-                        class="min-w-0 rounded border border-gray-600 bg-gray-900 px-3 py-2 text-white placeholder:text-gray-500"
+                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark placeholder:text-app-muted-dark"
                     />
 
-                    <label for="add-info-content" class="text-sm font-semibold tracking-wide text-gray-300 sm:pt-2.5">
+                    <label for="add-info-content" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
                         Inhoud
                     </label>
                     <textarea
@@ -135,10 +135,10 @@ function linkDisplayText(url) {
                         v-model="form.content"
                         rows="4"
                         placeholder="Inhoud…"
-                        class="min-w-0 rounded border border-gray-600 bg-gray-900 px-3 py-2 text-white placeholder:text-gray-500"
+                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark placeholder:text-app-muted-dark"
                     />
 
-                    <label for="add-info-link" class="text-sm font-semibold tracking-wide text-gray-300 sm:pt-2.5">
+                    <label for="add-info-link" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
                         Linkje
                     </label>
                     <input
@@ -148,14 +148,14 @@ function linkDisplayText(url) {
                         inputmode="url"
                         autocomplete="off"
                         placeholder="https://… of example.com"
-                        class="min-w-0 rounded border border-gray-600 bg-gray-900 px-3 py-2 text-white placeholder:text-gray-500"
+                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark placeholder:text-app-muted-dark"
                     />
 
                     <span class="hidden sm:block" aria-hidden="true" />
                     <div>
                         <button
                             type="submit"
-                            class="rounded bg-indigo-600 px-5 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+                            class="rounded bg-brand-red px-5 py-2 text-sm font-medium text-white hover:bg-brand-red-dark disabled:opacity-50"
                             :disabled="form.processing"
                         >
                             Opslaan
@@ -169,32 +169,32 @@ function linkDisplayText(url) {
 
             <form
                 v-show="showEditForm"
-                class="space-y-4 rounded-xl border border-amber-900/40 bg-gray-800/90 p-5 shadow-sm"
+                class="space-y-4 rounded-xl border border-brand-yellow/35 bg-app-panel-dark/95 p-5 shadow-sm"
                 @submit.prevent="submitEdit"
             >
                 <h3 class="text-base font-semibold text-amber-100">Info bewerken</h3>
                 <div class="grid gap-4 sm:grid-cols-[8rem_1fr] sm:items-start">
-                    <label for="edit-info-category" class="text-sm font-semibold tracking-wide text-gray-300 sm:pt-2.5">
+                    <label for="edit-info-category" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
                         Categorie
                     </label>
                     <input
                         id="edit-info-category"
                         v-model="editForm.category"
                         type="text"
-                        class="min-w-0 rounded border border-gray-600 bg-gray-900 px-3 py-2 text-white"
+                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark"
                     />
 
-                    <label for="edit-info-content" class="text-sm font-semibold tracking-wide text-gray-300 sm:pt-2.5">
+                    <label for="edit-info-content" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
                         Inhoud
                     </label>
                     <textarea
                         id="edit-info-content"
                         v-model="editForm.content"
                         rows="4"
-                        class="min-w-0 rounded border border-gray-600 bg-gray-900 px-3 py-2 text-white"
+                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark"
                     />
 
-                    <label for="edit-info-link" class="text-sm font-semibold tracking-wide text-gray-300 sm:pt-2.5">
+                    <label for="edit-info-link" class="text-sm font-semibold tracking-wide text-app-muted-dark sm:pt-2.5">
                         Linkje
                     </label>
                     <input
@@ -204,21 +204,21 @@ function linkDisplayText(url) {
                         inputmode="url"
                         autocomplete="off"
                         placeholder="https://…"
-                        class="min-w-0 rounded border border-gray-600 bg-gray-900 px-3 py-2 text-white placeholder:text-gray-500"
+                        class="min-w-0 rounded border border-app-border-dark bg-app-canvas-dark px-3 py-2 text-app-ink-dark placeholder:text-app-muted-dark"
                     />
 
                     <span class="hidden sm:block" aria-hidden="true" />
                     <div class="flex flex-wrap gap-2">
                         <button
                             type="submit"
-                            class="rounded bg-indigo-600 px-5 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+                            class="rounded bg-brand-red px-5 py-2 text-sm font-medium text-white hover:bg-brand-red-dark disabled:opacity-50"
                             :disabled="editForm.processing"
                         >
                             Bijwerken
                         </button>
                         <button
                             type="button"
-                            class="rounded border border-gray-500 px-5 py-2 text-sm font-medium text-white hover:bg-gray-700"
+                            class="rounded border border-brand-blue-light/50 px-5 py-2 text-sm font-medium text-app-ink-dark transition hover:bg-brand-blue/20"
                             @click="closeEditForm"
                         >
                             Annuleren
@@ -230,11 +230,11 @@ function linkDisplayText(url) {
                 <p v-if="editForm.errors.link" class="text-sm text-red-400">{{ editForm.errors.link }}</p>
             </form>
 
-            <div class="rounded-xl bg-gray-800 p-4 shadow-sm">
-                <div v-if="!props.notes?.length" class="py-6 text-center text-sm text-gray-500">
+            <div class="rounded-xl border border-brand-blue/20 bg-app-panel-dark p-4 shadow-sm">
+                <div v-if="!props.notes?.length" class="py-6 text-center text-sm text-app-muted dark:text-app-muted-dark">
                     Nog geen notities. Voeg er een toe via de knop rechtsboven.
                 </div>
-                <table v-else class="w-full table-fixed text-sm text-white">
+                <table v-else class="w-full table-fixed text-sm text-app-ink-dark">
                     <colgroup>
                         <col class="w-[18%]" />
                         <col class="w-[38%]" />
@@ -242,7 +242,7 @@ function linkDisplayText(url) {
                         <col class="w-[20%]" />
                     </colgroup>
                     <thead>
-                        <tr class="text-left text-gray-300">
+                        <tr class="text-left text-app-muted-dark">
                             <th class="pb-2">Categorie</th>
                             <th class="pb-2">Inhoud</th>
                             <th class="pb-2">Linkje</th>
@@ -253,10 +253,10 @@ function linkDisplayText(url) {
                         <tr
                             v-for="note in props.notes"
                             :key="note.id"
-                            class="border-t border-gray-600"
-                            :class="{ 'bg-gray-900/50': editingNoteId === note.id }"
+                            class="border-t border-brand-blue/35"
+                            :class="{ 'bg-brand-blue/5 dark:bg-app-canvas-dark/80': editingNoteId === note.id }"
                         >
-                            <td class="py-2 pr-3 align-top text-xs uppercase tracking-wide text-gray-400">
+                            <td class="py-2 pr-3 align-top text-xs uppercase tracking-wide text-app-muted-dark">
                                 {{ note.category }}
                             </td>
                             <td class="align-top whitespace-pre-wrap">{{ note.content }}</td>
@@ -266,17 +266,17 @@ function linkDisplayText(url) {
                                     :href="note.link"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    class="break-all text-indigo-300 underline decoration-indigo-400/80 underline-offset-2 hover:text-indigo-200"
+                                    class="break-all text-brand-blue-light underline decoration-brand-blue-light/70 underline-offset-2 hover:text-brand-yellow-soft"
                                 >
                                     {{ linkDisplayText(note.link) }}
                                 </a>
-                                <span v-else class="text-gray-500">—</span>
+                                <span v-else class="text-app-muted-dark">—</span>
                             </td>
                             <td class="py-2 align-top">
                                 <div class="flex flex-wrap items-center justify-end gap-2 sm:justify-start">
                                     <button
                                         type="button"
-                                        class="inline-flex items-center gap-1 rounded border border-gray-500 bg-gray-900 px-2 py-1 text-xs font-medium text-white hover:bg-gray-700"
+                                        class="inline-flex items-center gap-1 rounded border border-brand-blue/40 bg-app-canvas-dark px-2 py-1 text-xs font-medium text-app-ink-dark transition hover:bg-brand-blue/25"
                                         @click="openEditForm(note)"
                                     >
                                         <PencilSquareIcon class="h-4 w-4" />

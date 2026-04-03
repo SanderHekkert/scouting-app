@@ -30,8 +30,8 @@ function kindLabel(kind) {
 
 function kindBadgeClass(kind) {
     return kind === 'leader'
-        ? 'bg-sky-900/55 text-sky-200 ring-sky-500/35'
-        : 'bg-gray-700 text-gray-200 ring-gray-500/35';
+        ? 'bg-brand-blue/25 text-brand-blue-dark ring-brand-blue/40 dark:bg-brand-blue/35 dark:text-brand-yellow-soft dark:ring-brand-blue/50'
+        : 'bg-brand-green/20 text-brand-green ring-brand-green/35 dark:bg-brand-green/30 dark:text-brand-yellow-soft';
 }
 
 function formatIsoToNl(iso) {
@@ -50,20 +50,20 @@ function formatIsoToNl(iso) {
     <AuthenticatedLayout>
         <template #header>
             <div class="flex w-full flex-wrap items-center justify-between gap-3">
-                <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Dashboard</h2>
+                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Dashboard</h2>
                 <Link
                     :href="route('members.index')"
-                    class="text-sm font-medium text-indigo-700 hover:text-indigo-600 dark:text-indigo-300 dark:hover:text-indigo-200"
+                    class="text-sm font-medium text-brand-blue hover:text-brand-blue-dark dark:text-brand-blue-light dark:hover:text-brand-yellow-soft"
                 >
                     Dolfijnen →
                 </Link>
             </div>
         </template>
 
-        <div class="space-y-5 text-white">
+        <div class="space-y-5 text-app-ink dark:text-app-ink-dark">
             <section
                 v-if="todayEvents?.length"
-                class="relative overflow-hidden rounded-2xl border-2 border-amber-400/80 bg-gradient-to-br from-amber-950/80 via-amber-950/40 to-gray-900 p-5 shadow-lg shadow-amber-900/25 ring-1 ring-amber-300/40"
+                class="relative overflow-hidden rounded-2xl border-2 border-brand-yellow/70 bg-gradient-to-br from-amber-950/80 via-brand-red/25 to-brand-blue-dark/90 p-5 shadow-lg shadow-brand-red/20 ring-1 ring-brand-yellow/50"
                 aria-live="polite"
             >
                 <div class="pointer-events-none absolute -end-16 -top-16 size-40 rounded-full bg-amber-400/10 blur-2xl" />
@@ -99,7 +99,7 @@ function formatIsoToNl(iso) {
                         </ul>
                         <Link
                             :href="route('events.index')"
-                            class="mt-3 inline-flex text-xs font-semibold text-amber-200 underline decoration-amber-300/70 underline-offset-4 hover:text-white"
+                            class="mt-3 inline-flex text-xs font-semibold text-amber-200 underline decoration-amber-300/70 underline-offset-4 hover:text-brand-yellow-soft"
                         >
                             Naar agenda
                         </Link>
@@ -107,74 +107,74 @@ function formatIsoToNl(iso) {
                 </div>
             </section>
 
-            <section v-else class="rounded-xl border border-gray-700 bg-gray-800/70 px-4 py-3 text-sm text-gray-400">
-                <span class="font-medium text-gray-300">Geen opkomst vandaag</span>
-                <span class="mx-2 text-gray-600">·</span>
-                <Link :href="route('events.index')" class="text-indigo-300 hover:text-indigo-200">Bekijk agenda</Link>
+            <section v-else class="rounded-xl border border-app-border bg-app-panel/90 px-4 py-3 text-sm text-app-muted dark:border-brand-blue/30 dark:bg-app-panel-dark/90 dark:text-app-muted-dark">
+                <span class="font-medium text-app-ink dark:text-app-ink-dark">Geen opkomst vandaag</span>
+                <span class="mx-2 text-app-muted dark:text-app-muted-dark">·</span>
+                <Link :href="route('events.index')" class="font-medium text-brand-blue hover:text-brand-blue-dark dark:text-brand-blue-light dark:hover:text-brand-yellow-soft">Bekijk agenda</Link>
             </section>
 
             <section class="grid gap-3 sm:grid-cols-3">
                 <div
-                    class="flex gap-3 rounded-xl border border-gray-700 bg-gray-800 p-4 shadow-sm"
+                    class="flex gap-3 rounded-xl border border-app-border bg-app-panel p-4 shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark"
                 >
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-900 text-indigo-300 ring-1 ring-gray-600">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-blue/15 text-brand-blue ring-1 ring-brand-blue/30 dark:bg-brand-blue/25 dark:text-brand-yellow-soft dark:ring-brand-blue/45">
                         <UsersIcon class="h-5 w-5" />
                     </span>
                     <div class="min-w-0">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Dolfijnen</p>
-                        <p class="mt-1 tabular-nums text-2xl font-bold">{{ memberCount }}</p>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Dolfijnen</p>
+                        <p class="mt-1 tabular-nums text-2xl font-bold text-app-ink dark:text-app-ink-dark">{{ memberCount }}</p>
                     </div>
                 </div>
-                <div class="flex gap-3 rounded-xl border border-gray-700 bg-gray-800 p-4 shadow-sm">
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-900 text-sky-300 ring-1 ring-gray-600">
+                <div class="flex gap-3 rounded-xl border border-app-border bg-app-panel p-4 shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-red/15 text-brand-red ring-1 ring-brand-red/35 dark:bg-brand-red/20 dark:text-brand-yellow-soft dark:ring-brand-yellow/40">
                         <UserGroupIcon class="h-5 w-5" />
                     </span>
                     <div class="min-w-0">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Leiding</p>
-                        <p class="mt-1 tabular-nums text-2xl font-bold">{{ leaderCount }}</p>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Leiding</p>
+                        <p class="mt-1 tabular-nums text-2xl font-bold text-app-ink dark:text-app-ink-dark">{{ leaderCount }}</p>
                     </div>
                 </div>
-                <div class="flex gap-3 rounded-xl border border-gray-700 bg-gray-800 p-4 shadow-sm">
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-900 text-violet-300 ring-1 ring-gray-600">
+                <div class="flex gap-3 rounded-xl border border-app-border bg-app-panel p-4 shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-green/15 text-brand-green ring-1 ring-brand-green/35 dark:bg-brand-green/25 dark:text-brand-yellow-soft dark:ring-brand-yellow/40">
                         <ClipboardDocumentListIcon class="h-5 w-5" />
                     </span>
                     <div class="min-w-0">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Taken</p>
-                        <p class="mt-1 tabular-nums text-2xl font-bold">{{ taskCount }}</p>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Taken</p>
+                        <p class="mt-1 tabular-nums text-2xl font-bold text-app-ink dark:text-app-ink-dark">{{ taskCount }}</p>
                     </div>
                 </div>
             </section>
 
             <div class="grid gap-5 lg:grid-cols-2">
-                <section class="rounded-xl border border-gray-700 bg-gray-800 p-5 shadow-sm">
-                    <div class="flex items-center justify-between gap-3 border-b border-gray-600 pb-3">
+                <section class="rounded-xl border border-app-border bg-app-panel p-5 shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark">
+                    <div class="flex items-center justify-between gap-3 border-b border-brand-blue/35 pb-3">
                         <div class="flex items-center gap-2">
-                            <CalendarDaysIcon class="h-5 w-5 text-indigo-300" />
-                            <h3 class="text-base font-semibold text-indigo-100">Komende opkomsten</h3>
+                            <CalendarDaysIcon class="h-5 w-5 text-brand-blue dark:text-brand-blue-light" />
+                            <h3 class="text-base font-semibold text-brand-blue-dark dark:text-brand-yellow-soft">Komende opkomsten</h3>
                         </div>
                     </div>
                     <ul
                         v-if="upcomingEvents?.length"
-                        class="mt-4 divide-y divide-gray-700/80"
+                        class="mt-4 divide-y divide-app-border dark:divide-brand-blue/25"
                     >
                         <li
                             v-for="ev in upcomingEvents"
                             :key="ev.id"
                             class="flex gap-3 py-3 first:pt-0"
-                            :class="{ 'rounded-lg bg-indigo-950/35 px-2 -mx-2 ring-1 ring-indigo-500/30': ev.is_today }"
+                            :class="{ 'rounded-lg bg-brand-blue/30 px-2 -mx-2 ring-1 ring-brand-blue/40': ev.is_today }"
                         >
                             <div
                                 class="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-lg border text-center"
                                 :class="ev.is_today
                                     ? 'border-amber-500/60 bg-amber-950/40 text-amber-100'
-                                    : 'border-gray-600 bg-gray-900 text-gray-200'"
+                                    : 'border-app-border bg-app-sidebar text-app-ink dark:border-brand-blue/35 dark:bg-app-canvas-dark dark:text-app-ink-dark'"
                             >
-                                <span class="text-[10px] font-bold uppercase leading-none text-gray-400">{{ ev.weekday }}</span>
+                                <span class="text-[10px] font-bold uppercase leading-none text-app-muted dark:text-app-muted-dark">{{ ev.weekday }}</span>
                                 <span class="text-sm font-bold leading-tight">{{ ev.day_month }}</span>
                             </div>
                             <div class="min-w-0 flex-1">
-                                <p class="font-medium text-white">{{ ev.theme }}</p>
-                                <p class="mt-0.5 text-xs text-gray-400">
+                                <p class="font-medium text-app-ink dark:text-app-ink-dark">{{ ev.theme }}</p>
+                                <p class="mt-0.5 text-xs text-app-muted dark:text-app-muted-dark">
                                     <template v-if="ev.is_today">
                                         <span class="font-semibold text-amber-300">Vandaag</span>
                                         <span v-if="ev.event_type || ev.program_by"> · </span>
@@ -186,33 +186,33 @@ function formatIsoToNl(iso) {
                             </div>
                         </li>
                     </ul>
-                    <p v-else class="mt-6 text-center text-sm text-gray-500">
+                    <p v-else class="mt-6 text-center text-sm text-app-muted dark:text-app-muted-dark">
                         Geen geplande opkomsten.
-                        <Link :href="route('events.index')" class="text-indigo-300 hover:text-indigo-200"> Agenda </Link>
+                        <Link :href="route('events.index')" class="font-medium text-brand-blue hover:text-brand-blue-dark dark:text-brand-blue-light dark:hover:text-brand-yellow-soft"> Agenda </Link>
                     </p>
                 </section>
 
-                <section class="rounded-xl border border-gray-700 bg-gray-800 p-5 shadow-sm">
-                    <div class="flex items-center justify-between gap-3 border-b border-gray-600 pb-3">
+                <section class="rounded-xl border border-app-border bg-app-panel p-5 shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark">
+                    <div class="flex items-center justify-between gap-3 border-b border-brand-blue/35 pb-3">
                         <div class="flex items-center gap-2">
-                            <CakeIcon class="h-5 w-5 text-pink-300" />
-                            <h3 class="text-base font-semibold text-pink-100">Komende verjaardagen</h3>
+                            <CakeIcon class="h-5 w-5 text-brand-red dark:text-brand-yellow-soft" />
+                            <h3 class="text-base font-semibold text-brand-red-dark dark:text-brand-yellow-soft">Komende verjaardagen</h3>
                         </div>
                     </div>
                     <ul
                         v-if="upcomingBirthdays?.length"
-                        class="mt-4 divide-y divide-gray-700/80"
+                        class="mt-4 divide-y divide-app-border dark:divide-brand-blue/25"
                     >
                         <li v-for="row in upcomingBirthdays" :key="`${row.kind}-${row.id}`" class="flex flex-wrap items-center gap-3 py-3 first:pt-0">
                             <div
-                                class="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-lg border border-gray-600 bg-gray-900 text-center text-gray-200"
+                                class="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-lg border border-app-border bg-app-sidebar text-center text-app-ink dark:border-brand-blue/35 dark:bg-app-canvas-dark dark:text-app-ink-dark"
                             >
-                                <span class="text-[10px] font-bold uppercase leading-none text-gray-400">{{ row.weekday }}</span>
+                                <span class="text-[10px] font-bold uppercase leading-none text-app-muted dark:text-app-muted-dark">{{ row.weekday }}</span>
                                 <span class="text-sm font-bold leading-tight">{{ row.day_month }}</span>
                             </div>
                             <div class="min-w-0 flex-1">
                                 <div class="flex flex-wrap items-center gap-2">
-                                    <p class="font-medium text-white">{{ fullName(row) }}</p>
+                                    <p class="font-medium text-app-ink dark:text-app-ink-dark">{{ fullName(row) }}</p>
                                     <span
                                         class="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ring-1"
                                         :class="kindBadgeClass(row.kind)"
@@ -220,19 +220,19 @@ function formatIsoToNl(iso) {
                                         {{ kindLabel(row.kind) }}
                                     </span>
                                 </div>
-                                <p class="mt-0.5 text-xs text-gray-400">
+                                <p class="mt-0.5 text-xs text-app-muted dark:text-app-muted-dark">
                                     <span
-                                        :class="row.days_until === 0 ? 'font-semibold text-amber-300' : ''"
+                                        :class="row.days_until === 0 ? 'font-semibold text-brand-red dark:text-brand-yellow-soft' : ''"
                                     >
                                         {{ row.when_label }}
                                     </span>
-                                    <span class="text-gray-600"> · </span>
-                                    <span class="text-gray-500">geb. {{ formatIsoToNl(row.birthday) }}</span>
+                                    <span class="text-app-muted dark:text-app-muted-dark"> · </span>
+                                    <span>geb. {{ formatIsoToNl(row.birthday) }}</span>
                                 </p>
                             </div>
                         </li>
                     </ul>
-                    <p v-else class="mt-6 text-center text-sm text-gray-500">Nog geen verjaardagen met datum in het systeem.</p>
+                    <p v-else class="mt-6 text-center text-sm text-app-muted dark:text-app-muted-dark">Nog geen verjaardagen met datum in het systeem.</p>
                 </section>
             </div>
         </div>
