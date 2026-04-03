@@ -10,26 +10,43 @@ function tabClass(active) {
     ];
 }
 
-const isAgendaTab = () => route().current('events.*');
+const isAgendaTab = () => route().current('events.index');
+const isArchivedTab = () => route().current('events.archived');
 const isJaarThemaTab = () => route().current('jaar-thema');
 </script>
 
 <template>
-    <div class="mb-3 flex flex-wrap gap-1 border-b border-brand-blue/35" role="tablist" aria-label="Agenda onderdelen">
+    <div
+        class="mb-3 flex gap-1 overflow-x-auto overflow-y-hidden border-b border-brand-blue/35 pb-px [-webkit-overflow-scrolling:touch] sm:flex-wrap"
+        role="tablist"
+        aria-label="Agenda onderdelen"
+    >
         <Link
             role="tab"
             :href="route('events.index')"
             preserve-scroll
             :aria-selected="isAgendaTab()"
+            class="shrink-0 touch-manipulation whitespace-nowrap"
             :class="tabClass(isAgendaTab())"
         >
             Agenda
         </Link>
         <Link
             role="tab"
+            :href="route('events.archived')"
+            preserve-scroll
+            :aria-selected="isArchivedTab()"
+            class="shrink-0 touch-manipulation whitespace-nowrap"
+            :class="tabClass(isArchivedTab())"
+        >
+            Gearchiveerde opkomsten
+        </Link>
+        <Link
+            role="tab"
             :href="route('jaar-thema')"
             preserve-scroll
             :aria-selected="isJaarThemaTab()"
+            class="shrink-0 touch-manipulation whitespace-nowrap"
             :class="tabClass(isJaarThemaTab())"
         >
             Jaar thema

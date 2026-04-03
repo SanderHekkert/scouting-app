@@ -23,6 +23,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/tipper-topper-opkomst', TipperTopperOpkomstController::class)->name('tipper-topper-opkomst.index');
     Route::patch('/events/{event}/theme', [EventController::class, 'updateTheme'])->name('events.update-theme');
     Route::patch('/events/{event}/fields', [EventController::class, 'quickUpdate'])->name('events.quick-update');
+    Route::get('/events/archived', [EventController::class, 'archived'])->name('events.archived');
     Route::resource('events', EventController::class)->except(['create', 'show', 'edit']);
     Route::patch('/members/{member}/installed', [MemberController::class, 'updateInstalled'])->name('members.update-installed');
     Route::patch('/members/{member}/fields', [MemberController::class, 'quickUpdate'])->name('members.quick-update');

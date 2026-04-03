@@ -1,12 +1,14 @@
 <script setup>
 import AgendaSubnav from '@/Components/AgendaSubnav.vue';
-import EditableTextCell from '@/Components/EditableTextCell.vue';
+import AgendaEventsTable from '@/Components/AgendaEventsTable.vue';
 import { ref } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
-import { PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import { PlusIcon } from '@heroicons/vue/24/outline';
 
-const props = defineProps({ events: Array });
+const props = defineProps({
+    events: Array,
+});
 
 const showAddForm = ref(false);
 
@@ -190,106 +192,21 @@ function isEventFieldSaving(event, field) {
 
                 <div class="mb-3 flex w-full flex-col gap-3 border-b border-brand-blue/35 pb-2 sm:flex-row sm:items-start sm:justify-between">
                     <div>
-                        <h3 class="text-lg font-semibold text-app-ink dark:text-app-ink-dark">Overzicht</h3>
+                        <h3 class="text-lg font-semibold text-app-ink dark:text-app-ink-dark">Actuele opkomsten</h3>
                         <p class="mt-0.5 text-xs text-app-muted dark:text-app-muted-dark">
-                            Alle agenda-items. Dubbelklik in een cel om te bewerken. Klik daarna buiten het veld om op te slaan.
-                            Esc annuleert.
+                            Vanaf vandaag en verder. Opkomsten van vóór vandaag (kalenderdag) staan onder het tabblad
+                            Gearchiveerde opkomsten. Dubbelklik in een cel om te bewerken.
                         </p>
                     </div>
                 </div>
 
-                <div v-if="!props.events?.length" class="py-6 text-center text-sm text-app-muted dark:text-app-muted-dark">
-                    Nog geen agenda-items.
-                </div>
-                <div v-else class="surface-brand-top-lg overflow-x-auto rounded-lg border border-brand-blue/25">
-                    <table class="w-full min-w-[72rem] border-collapse text-left text-sm text-app-ink dark:text-app-ink-dark">
-                        <thead class="border-b border-brand-blue/35 bg-app-sidebar dark:bg-app-canvas-dark/80">
-                            <tr class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
-                                <th scope="col" class="min-w-[7rem] px-3 py-2.5">Thema</th>
-                                <th scope="col" class="whitespace-nowrap px-3 py-2.5">Datum</th>
-                                <th scope="col" class="min-w-[8rem] px-3 py-2.5">Type opkomst</th>
-                                <th scope="col" class="min-w-[10rem] px-3 py-2.5">Wat ga je doen?</th>
-                                <th scope="col" class="min-w-[7rem] px-3 py-2.5">Programma door</th>
-                                <th scope="col" class="min-w-[12rem] px-3 py-2.5">Afwezig</th>
-                                <th scope="col" class="min-w-[11rem] px-3 py-2.5">Bijzonderheden</th>
-                                <th scope="col" class="min-w-[9rem] whitespace-nowrap px-3 py-2.5 text-end sm:text-start">
-                                    Acties
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-brand-blue/25">
-                            <tr
-                                v-for="event in props.events"
-                                :key="event.id"
-                                class="bg-brand-blue/5 transition-colors hover:bg-brand-blue/12 dark:bg-app-panel-dark/50 dark:hover:bg-brand-blue/15"
-                            >
-                                <td class="px-3 py-2.5 align-top">
-                                    <EditableTextCell
-                                        :text="event.theme || ''"
-                                        multiline
-                                        :saving="isEventFieldSaving(event, 'theme')"
-                                        @save="(v) => patchEventField(event, 'theme', v)"
-                                    />
-                                </td>
-                                <td class="whitespace-nowrap px-3 py-2.5 align-top tabular-nums">
-                                    <EditableTextCell
-                                        :text="event.event_date ? String(event.event_date).slice(0, 10) : ''"
-                                        input-kind="date"
-                                        :multiline="false"
-                                        :saving="isEventFieldSaving(event, 'event_date')"
-                                        @save="(v) => patchEventField(event, 'event_date', v)"
-                                    />
-                                </td>
-                                <td class="px-3 py-2.5 align-top">
-                                    <EditableTextCell
-                                        :text="event.event_type || ''"
-                                        :multiline="false"
-                                        :saving="isEventFieldSaving(event, 'event_type')"
-                                        @save="(v) => patchEventField(event, 'event_type', v)"
-                                    />
-                                </td>
-                                <td class="px-3 py-2.5 align-top">
-                                    <EditableTextCell
-                                        :text="event.activity || ''"
-                                        multiline
-                                        :saving="isEventFieldSaving(event, 'activity')"
-                                        @save="(v) => patchEventField(event, 'activity', v)"
-                                    />
-                                </td>
-                                <td class="px-3 py-2.5 align-top">
-                                    <EditableTextCell
-                                        :text="event.program_by || ''"
-                                        :multiline="false"
-                                        :saving="isEventFieldSaving(event, 'program_by')"
-                                        @save="(v) => patchEventField(event, 'program_by', v)"
-                                    />
-                                </td>
-                                <td class="max-w-[18rem] px-3 py-2.5 align-top">
-                                    <EditableTextCell
-                                        :text="event.absent || ''"
-                                        multiline
-                                        :saving="isEventFieldSaving(event, 'absent')"
-                                        @save="(v) => patchEventField(event, 'absent', v)"
-                                    />
-                                </td>
-                                <td class="max-w-[16rem] px-3 py-2.5 align-top">
-                                    <EditableTextCell
-                                        :text="event.notes || ''"
-                                        multiline
-                                        :saving="isEventFieldSaving(event, 'notes')"
-                                        @save="(v) => patchEventField(event, 'notes', v)"
-                                    />
-                                </td>
-                                <td class="px-3 py-2.5 align-top">
-                                    <button type="button" class="btn-action-delete" @click="deleteEvent(event)">
-                                        <TrashIcon class="h-4 w-4 shrink-0" />
-                                        Verwijderen
-                                    </button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <AgendaEventsTable
+                    :events="props.events"
+                    :is-field-saving="isEventFieldSaving"
+                    empty-message="Nog geen actuele opkomsten."
+                    @patch-field="(ev, field, val) => patchEventField(ev, field, val)"
+                    @delete="deleteEvent"
+                />
             </div>
         </div>
     </AuthenticatedLayout>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -13,8 +14,34 @@ class EventController extends Controller
      */
     public function index()
     {
+        $today = Carbon::today();
+
+        $active = Event::query()
+            ->whereDate('event_date', '>=', $today)
+            ->orderBy('event_date')
+            ->orderBy('theme')
+            ->get();
+
         return Inertia::render('Events/Index', [
-            'events' => Event::query()->orderBy('event_date')->get(),
+            'events' => $active,
+        ]);
+    }
+
+    /**
+     * Gearchiveerde opkomsten (event_date vóór vandaag), eigen pagina onder Agenda.
+     */
+    public function archived()
+    {
+        $today = Carbon::today();
+
+        $archived = Event::query()
+            ->whereDate('event_date', '<', $today)
+            ->orderByDesc('event_date')
+            ->orderBy('theme')
+            ->get();
+
+        return Inertia::render('Events/Archived', [
+            'archivedEvents' => $archived,
         ]);
     }
 
@@ -103,6 +130,6 @@ class EventController extends Controller
     {
         $event->delete();
 
-        return to_route('events.index');
+        return back();
     }
 }

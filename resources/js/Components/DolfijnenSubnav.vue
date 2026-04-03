@@ -12,12 +12,17 @@ function tabClass(active) {
 </script>
 
 <template>
-    <div class="mb-3 flex flex-wrap gap-1 border-b border-brand-blue/35" role="tablist" aria-label="Dolfijnen onderdelen">
+    <div
+        class="mb-3 flex gap-1 overflow-x-auto overflow-y-hidden border-b border-brand-blue/35 pb-px [-webkit-overflow-scrolling:touch] sm:flex-wrap"
+        role="tablist"
+        aria-label="Dolfijnen onderdelen"
+    >
         <Link
             role="tab"
             :href="route('members.index')"
             preserve-scroll
             :aria-selected="route().current('members.index')"
+            class="shrink-0 touch-manipulation whitespace-nowrap"
             :class="tabClass(route().current('members.index'))"
         >
             Dolfijnen
@@ -27,6 +32,7 @@ function tabClass(active) {
             :href="route('members.bijzonderheden')"
             preserve-scroll
             :aria-selected="route().current('members.bijzonderheden')"
+            class="shrink-0 touch-manipulation whitespace-nowrap"
             :class="tabClass(route().current('members.bijzonderheden'))"
         >
             Bijzonderheden
@@ -36,6 +42,7 @@ function tabClass(active) {
             :href="route('tipper-topper-opkomst.index')"
             preserve-scroll
             :aria-selected="route().current('tipper-topper-opkomst.index')"
+            class="shrink-0 touch-manipulation whitespace-nowrap"
             :class="tabClass(route().current('tipper-topper-opkomst.index'))"
         >
             Tipper- & Topper opkomst
@@ -45,6 +52,7 @@ function tabClass(active) {
             :href="route('pods.index')"
             preserve-scroll
             :aria-selected="route().current('pods.index')"
+            class="shrink-0 touch-manipulation whitespace-nowrap"
             :class="tabClass(route().current('pods.index'))"
         >
             Vinindeling

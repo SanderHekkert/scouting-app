@@ -3,10 +3,9 @@
 </script>
 
 <template>
-    <div
-        class="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-950 via-[#0c2847] to-slate-900"
-    >
-        <div class="pointer-events-none fixed inset-0" aria-hidden="true">
+    <!-- Geen overflow-hidden op deze root: anders werkt sticky/fixed in child layouts niet goed op mobiel. -->
+    <div class="relative min-h-screen bg-gradient-to-br from-slate-950 via-[#0c2847] to-slate-900">
+        <div class="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden="true">
             <div
                 class="absolute -top-32 right-[-10%] h-[28rem] w-[28rem] rounded-full bg-brand-blue/20 blur-3xl"
             />

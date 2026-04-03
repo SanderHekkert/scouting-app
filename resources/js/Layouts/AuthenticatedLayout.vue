@@ -1,8 +1,9 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import AppShellBackground from '@/Components/AppShellBackground.vue';
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import { Link, usePage } from '@inertiajs/vue3';
+import { Bars3Icon, XMarkIcon } from '@heroicons/vue/24/outline';
 
 const page = usePage();
 
@@ -75,6 +76,31 @@ const activeMobileLabel = computed(() => {
 function closeMobileMenu() {
     mobileMenuOpen.value = false;
 }
+
+/** Voorkom achtergrond-scroll als het mobiele menu open is. */
+watch(mobileMenuOpen, (open) => {
+    if (typeof document === 'undefined') {
+        return;
+    }
+    document.body.style.overflow = open ? 'hidden' : '';
+});
+
+function onDocumentEscape(e) {
+    if (e.key === 'Escape') {
+        closeMobileMenu();
+    }
+}
+
+onMounted(() => {
+    document.addEventListener('keydown', onDocumentEscape);
+});
+
+onUnmounted(() => {
+    document.removeEventListener('keydown', onDocumentEscape);
+    if (typeof document !== 'undefined') {
+        document.body.style.overflow = '';
+    }
+});
 </script>
 
 <template>
@@ -170,90 +196,118 @@ function closeMobileMenu() {
                 />
             </aside>
 
-            <main class="min-h-screen min-w-0 p-4 md:ms-72 md:p-6">
-                <div class="mb-4 md:hidden">
-                    <div class="surface-brand-top sticky top-2 z-40 rounded-xl border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-200 dark:bg-white">
-                        <div class="mb-2 flex items-center gap-2">
-                            <Link
-                                :href="route('dashboard')"
-                                class="shrink-0 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-brand-blue/80"
-                                @click="closeMobileMenu"
-                            >
-                                <ApplicationLogo class="max-h-10 max-w-[6.5rem]" />
-                            </Link>
-                            <button
-                                type="button"
-                                class="flex min-h-[2.75rem] flex-1 items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 transition hover:bg-brand-blue/10"
-                                :aria-expanded="mobileMenuOpen"
-                                @click="mobileMenuOpen = !mobileMenuOpen"
-                            >
-                                <span class="min-w-0 truncate">{{ activeMobileLabel }}</span>
-                                <span class="shrink-0 text-xs text-app-muted">
-                                    {{ mobileMenuOpen ? 'Sluiten' : 'Menu' }}
-                                </span>
-                            </button>
-                        </div>
-                        <div v-if="mobileMenuOpen" class="pt-2">
-                            <nav class="flex max-h-[min(70vh,28rem)] flex-col gap-1 overflow-y-auto">
-                                <Link
-                                    v-for="item in mainNavItems"
-                                    :key="`mobile-${item.route}`"
-                                    :href="route(item.route)"
-                                    class="rounded-lg px-3 py-2.5 text-xs font-medium transition"
-                                    :class="
-                                        navItemIsActive(item)
-                                            ? 'bg-brand-red/10 text-brand-red'
-                                            : 'text-slate-800 hover:bg-brand-blue/10'
-                                    "
-                                    @click="closeMobileMenu"
-                                >
-                                    {{ item.label }}
-                                </Link>
-                                <Link
-                                    :href="route(dolfijnenNavItem.route)"
-                                    class="rounded-lg px-3 py-2.5 text-xs font-medium transition"
-                                    :class="
-                                        navItemIsActive(dolfijnenNavItem)
-                                            ? 'bg-brand-red/10 text-brand-red'
-                                            : 'text-slate-800 hover:bg-brand-blue/10'
-                                    "
-                                    @click="closeMobileMenu"
-                                >
-                                    {{ dolfijnenNavItem.label }}
-                                </Link>
-                                <Link
-                                    v-for="item in tailNavItems"
-                                    :key="`mobile-${item.route}`"
-                                    :href="route(item.route)"
-                                    class="rounded-lg px-3 py-2.5 text-xs font-medium transition"
-                                    :class="
-                                        navItemIsActive(item)
-                                            ? 'bg-brand-red/10 text-brand-red'
-                                            : 'text-slate-800 hover:bg-brand-blue/10'
-                                    "
-                                    @click="closeMobileMenu"
-                                >
-                                    {{ item.label }}
-                                </Link>
-                                <Link
-                                    :href="route('profile.edit')"
-                                    class="rounded-lg px-3 py-2.5 text-xs font-medium transition"
-                                    :class="route().current('profile.edit') ? 'bg-brand-red/10 text-brand-red' : 'text-slate-800 hover:bg-brand-blue/10'"
-                                    @click="closeMobileMenu"
-                                >
-                                    Profiel
-                                </Link>
-                            </nav>
-                        </div>
-                    </div>
+            <!-- Mobiel: vaste topbalk + overlay-menu (safe areas, grote tikdoelen) -->
+            <div
+                class="md:hidden fixed inset-x-0 top-0 z-50 border-b border-slate-200/90 bg-white/95 pt-[env(safe-area-inset-top,0px)] shadow-[0_4px_24px_-4px_rgba(0,0,0,0.12)] backdrop-blur-md dark:border-slate-700 dark:bg-slate-950/95 dark:shadow-black/30"
+            >
+                <div class="flex h-14 min-h-[3.5rem] items-center gap-2 px-3 sm:px-4">
+                    <Link
+                        :href="route('dashboard')"
+                        class="touch-manipulation shrink-0 rounded-lg p-2 -ms-1 outline-none ring-brand-blue/80 focus-visible:ring-2 active:bg-slate-100 dark:active:bg-slate-800"
+                        aria-label="Naar dashboard"
+                        @click="closeMobileMenu"
+                    >
+                        <ApplicationLogo class="max-h-9 max-w-[5.75rem]" />
+                    </Link>
+                    <button
+                        type="button"
+                        class="touch-manipulation flex min-h-11 min-w-0 flex-1 items-center justify-between gap-2 rounded-xl border border-slate-200/90 bg-white px-3 py-2.5 text-left text-sm font-semibold text-slate-900 shadow-sm transition active:scale-[0.99] dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                        :aria-expanded="mobileMenuOpen"
+                        aria-controls="app-mobile-nav"
+                        @click="mobileMenuOpen = !mobileMenuOpen"
+                    >
+                        <span class="min-w-0 flex-1 truncate">{{ activeMobileLabel }}</span>
+                        <span class="flex shrink-0 items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">
+                            <Bars3Icon v-if="!mobileMenuOpen" class="h-6 w-6" aria-hidden="true" />
+                            <XMarkIcon v-else class="h-6 w-6" aria-hidden="true" />
+                            <span class="whitespace-nowrap">{{ mobileMenuOpen ? 'Sluiten' : 'Menu' }}</span>
+                        </span>
+                    </button>
                 </div>
+            </div>
+
+            <div
+                v-show="mobileMenuOpen"
+                class="md:hidden fixed inset-0 z-[44] bg-slate-950/45 backdrop-blur-[2px] dark:bg-black/55"
+                aria-hidden="true"
+                @click="closeMobileMenu"
+            />
+
+            <nav
+                v-show="mobileMenuOpen"
+                id="app-mobile-nav"
+                class="md:hidden fixed left-0 right-0 z-[45] max-h-[min(78dvh,32rem)] overflow-y-auto overscroll-contain rounded-b-2xl border-b border-slate-200 bg-white shadow-2xl [-webkit-overflow-scrolling:touch] dark:border-slate-700 dark:bg-slate-950"
+                :style="{
+                    top: 'calc(env(safe-area-inset-top, 0px) + 3.5rem)',
+                }"
+                aria-label="Mobiel menu"
+            >
+                <div class="space-y-1 px-3 py-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
+                    <Link
+                        v-for="item in mainNavItems"
+                        :key="`mobile-${item.route}`"
+                        :href="route(item.route)"
+                        class="flex min-h-12 items-center rounded-xl px-4 text-base font-medium transition touch-manipulation active:scale-[0.99]"
+                        :class="
+                            navItemIsActive(item)
+                                ? 'bg-brand-red/12 text-brand-red ring-1 ring-brand-red/25'
+                                : 'text-slate-800 hover:bg-brand-blue/10 active:bg-brand-blue/15 dark:text-slate-100 dark:hover:bg-brand-blue/15'
+                        "
+                        @click="closeMobileMenu"
+                    >
+                        {{ item.label }}
+                    </Link>
+                    <Link
+                        :href="route(dolfijnenNavItem.route)"
+                        class="flex min-h-12 items-center rounded-xl px-4 text-base font-medium transition touch-manipulation active:scale-[0.99]"
+                        :class="
+                            navItemIsActive(dolfijnenNavItem)
+                                ? 'bg-brand-red/12 text-brand-red ring-1 ring-brand-red/25'
+                                : 'text-slate-800 hover:bg-brand-blue/10 active:bg-brand-blue/15 dark:text-slate-100 dark:hover:bg-brand-blue/15'
+                        "
+                        @click="closeMobileMenu"
+                    >
+                        {{ dolfijnenNavItem.label }}
+                    </Link>
+                    <Link
+                        v-for="item in tailNavItems"
+                        :key="`mobile-${item.route}`"
+                        :href="route(item.route)"
+                        class="flex min-h-12 items-center rounded-xl px-4 text-base font-medium transition touch-manipulation active:scale-[0.99]"
+                        :class="
+                            navItemIsActive(item)
+                                ? 'bg-brand-red/12 text-brand-red ring-1 ring-brand-red/25'
+                                : 'text-slate-800 hover:bg-brand-blue/10 active:bg-brand-blue/15 dark:text-slate-100 dark:hover:bg-brand-blue/15'
+                        "
+                        @click="closeMobileMenu"
+                    >
+                        {{ item.label }}
+                    </Link>
+                    <div class="my-2 border-t border-slate-200 dark:border-slate-700" />
+                    <Link
+                        :href="route('profile.edit')"
+                        class="flex min-h-12 items-center rounded-xl px-4 text-base font-medium transition touch-manipulation active:scale-[0.99]"
+                        :class="route().current('profile.edit') ? 'bg-brand-red/12 text-brand-red ring-1 ring-brand-red/25' : 'text-slate-800 hover:bg-brand-blue/10 dark:text-slate-100'"
+                        @click="closeMobileMenu"
+                    >
+                        Profiel
+                    </Link>
+                    <p class="px-4 pt-2 text-center text-[11px] text-slate-400 dark:text-slate-500">FN12 · Dolfijnen</p>
+                </div>
+            </nav>
+
+            <main
+                class="min-h-screen min-w-0 px-3 pb-[max(1rem,env(safe-area-inset-bottom,0px))] pt-[calc(env(safe-area-inset-top,0px)+3.5rem+0.75rem)] md:ms-72 md:px-6 md:pb-6 md:pt-6"
+            >
                 <header
                     v-if="$slots.header"
-                    class="surface-brand-top mb-6 w-full rounded-xl border border-white/35 bg-white/90 p-5 shadow-lg backdrop-blur-md dark:border-white/10 dark:bg-slate-950/50"
+                    class="surface-brand-top mb-4 w-full rounded-xl border border-white/35 bg-white/90 p-4 shadow-lg backdrop-blur-md sm:mb-6 sm:p-5 dark:border-white/10 dark:bg-slate-950/50"
                 >
                     <slot name="header" />
                 </header>
-                <slot />
+                <div class="min-w-0">
+                    <slot />
+                </div>
             </main>
         </div>
     </AppShellBackground>
