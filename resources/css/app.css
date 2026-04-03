@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Global readability override: convert dark/black text to white. */
+@layer base {
+    .text-black,
+    .text-gray-900,
+    .text-gray-800,
+    .text-gray-700,
+    .text-gray-600,
+    .text-zinc-900,
+    .text-zinc-800,
+    .text-zinc-700 {
+        color: #ffffff !important;
+    }
+}
