@@ -23,6 +23,7 @@ const links = [
     { label: 'Dashboard', route: 'dashboard' },
     { label: 'Agenda', route: 'events.index' },
     { label: 'Contacten', route: 'members.index' },
+    { label: 'Tipper- & Topper opkomst', route: 'tipper-topper-opkomst.index' },
     { label: 'Vinindeling', route: 'pods.index' },
     { label: 'Belangrijke info', route: 'info-notes.index' },
     { label: 'Taakverdeling', route: 'task-items.index' },

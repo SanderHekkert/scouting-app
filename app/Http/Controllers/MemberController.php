@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Member;
 use App\Models\Leader;
+use App\Models\Member;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -42,6 +42,7 @@ class MemberController extends Controller
             'address' => ['nullable', 'string', 'max:255'],
             'phone_mother' => ['nullable', 'string', 'max:255'],
             'phone_father' => ['nullable', 'string', 'max:255'],
+            'bijzonderheden' => ['nullable', 'string', 'max:65535'],
             'active' => ['nullable', 'boolean'],
         ]);
 
@@ -67,6 +68,7 @@ class MemberController extends Controller
             'address' => ['nullable', 'string', 'max:255'],
             'phone_mother' => ['nullable', 'string', 'max:255'],
             'phone_father' => ['nullable', 'string', 'max:255'],
+            'bijzonderheden' => ['nullable', 'string', 'max:65535'],
             'active' => ['nullable', 'boolean'],
         ]);
 
@@ -84,11 +86,29 @@ class MemberController extends Controller
             'tipper_topper_opkomst' => ['required', 'boolean'],
         ]);
 
-        $member->update([
-            'tipper_topper_opkomst' => $validated['tipper_topper_opkomst'],
-        ]);
+        if ($validated['tipper_topper_opkomst']) {
+            $maxOrder = Member::query()
+                ->where('tipper_topper_opkomst', true)
+                ->where('id', '!=', $member->id)
+                ->max('tipper_topper_opkomst_order');
 
-        return to_route('members.index');
+            $member->update([
+                'tipper_topper_opkomst' => true,
+                'tipper_topper_opkomst_order' => $maxOrder === null ? 0 : ((int) $maxOrder) + 1,
+            ]);
+        } else {
+            $maxNeeOrder = Member::query()
+                ->where('tipper_topper_opkomst', false)
+                ->where('id', '!=', $member->id)
+                ->max('tipper_topper_opkomst_order');
+
+            $member->update([
+                'tipper_topper_opkomst' => false,
+                'tipper_topper_opkomst_order' => $maxNeeOrder === null ? 0 : ((int) $maxNeeOrder) + 1,
+            ]);
+        }
+
+        return back();
     }
 
     /**

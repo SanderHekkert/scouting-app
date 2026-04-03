@@ -15,6 +15,7 @@ class Member extends Model
         'address',
         'phone_mother',
         'phone_father',
+        'bijzonderheden',
         'active',
         'tipper_topper_opkomst',
         'tipper_topper_opkomst_order',

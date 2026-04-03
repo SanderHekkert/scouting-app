@@ -15,5 +15,6 @@ class Leader extends Model
         'birthday',
         'phone_number',
         'email',
+        'bijzonderheden',
     ];
 }
