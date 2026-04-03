@@ -41,7 +41,7 @@ function deleteLeader() {
             <div class="flex flex-wrap items-center gap-3">
                 <Link
                     :href="route('leaders.index')"
-                    class="inline-flex items-center gap-1 text-sm font-medium text-brand-red hover:text-brand-red-dark dark:text-brand-blue-light dark:hover:text-brand-yellow-soft"
+                    class="inline-flex items-center gap-1 text-sm font-medium text-brand-red hover:text-brand-red-dark dark:text-brand-blue-light dark:hover:text-app-ink-dark"
                 >
                     <ChevronLeftIcon class="h-5 w-5" />
                     Terug naar Leiding
@@ -50,8 +50,8 @@ function deleteLeader() {
         </template>
 
         <div class="mx-auto max-w-lg space-y-4 text-app-ink dark:text-app-ink-dark">
-            <div class="rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5">
-                <h2 class="border-b border-brand-blue/35 pb-3 text-xl font-semibold text-brand-yellow-soft">
+            <div class="surface-brand-top rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5">
+                <h2 class="border-b border-brand-blue/35 pb-3 text-xl font-semibold text-app-ink dark:text-app-ink-dark">
                     {{ leaderDisplayName(leader) }}
                 </h2>
 
@@ -96,7 +96,7 @@ function deleteLeader() {
                             <a
                                 v-if="leader.email"
                                 :href="`mailto:${leader.email}`"
-                                class="text-brand-blue-light underline decoration-brand-blue-light/70 underline-offset-2 hover:text-brand-yellow-soft"
+                                class="text-brand-blue-light underline decoration-brand-blue-light/70 underline-offset-2 hover:text-brand-blue-dark dark:text-brand-blue-light dark:hover:text-app-ink-dark"
                             >
                                 {{ leader.email }}
                             </a>
@@ -106,18 +106,11 @@ function deleteLeader() {
                 </dl>
 
                 <div class="mt-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                    <Link
-                        :href="editIndexUrl"
-                        class="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-red px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-red-dark"
-                    >
+                    <Link :href="editIndexUrl" class="btn-action-edit btn-action-edit--lg">
                         <PencilSquareIcon class="h-5 w-5" />
                         Bewerken
                     </Link>
-                    <button
-                        type="button"
-                        class="inline-flex items-center justify-center gap-2 rounded-lg border border-red-800/60 bg-red-950/35 px-4 py-2.5 text-sm font-medium text-red-300 hover:bg-red-950/55"
-                        @click="deleteLeader"
-                    >
+                    <button type="button" class="btn-action-delete btn-action-delete--lg" @click="deleteLeader">
                         <TrashIcon class="h-5 w-5" />
                         Verwijderen
                     </button>

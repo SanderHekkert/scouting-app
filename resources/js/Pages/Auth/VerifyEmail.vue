@@ -52,7 +52,7 @@ const verificationLinkSent = computed(
                     :href="route('logout')"
                     method="post"
                     as="button"
-                    class="rounded-md text-sm text-app-muted underline hover:text-brand-blue-dark focus:outline-none focus:ring-2 focus:ring-brand-blue/50 focus:ring-offset-2 focus:ring-offset-app-canvas dark:text-app-muted-dark dark:hover:text-brand-yellow-soft dark:focus:ring-offset-app-canvas-dark"
+                    class="rounded-md text-sm text-app-muted underline hover:text-brand-blue-dark focus:outline-none focus:ring-2 focus:ring-brand-blue/50 focus:ring-offset-2 focus:ring-offset-app-canvas dark:text-app-muted-dark dark:hover:text-app-ink-dark dark:focus:ring-offset-app-canvas-dark"
                     >Log Out</Link
                 >
             </div>

@@ -208,10 +208,10 @@ function dashIfEmpty(value) {
         <div class="space-y-4 text-app-ink dark:text-app-ink-dark">
             <form
                 v-show="showAddForm"
-                class="space-y-4 rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5"
+                class="surface-brand-top space-y-4 rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5"
                 @submit.prevent="submitAdd"
             >
-                <h3 class="text-base font-semibold text-brand-yellow-soft">Nieuwe leiding</h3>
+                <h3 class="text-base font-semibold text-app-ink dark:text-app-ink-dark">Nieuwe leiding</h3>
                 <div class="grid gap-4 sm:grid-cols-[10rem_1fr] sm:items-start">
                     <label for="add-leader-first-name" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Voornaam
@@ -329,10 +329,10 @@ function dashIfEmpty(value) {
 
             <form
                 v-show="showEditForm"
-                class="space-y-4 rounded-xl border border-brand-yellow/35 bg-app-panel shadow-sm dark:bg-app-panel-dark/95 p-5"
+                class="surface-brand-top space-y-4 rounded-xl border border-brand-yellow/35 bg-app-panel shadow-sm dark:bg-app-panel-dark/95 p-5"
                 @submit.prevent="submitEdit"
             >
-                <h3 class="text-base font-semibold text-amber-100">Leiding bewerken</h3>
+                <h3 class="text-base font-semibold text-app-ink dark:text-app-ink-dark">Leiding bewerken</h3>
                 <div class="grid gap-4 sm:grid-cols-[10rem_1fr] sm:items-start">
                     <label for="edit-leader-first-name" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Voornaam
@@ -455,11 +455,11 @@ function dashIfEmpty(value) {
                 </p>
             </form>
 
-            <div class="rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-4">
+            <div class="surface-brand-top rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-4">
                 <div
                     class="mb-3 flex w-full flex-col gap-3 border-b border-brand-blue/35 pb-2 sm:flex-row sm:items-center sm:justify-between"
                 >
-                    <h3 class="text-lg font-semibold text-brand-yellow-soft">Overzicht</h3>
+                    <h3 class="text-lg font-semibold text-app-ink dark:text-app-ink-dark">Overzicht</h3>
                     <div class="flex w-full max-w-sm items-center gap-2 self-end sm:ms-auto">
                         <MagnifyingGlassIcon
                             class="h-5 w-5 shrink-0 text-app-muted dark:text-app-muted-dark"
@@ -488,13 +488,13 @@ function dashIfEmpty(value) {
                             v-for="leader in filteredLeaders"
                             :key="`l-mob-${leader.id}`"
                             :href="route('leaders.show', leader.id)"
-                            class="flex items-center justify-between gap-3 rounded-xl border border-brand-blue/30 bg-app-panel px-4 py-3 text-app-ink shadow-sm dark:bg-app-panel-dark/95 dark:text-app-ink-dark active:bg-brand-blue/15"
+                            class="surface-brand-top flex items-center justify-between gap-3 rounded-xl border border-brand-blue/30 bg-app-panel px-4 py-3 text-app-ink shadow-sm dark:bg-app-panel-dark/95 dark:text-app-ink-dark active:bg-brand-blue/15"
                         >
                             <span class="min-w-0 truncate font-medium">{{ leaderListName(leader) }}</span>
                             <ChevronRightIcon class="h-5 w-5 shrink-0 text-app-muted dark:text-app-muted-dark" aria-hidden="true" />
                         </Link>
                     </div>
-                    <div class="hidden overflow-x-auto rounded-lg border border-brand-blue/25 md:block">
+                    <div class="surface-brand-top-lg hidden overflow-x-auto rounded-lg border border-brand-blue/25 md:block">
                         <table class="w-full min-w-[64rem] border-collapse text-left text-sm text-app-ink dark:text-app-ink-dark">
                         <thead class="border-b border-brand-blue/35 bg-app-sidebar dark:bg-app-canvas-dark/80">
                             <tr class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
@@ -552,7 +552,7 @@ function dashIfEmpty(value) {
                                     <a
                                         v-if="leader.email"
                                         :href="`mailto:${leader.email}`"
-                                        class="text-brand-blue-light underline decoration-brand-blue-light/70 underline-offset-2 hover:text-brand-yellow-soft"
+                                        class="text-brand-blue-light underline decoration-brand-blue-light/70 underline-offset-2 hover:text-brand-blue-dark dark:text-brand-blue-light dark:hover:text-app-ink-dark"
                                     >
                                         {{ leader.email }}
                                     </a>
@@ -560,19 +560,11 @@ function dashIfEmpty(value) {
                                 </td>
                                 <td class="px-3 py-2.5 align-top">
                                     <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end lg:justify-start">
-                                        <button
-                                            type="button"
-                                            class="inline-flex items-center justify-center gap-1 rounded border border-brand-blue/40 bg-white px-2.5 py-1.5 text-xs font-medium text-app-ink dark:bg-app-canvas-dark dark:text-app-ink-dark transition hover:bg-brand-blue/25"
-                                            @click="openEditForm(leader)"
-                                        >
+                                        <button type="button" class="btn-action-edit" @click="openEditForm(leader)">
                                             <PencilSquareIcon class="h-4 w-4 shrink-0" />
                                             Bewerken
                                         </button>
-                                        <button
-                                            type="button"
-                                            class="inline-flex items-center justify-center gap-1 rounded border border-red-800/60 bg-red-950/35 px-2.5 py-1.5 text-xs font-medium text-red-300 hover:bg-red-950/55"
-                                            @click="deleteLeader(leader)"
-                                        >
+                                        <button type="button" class="btn-action-delete" @click="deleteLeader(leader)">
                                             <TrashIcon class="h-4 w-4 shrink-0" />
                                             Verwijderen
                                         </button>

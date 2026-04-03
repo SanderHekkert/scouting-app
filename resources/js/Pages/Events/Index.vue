@@ -113,10 +113,10 @@ function deleteEvent(event) {
         <div class="space-y-4 text-app-ink dark:text-app-ink-dark">
             <form
                 v-show="showAddForm"
-                class="space-y-4 rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5"
+                class="surface-brand-top space-y-4 rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5"
                 @submit.prevent="submitAdd"
             >
-                <h3 class="text-base font-semibold text-brand-yellow-soft">Nieuw agenda-item</h3>
+                <h3 class="text-base font-semibold text-app-ink dark:text-app-ink-dark">Nieuw agenda-item</h3>
                 <div class="grid gap-4 sm:grid-cols-[8rem_1fr] sm:items-start">
                     <label for="add-event-theme" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Thema
@@ -212,10 +212,10 @@ function deleteEvent(event) {
 
             <form
                 v-show="showEditForm"
-                class="space-y-4 rounded-xl border border-brand-yellow/35 bg-app-panel shadow-sm dark:bg-app-panel-dark/95 p-5"
+                class="surface-brand-top space-y-4 rounded-xl border border-brand-yellow/35 bg-app-panel shadow-sm dark:bg-app-panel-dark/95 p-5"
                 @submit.prevent="submitEdit"
             >
-                <h3 class="text-base font-semibold text-amber-100">Agenda-item bewerken</h3>
+                <h3 class="text-base font-semibold text-app-ink dark:text-app-ink-dark">Agenda-item bewerken</h3>
                 <div class="grid gap-4 sm:grid-cols-[8rem_1fr] sm:items-start">
                     <label for="edit-event-theme" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Thema
@@ -310,7 +310,7 @@ function deleteEvent(event) {
                 </p>
             </form>
 
-            <div class="rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-4">
+            <div class="surface-brand-top rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-4">
                 <div v-if="!props.events?.length" class="py-6 text-center text-sm text-app-muted dark:text-app-muted-dark">
                     Nog geen agenda-items.
                 </div>
@@ -344,19 +344,11 @@ function deleteEvent(event) {
                             <td class="align-top">{{ event.program_by }}</td>
                             <td class="py-2 align-top">
                                 <div class="flex flex-wrap items-center justify-end gap-2 sm:justify-start">
-                                    <button
-                                        type="button"
-                                        class="inline-flex items-center gap-1 rounded border border-brand-blue/40 bg-white px-2 py-1 text-xs font-medium text-app-ink dark:bg-app-canvas-dark dark:text-app-ink-dark transition hover:bg-brand-blue/25"
-                                        @click="openEditForm(event)"
-                                    >
+                                    <button type="button" class="btn-action-edit" @click="openEditForm(event)">
                                         <PencilSquareIcon class="h-4 w-4" />
                                         Bewerken
                                     </button>
-                                    <button
-                                        type="button"
-                                        class="inline-flex items-center gap-1 rounded border border-red-800/60 bg-red-950/35 px-2 py-1 text-xs font-medium text-red-300 hover:bg-red-950/55"
-                                        @click="deleteEvent(event)"
-                                    >
+                                    <button type="button" class="btn-action-delete" @click="deleteEvent(event)">
                                         <TrashIcon class="h-4 w-4" />
                                         Verwijderen
                                     </button>

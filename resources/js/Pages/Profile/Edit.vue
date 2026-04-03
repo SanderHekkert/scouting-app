@@ -30,7 +30,7 @@ defineProps({
         <div class="py-12">
             <div class="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
                 <div
-                    class="border border-app-border bg-app-panel p-4 shadow sm:rounded-lg sm:p-8 dark:border-app-border-dark dark:bg-app-panel-dark"
+                    class="surface-brand-top-lg border border-app-border bg-app-panel p-4 shadow sm:rounded-lg sm:p-8 dark:border-app-border-dark dark:bg-app-panel-dark"
                 >
                     <UpdateProfileInformationForm
                         :must-verify-email="mustVerifyEmail"
@@ -40,19 +40,19 @@ defineProps({
                 </div>
 
                 <div
-                    class="border border-app-border bg-app-panel p-4 shadow sm:rounded-lg sm:p-8 dark:border-app-border-dark dark:bg-app-panel-dark"
+                    class="surface-brand-top-lg border border-app-border bg-app-panel p-4 shadow sm:rounded-lg sm:p-8 dark:border-app-border-dark dark:bg-app-panel-dark"
                 >
                     <UpdatePasswordForm class="w-full" />
                 </div>
 
                 <div
-                    class="border border-app-border bg-app-panel p-4 shadow sm:rounded-lg sm:p-8 dark:border-app-border-dark dark:bg-app-panel-dark"
+                    class="surface-brand-top-lg border border-app-border bg-app-panel p-4 shadow sm:rounded-lg sm:p-8 dark:border-app-border-dark dark:bg-app-panel-dark"
                 >
                     <DeleteUserForm class="w-full" />
                 </div>
 
                 <div
-                    class="border border-app-border bg-app-panel p-4 shadow sm:rounded-lg sm:p-8 dark:border-app-border-dark dark:bg-app-panel-dark"
+                    class="surface-brand-top-lg border border-app-border bg-app-panel p-4 shadow sm:rounded-lg sm:p-8 dark:border-app-border-dark dark:bg-app-panel-dark"
                 >
                     <div class="w-full">
                         <h3 class="text-lg font-medium text-app-ink dark:text-app-ink-dark">

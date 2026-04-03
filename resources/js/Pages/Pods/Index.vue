@@ -117,10 +117,10 @@ function memberOptionLabel(m) {
         <div class="space-y-4 text-app-ink dark:text-app-ink-dark">
             <form
                 v-show="showLinkForm"
-                class="grid gap-4 rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5 md:grid-cols-2"
+                class="surface-brand-top grid gap-4 rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5 md:grid-cols-2"
                 @submit.prevent="submitLink"
             >
-                <h3 class="text-base font-semibold text-brand-yellow-soft md:col-span-2">Dolfijn aan een vin koppelen</h3>
+                <h3 class="text-base font-semibold text-app-ink dark:text-app-ink-dark md:col-span-2">Dolfijn aan een vin koppelen</h3>
                 <div class="md:col-span-2 grid gap-4 sm:grid-cols-[7rem_1fr] sm:items-start">
                     <label for="link-pod" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Vin</label>
                     <select
@@ -149,7 +149,7 @@ function memberOptionLabel(m) {
                             {{ memberOptionLabel(m) }}
                         </option>
                     </select>
-                    <p v-if="!unassignedMembers.length" class="text-sm text-amber-200/90 sm:col-span-2">
+                    <p v-if="!unassignedMembers.length" class="text-sm text-app-muted dark:text-app-muted-dark sm:col-span-2">
                         Alle leden zitten al in een vin.
                     </p>
 
@@ -196,9 +196,9 @@ function memberOptionLabel(m) {
                 <div
                     v-for="pod in pods"
                     :key="pod.id"
-                    class="rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-4"
+                    class="surface-brand-top rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-4"
                 >
-                    <h3 class="border-b border-brand-blue/35 pb-2 text-lg font-semibold text-brand-yellow-soft">
+                    <h3 class="border-b border-brand-blue/35 pb-2 text-lg font-semibold text-app-ink dark:text-app-ink-dark">
                         {{ pod.name }}
                     </h3>
                     <p v-if="!pod.memberships?.length" class="py-4 text-sm text-app-muted dark:text-app-muted-dark">
@@ -215,8 +215,8 @@ function memberOptionLabel(m) {
                                     class="mr-2 inline-block rounded px-2 py-0.5 text-xs font-semibold"
                                     :class="{
                                         'bg-brand-yellow/25 text-brand-blue-dark dark:bg-brand-yellow/35 dark:text-app-ink-dark': membership.role === 'Topper',
-                                        'bg-brand-blue/30 text-brand-yellow-soft': membership.role === 'Tipper',
-                                        'bg-brand-green/25 text-brand-green dark:text-brand-yellow-soft': membership.role !== 'Topper' && membership.role !== 'Tipper',
+                                        'bg-brand-blue/30 text-app-ink dark:text-app-ink-dark': membership.role === 'Tipper',
+                                        'bg-brand-green/25 text-brand-green dark:text-app-ink dark:text-app-ink-dark': membership.role !== 'Topper' && membership.role !== 'Tipper',
                                     }"
                                 >
                                     {{ membership.role }}
@@ -230,7 +230,7 @@ function memberOptionLabel(m) {
                             </div>
                             <button
                                 type="button"
-                                class="inline-flex shrink-0 items-center gap-1 rounded border border-red-800/60 bg-red-950/35 px-2 py-1 text-xs font-medium text-red-300 hover:bg-red-950/55"
+                                class="btn-action-delete shrink-0"
                                 @click="removeMembership(membership)"
                             >
                                 <TrashIcon class="h-4 w-4" />

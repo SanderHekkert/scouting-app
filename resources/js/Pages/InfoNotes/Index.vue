@@ -111,10 +111,10 @@ function linkDisplayText(url) {
         <div class="space-y-4 text-app-ink dark:text-app-ink-dark">
             <form
                 v-show="showAddForm"
-                class="space-y-4 rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5"
+                class="surface-brand-top space-y-4 rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5"
                 @submit.prevent="submitAdd"
             >
-                <h3 class="text-base font-semibold text-brand-yellow-soft">Nieuwe info</h3>
+                <h3 class="text-base font-semibold text-app-ink dark:text-app-ink-dark">Nieuwe info</h3>
                 <div class="grid gap-4 sm:grid-cols-[8rem_1fr] sm:items-start">
                     <label for="add-info-category" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Categorie
@@ -169,10 +169,10 @@ function linkDisplayText(url) {
 
             <form
                 v-show="showEditForm"
-                class="space-y-4 rounded-xl border border-brand-yellow/35 bg-app-panel shadow-sm dark:bg-app-panel-dark/95 p-5"
+                class="surface-brand-top space-y-4 rounded-xl border border-brand-yellow/35 bg-app-panel shadow-sm dark:bg-app-panel-dark/95 p-5"
                 @submit.prevent="submitEdit"
             >
-                <h3 class="text-base font-semibold text-amber-100">Info bewerken</h3>
+                <h3 class="text-base font-semibold text-app-ink dark:text-app-ink-dark">Info bewerken</h3>
                 <div class="grid gap-4 sm:grid-cols-[8rem_1fr] sm:items-start">
                     <label for="edit-info-category" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Categorie
@@ -230,7 +230,7 @@ function linkDisplayText(url) {
                 <p v-if="editForm.errors.link" class="text-sm text-red-400">{{ editForm.errors.link }}</p>
             </form>
 
-            <div class="rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-4">
+            <div class="surface-brand-top rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-4">
                 <div v-if="!props.notes?.length" class="py-6 text-center text-sm text-app-muted dark:text-app-muted-dark">
                     Nog geen notities. Voeg er een toe via de knop rechtsboven.
                 </div>
@@ -266,7 +266,7 @@ function linkDisplayText(url) {
                                     :href="note.link"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    class="break-all text-brand-blue-light underline decoration-brand-blue-light/70 underline-offset-2 hover:text-brand-yellow-soft"
+                                    class="break-all text-brand-blue-light underline decoration-brand-blue-light/70 underline-offset-2 hover:text-brand-blue-dark dark:text-brand-blue-light dark:hover:text-app-ink-dark"
                                 >
                                     {{ linkDisplayText(note.link) }}
                                 </a>
@@ -274,19 +274,11 @@ function linkDisplayText(url) {
                             </td>
                             <td class="py-2 align-top">
                                 <div class="flex flex-wrap items-center justify-end gap-2 sm:justify-start">
-                                    <button
-                                        type="button"
-                                        class="inline-flex items-center gap-1 rounded border border-brand-blue/40 bg-white px-2 py-1 text-xs font-medium text-app-ink dark:bg-app-canvas-dark dark:text-app-ink-dark transition hover:bg-brand-blue/25"
-                                        @click="openEditForm(note)"
-                                    >
+                                    <button type="button" class="btn-action-edit" @click="openEditForm(note)">
                                         <PencilSquareIcon class="h-4 w-4" />
                                         Bewerken
                                     </button>
-                                    <button
-                                        type="button"
-                                        class="inline-flex items-center gap-1 rounded border border-red-800/60 bg-red-950/35 px-2 py-1 text-xs font-medium text-red-300 hover:bg-red-950/55"
-                                        @click="deleteNote(note)"
-                                    >
+                                    <button type="button" class="btn-action-delete" @click="deleteNote(note)">
                                         <TrashIcon class="h-4 w-4" />
                                         Verwijderen
                                     </button>

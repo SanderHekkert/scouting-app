@@ -83,8 +83,8 @@ function setTipperTopperOpkomst(member, value) {
         </template>
 
         <div class="space-y-4 text-app-ink dark:text-app-ink-dark">
-            <div class="rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5">
-                <h3 class="border-b border-brand-blue/35 pb-2 text-lg font-semibold text-brand-yellow-soft">Dolfijnen</h3>
+            <div class="surface-brand-top rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5">
+                <h3 class="border-b border-brand-blue/35 pb-2 text-lg font-semibold text-app-ink dark:text-app-ink-dark">Dolfijnen</h3>
                 <p class="mt-2 text-xs text-app-muted dark:text-app-muted-dark">
                     Alle Dolfijnen staan hieronder. Ja’s bovenaan (laatste Ja het hoogst). Daarna nog geen keuze. Onderaan alle
                     Nee’s; wie het laatst op Nee is gezet, staat het laagst.
@@ -97,7 +97,7 @@ function setTipperTopperOpkomst(member, value) {
                     <div
                         v-for="m in sortedMembers"
                         :key="m.id"
-                        class="rounded-lg border border-brand-blue/30 bg-white p-3 shadow-sm dark:bg-app-canvas-dark/60"
+                        class="surface-brand-top-lg rounded-lg border border-brand-blue/30 bg-white p-3 shadow-sm dark:bg-app-canvas-dark/60"
                     >
                         <p class="text-sm font-medium text-app-ink dark:text-app-ink-dark">
                             {{ memberDisplayName(m) }}

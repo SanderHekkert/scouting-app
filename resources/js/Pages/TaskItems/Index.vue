@@ -170,10 +170,10 @@ function deleteTask(task) {
         <div class="space-y-4 text-app-ink dark:text-app-ink-dark">
             <form
                 v-show="showCategoryForm"
-                class="space-y-3 rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5"
+                class="surface-brand-top space-y-3 rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5"
                 @submit.prevent="submitCategory"
             >
-                <h3 class="text-base font-semibold text-brand-yellow-soft">Nieuwe takenlijst</h3>
+                <h3 class="text-base font-semibold text-app-ink dark:text-app-ink-dark">Nieuwe takenlijst</h3>
                 <div class="grid gap-4 sm:grid-cols-[8rem_1fr] sm:items-start">
                     <label for="category-name" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Naam
@@ -201,10 +201,10 @@ function deleteTask(task) {
 
             <form
                 v-show="showAddForm"
-                class="space-y-4 rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5"
+                class="surface-brand-top space-y-4 rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5"
                 @submit.prevent="submitAdd"
             >
-                <h3 class="text-base font-semibold text-brand-yellow-soft">Nieuwe taak</h3>
+                <h3 class="text-base font-semibold text-app-ink dark:text-app-ink-dark">Nieuwe taak</h3>
                 <div class="grid gap-4 sm:grid-cols-[8rem_1fr] sm:items-start">
                     <span class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-1">
                         Kopje
@@ -281,11 +281,11 @@ function deleteTask(task) {
 
             <form
                 v-show="showEditForm"
-                class="space-y-4 rounded-xl border border-brand-yellow/35 bg-app-panel shadow-sm dark:bg-app-panel-dark/95 p-5"
+                class="surface-brand-top space-y-4 rounded-xl border border-brand-yellow/35 bg-app-panel shadow-sm dark:bg-app-panel-dark/95 p-5"
                 @submit.prevent="submitEdit"
             >
-                <h3 class="text-base font-semibold text-amber-100">Taak bewerken</h3>
-                <p class="text-xs text-amber-200/80">
+                <h3 class="text-base font-semibold text-app-ink dark:text-app-ink-dark">Taak bewerken</h3>
+                <p class="text-xs text-app-muted dark:text-app-muted-dark">
                     Kies het kopje waar deze taak onder hoort, pas de teksten aan en klik op Bijwerken.
                 </p>
                 <div class="grid gap-4 sm:grid-cols-[8rem_1fr] sm:items-start">
@@ -299,7 +299,7 @@ function deleteTask(task) {
                             class="cursor-pointer rounded-lg border px-3 py-2 text-sm transition"
                             :class="
                                 editForm.category === cat
-                                    ? 'border-amber-400 bg-amber-950/40 text-amber-50 ring-2 ring-amber-400/70'
+                                    ? 'border-brand-blue bg-brand-blue/20 text-app-ink ring-2 ring-brand-blue/55 dark:border-brand-blue-light dark:bg-brand-blue/25 dark:text-app-ink-dark dark:ring-brand-blue/50'
                                     : 'border-brand-blue/35 bg-white text-app-ink hover:border-brand-blue/55 dark:bg-app-canvas-dark dark:text-app-ink-dark dark:hover:border-brand-blue/55'
                             "
                         >
@@ -378,9 +378,9 @@ function deleteTask(task) {
                 <div
                     v-for="section in groupedSections"
                     :key="section.category"
-                    class="rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-4"
+                    class="surface-brand-top rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-4"
                 >
-                    <h3 class="mb-3 border-b border-brand-blue/35 pb-2 text-lg font-semibold text-brand-yellow-soft">
+                    <h3 class="mb-3 border-b border-brand-blue/35 pb-2 text-lg font-semibold text-app-ink dark:text-app-ink-dark">
                         {{ section.category }}
                     </h3>
                     <div v-if="section.tasks.length === 0" class="py-3 text-sm text-app-muted dark:text-app-muted-dark">
@@ -413,19 +413,11 @@ function deleteTask(task) {
                                 <td class="align-top whitespace-pre-wrap">{{ task.description }}</td>
                                 <td class="py-2 align-top">
                                     <div class="flex flex-wrap items-center justify-end gap-2 sm:justify-start">
-                                        <button
-                                            type="button"
-                                            class="inline-flex items-center gap-1 rounded border border-brand-blue/40 bg-white px-2 py-1 text-xs font-medium text-app-ink dark:bg-app-canvas-dark dark:text-app-ink-dark transition hover:bg-brand-blue/25"
-                                            @click="openEditForm(task)"
-                                        >
+                                        <button type="button" class="btn-action-edit" @click="openEditForm(task)">
                                             <PencilSquareIcon class="h-4 w-4" />
                                             Bewerken
                                         </button>
-                                        <button
-                                            type="button"
-                                            class="inline-flex items-center gap-1 rounded border border-red-800/60 bg-red-950/35 px-2 py-1 text-xs font-medium text-red-300 hover:bg-red-950/55"
-                                            @click="deleteTask(task)"
-                                        >
+                                        <button type="button" class="btn-action-delete" @click="deleteTask(task)">
                                             <TrashIcon class="h-4 w-4" />
                                             Verwijderen
                                         </button>
