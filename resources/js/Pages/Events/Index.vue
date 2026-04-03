@@ -90,6 +90,25 @@ function deleteEvent(event) {
         preserveScroll: true,
     });
 }
+
+const agendaMonthLabels = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
+
+function formatAgendaDate(value) {
+    if (value == null || value === '') return '–';
+    const s = String(value).slice(0, 10);
+    const parts = s.split('-');
+    if (parts.length !== 3) return s;
+    const [y, m, d] = parts.map((p) => parseInt(p, 10));
+    if (!y || !m || !d) return s;
+    const label = agendaMonthLabels[m - 1];
+    if (!label) return s;
+    return `${d}-${label}`;
+}
+
+function dashIfEmpty(value) {
+    if (value == null || String(value).trim() === '') return '–';
+    return value;
+}
 </script>
 
 <template>
@@ -125,7 +144,7 @@ function deleteEvent(event) {
                         id="add-event-theme"
                         v-model="form.theme"
                         type="text"
-                        placeholder="bv. Europa"
+                        placeholder="Optioneel, bv. Europa"
                         class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
                     />
 
@@ -151,13 +170,13 @@ function deleteEvent(event) {
                     />
 
                     <label for="add-event-activity" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Activiteit
+                        Wat ga je doen?
                     </label>
                     <input
                         id="add-event-activity"
                         v-model="form.activity"
                         type="text"
-                        placeholder="Wat ga je doen?"
+                        placeholder="Bv. knutselen, kampvuur"
                         class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
                     />
 
@@ -248,7 +267,7 @@ function deleteEvent(event) {
                     />
 
                     <label for="edit-event-activity" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Activiteit
+                        Wat ga je doen?
                     </label>
                     <input
                         id="edit-event-activity"
@@ -314,49 +333,66 @@ function deleteEvent(event) {
                 <div v-if="!props.events?.length" class="py-6 text-center text-sm text-app-muted dark:text-app-muted-dark">
                     Nog geen agenda-items.
                 </div>
-                <table v-else class="w-full table-fixed text-sm text-app-ink dark:text-app-ink-dark">
-                    <colgroup>
-                        <col class="w-[20%]" />
-                        <col class="w-[14%]" />
-                        <col class="w-[16%]" />
-                        <col class="w-[30%]" />
-                        <col class="w-[20%]" />
-                    </colgroup>
-                    <thead>
-                        <tr class="text-left text-app-muted dark:text-app-muted-dark">
-                            <th class="pb-2">Thema</th>
-                            <th class="pb-2">Datum</th>
-                            <th class="pb-2">Type</th>
-                            <th class="pb-2">Programma door</th>
-                            <th class="pb-2 text-right sm:text-left">Acties</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr
-                            v-for="event in props.events"
-                            :key="event.id"
-                            class="border-t border-brand-blue/35"
-                            :class="{ 'bg-brand-blue/5 dark:bg-app-canvas-dark/80': editingEventId === event.id }"
-                        >
-                            <td class="py-2 pr-2 align-top">{{ event.theme }}</td>
-                            <td class="pr-2 align-top whitespace-nowrap">{{ event.event_date }}</td>
-                            <td class="pr-2 align-top">{{ event.event_type }}</td>
-                            <td class="align-top">{{ event.program_by }}</td>
-                            <td class="py-2 align-top">
-                                <div class="flex flex-wrap items-center justify-end gap-2 sm:justify-start">
-                                    <button type="button" class="btn-action-edit" @click="openEditForm(event)">
-                                        <PencilSquareIcon class="h-4 w-4" />
-                                        Bewerken
-                                    </button>
-                                    <button type="button" class="btn-action-delete" @click="deleteEvent(event)">
-                                        <TrashIcon class="h-4 w-4" />
-                                        Verwijderen
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div v-else class="surface-brand-top-lg overflow-x-auto rounded-lg border border-brand-blue/25">
+                    <table class="w-full min-w-[72rem] border-collapse text-left text-sm text-app-ink dark:text-app-ink-dark">
+                        <thead class="border-b border-brand-blue/35 bg-app-sidebar dark:bg-app-canvas-dark/80">
+                            <tr class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
+                                <th scope="col" class="min-w-[7rem] px-3 py-2.5">Thema</th>
+                                <th scope="col" class="whitespace-nowrap px-3 py-2.5">Datum</th>
+                                <th scope="col" class="min-w-[8rem] px-3 py-2.5">Type opkomst</th>
+                                <th scope="col" class="min-w-[10rem] px-3 py-2.5">Wat ga je doen?</th>
+                                <th scope="col" class="min-w-[7rem] px-3 py-2.5">Programma door</th>
+                                <th scope="col" class="min-w-[12rem] px-3 py-2.5">Afwezig</th>
+                                <th scope="col" class="min-w-[11rem] px-3 py-2.5">Bijzonderheden</th>
+                                <th scope="col" class="min-w-[9rem] whitespace-nowrap px-3 py-2.5 text-end sm:text-start">
+                                    Acties
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-brand-blue/25">
+                            <tr
+                                v-for="event in props.events"
+                                :key="event.id"
+                                class="bg-brand-blue/5 transition-colors hover:bg-brand-blue/12 dark:bg-app-panel-dark/50 dark:hover:bg-brand-blue/15"
+                                :class="{ '!bg-brand-blue/15 dark:!bg-app-canvas-dark/90': editingEventId === event.id }"
+                            >
+                                <td class="px-3 py-2.5 align-top">
+                                    <span class="line-clamp-3 break-words">{{ dashIfEmpty(event.theme) }}</span>
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-2.5 align-top tabular-nums">
+                                    {{ formatAgendaDate(event.event_date) }}
+                                </td>
+                                <td class="px-3 py-2.5 align-top">
+                                    <span class="line-clamp-2 break-words">{{ dashIfEmpty(event.event_type) }}</span>
+                                </td>
+                                <td class="px-3 py-2.5 align-top">
+                                    <span class="line-clamp-3 break-words whitespace-pre-wrap">{{ dashIfEmpty(event.activity) }}</span>
+                                </td>
+                                <td class="px-3 py-2.5 align-top">
+                                    <span class="line-clamp-2 break-words">{{ dashIfEmpty(event.program_by) }}</span>
+                                </td>
+                                <td class="max-w-[18rem] px-3 py-2.5 align-top">
+                                    <span class="line-clamp-4 break-words text-sm leading-snug">{{ dashIfEmpty(event.absent) }}</span>
+                                </td>
+                                <td class="max-w-[16rem] px-3 py-2.5 align-top">
+                                    <span class="line-clamp-3 break-words">{{ dashIfEmpty(event.notes) }}</span>
+                                </td>
+                                <td class="px-3 py-2.5 align-top">
+                                    <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end lg:justify-start">
+                                        <button type="button" class="btn-action-edit" @click="openEditForm(event)">
+                                            <PencilSquareIcon class="h-4 w-4 shrink-0" />
+                                            Bewerken
+                                        </button>
+                                        <button type="button" class="btn-action-delete" @click="deleteEvent(event)">
+                                            <TrashIcon class="h-4 w-4 shrink-0" />
+                                            Verwijderen
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </AuthenticatedLayout>

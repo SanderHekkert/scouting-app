@@ -50,8 +50,7 @@ const editForm = useForm({
 
 const memberSearchQuery = ref('');
 
-/** 'dolfijnen' = volledig overzicht, 'bijzonderheden' = focus op bijzonderheden-tabel */
-const membersTab = ref('dolfijnen');
+const membersTab = computed(() => (route().current('members.bijzonderheden') ? 'bijzonderheden' : 'dolfijnen'));
 
 function memberHasBijzonderheden(m) {
     return m?.bijzonderheden != null && String(m.bijzonderheden).trim() !== '';
@@ -478,9 +477,10 @@ function yesNoInstalled(value) {
 
             <div class="surface-brand-top rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-4">
                 <div class="mb-3 flex flex-wrap gap-1 border-b border-brand-blue/35" role="tablist" aria-label="Dolfijnen weergave">
-                    <button
-                        type="button"
+                    <Link
                         role="tab"
+                        :href="route('members.index')"
+                        preserve-scroll
                         :aria-selected="membersTab === 'dolfijnen'"
                         class="rounded-t-lg px-4 py-2 text-sm font-semibold transition"
                         :class="
@@ -488,13 +488,13 @@ function yesNoInstalled(value) {
                                 ? 'bg-brand-blue/15 text-brand-blue-dark dark:text-app-ink-dark'
                                 : 'text-app-muted hover:bg-brand-blue/10 hover:text-app-ink dark:text-app-muted-dark dark:hover:text-app-ink-dark'
                         "
-                        @click="membersTab = 'dolfijnen'"
                     >
                         Dolfijnen
-                    </button>
-                    <button
-                        type="button"
+                    </Link>
+                    <Link
                         role="tab"
+                        :href="route('members.bijzonderheden')"
+                        preserve-scroll
                         :aria-selected="membersTab === 'bijzonderheden'"
                         class="rounded-t-lg px-4 py-2 text-sm font-semibold transition"
                         :class="
@@ -502,10 +502,9 @@ function yesNoInstalled(value) {
                                 ? 'bg-brand-blue/15 text-brand-blue-dark dark:text-app-ink-dark'
                                 : 'text-app-muted hover:bg-brand-blue/10 hover:text-app-ink dark:text-app-muted-dark dark:hover:text-app-ink-dark'
                         "
-                        @click="membersTab = 'bijzonderheden'"
                     >
                         Bijzonderheden
-                    </button>
+                    </Link>
                 </div>
 
                 <div

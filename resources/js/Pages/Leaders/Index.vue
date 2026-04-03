@@ -131,6 +131,10 @@ function leaderListName(l) {
     return [l.first_name, l.last_name].filter(Boolean).join(' ').trim() || '–';
 }
 
+function leaderHasBijzonderheden(l) {
+    return l?.bijzonderheden != null && String(l.bijzonderheden).trim() !== '';
+}
+
 function normalizeLeaderPayload(data) {
     return {
         ...data,
@@ -488,10 +492,25 @@ function dashIfEmpty(value) {
                             v-for="leader in filteredLeaders"
                             :key="`l-mob-${leader.id}`"
                             :href="route('leaders.show', leader.id)"
-                            class="surface-brand-top flex items-center justify-between gap-3 rounded-xl border border-brand-blue/30 bg-app-panel px-4 py-3 text-app-ink shadow-sm dark:bg-app-panel-dark/95 dark:text-app-ink-dark active:bg-brand-blue/15"
+                            class="surface-brand-top flex flex-col gap-1.5 rounded-xl border border-brand-blue/30 bg-app-panel px-4 py-3 text-app-ink shadow-sm dark:bg-app-panel-dark/95 dark:text-app-ink-dark active:bg-brand-blue/15"
                         >
-                            <span class="min-w-0 truncate font-medium">{{ leaderListName(leader) }}</span>
-                            <ChevronRightIcon class="h-5 w-5 shrink-0 text-app-muted dark:text-app-muted-dark" aria-hidden="true" />
+                            <div class="flex items-start justify-between gap-3">
+                                <span class="flex min-w-0 items-center gap-2">
+                                    <span
+                                        v-if="leaderHasBijzonderheden(leader)"
+                                        class="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-brand-red"
+                                        title="Heeft bijzonderheden"
+                                    />
+                                    <span class="min-w-0 font-medium leading-snug">{{ leaderListName(leader) }}</span>
+                                </span>
+                                <ChevronRightIcon class="mt-0.5 h-5 w-5 shrink-0 text-app-muted dark:text-app-muted-dark" aria-hidden="true" />
+                            </div>
+                            <p
+                                v-if="leaderHasBijzonderheden(leader)"
+                                class="line-clamp-3 pl-4 text-sm leading-snug text-app-muted dark:text-app-muted-dark"
+                            >
+                                {{ leader.bijzonderheden }}
+                            </p>
                         </Link>
                     </div>
                     <div class="surface-brand-top-lg hidden overflow-x-auto rounded-lg border border-brand-blue/25 md:block">

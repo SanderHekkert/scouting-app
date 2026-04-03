@@ -24,7 +24,7 @@ class EventController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'theme' => ['required', 'string', 'max:255'],
+            'theme' => ['nullable', 'string', 'max:255'],
             'event_date' => ['required', 'date'],
             'event_type' => ['nullable', 'string', 'max:255'],
             'activity' => ['nullable', 'string', 'max:255'],
@@ -44,7 +44,7 @@ class EventController extends Controller
     public function update(Request $request, Event $event)
     {
         $data = $request->validate([
-            'theme' => ['required', 'string', 'max:255'],
+            'theme' => ['nullable', 'string', 'max:255'],
             'event_date' => ['required', 'date'],
             'event_type' => ['nullable', 'string', 'max:255'],
             'activity' => ['nullable', 'string', 'max:255'],

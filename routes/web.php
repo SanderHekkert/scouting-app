@@ -9,6 +9,7 @@ use App\Http\Controllers\PodController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TaskItemController;
 use App\Http\Controllers\TipperTopperOpkomstController;
+use App\Http\Controllers\YearThemeController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -17,9 +18,11 @@ Route::get('/', function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::get('/jaar-thema', YearThemeController::class)->name('jaar-thema');
     Route::get('/tipper-topper-opkomst', TipperTopperOpkomstController::class)->name('tipper-topper-opkomst.index');
     Route::resource('events', EventController::class)->except(['create', 'show', 'edit']);
     Route::patch('/members/{member}/tipper-topper-opkomst', [MemberController::class, 'updateTipperTopperOpkomst'])->name('members.tipper-topper-opkomst');
+    Route::get('/members/bijzonderheden', [MemberController::class, 'indexBijzonderheden'])->name('members.bijzonderheden');
     Route::get('/members/{member}', [MemberController::class, 'show'])->name('members.show');
     Route::get('/leaders/{leader}', [LeaderController::class, 'show'])->name('leaders.show');
     Route::resource('members', MemberController::class)->except(['create', 'show', 'edit']);

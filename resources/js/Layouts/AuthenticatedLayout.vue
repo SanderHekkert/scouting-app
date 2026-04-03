@@ -24,7 +24,9 @@ const userInitials = computed(() => {
 const links = [
     { label: 'Dashboard', route: 'dashboard' },
     { label: 'Agenda', route: 'events.index' },
+    { label: 'JaarThema', route: 'jaar-thema' },
     { label: 'Dolfijnen', route: 'members.index' },
+    { label: 'Bijzonderheden', route: 'members.bijzonderheden' },
     { label: 'Leiding', route: 'leaders.index' },
     { label: 'Tipper- & Topper opkomst', route: 'tipper-topper-opkomst.index' },
     { label: 'Vinindeling', route: 'pods.index' },

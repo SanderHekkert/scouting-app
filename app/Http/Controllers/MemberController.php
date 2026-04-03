@@ -13,6 +13,16 @@ class MemberController extends Controller
      */
     public function index(Request $request)
     {
+        return $this->renderMembersIndex($request);
+    }
+
+    public function indexBijzonderheden(Request $request)
+    {
+        return $this->renderMembersIndex($request);
+    }
+
+    private function renderMembersIndex(Request $request)
+    {
         $editId = $request->integer('edit');
 
         return Inertia::render('Members/Index', [
@@ -56,7 +66,7 @@ class MemberController extends Controller
 
         Member::create($data);
 
-        return to_route('members.index');
+        return back();
     }
 
     /**
@@ -82,7 +92,7 @@ class MemberController extends Controller
 
         $member->update($data);
 
-        return to_route('members.index');
+        return back();
     }
 
     public function updateTipperTopperOpkomst(Request $request, Member $member)
@@ -119,9 +129,14 @@ class MemberController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Member $member)
+    public function destroy(Request $request, Member $member)
     {
         $member->delete();
+
+        $referer = (string) $request->headers->get('referer', '');
+        if (str_contains($referer, '/members/bijzonderheden')) {
+            return to_route('members.bijzonderheden');
+        }
 
         return to_route('members.index');
     }
