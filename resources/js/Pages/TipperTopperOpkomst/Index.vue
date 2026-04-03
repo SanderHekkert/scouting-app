@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue';
+import DolfijnenSubnav from '@/Components/DolfijnenSubnav.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
 
@@ -79,12 +80,15 @@ function setTipperTopperOpkomst(member, value) {
     <Head title="Tipper- & Topper opkomst" />
     <AuthenticatedLayout>
         <template #header>
-            <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Tipper- & Topper opkomst</h2>
+            <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Dolfijnen</h2>
         </template>
 
         <div class="space-y-4 text-app-ink dark:text-app-ink-dark">
             <div class="surface-brand-top rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5">
-                <h3 class="border-b border-brand-blue/35 pb-2 text-lg font-semibold text-app-ink dark:text-app-ink-dark">Dolfijnen</h3>
+                <DolfijnenSubnav />
+                <h3 class="mt-2 border-b border-brand-blue/35 pb-2 text-lg font-semibold text-app-ink dark:text-app-ink-dark">
+                    Tipper- & Topper opkomst
+                </h3>
                 <p class="mt-2 text-xs text-app-muted dark:text-app-muted-dark">
                     Alle Dolfijnen staan hieronder. Ja’s bovenaan (laatste Ja het hoogst). Daarna nog geen keuze. Onderaan alle
                     Nee’s; wie het laatst op Nee is gezet, staat het laagst.

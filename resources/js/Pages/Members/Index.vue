@@ -1,5 +1,6 @@
 <script setup>
 import { computed, nextTick, onMounted, ref } from 'vue';
+import DolfijnenSubnav from '@/Components/DolfijnenSubnav.vue';
 import EditableTextCell from '@/Components/EditableTextCell.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
@@ -77,7 +78,42 @@ const filteredMembers = computed(() =>
     (props.members || []).filter((m) => memberMatchesSearch(m, memberSearchQuery.value)),
 );
 
-/** Kinderen met bijzonderheden bovenaan; daarna op achternaam, voornaam. */
+/** Dolfijnen-tab: oud → jong op leeftijd (hoog naar laag), daarna geboortedatum, dan naam. */
+const sortedDolfijnenMembers = computed(() => {
+    const list = [...filteredMembers.value];
+    const ageNum = (m) => {
+        if (m?.age == null || m.age === '') return null;
+        const n = Number(m.age);
+        return Number.isNaN(n) ? null : n;
+    };
+    const bdayIso = (m) => (m?.birthday ? String(m.birthday).slice(0, 10) : '');
+    const nameKey = (m) =>
+        `${m.last_name ?? ''} ${m.first_name ?? ''}`.trim().toLowerCase() ||
+        `${m.first_name ?? ''}`.toLowerCase();
+
+    list.sort((a, b) => {
+        const ageA = ageNum(a);
+        const ageB = ageNum(b);
+        if (ageA != null && ageB != null && ageA !== ageB) {
+            return ageB - ageA;
+        }
+        if (ageA != null && ageB == null) return -1;
+        if (ageA == null && ageB != null) return 1;
+
+        const dA = bdayIso(a);
+        const dB = bdayIso(b);
+        if (dA && dB && dA !== dB) {
+            return dA.localeCompare(dB);
+        }
+        if (dA && !dB) return -1;
+        if (!dA && dB) return 1;
+
+        return nameKey(a).localeCompare(nameKey(b), 'nl', { sensitivity: 'base' });
+    });
+    return list;
+});
+
+/** Tab Bijzonderheden: kinderen met ingevulde bijzonderheden bovenaan; daarna op naam. */
 const sortedFilteredMembers = computed(() => {
     const list = [...filteredMembers.value];
     list.sort((a, b) => {
@@ -367,43 +403,22 @@ function isMemberFieldSaving(member, field) {
             </form>
 
             <div class="surface-brand-top rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-4">
-                <div class="mb-3 flex flex-wrap gap-1 border-b border-brand-blue/35" role="tablist" aria-label="Dolfijnen weergave">
-                    <Link
-                        role="tab"
-                        :href="route('members.index')"
-                        preserve-scroll
-                        :aria-selected="membersTab === 'dolfijnen'"
-                        class="rounded-t-lg px-4 py-2 text-sm font-semibold transition"
-                        :class="
-                            membersTab === 'dolfijnen'
-                                ? 'bg-brand-blue/15 text-brand-blue-dark dark:text-app-ink-dark'
-                                : 'text-app-muted hover:bg-brand-blue/10 hover:text-app-ink dark:text-app-muted-dark dark:hover:text-app-ink-dark'
-                        "
-                    >
-                        Dolfijnen
-                    </Link>
-                    <Link
-                        role="tab"
-                        :href="route('members.bijzonderheden')"
-                        preserve-scroll
-                        :aria-selected="membersTab === 'bijzonderheden'"
-                        class="rounded-t-lg px-4 py-2 text-sm font-semibold transition"
-                        :class="
-                            membersTab === 'bijzonderheden'
-                                ? 'bg-brand-blue/15 text-brand-blue-dark dark:text-app-ink-dark'
-                                : 'text-app-muted hover:bg-brand-blue/10 hover:text-app-ink dark:text-app-muted-dark dark:hover:text-app-ink-dark'
-                        "
-                    >
-                        Bijzonderheden
-                    </Link>
-                </div>
+                <DolfijnenSubnav />
 
                 <div
                     class="mb-3 flex w-full flex-col gap-3 border-b border-brand-blue/35 pb-2 sm:flex-row sm:items-center sm:justify-between"
                 >
-                    <h3 class="text-lg font-semibold text-app-ink dark:text-app-ink-dark">
-                        {{ membersTab === 'dolfijnen' ? 'Overzicht' : 'Bijzonderheden' }}
-                    </h3>
+                    <div>
+                        <h3 class="text-lg font-semibold text-app-ink dark:text-app-ink-dark">
+                            {{ membersTab === 'dolfijnen' ? 'Overzicht' : 'Bijzonderheden' }}
+                        </h3>
+                        <p
+                            v-if="membersTab === 'dolfijnen'"
+                            class="mt-0.5 text-xs text-app-muted dark:text-app-muted-dark"
+                        >
+                            Gesorteerd van oud naar jong (leeftijd).
+                        </p>
+                    </div>
                     <div class="flex w-full max-w-sm items-center gap-2 self-end sm:ms-auto">
                         <MagnifyingGlassIcon
                             class="h-5 w-5 shrink-0 text-app-muted dark:text-app-muted-dark"
@@ -415,7 +430,11 @@ function isMemberFieldSaving(member, field) {
                             v-model="memberSearchQuery"
                             type="search"
                             autocomplete="off"
-                            placeholder="Zoek op naam, adres, telefoon, bijzonderheden…"
+                            :placeholder="
+                                membersTab === 'dolfijnen'
+                                    ? 'Zoek op naam, adres, telefoon…'
+                                    : 'Zoek op naam, adres, telefoon, bijzonderheden…'
+                            "
                             class="min-w-0 flex-1 rounded border border-app-border bg-white px-3 py-2 text-sm text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
                         />
                     </div>
@@ -439,7 +458,7 @@ function isMemberFieldSaving(member, field) {
                 <div v-else-if="membersTab === 'dolfijnen'" class="space-y-2 md:space-y-0">
                     <div class="md:hidden space-y-2">
                         <div
-                            v-for="member in sortedFilteredMembers"
+                            v-for="member in sortedDolfijnenMembers"
                             :key="`m-mob-${member.id}`"
                             class="surface-brand-top rounded-xl border border-brand-blue/30 bg-app-panel px-4 py-3 text-app-ink shadow-sm dark:bg-app-panel-dark/95 dark:text-app-ink-dark"
                         >
@@ -448,11 +467,6 @@ function isMemberFieldSaving(member, field) {
                                 class="flex items-center justify-between gap-3 rounded-lg active:bg-brand-blue/15"
                             >
                                 <span class="flex min-w-0 items-center gap-2 truncate">
-                                    <span
-                                        v-if="memberHasBijzonderheden(member)"
-                                        class="h-2 w-2 shrink-0 rounded-full bg-brand-red"
-                                        title="Heeft bijzonderheden"
-                                    />
                                     <span class="truncate font-medium">{{ memberDisplayName(member) }}</span>
                                 </span>
                                 <ChevronRightIcon class="h-5 w-5 shrink-0 text-app-muted dark:text-app-muted-dark" aria-hidden="true" />
@@ -481,7 +495,7 @@ function isMemberFieldSaving(member, field) {
                         </div>
                     </div>
                     <div class="surface-brand-top-lg hidden overflow-x-auto rounded-lg border border-brand-blue/25 md:block">
-                        <table class="w-full min-w-[72rem] border-collapse text-left text-sm text-app-ink dark:text-app-ink-dark">
+                        <table class="w-full min-w-[60rem] border-collapse text-left text-sm text-app-ink dark:text-app-ink-dark">
                         <thead class="border-b border-brand-blue/35 bg-app-sidebar dark:bg-app-canvas-dark/80">
                             <tr class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Geïnstalleerd</th>
@@ -489,7 +503,6 @@ function isMemberFieldSaving(member, field) {
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Achternaam</th>
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Verjaardag</th>
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Leeftijd</th>
-                                <th scope="col" class="min-w-[12rem] px-3 py-2.5">Bijzonderheden</th>
                                 <th scope="col" class="min-w-[10rem] px-3 py-2.5">Adres</th>
                                 <th scope="col" class="min-w-[9rem] px-3 py-2.5">Telefoon moeder</th>
                                 <th scope="col" class="min-w-[9rem] px-3 py-2.5">Telefoon vader</th>
@@ -500,7 +513,7 @@ function isMemberFieldSaving(member, field) {
                         </thead>
                         <tbody class="divide-y divide-brand-blue/25">
                             <tr
-                                v-for="member in sortedFilteredMembers"
+                                v-for="member in sortedDolfijnenMembers"
                                 :id="`member-row-${member.id}`"
                                 :key="member.id"
                                 class="bg-brand-blue/5 transition-colors hover:bg-brand-blue/12 dark:bg-app-panel-dark/50 dark:hover:bg-brand-blue/15"
@@ -571,17 +584,6 @@ function isMemberFieldSaving(member, field) {
                                         :open-request-nonce="memberInlineOpen.nonce"
                                         :saving="isMemberFieldSaving(member, 'age')"
                                         @save="(v) => patchMemberField(member, 'age', v)"
-                                    />
-                                </td>
-                                <td class="max-w-[16rem] px-3 py-2.5 align-top break-words">
-                                    <EditableTextCell
-                                        :text="member.bijzonderheden || ''"
-                                        multiline
-                                        :cell-key="`${member.id}:bijzonderheden`"
-                                        :open-request-key="memberInlineOpen.key"
-                                        :open-request-nonce="memberInlineOpen.nonce"
-                                        :saving="isMemberFieldSaving(member, 'bijzonderheden')"
-                                        @save="(v) => patchMemberField(member, 'bijzonderheden', v)"
                                     />
                                 </td>
                                 <td class="px-3 py-2.5 align-top">

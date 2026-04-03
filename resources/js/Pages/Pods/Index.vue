@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
+import DolfijnenSubnav from '@/Components/DolfijnenSubnav.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
@@ -124,7 +125,7 @@ function memberOptionLabel(m) {
     <AuthenticatedLayout>
         <template #header>
             <div class="flex w-full flex-wrap items-center justify-between gap-3">
-                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Vinindeling</h2>
+                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Dolfijnen</h2>
                 <div class="flex flex-wrap items-center justify-end gap-2 sm:ms-auto">
                     <button
                         type="button"
@@ -138,6 +139,10 @@ function memberOptionLabel(m) {
             </div>
         </template>
         <div class="space-y-4 text-app-ink dark:text-app-ink-dark">
+            <div class="surface-brand-top rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-4">
+                <DolfijnenSubnav />
+            </div>
+
             <form
                 v-show="showLinkForm"
                 class="surface-brand-top grid gap-4 rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5 md:grid-cols-2"

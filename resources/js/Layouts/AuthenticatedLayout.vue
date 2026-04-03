@@ -25,24 +25,33 @@ const links = [
     { label: 'Dashboard', route: 'dashboard' },
     { label: 'Agenda', route: 'events.index' },
     { label: 'Jaar Thema', route: 'jaar-thema' },
-    { label: 'Dolfijnen', route: 'members.index' },
     { label: 'Leiding', route: 'leaders.index' },
-    { label: 'Tipper- & Topper opkomst', route: 'tipper-topper-opkomst.index' },
-    { label: 'Vinindeling', route: 'pods.index' },
     { label: 'Belangrijke info', route: 'info-notes.index' },
     { label: 'Taakverdeling', route: 'task-items.index' },
 ];
 
 const mobileMenuOpen = ref(false);
 
+/** Dolfijnen (+ subpagina’s) zitten niet in de sidebar; wel label op mobiel wanneer je daar bent. */
+function isDolfijnenSectionRoute() {
+    return (
+        route().current('members.index') ||
+        route().current('members.bijzonderheden') ||
+        route().current('members.show') ||
+        route().current('tipper-topper-opkomst.index') ||
+        route().current('pods.index')
+    );
+}
+
 function navItemIsActive(item) {
-    if (route().current(item.route)) return true;
-    if (item.route === 'members.index' && route().current('members.bijzonderheden')) return true;
-    return false;
+    return route().current(item.route);
 }
 
 const activeMobileLabel = computed(() => {
-    const active = links.find((item) => navItemIsActive(item));
+    if (isDolfijnenSectionRoute()) {
+        return 'Dolfijnen';
+    }
+    const active = links.find((item) => route().current(item.route));
     if (active) return active.label;
     if (route().current('profile.edit')) return 'Profiel';
     return 'Menu';
@@ -82,7 +91,11 @@ function closeMobileMenu() {
                             :key="item.route"
                             :href="route(item.route)"
                             class="block shrink-0 rounded-lg px-3 py-2 text-sm font-medium transition"
-                            :class="navItemIsActive(item) ? 'bg-brand-red/10 text-brand-red' : 'text-slate-800 hover:bg-brand-blue/10'"
+                            :class="
+                                navItemIsActive(item)
+                                    ? 'bg-brand-red/10 text-brand-red'
+                                    : 'text-slate-800 hover:bg-brand-blue/10'
+                            "
                         >
                             {{ item.label }}
                         </Link>
@@ -146,8 +159,12 @@ function closeMobileMenu() {
                                     :key="`mobile-${item.route}`"
                                     :href="route(item.route)"
                                     class="rounded-lg px-3 py-2.5 text-xs font-medium transition"
-                            :class="navItemIsActive(item) ? 'bg-brand-red/10 text-brand-red' : 'text-slate-800 hover:bg-brand-blue/10'"
-                            @click="closeMobileMenu"
+                                    :class="
+                                        navItemIsActive(item)
+                                            ? 'bg-brand-red/10 text-brand-red'
+                                            : 'text-slate-800 hover:bg-brand-blue/10'
+                                    "
+                                    @click="closeMobileMenu"
                                 >
                                     {{ item.label }}
                                 </Link>
