@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Member;
+use App\Models\Leader;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -14,7 +15,16 @@ class MemberController extends Controller
     public function index()
     {
         return Inertia::render('Members/Index', [
-            'members' => Member::query()->orderBy('first_name')->get(),
+            'members' => Member::query()
+                ->orderByRaw('CASE WHEN age IS NULL THEN 1 ELSE 0 END')
+                ->orderByDesc('age')
+                ->orderBy('first_name')
+                ->orderBy('last_name')
+                ->get(),
+            'leaders' => Leader::query()
+                ->orderBy('first_name')
+                ->orderBy('last_name')
+                ->get(),
         ]);
     }
 
@@ -64,6 +74,19 @@ class MemberController extends Controller
         $data['active'] = $request->boolean('active', true);
 
         $member->update($data);
+
+        return to_route('members.index');
+    }
+
+    public function updateTipperTopperOpkomst(Request $request, Member $member)
+    {
+        $validated = $request->validate([
+            'tipper_topper_opkomst' => ['required', 'boolean'],
+        ]);
+
+        $member->update([
+            'tipper_topper_opkomst' => $validated['tipper_topper_opkomst'],
+        ]);
 
         return to_route('members.index');
     }

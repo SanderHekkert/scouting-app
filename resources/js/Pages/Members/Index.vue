@@ -1,10 +1,24 @@
 <script setup>
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { PlusIcon, PencilSquareIcon, TrashIcon } from '@heroicons/vue/24/outline';
 
-const props = defineProps({ members: Array });
+const props = defineProps({
+    members: Array,
+    leaders: {
+        type: Array,
+        default: () => [],
+    },
+});
+
+const tipperTopperDeelnemers = computed(() =>
+    [...(props.members || [])]
+        .filter((m) => m.tipper_topper_opkomst_order != null)
+        .sort((a, b) => a.tipper_topper_opkomst_order - b.tipper_topper_opkomst_order),
+);
+
+const opkomstSavingId = ref(null);
 
 const showAddForm = ref(false);
 const showEditForm = ref(false);
@@ -127,6 +141,27 @@ function formatBirthday(value) {
 function dashIfEmpty(value) {
     if (value == null || String(value).trim() === '') return '–';
     return value;
+}
+
+function memberDisplayName(m) {
+    const fn = m?.first_name ?? '';
+    const ln = m?.last_name ?? '';
+    return `${fn}${ln ? ` ${ln}` : ''}`.trim() || '–';
+}
+
+function setTipperTopperOpkomst(member, value) {
+    if (!member?.id) return;
+    opkomstSavingId.value = member.id;
+    router.patch(
+        route('members.tipper-topper-opkomst', member.id),
+        { tipper_topper_opkomst: value },
+        {
+            preserveScroll: true,
+            onFinish: () => {
+                opkomstSavingId.value = null;
+            },
+        },
+    );
 }
 
 function yesNoInstalled(value) {
@@ -428,6 +463,109 @@ function yesNoInstalled(value) {
                         </tr>
                     </tbody>
                 </table>
+            </div>
+
+            <div class="rounded-xl bg-gray-800 p-4 shadow-sm">
+                <h3 class="mb-3 border-b border-gray-600 pb-2 text-lg font-semibold text-indigo-200">Leiding</h3>
+                <div v-if="!props.leaders?.length" class="py-6 text-center text-sm text-gray-500">
+                    Nog geen leiding.
+                </div>
+                <table v-else class="w-full table-fixed text-sm text-white">
+                    <colgroup>
+                        <col class="w-[10%]" />
+                        <col class="w-[12%]" />
+                        <col class="w-[20%]" />
+                        <col class="w-[10%]" />
+                        <col class="w-[12%]" />
+                        <col class="w-[10%]" />
+                        <col class="w-[13%]" />
+                        <col class="w-[13%]" />
+                    </colgroup>
+                    <thead>
+                        <tr class="text-left text-gray-300">
+                            <th class="pb-2">Naam</th>
+                            <th class="pb-2">Achternaam</th>
+                            <th class="pb-2">Adres</th>
+                            <th class="pb-2">Postcode</th>
+                            <th class="pb-2">Plaats</th>
+                            <th class="pb-2">Geboortedatum</th>
+                            <th class="pb-2">Telefoonnummer</th>
+                            <th class="pb-2">E-mail</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="leader in props.leaders" :key="leader.id" class="border-t border-gray-600">
+                            <td class="py-2 pr-2 align-top">{{ dashIfEmpty(leader.first_name) }}</td>
+                            <td class="pr-2 align-top">{{ dashIfEmpty(leader.last_name) }}</td>
+                            <td class="pr-2 align-top break-words">{{ dashIfEmpty(leader.address) }}</td>
+                            <td class="pr-2 align-top">{{ dashIfEmpty(leader.postal_code) }}</td>
+                            <td class="pr-2 align-top">{{ dashIfEmpty(leader.city) }}</td>
+                            <td class="pr-2 align-top whitespace-nowrap">{{ formatBirthday(leader.birthday) }}</td>
+                            <td class="pr-2 align-top">{{ dashIfEmpty(leader.phone_number) }}</td>
+                            <td class="align-top break-all">
+                                <a
+                                    v-if="leader.email"
+                                    :href="`mailto:${leader.email}`"
+                                    class="text-indigo-300 underline decoration-indigo-400/80 underline-offset-2 hover:text-indigo-200"
+                                >
+                                    {{ leader.email }}
+                                </a>
+                                <span v-else>–</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div
+                v-if="tipperTopperDeelnemers.length"
+                class="rounded-xl bg-gray-800 p-5 shadow-sm"
+            >
+                <h3 class="border-b border-gray-600 pb-2 text-lg font-semibold text-indigo-200">
+                    Tipper/topper opkomst deelnemers
+                </h3>
+                <p class="mt-2 text-xs text-gray-400">
+                    Geef per naam aan of er deze opkomst bij is (Ja) of niet (Nee).
+                </p>
+                <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <div
+                        v-for="m in tipperTopperDeelnemers"
+                        :key="m.id"
+                        class="rounded-lg border border-gray-600 bg-gray-900/50 p-3"
+                    >
+                        <p class="text-sm font-medium text-white">
+                            {{ memberDisplayName(m) }}
+                        </p>
+                        <div class="mt-2 flex flex-wrap gap-2">
+                            <button
+                                type="button"
+                                class="rounded px-3 py-1.5 text-xs font-semibold transition disabled:opacity-50"
+                                :class="
+                                    m.tipper_topper_opkomst === true
+                                        ? 'bg-emerald-700 text-white ring-2 ring-emerald-400/80'
+                                        : 'border border-gray-500 bg-gray-800 text-gray-200 hover:bg-gray-700'
+                                "
+                                :disabled="opkomstSavingId === m.id"
+                                @click="setTipperTopperOpkomst(m, true)"
+                            >
+                                Ja
+                            </button>
+                            <button
+                                type="button"
+                                class="rounded px-3 py-1.5 text-xs font-semibold transition disabled:opacity-50"
+                                :class="
+                                    m.tipper_topper_opkomst === false
+                                        ? 'bg-rose-900/80 text-rose-100 ring-2 ring-rose-500/70'
+                                        : 'border border-gray-500 bg-gray-800 text-gray-200 hover:bg-gray-700'
+                                "
+                                :disabled="opkomstSavingId === m.id"
+                                @click="setTipperTopperOpkomst(m, false)"
+                            >
+                                Nee
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </AuthenticatedLayout>

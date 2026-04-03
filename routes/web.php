@@ -16,6 +16,7 @@ Route::get('/', function () {
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::resource('events', EventController::class)->except(['create', 'show', 'edit']);
+    Route::patch('/members/{member}/tipper-topper-opkomst', [MemberController::class, 'updateTipperTopperOpkomst'])->name('members.tipper-topper-opkomst');
     Route::resource('members', MemberController::class)->except(['create', 'show', 'edit']);
     Route::resource('pods', PodController::class)->except(['create', 'show', 'edit']);
     Route::post('/pods/{pod}/members', [PodController::class, 'addMember'])->name('pods.members.store');

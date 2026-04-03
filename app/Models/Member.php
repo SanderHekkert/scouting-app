@@ -16,7 +16,18 @@ class Member extends Model
         'phone_mother',
         'phone_father',
         'active',
+        'tipper_topper_opkomst',
+        'tipper_topper_opkomst_order',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'installed' => 'boolean',
+            'active' => 'boolean',
+            'tipper_topper_opkomst' => 'boolean',
+        ];
+    }
 
     public function podMemberships()
     {
