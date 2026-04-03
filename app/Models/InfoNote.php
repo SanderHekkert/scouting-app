@@ -9,5 +9,6 @@ class InfoNote extends Model
     protected $fillable = [
         'category',
         'content',
+        'link',
     ];
 }

@@ -6,6 +6,7 @@ use App\Models\Pod;
 use App\Models\PodMembership;
 use App\Models\Member;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 class PodController extends Controller
@@ -15,9 +16,20 @@ class PodController extends Controller
      */
     public function index()
     {
+        $pods = Pod::query()
+            ->with(['memberships' => function ($q) {
+                $q->with('member');
+            }])
+            ->orderBy('name')
+            ->get();
+
         return Inertia::render('Pods/Index', [
-            'pods' => Pod::query()->with('memberships.member')->orderBy('name')->get(),
-            'members' => Member::query()->orderBy('first_name')->get(['id', 'first_name', 'last_name']),
+            'pods' => $pods,
+            'unassignedMembers' => Member::query()
+                ->whereDoesntHave('podMemberships')
+                ->orderBy('first_name')
+                ->orderBy('last_name')
+                ->get(['id', 'first_name', 'last_name', 'age', 'birthday']),
         ]);
     }
 
@@ -63,12 +75,54 @@ class PodController extends Controller
     {
         $data = $request->validate([
             'member_id' => ['required', 'exists:members,id'],
-            'role' => ['required', 'string', 'max:255'],
+            'role' => ['required', 'string', 'in:Topper,Tipper,Vinlid'],
         ]);
 
+        $memberId = (int) $data['member_id'];
+        $role = $data['role'];
+
+        $existingElsewhere = PodMembership::query()
+            ->where('member_id', $memberId)
+            ->where('pod_id', '!=', $pod->id)
+            ->exists();
+
+        if ($existingElsewhere) {
+            throw ValidationException::withMessages([
+                'member_id' => 'Dit lid zit al in een andere vin.',
+            ]);
+        }
+
+        if ($role === 'Topper') {
+            $hasTopper = PodMembership::query()
+                ->where('pod_id', $pod->id)
+                ->where('role', 'Topper')
+                ->where('member_id', '!=', $memberId)
+                ->exists();
+
+            if ($hasTopper) {
+                throw ValidationException::withMessages([
+                    'role' => 'Er is al een Topper in deze vin.',
+                ]);
+            }
+        }
+
+        if ($role === 'Tipper') {
+            $hasTipper = PodMembership::query()
+                ->where('pod_id', $pod->id)
+                ->where('role', 'Tipper')
+                ->where('member_id', '!=', $memberId)
+                ->exists();
+
+            if ($hasTipper) {
+                throw ValidationException::withMessages([
+                    'role' => 'Er is al een Tipper in deze vin.',
+                ]);
+            }
+        }
+
         PodMembership::updateOrCreate(
-            ['pod_id' => $pod->id, 'member_id' => $data['member_id']],
-            ['role' => $data['role']],
+            ['pod_id' => $pod->id, 'member_id' => $memberId],
+            ['role' => $role],
         );
 
         return to_route('pods.index');

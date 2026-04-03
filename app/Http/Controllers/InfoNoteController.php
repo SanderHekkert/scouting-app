@@ -8,6 +8,21 @@ use Inertia\Inertia;
 
 class InfoNoteController extends Controller
 {
+    protected function prepareLinkForValidation(Request $request): void
+    {
+        $link = $request->input('link');
+        if (! is_string($link) || trim($link) === '') {
+            $request->merge(['link' => null]);
+
+            return;
+        }
+        $link = trim($link);
+        if (! preg_match('#^https?://#i', $link)) {
+            $link = 'https://'.$link;
+        }
+        $request->merge(['link' => $link]);
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -23,9 +38,11 @@ class InfoNoteController extends Controller
      */
     public function store(Request $request)
     {
+        $this->prepareLinkForValidation($request);
         $data = $request->validate([
             'category' => ['required', 'string', 'max:255'],
             'content' => ['required', 'string'],
+            'link' => ['nullable', 'string', 'max:2048', 'url'],
         ]);
 
         InfoNote::create($data);
@@ -38,9 +55,11 @@ class InfoNoteController extends Controller
      */
     public function update(Request $request, InfoNote $infoNote)
     {
+        $this->prepareLinkForValidation($request);
         $data = $request->validate([
             'category' => ['required', 'string', 'max:255'],
             'content' => ['required', 'string'],
+            'link' => ['nullable', 'string', 'max:2048', 'url'],
         ]);
 
         $infoNote->update($data);

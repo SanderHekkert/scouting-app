@@ -1,37 +1,241 @@
 <script setup>
+import { computed, ref, watch } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, useForm, router } from '@inertiajs/vue3';
+import { PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
 
-const props = defineProps({ pods: Array, members: Array });
-const podForm = useForm({ name: '' });
-const memberForm = useForm({ pod_id: '', member_id: '', role: 'Vinlid' });
+const props = defineProps({
+    pods: Array,
+    unassignedMembers: {
+        type: Array,
+        default: () => [],
+    },
+});
 
-const addPod = () => podForm.post(route('pods.store'), { onSuccess: () => podForm.reset() });
-const addMember = () => memberForm.post(route('pods.members.store', memberForm.pod_id), { onSuccess: () => memberForm.reset('member_id', 'role') });
+const showLinkForm = ref(false);
+
+const memberForm = useForm({
+    pod_id: '',
+    member_id: '',
+    role: 'Vinlid',
+});
+
+const selectedPod = computed(() =>
+    props.pods?.find((p) => String(p.id) === String(memberForm.pod_id)),
+);
+
+const podHasTopper = computed(() =>
+    selectedPod.value?.memberships?.some((m) => m.role === 'Topper'),
+);
+
+const podHasTipper = computed(() =>
+    selectedPod.value?.memberships?.some((m) => m.role === 'Tipper'),
+);
+
+watch(
+    () => memberForm.pod_id,
+    () => {
+        memberForm.role = 'Vinlid';
+        memberForm.clearErrors();
+    },
+);
+
+function toggleLinkForm() {
+    showLinkForm.value = !showLinkForm.value;
+    if (showLinkForm.value) {
+        memberForm.reset();
+        memberForm.role = 'Vinlid';
+    }
+}
+
+function tier(role) {
+    if (role === 'Topper') return 0;
+    if (role === 'Tipper') return 1;
+    return 2;
+}
+
+function sortedMemberships(memberships) {
+    if (!memberships?.length) return [];
+    return [...memberships].sort((a, b) => {
+        const t = tier(a.role) - tier(b.role);
+        if (t !== 0) return t;
+        const ageA = a.member?.age;
+        const ageB = b.member?.age;
+        if (ageA != null && ageB != null && ageA !== ageB) return ageB - ageA;
+        if (ageA != null && ageB == null) return -1;
+        if (ageA == null && ageB != null) return 1;
+        const name = (m) =>
+            `${m?.member?.last_name ?? ''} ${m?.member?.first_name ?? ''}`.trim();
+        return name(a).localeCompare(name(b), 'nl', { sensitivity: 'base' });
+    });
+}
+
+function submitLink() {
+    if (!memberForm.pod_id) return;
+    memberForm.post(route('pods.members.store', memberForm.pod_id), {
+        preserveScroll: true,
+        onSuccess: () => {
+            memberForm.reset();
+            memberForm.role = 'Vinlid';
+            showLinkForm.value = false;
+        },
+    });
+}
+
+function removeMembership(membership) {
+    if (!membership?.id) return;
+    if (!confirm('Dit lid uit de vin halen?')) return;
+    router.delete(route('pods.members.destroy', membership.id), {
+        preserveScroll: true,
+    });
+}
+
+function memberOptionLabel(m) {
+    const base = `${m.first_name} ${m.last_name}`.trim();
+    return m.age != null ? `${base} (${m.age})` : base;
+}
 </script>
 
 <template>
     <Head title="Vinindeling" />
     <AuthenticatedLayout>
-        <template #header><h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200">Vinindeling</h2></template>
-        <div class="space-y-4">
-            <form @submit.prevent="addPod" class="flex gap-2 rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800">
-                <input v-model="podForm.name" placeholder="Nieuwe vin/groep" class="flex-1 rounded border-gray-300 dark:bg-gray-900" />
-                <button class="rounded bg-indigo-600 px-4 py-2 text-white">Toevoegen</button>
+        <template #header>
+            <div class="flex w-full flex-wrap items-center justify-between gap-3">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Vinindeling</h2>
+                <div class="flex flex-wrap items-center justify-end gap-2 sm:ms-auto">
+                    <button
+                        type="button"
+                        class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-gray-100 px-3 py-2 text-sm font-medium text-gray-900 hover:bg-gray-200 dark:border-gray-600 dark:bg-gray-900 dark:text-white dark:hover:bg-gray-700"
+                        @click="toggleLinkForm"
+                    >
+                        <PlusIcon class="h-5 w-5" />
+                        Lid koppelen
+                    </button>
+                </div>
+            </div>
+        </template>
+        <div class="space-y-4 text-white">
+            <form
+                v-show="showLinkForm"
+                class="grid gap-4 rounded-xl bg-gray-800 p-5 shadow-sm md:grid-cols-2"
+                @submit.prevent="submitLink"
+            >
+                <h3 class="text-base font-semibold text-white md:col-span-2">Lid aan een vin koppelen</h3>
+                <div class="md:col-span-2 grid gap-4 sm:grid-cols-[7rem_1fr] sm:items-start">
+                    <label for="link-pod" class="text-sm font-semibold tracking-wide text-gray-300 sm:pt-2.5">Vin</label>
+                    <select
+                        id="link-pod"
+                        v-model="memberForm.pod_id"
+                        class="min-w-0 rounded border border-gray-600 bg-gray-900 px-3 py-2 text-white"
+                        required
+                    >
+                        <option value="" disabled>Kies vin</option>
+                        <option v-for="pod in pods" :key="pod.id" :value="String(pod.id)">{{ pod.name }}</option>
+                    </select>
+
+                    <label for="link-member" class="text-sm font-semibold tracking-wide text-gray-300 sm:pt-2.5">Lid</label>
+                    <select
+                        id="link-member"
+                        v-model="memberForm.member_id"
+                        class="min-w-0 rounded border border-gray-600 bg-gray-900 px-3 py-2 text-white"
+                        required
+                    >
+                        <option value="" disabled>Kies lid</option>
+                        <option
+                            v-for="m in unassignedMembers"
+                            :key="m.id"
+                            :value="String(m.id)"
+                        >
+                            {{ memberOptionLabel(m) }}
+                        </option>
+                    </select>
+                    <p v-if="!unassignedMembers.length" class="text-sm text-amber-200/90 sm:col-span-2">
+                        Alle leden zitten al in een vin.
+                    </p>
+
+                    <label for="link-role" class="text-sm font-semibold tracking-wide text-gray-300 sm:pt-2.5">Rol</label>
+                    <select
+                        id="link-role"
+                        v-model="memberForm.role"
+                        class="min-w-0 rounded border border-gray-600 bg-gray-900 px-3 py-2 text-white"
+                    >
+                        <option value="Topper" :disabled="podHasTopper">
+                            Topper{{ podHasTopper ? ' (bezet)' : '' }}
+                        </option>
+                        <option value="Tipper" :disabled="podHasTipper">
+                            Tipper{{ podHasTipper ? ' (bezet)' : '' }}
+                        </option>
+                        <option value="Vinlid">Vinlid</option>
+                    </select>
+                </div>
+                <div class="flex flex-wrap gap-2 md:col-span-2">
+                    <button
+                        type="submit"
+                        class="rounded bg-indigo-600 px-5 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+                        :disabled="memberForm.processing || !unassignedMembers.length"
+                    >
+                        Koppelen
+                    </button>
+                    <button
+                        type="button"
+                        class="rounded border border-gray-500 px-5 py-2 text-sm font-medium text-white hover:bg-gray-700"
+                        @click="toggleLinkForm"
+                    >
+                        Annuleren
+                    </button>
+                </div>
+                <p v-if="memberForm.errors.member_id" class="text-sm text-red-400 md:col-span-2">
+                    {{ memberForm.errors.member_id }}
+                </p>
+                <p v-if="memberForm.errors.role" class="text-sm text-red-400 md:col-span-2">
+                    {{ memberForm.errors.role }}
+                </p>
             </form>
-            <form @submit.prevent="addMember" class="grid gap-2 rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800 md:grid-cols-4">
-                <select v-model="memberForm.pod_id" class="rounded border-gray-300 dark:bg-gray-900"><option value="">Kies vin</option><option v-for="pod in props.pods" :key="pod.id" :value="pod.id">{{ pod.name }}</option></select>
-                <select v-model="memberForm.member_id" class="rounded border-gray-300 dark:bg-gray-900"><option value="">Kies lid</option><option v-for="member in props.members" :key="member.id" :value="member.id">{{ member.first_name }} {{ member.last_name }}</option></select>
-                <input v-model="memberForm.role" class="rounded border-gray-300 dark:bg-gray-900" />
-                <button class="rounded bg-indigo-600 px-4 py-2 text-white">Lid koppelen</button>
-            </form>
-            <div class="grid gap-3 md:grid-cols-2">
-                <div v-for="pod in props.pods" :key="pod.id" class="rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800">
-                    <h3 class="font-semibold text-gray-900 dark:text-gray-100">{{ pod.name }}</h3>
-                    <ul class="mt-2 space-y-1 text-sm">
-                        <li v-for="membership in pod.memberships" :key="membership.id" class="flex items-center justify-between text-gray-700 dark:text-gray-200">
-                            <span>{{ membership.role }} - {{ membership.member?.first_name }} {{ membership.member?.last_name }}</span>
-                            <button @click="$inertia.delete(route('pods.members.destroy', membership.id))" class="text-red-600">x</button>
+
+            <div class="grid gap-4 md:grid-cols-2">
+                <div
+                    v-for="pod in pods"
+                    :key="pod.id"
+                    class="rounded-xl bg-gray-800 p-4 shadow-sm"
+                >
+                    <h3 class="border-b border-gray-600 pb-2 text-lg font-semibold text-indigo-200">
+                        {{ pod.name }}
+                    </h3>
+                    <p v-if="!pod.memberships?.length" class="py-4 text-sm text-gray-500">
+                        Nog geen leden in deze vin.
+                    </p>
+                    <ul v-else class="mt-3 space-y-2 text-sm">
+                        <li
+                            v-for="membership in sortedMemberships(pod.memberships)"
+                            :key="membership.id"
+                            class="flex items-start justify-between gap-2 border-t border-gray-600 pt-2 first:border-t-0 first:pt-0"
+                        >
+                            <div class="min-w-0 text-white">
+                                <span
+                                    class="mr-2 inline-block rounded px-2 py-0.5 text-xs font-semibold"
+                                    :class="{
+                                        'bg-amber-900/50 text-amber-200': membership.role === 'Topper',
+                                        'bg-sky-900/50 text-sky-200': membership.role === 'Tipper',
+                                        'bg-gray-700 text-gray-200': membership.role !== 'Topper' && membership.role !== 'Tipper',
+                                    }"
+                                >
+                                    {{ membership.role }}
+                                </span>
+                                <span class="text-gray-100">
+                                    {{ membership.member?.first_name }} {{ membership.member?.last_name }}
+                                </span>
+                                <span v-if="membership.member?.age != null" class="text-gray-400">
+                                    ({{ membership.member.age }})
+                                </span>
+                            </div>
+                            <button
+                                type="button"
+                                class="inline-flex shrink-0 items-center gap-1 rounded border border-red-800/60 bg-red-950/35 px-2 py-1 text-xs font-medium text-red-300 hover:bg-red-950/55"
+                                @click="removeMembership(membership)"
+                            >
+                                <TrashIcon class="h-4 w-4" />
+                                Verwijderen
+                            </button>
                         </li>
                     </ul>
                 </div>

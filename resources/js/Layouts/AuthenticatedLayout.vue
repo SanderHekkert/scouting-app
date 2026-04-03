@@ -32,7 +32,9 @@ const links = [
 <template>
     <div class="min-h-screen bg-gray-100 dark:bg-gray-900">
         <div class="flex min-h-screen">
-            <aside class="w-72 bg-white p-5 shadow-sm dark:bg-gray-800">
+            <aside
+                class="sticky top-0 flex h-screen w-72 shrink-0 flex-col overflow-y-auto border-r border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800"
+            >
                 <h1 class="text-lg font-bold text-gray-900 dark:text-gray-100">
                     Fridtjof Nansen 12
                 </h1>
@@ -70,21 +72,14 @@ const links = [
                             }}</span>
                         </span>
                     </Link>
-                    <div class="mt-2 px-2">
-                        <Link
-                            :href="route('logout')"
-                            method="post"
-                            as="button"
-                            class="text-xs text-red-600 hover:underline dark:text-red-400"
-                        >
-                            Uitloggen
-                        </Link>
-                    </div>
                 </div>
             </aside>
 
             <main class="flex-1 p-6">
-                <header v-if="$slots.header" class="mb-6 rounded-xl bg-white p-5 shadow-sm dark:bg-gray-800">
+                <header
+                    v-if="$slots.header"
+                    class="mb-6 w-full rounded-xl bg-white p-5 shadow-sm dark:bg-gray-800"
+                >
                     <slot name="header" />
                 </header>
                 <slot />

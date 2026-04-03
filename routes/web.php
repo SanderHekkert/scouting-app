@@ -22,6 +22,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/pod-memberships/{podMembership}', [PodController::class, 'removeMember'])->name('pods.members.destroy');
     Route::resource('info-notes', InfoNoteController::class)->except(['create', 'show', 'edit']);
     Route::resource('task-items', TaskItemController::class)->except(['create', 'show', 'edit']);
+    Route::post('/task-categories', [TaskItemController::class, 'storeCategory'])->name('task-categories.store');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

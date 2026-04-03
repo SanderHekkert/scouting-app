@@ -17,4 +17,9 @@ class Member extends Model
         'phone_father',
         'active',
     ];
+
+    public function podMemberships()
+    {
+        return $this->hasMany(PodMembership::class);
+    }
 }
