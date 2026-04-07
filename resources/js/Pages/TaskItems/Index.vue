@@ -1,9 +1,8 @@
 <script setup>
 import { computed, ref } from 'vue';
-import EditableTextCell from '@/Components/EditableTextCell.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, useForm, router, usePage } from '@inertiajs/vue3';
-import { Bars3Icon, PlusIcon, TrashIcon, XMarkIcon } from '@heroicons/vue/24/outline';
+import { Bars3Icon, PencilSquareIcon, PlusIcon, TrashIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     tasks: Array,
@@ -63,10 +62,12 @@ const form = useForm({
     title: '',
     owner_user_ids: [],
     description: '',
-    deadline: '',
+    deadlines: [],
 });
+const addDeadlineInput = ref('');
 
 const taskFieldSaving = ref(null);
+const editingTaskId = ref(null);
 const draggingTaskId = ref(null);
 const dragOverCategory = ref('');
 
@@ -76,6 +77,7 @@ function toggleAddForm() {
         showCategoryForm.value = false;
         form.reset();
         form.category = defaultCategory();
+        addDeadlineInput.value = '';
     }
 }
 
@@ -93,6 +95,7 @@ function submitAdd() {
         onSuccess: () => {
             form.reset();
             form.category = defaultCategory();
+            addDeadlineInput.value = '';
             showAddForm.value = false;
         },
     });
@@ -117,6 +120,15 @@ function isTaskRowSaving(task) {
     return key != null && String(key).startsWith(`${task.id}:`);
 }
 
+function isTaskEditing(task) {
+    return editingTaskId.value === task?.id;
+}
+
+function toggleTaskEdit(task) {
+    if (!task?.id) return;
+    editingTaskId.value = editingTaskId.value === task.id ? null : task.id;
+}
+
 function patchTaskField(task, field, raw) {
     if (!task?.id) return;
     let payload = {};
@@ -128,8 +140,8 @@ function patchTaskField(task, field, raw) {
         payload = { title: raw ?? '' };
     } else if (field === 'description') {
         payload = { description: raw ?? '' };
-    } else if (field === 'deadline') {
-        payload = { deadline: raw || null };
+    } else if (field === 'deadlines') {
+        payload = { deadlines: Array.isArray(raw) ? raw : [] };
     } else {
         return;
     }
@@ -186,6 +198,37 @@ function onTaskOwnerSelectChange(task, domEvent) {
     if (domEvent?.target) {
         domEvent.target.value = '';
     }
+}
+
+function normalizeDeadlines(values) {
+    return [...new Set((Array.isArray(values) ? values : [])
+        .map((v) => String(v || '').trim())
+        .filter((v) => /^\d{4}-\d{2}-\d{2}$/.test(v)))].sort();
+}
+
+function deadlinesForTask(task) {
+    return normalizeDeadlines(task?.deadlines);
+}
+
+function addFormDeadline() {
+    const value = String(addDeadlineInput.value || '').trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return;
+    form.deadlines = normalizeDeadlines([...(form.deadlines || []), value]);
+    addDeadlineInput.value = '';
+}
+
+function removeFormDeadline(value) {
+    form.deadlines = normalizeDeadlines((form.deadlines || []).filter((d) => d !== value));
+}
+
+function addTaskDeadline(task, value) {
+    const next = normalizeDeadlines([...(deadlinesForTask(task) || []), value]);
+    patchTaskField(task, 'deadlines', next);
+}
+
+function removeTaskDeadline(task, value) {
+    const next = normalizeDeadlines(deadlinesForTask(task).filter((d) => d !== value));
+    patchTaskField(task, 'deadlines', next);
 }
 
 function deleteTask(task) {
@@ -379,14 +422,37 @@ function onCategoryDrop(category, event) {
                     />
 
                     <label for="add-deadline" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Deadline
+                        Deadlines
                     </label>
-                    <input
-                        id="add-deadline"
-                        v-model="form.deadline"
-                        type="date"
-                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                    />
+                    <div>
+                        <div class="flex flex-wrap gap-1.5">
+                            <span
+                                v-for="d in form.deadlines"
+                                :key="`add-deadline-chip-${d}`"
+                                class="inline-flex items-center gap-1 rounded-full bg-brand-blue/15 px-2 py-0.5 text-xs"
+                            >
+                                {{ d }}
+                                <button type="button" class="rounded p-0.5 hover:bg-brand-blue/25" @click="removeFormDeadline(d)">
+                                    <XMarkIcon class="h-3.5 w-3.5" />
+                                </button>
+                            </span>
+                        </div>
+                        <div class="mt-2 flex gap-2">
+                            <input
+                                id="add-deadline"
+                                v-model="addDeadlineInput"
+                                type="date"
+                                class="min-w-0 flex-1 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
+                            />
+                            <button
+                                type="button"
+                                class="rounded border border-brand-blue-light/50 px-3 py-2 text-sm font-medium text-app-ink transition hover:bg-brand-blue/10 dark:text-app-ink-dark"
+                                @click="addFormDeadline"
+                            >
+                                Toevoegen
+                            </button>
+                        </div>
+                    </div>
 
                     <span class="hidden sm:block" aria-hidden="true" />
                     <div>
@@ -442,12 +508,15 @@ function onCategoryDrop(category, event) {
                                 </div>
 
                                 <p class="mt-2 text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Taak</p>
-                                <EditableTextCell
-                                    :text="task.title || ''"
-                                    :multiline="false"
-                                    :saving="isTaskFieldSaving(task, 'title')"
-                                    @save="(v) => patchTaskField(task, 'title', v)"
+                                <input
+                                    v-if="isTaskEditing(task)"
+                                    type="text"
+                                    class="mt-1 w-full min-w-0 rounded border border-app-border bg-white px-2 py-1.5 text-app-ink shadow-sm outline-none focus:border-brand-blue dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
+                                    :value="task.title || ''"
+                                    :disabled="isTaskRowSaving(task)"
+                                    @change="patchTaskField(task, 'title', $event.target.value)"
                                 />
+                                <p v-else class="mt-1 text-sm text-app-ink dark:text-app-ink-dark">{{ task.title || '—' }}</p>
 
                                 <p class="mt-2 text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Wie</p>
                                 <div class="mt-1 flex flex-wrap gap-1.5">
@@ -460,6 +529,7 @@ function onCategoryDrop(category, event) {
                                         <button
                                             type="button"
                                             class="rounded p-0.5 hover:bg-brand-blue/25"
+                                            :disabled="!isTaskEditing(task) || isTaskRowSaving(task)"
                                             @click="removeTaskOwner(task, id)"
                                         >
                                             <XMarkIcon class="h-3.5 w-3.5" />
@@ -467,6 +537,7 @@ function onCategoryDrop(category, event) {
                                     </span>
                                 </div>
                                 <select
+                                    v-if="isTaskEditing(task)"
                                     class="mt-2 w-full min-w-0 rounded border border-app-border bg-white px-2 py-1.5 text-app-ink shadow-sm outline-none focus:border-brand-blue dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                                     :disabled="isTaskRowSaving(task)"
                                     @change="onTaskOwnerSelectChange(task, $event)"
@@ -482,30 +553,51 @@ function onCategoryDrop(category, event) {
                                 </select>
 
                                 <p class="mt-2 text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Uitleg</p>
-                                <EditableTextCell
-                                    :text="task.description || ''"
-                                    multiline
-                                    :saving="isTaskFieldSaving(task, 'description')"
-                                    @save="(v) => patchTaskField(task, 'description', v)"
-                                />
-
-                                <p class="mt-2 text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Deadline</p>
-                                <input
-                                    type="date"
+                                <textarea
+                                    v-if="isTaskEditing(task)"
+                                    rows="3"
                                     class="mt-1 w-full min-w-0 rounded border border-app-border bg-white px-2 py-1.5 text-app-ink shadow-sm outline-none focus:border-brand-blue dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                                    :value="task.deadline || ''"
+                                    :value="task.description || ''"
                                     :disabled="isTaskRowSaving(task)"
-                                    @change="patchTaskField(task, 'deadline', $event.target.value)"
+                                    @change="patchTaskField(task, 'description', $event.target.value)"
+                                />
+                                <p v-else class="mt-1 whitespace-pre-wrap text-sm text-app-ink dark:text-app-ink-dark">{{ task.description || '—' }}</p>
+
+                                <p class="mt-2 text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Deadlines</p>
+                                <div class="mt-1 flex flex-wrap gap-1.5">
+                                    <span
+                                        v-for="d in deadlinesForTask(task)"
+                                        :key="`mob-deadline-chip-${task.id}-${d}`"
+                                        class="inline-flex items-center gap-1 rounded-full bg-brand-blue/15 px-2 py-0.5 text-xs"
+                                    >
+                                        {{ d }}
+                                        <button type="button" class="rounded p-0.5 hover:bg-brand-blue/25" :disabled="!isTaskEditing(task) || isTaskRowSaving(task)" @click="removeTaskDeadline(task, d)">
+                                            <XMarkIcon class="h-3.5 w-3.5" />
+                                        </button>
+                                    </span>
+                                </div>
+                                <input
+                                    v-if="isTaskEditing(task)"
+                                    type="date"
+                                    class="mt-2 w-full min-w-0 rounded border border-app-border bg-white px-2 py-1.5 text-app-ink shadow-sm outline-none focus:border-brand-blue dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
+                                    :disabled="isTaskRowSaving(task)"
+                                    @change="addTaskDeadline(task, $event.target.value); $event.target.value = ''"
                                 />
 
                                 <div class="mt-3 border-t border-brand-blue/25 pt-3 dark:border-brand-blue/35">
+                                    <button
+                                        type="button"
+                                        class="mr-2 rounded border border-app-border px-2 py-1.5 text-sm text-app-ink hover:bg-brand-blue/10 dark:border-app-border-dark dark:text-app-ink-dark"
+                                        @click="toggleTaskEdit(task)"
+                                    >
+                                        <PencilSquareIcon class="h-4 w-4" />
+                                    </button>
                                     <button
                                         type="button"
                                         class="btn-action-delete h-[34px] px-2 py-1.5 text-sm"
                                         @click="deleteTask(task)"
                                     >
                                         <TrashIcon class="h-4 w-4" />
-                                        Verwijderen
                                     </button>
                                 </div>
                             </div>
@@ -525,7 +617,7 @@ function onCategoryDrop(category, event) {
                                 <th class="pb-2">Taak</th>
                                 <th class="pb-2">Wie</th>
                                 <th class="pb-2">Uitleg</th>
-                                <th class="pb-2">Deadline</th>
+                                <th class="pb-2">Deadlines</th>
                                 <th class="pb-2 text-right sm:text-left">Acties</th>
                             </tr>
                         </thead>
@@ -542,12 +634,15 @@ function onCategoryDrop(category, event) {
                                     <Bars3Icon class="h-5 w-5 cursor-grab" />
                                 </td>
                                 <td class="py-2 pr-3 align-middle">
-                                    <EditableTextCell
-                                        :text="task.title || ''"
-                                        :multiline="false"
-                                        :saving="isTaskFieldSaving(task, 'title')"
-                                        @save="(v) => patchTaskField(task, 'title', v)"
+                                    <input
+                                        v-if="isTaskEditing(task)"
+                                        type="text"
+                                        class="w-full min-w-0 rounded border border-app-border bg-white px-2 py-1.5 text-app-ink shadow-sm outline-none focus:border-brand-blue dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
+                                        :value="task.title || ''"
+                                        :disabled="isTaskRowSaving(task)"
+                                        @change="patchTaskField(task, 'title', $event.target.value)"
                                     />
+                                    <span v-else>{{ task.title || '—' }}</span>
                                 </td>
                                 <td class="py-2 pr-2 align-middle">
                                     <label class="sr-only" :for="`task-owner-${task.id}`">Wie</label>
@@ -561,6 +656,7 @@ function onCategoryDrop(category, event) {
                                             <button
                                                 type="button"
                                                 class="rounded p-0.5 hover:bg-brand-blue/25"
+                                                :disabled="!isTaskEditing(task) || isTaskRowSaving(task)"
                                                 @click="removeTaskOwner(task, id)"
                                             >
                                                 <XMarkIcon class="h-3.5 w-3.5" />
@@ -568,6 +664,7 @@ function onCategoryDrop(category, event) {
                                         </span>
                                     </div>
                                     <select
+                                        v-if="isTaskEditing(task)"
                                         :id="`task-owner-${task.id}`"
                                         class="mt-2 w-full min-w-0 rounded border border-app-border bg-white px-2 py-1.5 text-app-ink shadow-sm outline-none focus:border-brand-blue dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                                         :disabled="isTaskRowSaving(task)"
@@ -584,32 +681,55 @@ function onCategoryDrop(category, event) {
                                     </select>
                                 </td>
                                 <td class="align-middle">
-                                    <EditableTextCell
-                                        :text="task.description || ''"
-                                        multiline
-                                        :saving="isTaskFieldSaving(task, 'description')"
-                                        @save="(v) => patchTaskField(task, 'description', v)"
+                                    <textarea
+                                        v-if="isTaskEditing(task)"
+                                        rows="3"
+                                        class="w-full min-w-0 rounded border border-app-border bg-white px-2 py-1.5 text-app-ink shadow-sm outline-none focus:border-brand-blue dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
+                                        :value="task.description || ''"
+                                        :disabled="isTaskRowSaving(task)"
+                                        @change="patchTaskField(task, 'description', $event.target.value)"
                                     />
+                                    <span v-else class="whitespace-pre-wrap">{{ task.description || '—' }}</span>
                                 </td>
                                 <td class="py-2 align-middle">
-                                    <label class="sr-only" :for="`task-deadline-${task.id}`">Deadline</label>
+                                    <label class="sr-only" :for="`task-deadline-${task.id}`">Deadlines</label>
+                                    <div class="flex flex-wrap gap-1.5">
+                                        <span
+                                            v-for="d in deadlinesForTask(task)"
+                                            :key="`desk-deadline-chip-${task.id}-${d}`"
+                                            class="inline-flex items-center gap-1 rounded-full bg-brand-blue/15 px-2 py-0.5 text-xs"
+                                        >
+                                            {{ d }}
+                                            <button type="button" class="rounded p-0.5 hover:bg-brand-blue/25" :disabled="!isTaskEditing(task) || isTaskRowSaving(task)" @click="removeTaskDeadline(task, d)">
+                                                <XMarkIcon class="h-3.5 w-3.5" />
+                                            </button>
+                                        </span>
+                                    </div>
                                     <input
+                                        v-if="isTaskEditing(task)"
                                         :id="`task-deadline-${task.id}`"
                                         type="date"
-                                        class="w-full min-w-0 rounded border border-app-border bg-white px-2 py-1.5 text-app-ink shadow-sm outline-none focus:border-brand-blue dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                                        :value="task.deadline || ''"
+                                        class="mt-2 w-full min-w-0 rounded border border-app-border bg-white px-2 py-1.5 text-app-ink shadow-sm outline-none focus:border-brand-blue dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                                         :disabled="isTaskRowSaving(task)"
-                                        @change="patchTaskField(task, 'deadline', $event.target.value)"
+                                        @change="addTaskDeadline(task, $event.target.value); $event.target.value = ''"
                                     />
                                 </td>
                                 <td class="py-2 align-middle">
                                     <button
                                         type="button"
+                                        class="mr-2 rounded border border-app-border px-2 py-1.5 text-sm text-app-ink hover:bg-brand-blue/10 dark:border-app-border-dark dark:text-app-ink-dark"
+                                        @click="toggleTaskEdit(task)"
+                                        title="Bewerken"
+                                    >
+                                        <PencilSquareIcon class="h-4 w-4" />
+                                    </button>
+                                    <button
+                                        type="button"
                                         class="btn-action-delete h-[34px] px-2 py-1.5 text-sm"
                                         @click="deleteTask(task)"
+                                        title="Verwijderen"
                                     >
                                         <TrashIcon class="h-4 w-4" />
-                                        Verwijderen
                                     </button>
                                 </td>
                             </tr>

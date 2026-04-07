@@ -53,7 +53,7 @@ class TaskItemController extends Controller
                     'owner_user_id' => $task->owner_user_id,
                     'owner_user_ids' => $task->owner_user_ids ?? [],
                     'description' => $task->description,
-                    'deadline' => $task->deadline ? Carbon::parse((string) $task->deadline)->toDateString() : null,
+                    'deadlines' => $this->normalizedDeadlines($task->deadlines),
                 ];
             });
 
@@ -93,10 +93,12 @@ class TaskItemController extends Controller
             'owner_user_ids' => ['nullable', 'array'],
             'owner_user_ids.*' => ['integer', Rule::exists('users', 'id')],
             'description' => ['required', 'string'],
-            'deadline' => ['nullable', 'date'],
+            'deadlines' => ['nullable', 'array'],
+            'deadlines.*' => ['date_format:Y-m-d'],
         ]);
 
         $this->hydrateOwnerFields($data);
+        $this->hydrateDeadlineFields($data);
 
         TaskItem::create($data);
 
@@ -122,10 +124,12 @@ class TaskItemController extends Controller
             'owner_user_ids' => ['nullable', 'array'],
             'owner_user_ids.*' => ['integer', Rule::exists('users', 'id')],
             'description' => ['required', 'string'],
-            'deadline' => ['nullable', 'date'],
+            'deadlines' => ['nullable', 'array'],
+            'deadlines.*' => ['date_format:Y-m-d'],
         ]);
 
         $this->hydrateOwnerFields($data);
+        $this->hydrateDeadlineFields($data);
 
         $task_item->update($data);
 
@@ -152,11 +156,15 @@ class TaskItemController extends Controller
             'owner_user_ids' => ['sometimes', 'nullable', 'array'],
             'owner_user_ids.*' => ['integer', Rule::exists('users', 'id')],
             'description' => ['sometimes', 'required', 'string'],
-            'deadline' => ['sometimes', 'nullable', 'date'],
+            'deadlines' => ['sometimes', 'nullable', 'array'],
+            'deadlines.*' => ['date_format:Y-m-d'],
         ]);
 
         if (array_key_exists('owner_user_id', $data) || array_key_exists('owner_user_ids', $data)) {
             $this->hydrateOwnerFields($data);
+        }
+        if (array_key_exists('deadlines', $data)) {
+            $this->hydrateDeadlineFields($data);
         }
 
         $taskItem->update($data);
@@ -230,5 +238,25 @@ class TaskItemController extends Controller
             ->all();
 
         $data['owner'] = $names !== [] ? implode(', ', $names) : null;
+    }
+
+    private function hydrateDeadlineFields(array &$data): void
+    {
+        $data['deadlines'] = $this->normalizedDeadlines($data['deadlines'] ?? null);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function normalizedDeadlines(mixed $deadlines): array
+    {
+        return collect(is_array($deadlines) ? $deadlines : [])
+            ->map(fn ($v): string => trim((string) $v))
+            ->filter()
+            ->map(fn (string $v): string => Carbon::parse($v)->toDateString())
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
     }
 }

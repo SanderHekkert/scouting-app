@@ -30,7 +30,7 @@ class DashboardController extends Controller
             ->whereDate('event_date', '>=', $today)
             ->orderBy('event_date')
             ->orderBy('theme')
-            ->limit(5)
+            ->limit(3)
             ->get()
             ->map(fn (Event $e) => $this->serializeEvent($e, $today));
 
@@ -290,7 +290,7 @@ class DashboardController extends Controller
 
         return $rows
             ->sortBy(fn (array $r) => ($r['next_date'] ?? '').'_'.($r['kind'] ?? '').'_'.($r['last_name'] ?? '').'_'.($r['first_name'] ?? ''))
-            ->take(5)
+            ->take(3)
             ->values()
             ->all();
     }
@@ -395,12 +395,9 @@ class DashboardController extends Controller
                 $query->where('owner_user_id', $user->id)
                     ->orWhereJsonContains('owner_user_ids', $user->id);
             })
-            ->orderByRaw('deadline IS NULL')
-            ->orderBy('deadline')
-            ->orderBy('title')
             ->get()
             ->map(function (TaskItem $task) use ($today): array {
-                $deadline = $task->deadline ? Carbon::parse((string) $task->deadline)->startOfDay() : null;
+                $deadline = $this->nextTaskDeadline($task, $today);
 
                 return [
                     'id' => $task->id,
@@ -410,8 +407,50 @@ class DashboardController extends Controller
                     'is_overdue' => $deadline ? $deadline->lt($today) : false,
                 ];
             })
+            ->sortBy(function (array $row): array {
+                return [
+                    $row['deadline'] === null ? 1 : 0,
+                    $row['deadline'] ?? '9999-12-31',
+                    mb_strtolower((string) ($row['title'] ?? '')),
+                ];
+            })
             ->values()
             ->all();
+    }
+
+    private function nextTaskDeadline(TaskItem $task, Carbon $today): ?Carbon
+    {
+        $dates = collect(is_array($task->deadlines) ? $task->deadlines : [])
+            ->map(fn ($v): string => trim((string) $v))
+            ->filter()
+            ->map(function (string $v): ?Carbon {
+                try {
+                    return Carbon::parse($v)->startOfDay();
+                } catch (\Throwable) {
+                    return null;
+                }
+            })
+            ->filter()
+            ->values();
+
+        if ($dates->isEmpty()) {
+            return null;
+        }
+
+        $upcoming = $dates
+            ->filter(fn (Carbon $d): bool => $d->gte($today))
+            ->sortBy(fn (Carbon $d) => $d->toDateString())
+            ->values()
+            ->first();
+
+        if ($upcoming) {
+            return $upcoming;
+        }
+
+        return $dates
+            ->sortBy(fn (Carbon $d) => $d->toDateString())
+            ->values()
+            ->last();
     }
 
     private function currentLeaderName(?User $user): ?string
