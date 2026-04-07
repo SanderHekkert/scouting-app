@@ -56,6 +56,7 @@ function leaderMatchesSearch(l, rawQuery) {
     return matchesMultiFieldSearch(rawQuery, [
         l.first_name,
         l.last_name,
+        l.section_role_label,
         l.address,
         l.postal_code,
         l.city,
@@ -361,6 +362,9 @@ function isLeaderFieldSaving(leader, field) {
                                 </span>
                                 <ChevronRightIcon class="mt-0.5 h-5 w-5 shrink-0 text-app-muted dark:text-app-muted-dark" aria-hidden="true" />
                             </Link>
+                            <div class="mt-1 text-xs text-app-muted dark:text-app-muted-dark">
+                                Rol: {{ leader.section_role_label || '–' }}
+                            </div>
                             <div
                                 class="mt-2 border-t border-brand-blue/25 pt-2 text-sm dark:border-brand-blue/35"
                                 @click.stop
@@ -383,6 +387,7 @@ function isLeaderFieldSaving(leader, field) {
                             <tr class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Voornaam</th>
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Achternaam</th>
+                                <th scope="col" class="whitespace-nowrap px-3 py-2.5">Rol</th>
                                 <th scope="col" class="min-w-[12rem] px-3 py-2.5">Bijzonderheden</th>
                                 <th scope="col" class="min-w-[10rem] px-3 py-2.5">Adres</th>
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Postcode</th>
@@ -424,6 +429,9 @@ function isLeaderFieldSaving(leader, field) {
                                         :saving="isLeaderFieldSaving(leader, 'last_name')"
                                         @save="(v) => patchLeaderField(leader, 'last_name', v)"
                                     />
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-2.5 align-top">
+                                    {{ leader.section_role_label || '–' }}
                                 </td>
                                 <td class="max-w-[16rem] px-3 py-2.5 align-top break-words">
                                     <EditableTextCell
