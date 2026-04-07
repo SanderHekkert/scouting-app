@@ -46,14 +46,17 @@ class DashboardController extends Controller
      */
     private function yearEventsCountExcludingVacation(Carbon $today): int
     {
-        return Event::query()
+        $archivedThisYear = Event::query()
             ->whereYear('event_date', $today->year)
-            ->where(function ($query) {
-                $query
-                    ->whereNull('event_type')
-                    ->orWhereRaw('LOWER(event_type) NOT LIKE ?', ['%vakantie%']);
-            })
+            ->whereDate('event_date', '<', $today)
             ->count();
+
+        $activeThisYear = Event::query()
+            ->whereYear('event_date', $today->year)
+            ->whereDate('event_date', '>=', $today)
+            ->count();
+
+        return $archivedThisYear + $activeThisYear;
     }
 
     /**
