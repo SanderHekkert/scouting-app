@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignId('pod_id')->constrained()->cascadeOnDelete();
             $table->foreignId('member_id')->constrained()->cascadeOnDelete();
             $table->string('role');
+            $table->string('section', 40)->default('dolfijnen')->index();
             $table->timestamps();
             $table->unique(['pod_id', 'member_id']);
         });

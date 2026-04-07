@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
-use App\Models\Leader;
 use App\Models\Member;
 use App\Models\User;
 use Carbon\Carbon;
@@ -34,7 +33,7 @@ class DashboardController extends Controller
             'upcomingEvents' => $upcomingEvents,
             'upcomingBirthdays' => $this->upcomingBirthdays($today),
             'memberCount' => Member::count(),
-            'leaderCount' => Leader::count(),
+            'leaderCount' => User::query()->whereNotNull('first_name')->count(),
             'yearEventsCount' => $this->yearEventsCountExcludingVacation($today),
             'leaderAbsenceChart' => $this->leaderAbsenceChart($today),
         ]);
@@ -77,7 +76,8 @@ class DashboardController extends Controller
 
         $rows = [];
         foreach (
-            Leader::query()
+            User::query()
+                ->whereNotNull('first_name')
                 ->orderBy('last_name')
                 ->orderBy('first_name')
                 ->get() as $leader
@@ -106,7 +106,7 @@ class DashboardController extends Controller
                 }
             }
 
-            $realName = $leader->full_name !== '' ? $leader->full_name : ('Leiding #'.$leader->id);
+            $realName = trim(($leader->first_name ?? '').' '.($leader->last_name ?? '')) ?: ($leader->name ?: ('Leiding #'.$leader->id));
             $chartLabel = $scoutName ?? $realName;
 
             $rows[] = [
@@ -210,7 +210,7 @@ class DashboardController extends Controller
             ));
         }
 
-        foreach (Leader::query()->whereNotNull('birthday')->cursor() as $leader) {
+        foreach (User::query()->whereNotNull('first_name')->whereNotNull('birthday')->cursor() as $leader) {
             $birthday = Carbon::parse($leader->birthday);
             $next = $this->nextBirthdayDate($birthday, $today);
             $rows->push($this->serializeBirthdayRow(

@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
-import DolfijnenSubnav from '@/Components/DolfijnenSubnav.vue';
+import SpeltakSubnav from '@/Components/SpeltakSubnav.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, useForm, router, usePage } from '@inertiajs/vue3';
 import { PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
@@ -147,7 +147,7 @@ function memberOptionLabel(m) {
         </template>
         <div class="space-y-4 text-app-ink dark:text-app-ink-dark">
             <div class="surface-brand-top rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-4">
-                <DolfijnenSubnav />
+                <SpeltakSubnav />
             </div>
 
             <form

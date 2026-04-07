@@ -13,9 +13,12 @@ return new class extends Migration
     {
         Schema::create('task_items', function (Blueprint $table) {
             $table->id();
+            $table->string('category')->default('Algemeen');
             $table->string('title');
             $table->string('owner')->nullable();
+            $table->foreignId('owner_user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->text('description')->nullable();
+            $table->string('section', 40)->default('dolfijnen')->index();
             $table->timestamps();
         });
     }

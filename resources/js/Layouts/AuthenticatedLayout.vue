@@ -10,9 +10,13 @@ const sectionLabels = {
     dolfijnen: 'Dolfijnen',
     zeeverkenners: 'Zeeverkenners',
 };
+const allSections = ['dolfijnen', 'zeeverkenners'];
 
 const activeSection = computed(() => page.props.auth?.active_section || 'dolfijnen');
 const availableSections = computed(() => {
+    if (isAdmin.value) {
+        return allSections;
+    }
     const roles = page.props.auth?.section_roles || [];
     return [...new Set(roles.map((r) => r.section))].filter((section) => section !== '*');
 });
@@ -25,7 +29,14 @@ function switchSection(section) {
     router.post(
         route('active-section.update'),
         { section },
-        { preserveScroll: true, preserveState: false },
+        {
+            preserveScroll: true,
+            preserveState: false,
+            onSuccess: () => {
+                // Forceer volledige herlaad zodat alle tabbladen/data direct matchen met de gekozen speltak.
+                window.location.reload();
+            },
+        },
     );
 }
 
@@ -49,7 +60,7 @@ const mainNavItems = [
     { label: 'Agenda', route: 'events.index', matchRoutes: ['events.*', 'jaar-thema'] },
 ];
 
-/** Eén sidebar-link; subpagina’s bereik je via DolfijnenSubnav op de pagina zelf. */
+/** Eén sidebar-link; subpagina’s bereik je via SpeltakSubnav op de pagina zelf. */
 const dolfijnenNavItem = {
     label: 'Speltak',
     route: 'members.index',

@@ -15,6 +15,8 @@ return new class extends Migration
             $table->id();
             $table->string('category');
             $table->text('content');
+            $table->string('link', 2048)->nullable();
+            $table->string('section', 40)->default('dolfijnen')->index();
             $table->timestamps();
         });
     }

@@ -13,9 +13,11 @@ return new class extends Migration
     {
         Schema::create('task_categories', function (Blueprint $table) {
             $table->id();
-            $table->string('name')->unique();
+            $table->string('section', 40)->default('dolfijnen')->index();
+            $table->string('name');
             $table->unsignedInteger('position')->default(0);
             $table->timestamps();
+            $table->unique(['section', 'name'], 'task_categories_section_name_unique');
         });
     }
 

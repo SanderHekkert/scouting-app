@@ -1,5 +1,9 @@
 <script setup>
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
+import { computed } from 'vue';
+
+const page = usePage();
+const showJaarThema = computed(() => page.props.auth?.active_section !== 'zeeverkenners');
 
 function tabClass(active) {
     return [
@@ -42,6 +46,7 @@ const isJaarThemaTab = () => route().current('jaar-thema');
             Gearchiveerde opkomsten
         </Link>
         <Link
+            v-if="showJaarThema"
             role="tab"
             :href="route('jaar-thema')"
             preserve-scroll

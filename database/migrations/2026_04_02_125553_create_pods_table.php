@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('pods', function (Blueprint $table) {
             $table->id();
             $table->string('name');
+            $table->string('section', 40)->default('dolfijnen')->index();
             $table->timestamps();
         });
     }

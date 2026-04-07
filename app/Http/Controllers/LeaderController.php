@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Leader;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -13,7 +13,8 @@ class LeaderController extends Controller
         $editId = $request->integer('edit');
 
         return Inertia::render('Leaders/Index', [
-            'leaders' => Leader::query()
+            'leaders' => User::query()
+                ->whereNotNull('first_name')
                 ->orderBy('first_name')
                 ->orderBy('last_name')
                 ->get(),
@@ -21,7 +22,7 @@ class LeaderController extends Controller
         ]);
     }
 
-    public function show(Leader $leader)
+    public function show(User $leader)
     {
         return Inertia::render('Leaders/Show', [
             'leader' => $leader,
@@ -31,7 +32,7 @@ class LeaderController extends Controller
     /**
      * Snel één veld bijwerken (tabel / detail + EditableTextCell).
      */
-    public function quickUpdate(Request $request, Leader $leader)
+    public function quickUpdate(Request $request, User $leader)
     {
         if ($request->has('email') && $request->input('email') === '') {
             $request->merge(['email' => null]);
@@ -76,12 +77,14 @@ class LeaderController extends Controller
             $data['birthday'] = null;
         }
 
-        Leader::create($data);
+        $data['name'] = trim(($data['first_name'] ?? '').' '.($data['last_name'] ?? ''));
+        $data['password'] = \Database\Seeders\bcrypt('password');
+        User::create($data);
 
         return to_route('leaders.index');
     }
 
-    public function update(Request $request, Leader $leader)
+    public function update(Request $request, User $leader)
     {
         $data = $request->validate([
             'first_name' => ['required', 'string', 'max:255'],
@@ -99,12 +102,13 @@ class LeaderController extends Controller
             $data['birthday'] = null;
         }
 
+        $data['name'] = trim(($data['first_name'] ?? '').' '.($data['last_name'] ?? ''));
         $leader->update($data);
 
         return to_route('leaders.index');
     }
 
-    public function destroy(Leader $leader)
+    public function destroy(User $leader)
     {
         $leader->delete();
 

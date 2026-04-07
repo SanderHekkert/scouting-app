@@ -3,14 +3,28 @@
 namespace App\Http\Controllers;
 
 use App\Models\YearThemeEntry;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class YearThemeController extends Controller
 {
-    public function index(): Response
+    private function ensureAllowed(): ?RedirectResponse
     {
+        if (app()->bound('currentSection') && app('currentSection') === 'zeeverkenners') {
+            return to_route('events.index');
+        }
+
+        return null;
+    }
+
+    public function index(): Response|RedirectResponse
+    {
+        if ($redirect = $this->ensureAllowed()) {
+            return $redirect;
+        }
+
         return Inertia::render('YearThemes/Index', [
             'rows' => YearThemeEntry::query()
                 ->orderBy('sort_order')
@@ -23,8 +37,12 @@ class YearThemeController extends Controller
         ]);
     }
 
-    public function updateEntry(Request $request, YearThemeEntry $yearThemeEntry)
+    public function updateEntry(Request $request, YearThemeEntry $yearThemeEntry): RedirectResponse
     {
+        if ($redirect = $this->ensureAllowed()) {
+            return $redirect;
+        }
+
         $data = $request->validate([
             'value' => ['nullable', 'string', 'max:65535'],
         ]);

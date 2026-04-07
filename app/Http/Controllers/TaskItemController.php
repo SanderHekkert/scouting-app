@@ -2,15 +2,20 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Leader;
 use App\Models\TaskCategory;
 use App\Models\TaskItem;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class TaskItemController extends Controller
 {
+    private function activeSection(): string
+    {
+        return app()->bound('currentSection') ? app('currentSection') : 'dolfijnen';
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -23,7 +28,6 @@ class TaskItemController extends Controller
             ->all();
 
         $tasks = TaskItem::query()
-            ->with('ownerLeader:id,first_name,last_name')
             ->get()
             ->sortBy(function (TaskItem $task) use ($taskCategories) {
                 $categoryIndex = array_search($task->category, $taskCategories, true);
@@ -34,13 +38,14 @@ class TaskItemController extends Controller
                 ];
             })->values();
 
-        $leaders = Leader::query()
+        $leaders = User::query()
+            ->whereNotNull('first_name')
             ->orderBy('last_name')
             ->orderBy('first_name')
             ->get(['id', 'first_name', 'last_name'])
-            ->map(fn (Leader $leader) => [
+            ->map(fn (User $leader) => [
                 'id' => $leader->id,
-                'name' => $leader->full_name,
+                'name' => trim(($leader->first_name ?? '').' '.($leader->last_name ?? '')) ?: $leader->name,
             ]);
 
         return Inertia::render('TaskItems/Index', [
@@ -55,17 +60,24 @@ class TaskItemController extends Controller
      */
     public function store(Request $request)
     {
+        $section = $this->activeSection();
         $data = $request->validate([
-            'category' => ['required', 'string', Rule::exists('task_categories', 'name')],
+            'category' => [
+                'required',
+                'string',
+                Rule::exists('task_categories', 'name')->where(
+                    fn ($query) => $query->where('section', $section)
+                ),
+            ],
             'title' => ['required', 'string', 'max:255'],
-            'owner_leader_id' => ['nullable', 'integer', Rule::exists('leaders', 'id')],
+            'owner_user_id' => ['nullable', 'integer', Rule::exists('users', 'id')],
             'description' => ['nullable', 'string'],
         ]);
 
         $data['owner'] = null;
-        $data['owner_user_id'] = null;
-        if (! empty($data['owner_leader_id'])) {
-            $data['owner'] = Leader::query()->find($data['owner_leader_id'])?->full_name;
+        if (! empty($data['owner_user_id'])) {
+            $owner = User::query()->find($data['owner_user_id']);
+            $data['owner'] = $owner?->name;
         }
 
         TaskItem::create($data);
@@ -78,17 +90,24 @@ class TaskItemController extends Controller
      */
     public function update(Request $request, TaskItem $taskItem)
     {
+        $section = $this->activeSection();
         $data = $request->validate([
-            'category' => ['required', 'string', Rule::exists('task_categories', 'name')],
+            'category' => [
+                'required',
+                'string',
+                Rule::exists('task_categories', 'name')->where(
+                    fn ($query) => $query->where('section', $section)
+                ),
+            ],
             'title' => ['required', 'string', 'max:255'],
-            'owner_leader_id' => ['nullable', 'integer', Rule::exists('leaders', 'id')],
+            'owner_user_id' => ['nullable', 'integer', Rule::exists('users', 'id')],
             'description' => ['nullable', 'string'],
         ]);
 
         $data['owner'] = null;
-        $data['owner_user_id'] = null;
-        if (! empty($data['owner_leader_id'])) {
-            $data['owner'] = Leader::query()->find($data['owner_leader_id'])?->full_name;
+        if (! empty($data['owner_user_id'])) {
+            $owner = User::query()->find($data['owner_user_id']);
+            $data['owner'] = $owner?->name;
         }
 
         $taskItem->update($data);
@@ -101,18 +120,26 @@ class TaskItemController extends Controller
      */
     public function quickUpdate(Request $request, TaskItem $taskItem)
     {
+        $section = $this->activeSection();
         $data = $request->validate([
-            'category' => ['sometimes', 'required', 'string', Rule::exists('task_categories', 'name')],
+            'category' => [
+                'sometimes',
+                'required',
+                'string',
+                Rule::exists('task_categories', 'name')->where(
+                    fn ($query) => $query->where('section', $section)
+                ),
+            ],
             'title' => ['sometimes', 'required', 'string', 'max:255'],
-            'owner_leader_id' => ['sometimes', 'nullable', 'integer', Rule::exists('leaders', 'id')],
+            'owner_user_id' => ['sometimes', 'nullable', 'integer', Rule::exists('users', 'id')],
             'description' => ['sometimes', 'nullable', 'string'],
         ]);
 
-        if (array_key_exists('owner_leader_id', $data)) {
-            $data['owner_user_id'] = null;
+        if (array_key_exists('owner_user_id', $data)) {
             $data['owner'] = null;
-            if (! empty($data['owner_leader_id'])) {
-                $data['owner'] = Leader::query()->find($data['owner_leader_id'])?->full_name;
+            if (! empty($data['owner_user_id'])) {
+                $owner = User::query()->find($data['owner_user_id']);
+                $data['owner'] = $owner?->name;
             }
         }
 
@@ -123,8 +150,16 @@ class TaskItemController extends Controller
 
     public function storeCategory(Request $request)
     {
+        $section = $this->activeSection();
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:100', 'unique:task_categories,name'],
+            'name' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('task_categories', 'name')->where(
+                    fn ($query) => $query->where('section', $section)
+                ),
+            ],
         ]);
 
         $maxPosition = (int) TaskCategory::query()->max('position');

@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue';
-import DolfijnenSubnav from '@/Components/DolfijnenSubnav.vue';
+import SpeltakSubnav from '@/Components/SpeltakSubnav.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 
@@ -89,7 +89,7 @@ function setTipperTopperOpkomst(member, value) {
 
         <div class="space-y-4 text-app-ink dark:text-app-ink-dark">
             <div class="surface-brand-top rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5">
-                <DolfijnenSubnav />
+                <SpeltakSubnav />
                 <h3 class="mt-2 border-b border-brand-blue/35 pb-2 text-lg font-semibold text-app-ink dark:text-app-ink-dark">
                     Tipper- & Topper opkomst
                 </h3>

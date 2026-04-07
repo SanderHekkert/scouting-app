@@ -13,6 +13,7 @@ return new class extends Migration
             $table->unsignedTinyInteger('sort_order')->default(0);
             $table->string('label');
             $table->text('value')->nullable();
+            $table->string('section', 40)->default('dolfijnen')->index();
             $table->timestamps();
         });
     }

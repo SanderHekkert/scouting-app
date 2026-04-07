@@ -48,7 +48,7 @@ const categoryForm = useForm({
 const form = useForm({
     category: defaultCategory(),
     title: '',
-    owner_leader_id: '',
+    owner_user_id: '',
     description: '',
 });
 
@@ -104,9 +104,9 @@ function isTaskRowSaving(task) {
 function patchTaskField(task, field, raw) {
     if (!task?.id) return;
     let payload = {};
-    if (field === 'owner_leader_id') {
+    if (field === 'owner_user_id') {
         const s = raw === '' || raw == null ? null : Number(raw);
-        payload = { owner_leader_id: Number.isNaN(s) ? null : s };
+        payload = { owner_user_id: Number.isNaN(s) ? null : s };
     } else if (field === 'category') {
         payload = { category: raw };
     } else if (field === 'title') {
@@ -235,7 +235,7 @@ function deleteTask(task) {
                     </label>
                     <select
                         id="add-owner"
-                        v-model="form.owner_leader_id"
+                        v-model="form.owner_user_id"
                         class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                     >
                         <option value="">Geen toegewezen</option>
@@ -334,10 +334,10 @@ function deleteTask(task) {
                                     <select
                                         :id="`task-owner-${task.id}`"
                                         class="w-full min-w-0 rounded border border-app-border bg-white px-2 py-1.5 text-app-ink shadow-sm outline-none focus:border-brand-blue dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                                        :value="task.owner_leader_id != null ? String(task.owner_leader_id) : ''"
+                                        :value="task.owner_user_id != null ? String(task.owner_user_id) : ''"
                                         :disabled="isTaskRowSaving(task)"
                                         @change="
-                                            patchTaskField(task, 'owner_leader_id', $event.target.value || null)
+                                            patchTaskField(task, 'owner_user_id', $event.target.value || null)
                                         "
                                     >
                                         <option value="">Geen toegewezen</option>

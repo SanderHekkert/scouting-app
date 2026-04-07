@@ -21,7 +21,11 @@ return new class extends Migration
             $table->string('address')->nullable();
             $table->string('phone_mother')->nullable();
             $table->string('phone_father')->nullable();
+            $table->text('bijzonderheden')->nullable();
             $table->boolean('active')->default(true);
+            $table->boolean('tipper_topper_opkomst')->nullable();
+            $table->unsignedTinyInteger('tipper_topper_opkomst_order')->nullable();
+            $table->string('section', 40)->default('dolfijnen')->index();
             $table->timestamps();
         });
     }
