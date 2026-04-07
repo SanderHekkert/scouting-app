@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Event;
 use App\Models\Member;
 use App\Models\User;
+use App\Models\UserSectionRole;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Inertia\Inertia;
 
 class DashboardController extends Controller
@@ -33,7 +35,7 @@ class DashboardController extends Controller
             'upcomingEvents' => $upcomingEvents,
             'upcomingBirthdays' => $this->upcomingBirthdays($today),
             'memberCount' => Member::count(),
-            'leaderCount' => User::query()->whereNotNull('first_name')->count(),
+            'leaderCount' => $this->scopedLeadersQuery()->count(),
             'yearEventsCount' => $this->yearEventsCountExcludingVacation($today),
             'leaderAbsenceChart' => $this->leaderAbsenceChart($today),
         ]);
@@ -68,20 +70,18 @@ class DashboardController extends Controller
             ->whereNotNull('absent')
             ->pluck('absent');
 
-        $usersByEmail = User::query()
+        $leaders = $this->scopedLeadersQuery()
+            ->orderBy('last_name')
+            ->orderBy('first_name')
+            ->get();
+
+        $usersByEmail = $leaders
             ->whereNotNull('email')
             ->where('email', '!=', '')
-            ->get()
             ->keyBy(fn (User $u) => mb_strtolower(trim($u->email)));
 
         $rows = [];
-        foreach (
-            User::query()
-                ->whereNotNull('first_name')
-                ->orderBy('last_name')
-                ->orderBy('first_name')
-                ->get() as $leader
-        ) {
+        foreach ($leaders as $leader) {
             $full = trim(implode(' ', array_filter([
                 trim((string) $leader->first_name),
                 trim((string) $leader->last_name),
@@ -107,7 +107,7 @@ class DashboardController extends Controller
             }
 
             $realName = trim(($leader->first_name ?? '').' '.($leader->last_name ?? '')) ?: ($leader->name ?: ('Leiding #'.$leader->id));
-            $chartLabel = $scoutName ?? $realName;
+            $chartLabel = $realName;
 
             $rows[] = [
                 'id' => $leader->id,
@@ -298,5 +298,26 @@ class DashboardController extends Controller
         ];
 
         return $map[(int) $date->format('w')];
+    }
+
+    private function activeSection(): string
+    {
+        return app()->bound('currentSection') ? app('currentSection') : UserSectionRole::SECTION_DOLFIJNEN;
+    }
+
+    private function scopedLeadersQuery(): Builder
+    {
+        $section = $this->activeSection();
+
+        return User::query()
+            ->whereNotNull('first_name')
+            ->whereHas('sectionRoles', function (Builder $query) use ($section): void {
+                $query->where('section', $section)
+                    ->whereIn('role', [
+                        UserSectionRole::ROLE_TEAMLEIDER,
+                        UserSectionRole::ROLE_LEIDING,
+                        UserSectionRole::ROLE_OUDERCONTACT,
+                    ]);
+            });
     }
 }

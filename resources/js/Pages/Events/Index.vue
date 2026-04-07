@@ -215,7 +215,14 @@ function isEventFieldSaving(event, field) {
 
                 <div class="mb-3 flex w-full flex-col gap-3 border-b border-brand-blue/35 pb-2 sm:flex-row sm:items-start sm:justify-between">
                     <div>
-                        <h3 class="text-lg font-semibold text-app-ink dark:text-app-ink-dark">Actuele opkomsten</h3>
+                        <h3 class="text-lg font-semibold text-app-ink dark:text-app-ink-dark">
+                            Actuele opkomsten
+                            <span
+                                class="ms-2 inline-flex align-middle rounded-full bg-slate-200/90 px-2 py-0.5 text-xs font-medium tabular-nums text-app-muted dark:bg-brand-blue/25 dark:text-app-muted-dark"
+                            >
+                                {{ props.events?.length ?? 0 }}
+                            </span>
+                        </h3>
                         <p class="mt-0.5 text-xs text-app-muted dark:text-app-muted-dark">
                             Vanaf vandaag en verder. Opkomsten van vóór vandaag (kalenderdag) staan onder het tabblad
                             Gearchiveerde opkomsten. Dubbelklik in een cel om te bewerken.

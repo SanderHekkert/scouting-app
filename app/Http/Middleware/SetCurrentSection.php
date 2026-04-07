@@ -29,10 +29,10 @@ class SetCurrentSection
         $allowedSections = $hasGlobalAdmin
             ? UserSectionRole::ALL_SECTIONS
             : $user->sectionRoles()
-            ->pluck('section')
-            ->unique()
-            ->values()
-            ->all();
+                ->pluck('section')
+                ->unique()
+                ->values()
+                ->all();
 
         if ($allowedSections === []) {
             $allowedSections = [$default];

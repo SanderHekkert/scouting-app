@@ -318,12 +318,6 @@ function agendaUrlForEvent(ev) {
                         Agenda
                     </Link>
                 </div>
-                <p class="mt-3 text-xs leading-relaxed text-app-muted dark:text-app-muted-dark">
-                    Staafdiagram op basis van het veld «Afwezig» bij opkomsten tot en met vandaag. Als er een account met
-                    scoutingnaam (kolom leader_name) bij de leider hoort, wordt die naam eerst in de tekst gezocht; anders
-                    geldt de herkenning op voor-/achternaam. In de grafiek staat waar mogelijk de scoutingnaam; hover voor
-                    de burgerlijke naam.
-                </p>
                 <div v-if="!props.leaderAbsenceChart?.length" class="mt-6 text-center text-sm text-app-muted dark:text-app-muted-dark">
                     Nog geen leiding in het systeem.
                 </div>

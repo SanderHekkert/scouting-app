@@ -17,6 +17,14 @@ class LeaderController extends Controller
         return Inertia::render('Leaders/Index', [
             'leaders' => User::query()
                 ->whereNotNull('first_name')
+                ->whereHas('sectionRoles', function ($query) use ($activeSection): void {
+                    $query->where('section', $activeSection)
+                        ->whereIn('role', [
+                            UserSectionRole::ROLE_TEAMLEIDER,
+                            UserSectionRole::ROLE_LEIDING,
+                            UserSectionRole::ROLE_OUDERCONTACT,
+                        ]);
+                })
                 ->with(['sectionRoles' => function ($query) use ($activeSection): void {
                     $query->where('section', $activeSection)
                         ->whereIn('role', [
@@ -101,7 +109,7 @@ class LeaderController extends Controller
         }
 
         $data['name'] = trim(($data['first_name'] ?? '').' '.($data['last_name'] ?? ''));
-        $data['password'] = \Database\Seeders\bcrypt('password');
+        $data['password'] = bcrypt('password');
         User::create($data);
 
         return to_route('leaders.index');

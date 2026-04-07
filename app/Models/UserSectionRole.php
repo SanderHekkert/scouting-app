@@ -8,12 +8,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class UserSectionRole extends Model
 {
     public const SECTION_ALL = '*';
+
     public const SECTION_DOLFIJNEN = 'dolfijnen';
+
     public const SECTION_ZEEVERKENNERS = 'zeeverkenners';
 
     public const ROLE_ADMIN = 'admin';
+
     public const ROLE_TEAMLEIDER = 'teamleider';
+
     public const ROLE_LEIDING = 'leiding';
+
     public const ROLE_OUDERCONTACT = 'ouder_contact';
 
     public const ALL_SECTIONS = [
