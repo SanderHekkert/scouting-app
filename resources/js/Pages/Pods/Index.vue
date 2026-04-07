@@ -216,7 +216,7 @@ function memberOptionLabel(m) {
                         v-model="groupForm.name"
                         type="text"
                         class="min-w-0 w-full rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                        :placeholder="`Naam van de ${groupWord.value}`"
+                        :placeholder="`Naam van de ${groupWord}`"
                         required
                     />
                     <p v-if="groupForm.errors.name" class="mt-1 text-sm text-red-400">
@@ -246,7 +246,7 @@ function memberOptionLabel(m) {
                 class="surface-brand-top grid gap-4 rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5 md:grid-cols-2"
                 @submit.prevent="submitLink"
             >
-                <h3 class="text-base font-semibold text-app-ink dark:text-app-ink-dark md:col-span-2">{{ speltakSingular }} aan een {{ groupWord.value }} koppelen</h3>
+                <h3 class="text-base font-semibold text-app-ink dark:text-app-ink-dark md:col-span-2">{{ speltakSingular }} aan een {{ groupWord }} koppelen</h3>
                 <div class="md:col-span-2 grid gap-4 sm:grid-cols-[7rem_1fr] sm:items-start">
                     <label for="link-pod" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">{{ groupWordCapitalized }}</label>
                     <select
@@ -255,7 +255,7 @@ function memberOptionLabel(m) {
                         class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                         required
                     >
-                        <option value="" disabled>Kies {{ groupWord.value }}</option>
+                        <option value="" disabled>Kies {{ groupWord }}</option>
                         <option v-for="pod in pods" :key="pod.id" :value="String(pod.id)">{{ pod.name }}</option>
                     </select>
 
@@ -276,7 +276,7 @@ function memberOptionLabel(m) {
                         </option>
                     </select>
                     <p v-if="!unassignedMembers.length" class="text-sm text-app-muted dark:text-app-muted-dark sm:col-span-2">
-                        Alle leden zitten al in een {{ groupWord.value }}.
+                        Alle leden zitten al in een {{ groupWord }}.
                     </p>
 
                     <label for="link-role" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Rol</label>
@@ -340,7 +340,7 @@ function memberOptionLabel(m) {
                     </div>
 
                     <div v-if="!pod.memberships?.length" class="py-4 text-sm text-app-muted dark:text-app-muted-dark">
-                        Nog geen leden in deze {{ groupWord.value }}.
+                        Nog geen leden in deze {{ groupWord }}.
                     </div>
 
                     <div v-else class="mt-3 flex flex-col gap-4 text-sm">
