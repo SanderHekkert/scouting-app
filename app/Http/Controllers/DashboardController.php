@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Event;
 use App\Models\Member;
+use App\Models\TaskItem;
 use App\Models\User;
 use App\Models\UserSectionRole;
 use Carbon\Carbon;
@@ -41,6 +42,7 @@ class DashboardController extends Controller
             'leaderCount' => $this->scopedLeadersQuery()->count(),
             'nextUpcomingAttendance' => $this->nextUpcomingAttendanceState($today),
             'leaderAbsenceChart' => $this->leaderAbsenceChart($today),
+            'myTaskDeadlines' => $this->myTaskDeadlines($today),
         ]);
     }
 
@@ -315,22 +317,17 @@ class DashboardController extends Controller
 
     private function dutchWeekdayShort(Carbon $date): string
     {
-        $map = [
-            0 => 'zo',
-            1 => 'ma',
-            2 => 'di',
-            3 => 'wo',
-            4 => 'do',
-            5 => 'vr',
-            6 => 'za',
-        ];
-
-        return $map[(int) $date->format('w')];
+        return mb_strtolower($date->locale('nl')->isoFormat('dd'));
     }
 
     private function activeSection(): string
     {
-        return app()->bound('currentSection') ? app('currentSection') : UserSectionRole::SECTION_DOLFIJNEN;
+        $fromSession = session('active_section');
+        if (is_string($fromSession) && $fromSession !== '') {
+            return $fromSession;
+        }
+
+        return UserSectionRole::SECTION_DOLFIJNEN;
     }
 
     private function scopedLeadersQuery(): Builder
@@ -347,6 +344,38 @@ class DashboardController extends Controller
                         UserSectionRole::ROLE_OUDERCONTACT,
                     ]);
             });
+    }
+
+    /**
+     * @return list<array{id:int,title:string,category:string,deadline:string,is_overdue:bool}>
+     */
+    private function myTaskDeadlines(Carbon $today): array
+    {
+        $user = Auth::user();
+        if (! $user) {
+            return [];
+        }
+
+        return TaskItem::query()
+            ->where('owner_user_id', $user->id)
+            ->whereNotNull('deadline')
+            ->orderBy('deadline')
+            ->orderBy('title')
+            ->limit(6)
+            ->get()
+            ->map(function (TaskItem $task) use ($today): array {
+                $deadline = Carbon::parse((string) $task->deadline)->startOfDay();
+
+                return [
+                    'id' => $task->id,
+                    'title' => (string) $task->title,
+                    'category' => (string) ($task->category ?? ''),
+                    'deadline' => $deadline->toDateString(),
+                    'is_overdue' => $deadline->lt($today),
+                ];
+            })
+            ->values()
+            ->all();
     }
 
     private function currentLeaderName(?User $user): ?string

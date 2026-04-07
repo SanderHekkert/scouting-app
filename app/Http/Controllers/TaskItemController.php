@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\TaskCategory;
 use App\Models\TaskItem;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -13,7 +14,12 @@ class TaskItemController extends Controller
 {
     private function activeSection(): string
     {
-        return app()->bound('currentSection') ? app('currentSection') : 'dolfijnen';
+        $fromSession = session('active_section');
+        if (is_string($fromSession) && $fromSession !== '') {
+            return $fromSession;
+        }
+
+        return 'dolfijnen';
     }
 
     /**
@@ -36,7 +42,19 @@ class TaskItemController extends Controller
                     $categoryIndex === false ? 99 : $categoryIndex,
                     $task->title,
                 ];
-            })->values();
+            })
+            ->values()
+            ->map(function (TaskItem $task): array {
+                return [
+                    'id' => $task->id,
+                    'category' => $task->category,
+                    'title' => $task->title,
+                    'owner' => $task->owner,
+                    'owner_user_id' => $task->owner_user_id,
+                    'description' => $task->description,
+                    'deadline' => $task->deadline ? Carbon::parse((string) $task->deadline)->toDateString() : null,
+                ];
+            });
 
         $leaders = User::query()
             ->whereNotNull('first_name')
@@ -72,6 +90,7 @@ class TaskItemController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'owner_user_id' => ['nullable', 'integer', Rule::exists('users', 'id')],
             'description' => ['nullable', 'string'],
+            'deadline' => ['nullable', 'date'],
         ]);
 
         $data['owner'] = null;
@@ -102,6 +121,7 @@ class TaskItemController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'owner_user_id' => ['nullable', 'integer', Rule::exists('users', 'id')],
             'description' => ['nullable', 'string'],
+            'deadline' => ['nullable', 'date'],
         ]);
 
         $data['owner'] = null;
@@ -133,6 +153,7 @@ class TaskItemController extends Controller
             'title' => ['sometimes', 'required', 'string', 'max:255'],
             'owner_user_id' => ['sometimes', 'nullable', 'integer', Rule::exists('users', 'id')],
             'description' => ['sometimes', 'nullable', 'string'],
+            'deadline' => ['sometimes', 'nullable', 'date'],
         ]);
 
         if (array_key_exists('owner_user_id', $data)) {

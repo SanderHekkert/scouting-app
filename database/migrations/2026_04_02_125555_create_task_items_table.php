@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('owner')->nullable();
             $table->foreignId('owner_user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->text('description')->nullable();
+            $table->date('deadline')->nullable();
             $table->string('section', 40)->default('dolfijnen')->index();
             $table->timestamps();
         });

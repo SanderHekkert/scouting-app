@@ -50,6 +50,7 @@ const form = useForm({
     title: '',
     owner_user_id: '',
     description: '',
+    deadline: '',
 });
 
 const taskFieldSaving = ref(null);
@@ -115,6 +116,8 @@ function patchTaskField(task, field, raw) {
         payload = { title: raw ?? '' };
     } else if (field === 'description') {
         payload = { description: raw ?? '' };
+    } else if (field === 'deadline') {
+        payload = { deadline: raw || null };
     } else {
         return;
     }
@@ -284,6 +287,16 @@ function onCategoryDrop(category, event) {
                         class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
                     />
 
+                    <label for="add-deadline" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
+                        Deadline
+                    </label>
+                    <input
+                        id="add-deadline"
+                        v-model="form.deadline"
+                        type="date"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
+                    />
+
                     <span class="hidden sm:block" aria-hidden="true" />
                     <div>
                         <button
@@ -364,6 +377,15 @@ function onCategoryDrop(category, event) {
                                     @save="(v) => patchTaskField(task, 'description', v)"
                                 />
 
+                                <p class="mt-2 text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Deadline</p>
+                                <input
+                                    type="date"
+                                    class="mt-1 w-full min-w-0 rounded border border-app-border bg-white px-2 py-1.5 text-app-ink shadow-sm outline-none focus:border-brand-blue dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
+                                    :value="task.deadline || ''"
+                                    :disabled="isTaskRowSaving(task)"
+                                    @change="patchTaskField(task, 'deadline', $event.target.value)"
+                                />
+
                                 <div class="mt-3 border-t border-brand-blue/25 pt-3 dark:border-brand-blue/35">
                                     <button type="button" class="btn-action-delete" @click="deleteTask(task)">
                                         <TrashIcon class="h-4 w-4" />
@@ -375,9 +397,10 @@ function onCategoryDrop(category, event) {
                         <table class="hidden w-full table-fixed text-sm text-app-ink dark:text-app-ink-dark md:table">
                         <colgroup>
                             <col class="w-[6%]" />
-                            <col class="w-[30%]" />
+                            <col class="w-[24%]" />
                             <col class="w-[18%]" />
-                            <col class="w-[38%]" />
+                            <col class="w-[32%]" />
+                            <col class="w-[10%]" />
                             <col class="w-[10%]" />
                         </colgroup>
                         <thead>
@@ -386,6 +409,7 @@ function onCategoryDrop(category, event) {
                                 <th class="pb-2">Taak</th>
                                 <th class="pb-2">Wie</th>
                                 <th class="pb-2">Uitleg</th>
+                                <th class="pb-2">Deadline</th>
                                 <th class="pb-2 text-right sm:text-left">Acties</th>
                             </tr>
                         </thead>
@@ -436,6 +460,17 @@ function onCategoryDrop(category, event) {
                                         multiline
                                         :saving="isTaskFieldSaving(task, 'description')"
                                         @save="(v) => patchTaskField(task, 'description', v)"
+                                    />
+                                </td>
+                                <td class="py-2 align-top">
+                                    <label class="sr-only" :for="`task-deadline-${task.id}`">Deadline</label>
+                                    <input
+                                        :id="`task-deadline-${task.id}`"
+                                        type="date"
+                                        class="w-full min-w-0 rounded border border-app-border bg-white px-2 py-1.5 text-app-ink shadow-sm outline-none focus:border-brand-blue dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
+                                        :value="task.deadline || ''"
+                                        :disabled="isTaskRowSaving(task)"
+                                        @change="patchTaskField(task, 'deadline', $event.target.value)"
                                     />
                                 </td>
                                 <td class="py-2 align-top">
