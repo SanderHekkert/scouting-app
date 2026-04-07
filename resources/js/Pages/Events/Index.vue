@@ -202,7 +202,7 @@ function isEventFieldSaving(event, field) {
                     <div>
                         <button
                             type="submit"
-                            class="rounded bg-brand-red px-5 py-2 text-sm font-medium text-white hover:bg-brand-red-dark disabled:opacity-50"
+                            class="rounded bg-brand-blue px-5 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark disabled:opacity-50"
                             :disabled="form.processing"
                         >
                             Opslaan
@@ -227,10 +227,6 @@ function isEventFieldSaving(event, field) {
                                 {{ props.events?.length ?? 0 }}
                             </span>
                         </h3>
-                        <p class="mt-0.5 text-xs text-app-muted dark:text-app-muted-dark">
-                            Vanaf vandaag en verder. Opkomsten van vóór vandaag (kalenderdag) staan onder het tabblad
-                            Gearchiveerde opkomsten. Dubbelklik in een cel om te bewerken.
-                        </p>
                     </div>
                 </div>
 

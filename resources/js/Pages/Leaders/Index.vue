@@ -307,7 +307,7 @@ function isLeaderFieldSaving(leader, field) {
                     <div>
                         <button
                             type="submit"
-                            class="rounded bg-brand-red px-5 py-2 text-sm font-medium text-white hover:bg-brand-red-dark disabled:opacity-50"
+                            class="rounded bg-brand-blue px-5 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark disabled:opacity-50"
                             :disabled="form.processing"
                         >
                             Opslaan

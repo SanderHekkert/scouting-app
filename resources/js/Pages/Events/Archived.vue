@@ -62,10 +62,6 @@ function isEventFieldSaving(event, field) {
                                 {{ props.archivedEvents?.length ?? 0 }}
                             </span>
                         </h3>
-                        <p class="mt-0.5 text-xs text-app-muted dark:text-app-muted-dark">
-                            Opkomsten van vóór vandaag (kalenderdag). Je kunt ze nog bewerken of verwijderen. Zet je de
-                            datum op vandaag of later, dan komen ze weer bij actuele opkomsten.
-                        </p>
                     </div>
                 </div>
 

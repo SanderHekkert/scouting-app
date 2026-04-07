@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue';
 import EditableTextCell from '@/Components/EditableTextCell.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, useForm, router } from '@inertiajs/vue3';
+import { Head, useForm, router, usePage } from '@inertiajs/vue3';
 import { Bars3Icon, PlusIcon, TrashIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
@@ -16,12 +16,25 @@ const props = defineProps({
         default: () => [],
     },
 });
+const page = usePage();
+const hideCategories = computed(() =>
+    ['bevers', 'zeeverkenners', 'wilde_vaart'].includes(page.props.auth?.active_section),
+);
 
 function defaultCategory() {
     return props.taskCategories?.length ? props.taskCategories[0] : 'Algemeen';
 }
 
 const groupedSections = computed(() => {
+    if (hideCategories.value) {
+        return [
+            {
+                category: 'Taken',
+                tasks: [...(props.tasks || [])],
+            },
+        ];
+    }
+
     const byCat = Object.fromEntries(
         (props.taskCategories || []).map((c) => [c, []]),
     );
@@ -229,10 +242,11 @@ function onCategoryDrop(category, event) {
                     <button
                         type="button"
                         class="inline-flex items-center gap-2 rounded-lg border border-app-border bg-app-panel px-3 py-2 text-sm font-medium text-app-ink shadow-sm transition hover:border-brand-blue/40 hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:border-brand-blue/45 dark:hover:bg-brand-blue/15"
+                        v-if="!hideCategories"
                         @click="toggleCategoryForm"
                     >
                         <PlusIcon class="h-5 w-5" />
-                        Takenlijst toevoegen
+                        Sectie toevoegen
                     </button>
                 </div>
             </div>
@@ -243,7 +257,7 @@ function onCategoryDrop(category, event) {
                 class="surface-brand-top space-y-3 rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5"
                 @submit.prevent="submitCategory"
             >
-                <h3 class="text-base font-semibold text-app-ink dark:text-app-ink-dark">Nieuwe takenlijst</h3>
+                <h3 class="text-base font-semibold text-app-ink dark:text-app-ink-dark">Nieuwe sectie</h3>
                 <div class="grid gap-4 sm:grid-cols-[8rem_1fr] sm:items-start">
                     <label for="category-name" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Naam
@@ -259,7 +273,7 @@ function onCategoryDrop(category, event) {
                     <div>
                         <button
                             type="submit"
-                            class="rounded bg-brand-red px-5 py-2 text-sm font-medium text-white hover:bg-brand-red-dark disabled:opacity-50"
+                            class="rounded bg-brand-blue px-5 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark disabled:opacity-50"
                             :disabled="categoryForm.processing"
                         >
                             Aanmaken
@@ -276,10 +290,10 @@ function onCategoryDrop(category, event) {
             >
                 <h3 class="text-base font-semibold text-app-ink dark:text-app-ink-dark">Nieuwe taak</h3>
                 <div class="grid gap-4 sm:grid-cols-[8rem_1fr] sm:items-start">
-                    <span class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-1">
+                    <span v-if="!hideCategories" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-1">
                         Kopje
                     </span>
-                    <div class="flex flex-wrap gap-2" role="radiogroup" aria-label="Kies kopje voor deze taak">
+                    <div v-if="!hideCategories" class="flex flex-wrap gap-2" role="radiogroup" aria-label="Kies kopje voor deze taak">
                         <label
                             v-for="cat in taskCategories"
                             :key="`add-${cat}`"
@@ -403,7 +417,10 @@ function onCategoryDrop(category, event) {
                     @dragover="onCategoryDragOver(section.category, $event)"
                     @drop="onCategoryDrop(section.category, $event)"
                 >
-                    <h3 class="mb-3 border-b border-brand-blue/35 pb-2 text-lg font-semibold text-app-ink dark:text-app-ink-dark">
+                    <h3
+                        v-if="!hideCategories"
+                        class="mb-3 border-b border-brand-blue/35 pb-2 text-lg font-semibold text-app-ink dark:text-app-ink-dark"
+                    >
                         {{ section.category }}
                     </h3>
                     <div v-if="section.tasks.length === 0" class="py-3 text-sm text-app-muted dark:text-app-muted-dark">

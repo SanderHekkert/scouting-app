@@ -106,7 +106,7 @@ class TaskItemController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, TaskItem $taskItem)
+    public function update(Request $request, TaskItem $task_item)
     {
         $section = $this->activeSection();
         $data = $request->validate([
@@ -127,7 +127,7 @@ class TaskItemController extends Controller
 
         $this->hydrateOwnerFields($data);
 
-        $taskItem->update($data);
+        $task_item->update($data);
 
         return to_route('task-items.index');
     }
@@ -191,9 +191,9 @@ class TaskItemController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(TaskItem $taskItem)
+    public function destroy(TaskItem $task_item)
     {
-        $taskItem->delete();
+        $task_item->delete();
 
         return to_route('task-items.index');
     }

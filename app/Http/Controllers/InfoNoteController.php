@@ -73,7 +73,7 @@ class InfoNoteController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, InfoNote $infoNote)
+    public function update(Request $request, InfoNote $info_note)
     {
         $this->prepareLinkForValidation($request);
         $data = $request->validate([
@@ -82,7 +82,7 @@ class InfoNoteController extends Controller
             'link' => ['nullable', 'string', 'max:2048', 'url'],
         ]);
 
-        $infoNote->update($data);
+        $info_note->update($data);
 
         return to_route('info-notes.index');
     }
@@ -90,9 +90,9 @@ class InfoNoteController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(InfoNote $infoNote)
+    public function destroy(InfoNote $info_note)
     {
-        $infoNote->delete();
+        $info_note->delete();
 
         return to_route('info-notes.index');
     }

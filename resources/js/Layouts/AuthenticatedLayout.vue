@@ -7,12 +7,12 @@ import { Bars3Icon, XMarkIcon } from '@heroicons/vue/24/outline';
 
 const page = usePage();
 const sectionLabels = {
+    bevers: 'Bevers',
     dolfijnen: 'Dolfijnen',
     zeeverkenners: 'Zeeverkenners',
-    bevers: 'Bevers',
     wilde_vaart: 'Wilde Vaart',
 };
-const allSections = ['dolfijnen', 'zeeverkenners', 'bevers', 'wilde_vaart'];
+const allSections = ['bevers', 'dolfijnen', 'zeeverkenners', 'wilde_vaart'];
 const sectionButtonClass = {
     dolfijnen: {
         active: 'bg-emerald-600/20 text-emerald-700',
@@ -38,7 +38,8 @@ const availableSections = computed(() => {
         return allSections;
     }
     const roles = page.props.auth?.section_roles || [];
-    return [...new Set(roles.map((r) => r.section))].filter((section) => section !== '*');
+    const allowed = new Set(roles.map((r) => r.section).filter((section) => section !== '*'));
+    return allSections.filter((section) => allowed.has(section));
 });
 const isAdmin = computed(() =>
     (page.props.auth?.section_roles || []).some((r) => r.section === '*' && r.role === 'admin'),
@@ -174,7 +175,6 @@ onUnmounted(() => {
                         <p class="text-lg font-bold leading-tight text-brand-blue-dark">
                             Fridtjof Nansen Groep 12
                         </p>
-                        <p class="mt-1 text-xs text-app-muted">{{ sectionLabels[activeSection] }} Applicatie</p>
                         <div class="mt-3 flex flex-wrap gap-2">
                             <button
                                 v-for="section in availableSections"
