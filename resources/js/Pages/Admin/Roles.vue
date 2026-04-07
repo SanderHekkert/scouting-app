@@ -1,7 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
-import { reactive } from 'vue';
+import { computed, reactive } from 'vue';
 
 const props = defineProps({
     users: { type: Array, default: () => [] },
@@ -18,6 +18,14 @@ const labels = {
     leiding: 'Leiding',
     ouder_contact: 'Oudercontact',
 };
+const sectionOrder = ['bevers', 'dolfijnen', 'zeeverkenners', 'wilde_vaart'];
+const orderedSections = computed(() => {
+    const input = Array.isArray(props.sections) ? props.sections : [];
+    const allowed = new Set(input);
+    const sortedKnown = sectionOrder.filter((section) => allowed.has(section));
+    const rest = input.filter((section) => !sectionOrder.includes(section));
+    return [...sortedKnown, ...rest];
+});
 
 const stateByUser = reactive(
     Object.fromEntries(
@@ -81,7 +89,7 @@ function saveUser(userId) {
                             v-model="stateByUser[user.id].selected_section"
                             class="mt-1 w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black"
                         >
-                            <option v-for="section in sections" :key="`mob-s-${user.id}-${section}`" :value="section">
+                            <option v-for="section in orderedSections" :key="`mob-s-${user.id}-${section}`" :value="section">
                                 {{ labels[section] || section }}
                             </option>
                         </select>
@@ -135,7 +143,7 @@ function saveUser(userId) {
                                     v-model="stateByUser[user.id].selected_section"
                                     class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black"
                                 >
-                                    <option v-for="section in sections" :key="`s-${user.id}-${section}`" :value="section">
+                                    <option v-for="section in orderedSections" :key="`s-${user.id}-${section}`" :value="section">
                                         {{ labels[section] || section }}
                                     </option>
                                 </select>

@@ -8,6 +8,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Illuminate\Support\Collection;
 
 class YearThemeController extends Controller
 {
@@ -29,10 +30,28 @@ class YearThemeController extends Controller
             return $redirect;
         }
 
+        $section = $this->activeSection();
+        $rows = YearThemeEntry::query()
+            ->orderBy('sort_order')
+            ->get();
+
+        if ($section === UserSectionRole::SECTION_BEVERS) {
+            $rows = $rows
+                ->sortBy('sort_order')
+                ->values()
+                ->take(2)
+                ->values();
+
+            if (isset($rows[0])) {
+                $rows[0]->label = 'Seizoensthema:';
+            }
+            if (isset($rows[1])) {
+                $rows[1]->label = 'Beverkamp thema:';
+            }
+        }
+
         return Inertia::render('YearThemes/Index', [
-            'rows' => YearThemeEntry::query()
-                ->orderBy('sort_order')
-                ->get()
+            'rows' => $rows
                 ->map(fn (YearThemeEntry $e) => [
                     'id' => $e->id,
                     'label' => $e->label,
@@ -54,5 +73,22 @@ class YearThemeController extends Controller
         $yearThemeEntry->update($data);
 
         return back();
+    }
+
+    private function activeSection(): string
+    {
+        if (app()->bound('currentSection')) {
+            $section = app('currentSection');
+            if (is_string($section) && $section !== '') {
+                return $section;
+            }
+        }
+
+        $fromSession = session('active_section');
+        if (is_string($fromSession) && $fromSession !== '') {
+            return $fromSession;
+        }
+
+        return UserSectionRole::SECTION_DOLFIJNEN;
     }
 }

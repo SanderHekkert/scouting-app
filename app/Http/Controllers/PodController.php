@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Member;
 use App\Models\Pod;
 use App\Models\PodMembership;
+use App\Models\UserSectionRole;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -16,6 +17,13 @@ class PodController extends Controller
      */
     public function index()
     {
+        if (
+            app()->bound('currentSection') &&
+            app('currentSection') === UserSectionRole::SECTION_BEVERS
+        ) {
+            return to_route('members.index');
+        }
+
         /** Vaste volgorde zoals in de seed (kolommen Narwals → Orinoco's → Tuimelaars → Grampers). */
         $podOrder = ['Narwals', "Orinoco's", 'Tuimelaars', 'Grampers'];
 

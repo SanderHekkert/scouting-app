@@ -27,13 +27,20 @@ const sectionSingularMap = {
 };
 const speltakLabel = computed(() => sectionLabelMap[page.props.auth?.active_section] || 'Dolfijnen');
 const speltakSingular = computed(() => sectionSingularMap[page.props.auth?.active_section] || 'Dolfijn');
+const groupWord = computed(() => page.props.auth?.active_section === 'zeeverkenners' ? 'bak' : 'vin');
+const groupWordCapitalized = computed(() => groupWord.value.charAt(0).toUpperCase() + groupWord.value.slice(1));
+const groupingTitle = computed(() => page.props.auth?.active_section === 'zeeverkenners' ? 'Bakindeling' : 'Vinindeling');
 
 const showLinkForm = ref(false);
+const showGroupForm = ref(false);
 
 const memberForm = useForm({
     pod_id: '',
     member_id: '',
     role: 'Vinlid',
+});
+const groupForm = useForm({
+    name: '',
 });
 
 const selectedPod = computed(() =>
@@ -64,6 +71,14 @@ function toggleLinkForm() {
     }
 }
 
+function toggleGroupForm() {
+    showGroupForm.value = !showGroupForm.value;
+    if (showGroupForm.value) {
+        groupForm.reset();
+        groupForm.clearErrors();
+    }
+}
+
 function tier(role) {
     if (role === 'Topper') return 0;
     if (role === 'Tipper') return 1;
@@ -86,7 +101,7 @@ function sortedMemberships(memberships) {
     });
 }
 
-/** Per vin: Topper → Tipper → Vinleden (zoals besproken / seed-kolommen). */
+/** Per groep: Topper → Tipper → Vinleden (zoals besproken / seed-kolommen). */
 function podSections(memberships) {
     const sorted = sortedMemberships(memberships ?? []);
     const topper = sorted.filter((m) => m.role === 'Topper');
@@ -121,10 +136,31 @@ function submitLink() {
     });
 }
 
+function submitGroup() {
+    const name = String(groupForm.name ?? '').trim();
+    if (!name) return;
+    groupForm.name = name;
+    groupForm.post(route('pods.store'), {
+        preserveScroll: true,
+        onSuccess: () => {
+            groupForm.reset();
+            showGroupForm.value = false;
+        },
+    });
+}
+
 function removeMembership(membership) {
     if (!membership?.id) return;
-    if (!confirm(`Deze ${speltakSingular.value} uit de vin halen?`)) return;
+    if (!confirm(`Deze ${speltakSingular.value} uit de ${groupWord.value} halen?`)) return;
     router.delete(route('pods.members.destroy', membership.id), {
+        preserveScroll: true,
+    });
+}
+
+function removeGroup(pod) {
+    if (!pod?.id) return;
+    if (!confirm(`Deze ${groupWord.value} verwijderen?`)) return;
+    router.delete(route('pods.destroy', pod.id), {
         preserveScroll: true,
     });
 }
@@ -136,7 +172,7 @@ function memberOptionLabel(m) {
 </script>
 
 <template>
-    <Head title="Vinindeling" />
+    <Head :title="groupingTitle" />
     <AuthenticatedLayout>
         <template #header>
             <div class="flex w-full flex-wrap items-center justify-between gap-3">
@@ -145,10 +181,18 @@ function memberOptionLabel(m) {
                     <button
                         type="button"
                         class="inline-flex items-center gap-2 rounded-lg border border-app-border bg-app-panel px-3 py-2 text-sm font-medium text-app-ink shadow-sm transition hover:border-brand-blue/40 hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:border-brand-blue/45 dark:hover:bg-brand-blue/15"
+                        @click="toggleGroupForm"
+                    >
+                        <PlusIcon class="h-5 w-5" />
+                        Nieuwe {{ groupWordCapitalized }}
+                    </button>
+                    <button
+                        type="button"
+                        class="inline-flex items-center gap-2 rounded-lg border border-app-border bg-app-panel px-3 py-2 text-sm font-medium text-app-ink shadow-sm transition hover:border-brand-blue/40 hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:border-brand-blue/45 dark:hover:bg-brand-blue/15"
                         @click="toggleLinkForm"
                     >
                         <PlusIcon class="h-5 w-5" />
-                        {{ speltakSingular }} koppelen aan Vin
+                        {{ speltakSingular }} koppelen aan {{ groupWordCapitalized }}
                     </button>
                 </div>
             </div>
@@ -159,20 +203,59 @@ function memberOptionLabel(m) {
             </div>
 
             <form
+                v-show="showGroupForm"
+                class="surface-brand-top grid gap-4 rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5 sm:grid-cols-[8rem_1fr_auto]"
+                @submit.prevent="submitGroup"
+            >
+                <label for="group-name" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
+                    {{ groupWordCapitalized }}
+                </label>
+                <div>
+                    <input
+                        id="group-name"
+                        v-model="groupForm.name"
+                        type="text"
+                        class="min-w-0 w-full rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
+                        :placeholder="`Naam van de ${groupWord.value}`"
+                        required
+                    />
+                    <p v-if="groupForm.errors.name" class="mt-1 text-sm text-red-400">
+                        {{ groupForm.errors.name }}
+                    </p>
+                </div>
+                <div class="flex gap-2 sm:justify-end">
+                    <button
+                        type="submit"
+                        class="rounded bg-brand-blue px-4 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark disabled:opacity-50"
+                        :disabled="groupForm.processing"
+                    >
+                        Toevoegen
+                    </button>
+                    <button
+                        type="button"
+                        class="rounded border border-brand-blue-light/50 px-4 py-2 text-sm font-medium text-app-ink dark:text-app-ink-dark transition hover:bg-brand-blue/20"
+                        @click="toggleGroupForm"
+                    >
+                        Annuleren
+                    </button>
+                </div>
+            </form>
+
+            <form
                 v-show="showLinkForm"
                 class="surface-brand-top grid gap-4 rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5 md:grid-cols-2"
                 @submit.prevent="submitLink"
             >
-                <h3 class="text-base font-semibold text-app-ink dark:text-app-ink-dark md:col-span-2">{{ speltakSingular }} aan een vin koppelen</h3>
+                <h3 class="text-base font-semibold text-app-ink dark:text-app-ink-dark md:col-span-2">{{ speltakSingular }} aan een {{ groupWord.value }} koppelen</h3>
                 <div class="md:col-span-2 grid gap-4 sm:grid-cols-[7rem_1fr] sm:items-start">
-                    <label for="link-pod" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Vin</label>
+                    <label for="link-pod" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">{{ groupWordCapitalized }}</label>
                     <select
                         id="link-pod"
                         v-model="memberForm.pod_id"
                         class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                         required
                     >
-                        <option value="" disabled>Kies vin</option>
+                        <option value="" disabled>Kies {{ groupWord.value }}</option>
                         <option v-for="pod in pods" :key="pod.id" :value="String(pod.id)">{{ pod.name }}</option>
                     </select>
 
@@ -193,7 +276,7 @@ function memberOptionLabel(m) {
                         </option>
                     </select>
                     <p v-if="!unassignedMembers.length" class="text-sm text-app-muted dark:text-app-muted-dark sm:col-span-2">
-                        Alle leden zitten al in een vin.
+                        Alle leden zitten al in een {{ groupWord.value }}.
                     </p>
 
                     <label for="link-role" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Rol</label>
@@ -242,12 +325,22 @@ function memberOptionLabel(m) {
                     :key="pod.id"
                     class="surface-brand-top flex min-w-0 flex-col rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-4"
                 >
-                    <h3 class="border-b border-brand-blue/35 pb-2 text-lg font-semibold text-app-ink dark:text-app-ink-dark">
-                        {{ pod.name }}
-                    </h3>
+                    <div class="flex items-start justify-between gap-2 border-b border-brand-blue/35 pb-2">
+                        <h3 class="text-lg font-semibold text-app-ink dark:text-app-ink-dark">
+                            {{ pod.name }}
+                        </h3>
+                        <button
+                            type="button"
+                            class="btn-action-delete shrink-0"
+                            @click="removeGroup(pod)"
+                        >
+                            <TrashIcon class="h-4 w-4" />
+                            Verwijderen
+                        </button>
+                    </div>
 
                     <div v-if="!pod.memberships?.length" class="py-4 text-sm text-app-muted dark:text-app-muted-dark">
-                        Nog geen leden in deze vin.
+                        Nog geen leden in deze {{ groupWord.value }}.
                     </div>
 
                     <div v-else class="mt-3 flex flex-col gap-4 text-sm">

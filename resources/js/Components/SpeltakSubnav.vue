@@ -11,7 +11,13 @@ const sectionLabelMap = {
 };
 const speltakLabel = computed(() => sectionLabelMap[page.props.auth?.active_section] || 'Dolfijnen');
 const showTipperTopper = computed(
-    () => !['zeeverkenners', 'wilde_vaart'].includes(page.props.auth?.active_section),
+    () => !['bevers', 'zeeverkenners', 'wilde_vaart'].includes(page.props.auth?.active_section),
+);
+const showPods = computed(
+    () => !['bevers'].includes(page.props.auth?.active_section),
+);
+const podsLabel = computed(
+    () => page.props.auth?.active_section === 'zeeverkenners' ? 'Bakindeling' : 'Vinindeling',
 );
 
 function tabClass(active) {
@@ -62,6 +68,7 @@ function tabClass(active) {
             Tipper- & Topper opkomst
         </Link>
         <Link
+            v-if="showPods"
             role="tab"
             :href="route('pods.index')"
             preserve-scroll
@@ -69,7 +76,7 @@ function tabClass(active) {
             class="shrink-0 touch-manipulation whitespace-nowrap"
             :class="tabClass(route().current('pods.index'))"
         >
-            Vinindeling
+            {{ podsLabel }}
         </Link>
     </div>
 </template>
