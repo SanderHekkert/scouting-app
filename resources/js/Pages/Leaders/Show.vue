@@ -38,11 +38,6 @@ function formatBirthday(value) {
     return `${d}-${m}-${y}`;
 }
 
-function dashIfEmpty(value) {
-    if (value == null || String(value).trim() === '') return '–';
-    return value;
-}
-
 function leaderDisplayName(l) {
     const parts = [l?.first_name, l?.last_name].filter(Boolean);
     return parts.join(' ').trim() || '–';
