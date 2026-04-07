@@ -253,6 +253,45 @@ function setUpcomingAttendancePresent(present) {
                 </div>
             </section>
 
+            <section class="surface-brand-top rounded-xl border border-app-border bg-app-panel p-5 shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark">
+                <div class="flex items-center justify-between gap-3 border-b border-brand-blue/35 pb-3">
+                    <div class="flex items-center gap-2">
+                        <CalendarDaysIcon class="h-5 w-5 text-brand-green dark:text-app-ink-dark" />
+                        <h3 class="text-base font-semibold text-brand-blue-dark dark:text-app-ink-dark">Mijn taken</h3>
+                    </div>
+                    <Link
+                        :href="route('task-items.index')"
+                        class="text-xs font-semibold text-brand-blue hover:text-brand-blue-dark dark:text-brand-blue-light dark:hover:text-app-ink-dark"
+                    >
+                        Taakverdeling
+                    </Link>
+                </div>
+                <ul
+                    v-if="myTaskDeadlines?.length"
+                    class="mt-4 divide-y divide-app-border dark:divide-brand-blue/25"
+                >
+                    <li v-for="task in myTaskDeadlines" :key="`dl-${task.id}`" class="flex items-start justify-between gap-3 py-3 first:pt-0">
+                        <div class="min-w-0">
+                            <p class="truncate font-medium text-app-ink dark:text-app-ink-dark">{{ task.title }}</p>
+                            <p class="text-xs text-app-muted dark:text-app-muted-dark">{{ task.category || 'Algemeen' }}</p>
+                        </div>
+                        <span
+                            class="shrink-0 rounded-full px-2 py-1 text-xs font-semibold"
+                            :class="!task.deadline
+                                ? 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-100'
+                                : task.is_overdue
+                                ? 'bg-brand-red/15 text-brand-red dark:bg-brand-red/25 dark:text-app-ink-dark'
+                                : 'bg-brand-blue/10 text-brand-blue-dark dark:bg-brand-blue/25 dark:text-app-ink-dark'"
+                        >
+                            {{ task.deadline ? formatIsoToNl(task.deadline) : 'Geen deadline' }}
+                        </span>
+                    </li>
+                </ul>
+                <p v-else class="mt-4 text-sm text-app-muted dark:text-app-muted-dark">
+                    Geen taken voor jou.
+                </p>
+            </section>
+
             <div class="grid gap-5 lg:grid-cols-2">
                 <section class="surface-brand-top rounded-xl border border-app-border bg-app-panel p-5 shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark">
                     <div class="flex items-center justify-between gap-3 border-b border-brand-blue/35 pb-3">
@@ -401,42 +440,6 @@ function setUpcomingAttendancePresent(present) {
                 </div>
             </section>
 
-            <section class="surface-brand-top rounded-xl border border-app-border bg-app-panel p-5 shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark">
-                <div class="flex items-center justify-between gap-3 border-b border-brand-blue/35 pb-3">
-                    <div class="flex items-center gap-2">
-                        <CalendarDaysIcon class="h-5 w-5 text-brand-green dark:text-app-ink-dark" />
-                        <h3 class="text-base font-semibold text-brand-blue-dark dark:text-app-ink-dark">Mijn taken met deadline</h3>
-                    </div>
-                    <Link
-                        :href="route('task-items.index')"
-                        class="text-xs font-semibold text-brand-blue hover:text-brand-blue-dark dark:text-brand-blue-light dark:hover:text-app-ink-dark"
-                    >
-                        Taakverdeling
-                    </Link>
-                </div>
-                <ul
-                    v-if="myTaskDeadlines?.length"
-                    class="mt-4 divide-y divide-app-border dark:divide-brand-blue/25"
-                >
-                    <li v-for="task in myTaskDeadlines" :key="`dl-${task.id}`" class="flex items-start justify-between gap-3 py-3 first:pt-0">
-                        <div class="min-w-0">
-                            <p class="truncate font-medium text-app-ink dark:text-app-ink-dark">{{ task.title }}</p>
-                            <p class="text-xs text-app-muted dark:text-app-muted-dark">{{ task.category || 'Algemeen' }}</p>
-                        </div>
-                        <span
-                            class="shrink-0 rounded-full px-2 py-1 text-xs font-semibold"
-                            :class="task.is_overdue
-                                ? 'bg-brand-red/15 text-brand-red dark:bg-brand-red/25 dark:text-app-ink-dark'
-                                : 'bg-brand-blue/10 text-brand-blue-dark dark:bg-brand-blue/25 dark:text-app-ink-dark'"
-                        >
-                            {{ formatIsoToNl(task.deadline) }}
-                        </span>
-                    </li>
-                </ul>
-                <p v-else class="mt-4 text-sm text-app-muted dark:text-app-muted-dark">
-                    Geen taken met deadline voor jou.
-                </p>
-            </section>
         </div>
     </AuthenticatedLayout>
 </template>

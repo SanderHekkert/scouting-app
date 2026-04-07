@@ -42,7 +42,7 @@ class DashboardController extends Controller
             'leaderCount' => $this->scopedLeadersQuery()->count(),
             'nextUpcomingAttendance' => $this->nextUpcomingAttendanceState($today),
             'leaderAbsenceChart' => $this->leaderAbsenceChart($today),
-            'myTaskDeadlines' => $this->myTaskDeadlines($today),
+            'myTaskDeadlines' => $this->myTasks($today),
         ]);
     }
 
@@ -381,9 +381,9 @@ class DashboardController extends Controller
     }
 
     /**
-     * @return list<array{id:int,title:string,category:string,deadline:string,is_overdue:bool}>
+     * @return list<array{id:int,title:string,category:string,deadline:?string,is_overdue:bool}>
      */
-    private function myTaskDeadlines(Carbon $today): array
+    private function myTasks(Carbon $today): array
     {
         $user = Auth::user();
         if (! $user) {
@@ -395,20 +395,19 @@ class DashboardController extends Controller
                 $query->where('owner_user_id', $user->id)
                     ->orWhereJsonContains('owner_user_ids', $user->id);
             })
-            ->whereNotNull('deadline')
+            ->orderByRaw('deadline IS NULL')
             ->orderBy('deadline')
             ->orderBy('title')
-            ->limit(6)
             ->get()
             ->map(function (TaskItem $task) use ($today): array {
-                $deadline = Carbon::parse((string) $task->deadline)->startOfDay();
+                $deadline = $task->deadline ? Carbon::parse((string) $task->deadline)->startOfDay() : null;
 
                 return [
                     'id' => $task->id,
                     'title' => (string) $task->title,
                     'category' => (string) ($task->category ?? ''),
-                    'deadline' => $deadline->toDateString(),
-                    'is_overdue' => $deadline->lt($today),
+                    'deadline' => $deadline?->toDateString(),
+                    'is_overdue' => $deadline ? $deadline->lt($today) : false,
                 ];
             })
             ->values()
