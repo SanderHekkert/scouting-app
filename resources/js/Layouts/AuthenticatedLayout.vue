@@ -97,7 +97,7 @@ const activeMobileLabel = computed(() => {
     if (inMain) {
         return inMain.label;
     }
-    const inTail = tailNavItems.find((item) => navItemIsActive(item));
+    const inTail = tailNavItems.value.find((item) => navItemIsActive(item));
     if (inTail) {
         return inTail.label;
     }

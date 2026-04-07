@@ -31,16 +31,16 @@ class LeaderController extends Controller
                 ->map(function (User $leader) {
                     $role = $leader->sectionRoles->pluck('role')->first();
 
-                    return [
-                        ...$leader->toArray(),
+                    return array_merge($leader->toArray(), [
                         'section_role_label' => match ($role) {
                             UserSectionRole::ROLE_TEAMLEIDER => 'Teamleider',
                             UserSectionRole::ROLE_OUDERCONTACT => 'Oudercontact',
                             UserSectionRole::ROLE_LEIDING => 'Leiding',
                             default => null,
                         },
-                    ];
-                }),
+                    ]);
+                })
+                ->values(),
             'open_edit_leader_id' => $editId > 0 ? $editId : null,
         ]);
     }
