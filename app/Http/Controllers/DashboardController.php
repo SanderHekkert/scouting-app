@@ -127,7 +127,6 @@ class DashboardController extends Controller
     private function leaderAbsenceChart(Carbon $today): array
     {
         $events = Event::query()
-            ->whereDate('event_date', '<=', $today)
             ->whereNotNull('absent')
             ->pluck('absent');
 
@@ -180,23 +179,44 @@ class DashboardController extends Controller
 
     private function absentTextMentionsLeader(string $absent, string $full, string $first, string $last): bool
     {
-        if ($full !== '' && stripos($absent, $full) !== false) {
-            return true;
-        }
+        $items = collect($this->splitAbsentNames($absent))
+            ->map(fn (string $name): string => $this->normalizePersonName($name))
+            ->filter()
+            ->values();
 
-        if ($first === '') {
+        if ($items->isEmpty()) {
             return false;
         }
 
-        if (! preg_match('/\b'.preg_quote($first, '/').'\b/iu', $absent)) {
-            return false;
-        }
+        $fullNorm = $this->normalizePersonName($full);
+        $firstNorm = $this->normalizePersonName($first);
+        $lastNorm = $this->normalizePersonName($last);
 
-        if ($last === '') {
+        if ($fullNorm !== '' && $items->contains($fullNorm)) {
             return true;
         }
 
-        return stripos($absent, $last) !== false;
+        // Agenda-afwezigheid wordt vaak als alleen voornaam ingevuld.
+        if ($firstNorm !== '' && $items->contains($firstNorm)) {
+            return true;
+        }
+
+        if ($firstNorm === '') {
+            return false;
+        }
+
+        return $items->contains(function (string $item) use ($firstNorm, $lastNorm): bool {
+            if (! str_contains(' '.$item.' ', ' '.$firstNorm.' ')) {
+                return false;
+            }
+
+            return $lastNorm === '' || str_contains(' '.$item.' ', ' '.$lastNorm.' ');
+        });
+    }
+
+    private function normalizePersonName(string $value): string
+    {
+        return preg_replace('/\s+/u', ' ', mb_strtolower(trim($value))) ?? '';
     }
 
     /**
@@ -225,6 +245,7 @@ class DashboardController extends Controller
     private function upcomingBirthdays(Carbon $today): array
     {
         $rows = collect();
+        $section = $this->activeSection();
 
         foreach (Member::query()->whereNotNull('birthday')->cursor() as $member) {
             $birthday = Carbon::parse($member->birthday);
@@ -240,7 +261,20 @@ class DashboardController extends Controller
             ));
         }
 
-        foreach (User::query()->whereNotNull('first_name')->whereNotNull('birthday')->cursor() as $leader) {
+        foreach (
+            User::query()
+                ->whereNotNull('first_name')
+                ->whereNotNull('birthday')
+                ->whereHas('sectionRoles', function (Builder $query) use ($section): void {
+                    $query->where('section', $section)
+                        ->whereIn('role', [
+                            UserSectionRole::ROLE_TEAMLEIDER,
+                            UserSectionRole::ROLE_LEIDING,
+                            UserSectionRole::ROLE_OUDERCONTACT,
+                        ]);
+                })
+                ->cursor() as $leader
+        ) {
             $birthday = Carbon::parse($leader->birthday);
             $next = $this->nextBirthdayDate($birthday, $today);
             $rows->push($this->serializeBirthdayRow(
