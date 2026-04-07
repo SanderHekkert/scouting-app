@@ -3,7 +3,7 @@ import { computed, ref } from 'vue';
 import EditableTextCell from '@/Components/EditableTextCell.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
-import { PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import { Bars3Icon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     tasks: Array,
@@ -53,6 +53,8 @@ const form = useForm({
 });
 
 const taskFieldSaving = ref(null);
+const draggingTaskId = ref(null);
+const dragOverCategory = ref('');
 
 function toggleAddForm() {
     showAddForm.value = !showAddForm.value;
@@ -131,6 +133,33 @@ function deleteTask(task) {
     router.delete(route('task-items.destroy', task.id), {
         preserveScroll: true,
     });
+}
+
+function onTaskDragStart(task) {
+    draggingTaskId.value = task?.id ?? null;
+}
+
+function onTaskDragEnd() {
+    draggingTaskId.value = null;
+    dragOverCategory.value = '';
+}
+
+function onCategoryDragOver(category, event) {
+    event.preventDefault();
+    dragOverCategory.value = category;
+}
+
+function onCategoryDrop(category, event) {
+    event.preventDefault();
+    const id = draggingTaskId.value;
+    if (!id) return;
+    const task = (props.tasks || []).find((t) => t.id === id);
+    if (!task || task.category === category) {
+        onTaskDragEnd();
+        return;
+    }
+    patchTaskField(task, 'category', category);
+    onTaskDragEnd();
 }
 </script>
 
@@ -277,6 +306,9 @@ function deleteTask(task) {
                     v-for="section in groupedSections"
                     :key="section.category"
                     class="surface-brand-top rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-4"
+                    :class="{ 'ring-2 ring-brand-blue/50': dragOverCategory === section.category }"
+                    @dragover="onCategoryDragOver(section.category, $event)"
+                    @drop="onCategoryDrop(section.category, $event)"
                 >
                     <h3 class="mb-3 border-b border-brand-blue/35 pb-2 text-lg font-semibold text-app-ink dark:text-app-ink-dark">
                         {{ section.category }}
@@ -290,18 +322,14 @@ function deleteTask(task) {
                                 v-for="task in section.tasks"
                                 :key="`task-mob-${task.id}`"
                                 class="surface-brand-top rounded-xl border border-brand-blue/30 bg-app-panel px-4 py-3 text-app-ink shadow-sm dark:bg-app-panel-dark/95 dark:text-app-ink-dark"
+                                draggable="true"
+                                @dragstart="onTaskDragStart(task)"
+                                @dragend="onTaskDragEnd"
                             >
-                                <p class="text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Kopje</p>
-                                <select
-                                    class="mt-1 w-full min-w-0 rounded border border-app-border bg-white px-2 py-1.5 text-app-ink shadow-sm outline-none focus:border-brand-blue dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                                    :value="task.category"
-                                    :disabled="isTaskRowSaving(task)"
-                                    @change="patchTaskField(task, 'category', $event.target.value)"
-                                >
-                                    <option v-for="c in taskCategories" :key="`mob-${task.id}-${c}`" :value="c">
-                                        {{ c }}
-                                    </option>
-                                </select>
+                                <div class="mb-1 inline-flex items-center gap-1 rounded bg-brand-blue/10 px-2 py-1 text-xs text-app-muted dark:text-app-muted-dark">
+                                    <Bars3Icon class="h-4 w-4" />
+                                    Sleep naar ander kopje
+                                </div>
 
                                 <p class="mt-2 text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Taak</p>
                                 <EditableTextCell
@@ -346,15 +374,15 @@ function deleteTask(task) {
                         </div>
                         <table class="hidden w-full table-fixed text-sm text-app-ink dark:text-app-ink-dark md:table">
                         <colgroup>
-                            <col class="w-[14%]" />
-                            <col class="w-[22%]" />
+                            <col class="w-[6%]" />
+                            <col class="w-[30%]" />
                             <col class="w-[18%]" />
-                            <col class="w-[36%]" />
+                            <col class="w-[38%]" />
                             <col class="w-[10%]" />
                         </colgroup>
                         <thead>
                             <tr class="text-left text-app-muted dark:text-app-muted-dark">
-                                <th class="pb-2">Kopje</th>
+                                <th class="pb-2"></th>
                                 <th class="pb-2">Taak</th>
                                 <th class="pb-2">Wie</th>
                                 <th class="pb-2">Uitleg</th>
@@ -366,20 +394,12 @@ function deleteTask(task) {
                                 v-for="task in section.tasks"
                                 :key="task.id"
                                 class="border-t border-brand-blue/35"
+                                draggable="true"
+                                @dragstart="onTaskDragStart(task)"
+                                @dragend="onTaskDragEnd"
                             >
-                                <td class="py-2 pr-2 align-top">
-                                    <label class="sr-only" :for="`task-cat-${task.id}`">Kopje</label>
-                                    <select
-                                        :id="`task-cat-${task.id}`"
-                                        class="w-full min-w-0 rounded border border-app-border bg-white px-2 py-1.5 text-app-ink shadow-sm outline-none focus:border-brand-blue dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                                        :value="task.category"
-                                        :disabled="isTaskRowSaving(task)"
-                                        @change="patchTaskField(task, 'category', $event.target.value)"
-                                    >
-                                        <option v-for="c in taskCategories" :key="`${task.id}-${c}`" :value="c">
-                                            {{ c }}
-                                        </option>
-                                    </select>
+                                <td class="py-2 pr-2 align-top text-app-muted dark:text-app-muted-dark">
+                                    <Bars3Icon class="h-5 w-5 cursor-grab" />
                                 </td>
                                 <td class="py-2 pr-3 align-top">
                                     <EditableTextCell
@@ -389,7 +409,7 @@ function deleteTask(task) {
                                         @save="(v) => patchTaskField(task, 'title', v)"
                                     />
                                 </td>
-                                <td class="pr-2 align-top">
+                                <td class="py-2 pr-2 align-top">
                                     <label class="sr-only" :for="`task-owner-${task.id}`">Wie</label>
                                     <select
                                         :id="`task-owner-${task.id}`"
@@ -410,7 +430,7 @@ function deleteTask(task) {
                                         </option>
                                     </select>
                                 </td>
-                                <td class="align-top">
+                                <td class="align-middle">
                                     <EditableTextCell
                                         :text="task.description || ''"
                                         multiline
