@@ -17,12 +17,14 @@ class TaskItem extends Model
         'title',
         'owner',
         'owner_user_id',
+        'owner_user_ids',
         'description',
         'deadline',
     ];
 
     protected $casts = [
         'deadline' => 'date',
+        'owner_user_ids' => 'array',
     ];
 
     public function ownerUser(): BelongsTo

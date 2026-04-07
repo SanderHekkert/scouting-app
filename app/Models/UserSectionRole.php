@@ -13,6 +13,10 @@ class UserSectionRole extends Model
 
     public const SECTION_ZEEVERKENNERS = 'zeeverkenners';
 
+    public const SECTION_BEVERS = 'bevers';
+
+    public const SECTION_WILDE_VAART = 'wilde_vaart';
+
     public const ROLE_ADMIN = 'admin';
 
     public const ROLE_TEAMLEIDER = 'teamleider';
@@ -24,6 +28,8 @@ class UserSectionRole extends Model
     public const ALL_SECTIONS = [
         self::SECTION_DOLFIJNEN,
         self::SECTION_ZEEVERKENNERS,
+        self::SECTION_BEVERS,
+        self::SECTION_WILDE_VAART,
     ];
 
     public const ALL_ROLES = [

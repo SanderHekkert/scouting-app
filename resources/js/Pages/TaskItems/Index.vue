@@ -3,7 +3,7 @@ import { computed, ref } from 'vue';
 import EditableTextCell from '@/Components/EditableTextCell.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
-import { Bars3Icon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import { Bars3Icon, PlusIcon, TrashIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     tasks: Array,
@@ -48,7 +48,7 @@ const categoryForm = useForm({
 const form = useForm({
     category: defaultCategory(),
     title: '',
-    owner_user_id: '',
+    owner_user_ids: [],
     description: '',
     deadline: '',
 });
@@ -107,9 +107,8 @@ function isTaskRowSaving(task) {
 function patchTaskField(task, field, raw) {
     if (!task?.id) return;
     let payload = {};
-    if (field === 'owner_user_id') {
-        const s = raw === '' || raw == null ? null : Number(raw);
-        payload = { owner_user_id: Number.isNaN(s) ? null : s };
+    if (field === 'owner_user_ids') {
+        payload = { owner_user_ids: Array.isArray(raw) ? raw : [] };
     } else if (field === 'category') {
         payload = { category: raw };
     } else if (field === 'title') {
@@ -128,6 +127,52 @@ function patchTaskField(task, field, raw) {
             taskFieldSaving.value = null;
         },
     });
+}
+
+function firstNameOnly(name) {
+    const s = String(name ?? '').trim();
+    if (!s) return '';
+    return s.split(/\s+/)[0] || s;
+}
+
+function leaderNameById(id) {
+    const match = (props.leaders || []).find((l) => Number(l.id) === Number(id));
+    return match?.name || '';
+}
+
+function ownerIds(task) {
+    if (Array.isArray(task?.owner_user_ids)) {
+        return [...new Set(task.owner_user_ids.map((v) => Number(v)).filter((n) => Number.isFinite(n)))];
+    }
+    if (task?.owner_user_id != null && task.owner_user_id !== '') {
+        return [Number(task.owner_user_id)];
+    }
+    return [];
+}
+
+function addTaskOwner(task, id) {
+    const candidate = Number(id);
+    if (!Number.isFinite(candidate)) return;
+    const current = ownerIds(task);
+    if (current.includes(candidate)) return;
+    patchTaskField(task, 'owner_user_ids', [...current, candidate]);
+}
+
+function removeTaskOwner(task, id) {
+    const current = ownerIds(task);
+    patchTaskField(
+        task,
+        'owner_user_ids',
+        current.filter((x) => x !== Number(id)),
+    );
+}
+
+function onTaskOwnerSelectChange(task, domEvent) {
+    const id = domEvent?.target?.value;
+    addTaskOwner(task, id);
+    if (domEvent?.target) {
+        domEvent.target.value = '';
+    }
 }
 
 function deleteTask(task) {
@@ -245,7 +290,13 @@ function onCategoryDrop(category, event) {
                                     : 'border-brand-blue/35 bg-white text-app-ink hover:border-brand-blue/55 dark:bg-app-canvas-dark dark:text-app-ink-dark dark:hover:border-brand-blue/55'
                             "
                         >
-                            <input v-model="form.category" type="radio" class="sr-only" :value="cat" />
+                            <input
+                                v-model="form.category"
+                                type="radio"
+                                class="sr-only"
+                                :value="cat"
+                                :required="taskCategories[0] === cat"
+                            />
                             {{ cat }}
                         </label>
                     </div>
@@ -259,22 +310,47 @@ function onCategoryDrop(category, event) {
                         type="text"
                         autocomplete="off"
                         placeholder="bv. Agenda bijhouden"
+                        required
                         class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
                     />
 
-                    <label for="add-owner" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
+                    <label for="add-owners" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Wie
                     </label>
-                    <select
-                        id="add-owner"
-                        v-model="form.owner_user_id"
-                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                    >
-                        <option value="">Geen toegewezen</option>
-                        <option v-for="leader in leaders" :key="`add-leader-${leader.id}`" :value="String(leader.id)">
-                            {{ leader.name }}
-                        </option>
-                    </select>
+                    <div>
+                        <div class="flex flex-wrap gap-1.5">
+                            <span
+                                v-for="id in form.owner_user_ids"
+                                :key="`add-owner-chip-${id}`"
+                                class="inline-flex items-center gap-1 rounded-full bg-brand-blue/15 px-2 py-0.5 text-xs"
+                            >
+                                {{ firstNameOnly(leaderNameById(id)) }}
+                                <button
+                                    type="button"
+                                    class="rounded p-0.5 hover:bg-brand-blue/25"
+                                    @click="form.owner_user_ids = form.owner_user_ids.filter((x) => Number(x) !== Number(id))"
+                                >
+                                    <XMarkIcon class="h-3.5 w-3.5" />
+                                </button>
+                            </span>
+                        </div>
+                        <select
+                            id="add-owners"
+                            class="mt-2 min-w-0 w-full rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
+                            @change="
+                                (e) => {
+                                    const v = Number(e.target.value);
+                                    if (Number.isFinite(v) && !form.owner_user_ids.includes(v)) form.owner_user_ids.push(v);
+                                    e.target.value = '';
+                                }
+                            "
+                        >
+                            <option value="">Naam toevoegen…</option>
+                            <option v-for="leader in leaders" :key="`add-leader-${leader.id}`" :value="String(leader.id)">
+                                {{ firstNameOnly(leader.name) }}
+                            </option>
+                        </select>
+                    </div>
 
                     <label for="add-description" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Uitleg
@@ -284,6 +360,7 @@ function onCategoryDrop(category, event) {
                         v-model="form.description"
                         rows="4"
                         placeholder="Wat houdt deze taak in?"
+                        required
                         class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
                     />
 
@@ -311,6 +388,9 @@ function onCategoryDrop(category, event) {
                 <p v-if="form.errors.category" class="text-sm text-red-400">{{ form.errors.category }}</p>
                 <p v-if="form.errors.title" class="text-sm text-red-400">
                     {{ form.errors.title }}
+                </p>
+                <p v-if="form.errors.description" class="text-sm text-red-400">
+                    {{ form.errors.description }}
                 </p>
             </form>
 
@@ -353,19 +433,34 @@ function onCategoryDrop(category, event) {
                                 />
 
                                 <p class="mt-2 text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Wie</p>
+                                <div class="mt-1 flex flex-wrap gap-1.5">
+                                    <span
+                                        v-for="id in ownerIds(task)"
+                                        :key="`mob-owner-chip-${task.id}-${id}`"
+                                        class="inline-flex items-center gap-1 rounded-full bg-brand-blue/15 px-2 py-0.5 text-xs"
+                                    >
+                                        {{ firstNameOnly(leaderNameById(id)) }}
+                                        <button
+                                            type="button"
+                                            class="rounded p-0.5 hover:bg-brand-blue/25"
+                                            @click="removeTaskOwner(task, id)"
+                                        >
+                                            <XMarkIcon class="h-3.5 w-3.5" />
+                                        </button>
+                                    </span>
+                                </div>
                                 <select
-                                    class="mt-1 w-full min-w-0 rounded border border-app-border bg-white px-2 py-1.5 text-app-ink shadow-sm outline-none focus:border-brand-blue dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                                    :value="task.owner_user_id != null ? String(task.owner_user_id) : ''"
+                                    class="mt-2 w-full min-w-0 rounded border border-app-border bg-white px-2 py-1.5 text-app-ink shadow-sm outline-none focus:border-brand-blue dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                                     :disabled="isTaskRowSaving(task)"
-                                    @change="patchTaskField(task, 'owner_user_id', $event.target.value || null)"
+                                    @change="onTaskOwnerSelectChange(task, $event)"
                                 >
-                                    <option value="">Geen toegewezen</option>
+                                    <option value="">Naam toevoegen…</option>
                                     <option
                                         v-for="leader in leaders"
                                         :key="`mob-row-leader-${task.id}-${leader.id}`"
                                         :value="String(leader.id)"
                                     >
-                                        {{ leader.name }}
+                                        {{ firstNameOnly(leader.name) }}
                                     </option>
                                 </select>
 
@@ -387,7 +482,11 @@ function onCategoryDrop(category, event) {
                                 />
 
                                 <div class="mt-3 border-t border-brand-blue/25 pt-3 dark:border-brand-blue/35">
-                                    <button type="button" class="btn-action-delete" @click="deleteTask(task)">
+                                    <button
+                                        type="button"
+                                        class="btn-action-delete h-[34px] px-2 py-1.5 text-sm"
+                                        @click="deleteTask(task)"
+                                    >
                                         <TrashIcon class="h-4 w-4" />
                                         Verwijderen
                                     </button>
@@ -422,10 +521,10 @@ function onCategoryDrop(category, event) {
                                 @dragstart="onTaskDragStart(task)"
                                 @dragend="onTaskDragEnd"
                             >
-                                <td class="py-2 pr-2 align-top text-app-muted dark:text-app-muted-dark">
+                                <td class="py-2 pr-2 align-middle text-app-muted dark:text-app-muted-dark">
                                     <Bars3Icon class="h-5 w-5 cursor-grab" />
                                 </td>
-                                <td class="py-2 pr-3 align-top">
+                                <td class="py-2 pr-3 align-middle">
                                     <EditableTextCell
                                         :text="task.title || ''"
                                         :multiline="false"
@@ -433,24 +532,37 @@ function onCategoryDrop(category, event) {
                                         @save="(v) => patchTaskField(task, 'title', v)"
                                     />
                                 </td>
-                                <td class="py-2 pr-2 align-top">
+                                <td class="py-2 pr-2 align-middle">
                                     <label class="sr-only" :for="`task-owner-${task.id}`">Wie</label>
+                                    <div class="flex flex-wrap gap-1.5">
+                                        <span
+                                            v-for="id in ownerIds(task)"
+                                            :key="`desk-owner-chip-${task.id}-${id}`"
+                                            class="inline-flex items-center gap-1 rounded-full bg-brand-blue/15 px-2 py-0.5 text-xs"
+                                        >
+                                            {{ firstNameOnly(leaderNameById(id)) }}
+                                            <button
+                                                type="button"
+                                                class="rounded p-0.5 hover:bg-brand-blue/25"
+                                                @click="removeTaskOwner(task, id)"
+                                            >
+                                                <XMarkIcon class="h-3.5 w-3.5" />
+                                            </button>
+                                        </span>
+                                    </div>
                                     <select
                                         :id="`task-owner-${task.id}`"
-                                        class="w-full min-w-0 rounded border border-app-border bg-white px-2 py-1.5 text-app-ink shadow-sm outline-none focus:border-brand-blue dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                                        :value="task.owner_user_id != null ? String(task.owner_user_id) : ''"
+                                        class="mt-2 w-full min-w-0 rounded border border-app-border bg-white px-2 py-1.5 text-app-ink shadow-sm outline-none focus:border-brand-blue dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                                         :disabled="isTaskRowSaving(task)"
-                                        @change="
-                                            patchTaskField(task, 'owner_user_id', $event.target.value || null)
-                                        "
+                                        @change="onTaskOwnerSelectChange(task, $event)"
                                     >
-                                        <option value="">Geen toegewezen</option>
+                                        <option value="">Naam toevoegen…</option>
                                         <option
                                             v-for="leader in leaders"
                                             :key="`row-leader-${task.id}-${leader.id}`"
                                             :value="String(leader.id)"
                                         >
-                                            {{ leader.name }}
+                                            {{ firstNameOnly(leader.name) }}
                                         </option>
                                     </select>
                                 </td>
@@ -462,7 +574,7 @@ function onCategoryDrop(category, event) {
                                         @save="(v) => patchTaskField(task, 'description', v)"
                                     />
                                 </td>
-                                <td class="py-2 align-top">
+                                <td class="py-2 align-middle">
                                     <label class="sr-only" :for="`task-deadline-${task.id}`">Deadline</label>
                                     <input
                                         :id="`task-deadline-${task.id}`"
@@ -473,8 +585,12 @@ function onCategoryDrop(category, event) {
                                         @change="patchTaskField(task, 'deadline', $event.target.value)"
                                     />
                                 </td>
-                                <td class="py-2 align-top">
-                                    <button type="button" class="btn-action-delete" @click="deleteTask(task)">
+                                <td class="py-2 align-middle">
+                                    <button
+                                        type="button"
+                                        class="btn-action-delete h-[34px] px-2 py-1.5 text-sm"
+                                        @click="deleteTask(task)"
+                                    >
                                         <TrashIcon class="h-4 w-4" />
                                         Verwijderen
                                     </button>

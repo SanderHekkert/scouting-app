@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\UserSectionRole;
 use App\Models\YearThemeEntry;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -12,7 +13,10 @@ class YearThemeController extends Controller
 {
     private function ensureAllowed(): ?RedirectResponse
     {
-        if (app()->bound('currentSection') && app('currentSection') === 'zeeverkenners') {
+        if (
+            app()->bound('currentSection') &&
+            in_array(app('currentSection'), [UserSectionRole::SECTION_ZEEVERKENNERS, UserSectionRole::SECTION_WILDE_VAART], true)
+        ) {
             return to_route('events.index');
         }
 

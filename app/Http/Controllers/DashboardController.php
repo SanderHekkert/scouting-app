@@ -357,7 +357,10 @@ class DashboardController extends Controller
         }
 
         return TaskItem::query()
-            ->where('owner_user_id', $user->id)
+            ->where(function (Builder $query) use ($user): void {
+                $query->where('owner_user_id', $user->id)
+                    ->orWhereJsonContains('owner_user_ids', $user->id);
+            })
             ->whereNotNull('deadline')
             ->orderBy('deadline')
             ->orderBy('title')

@@ -11,9 +11,13 @@ const props = defineProps({
     },
 });
 const page = usePage();
-const speltakLabel = computed(() =>
-    page.props.auth?.active_section === 'zeeverkenners' ? 'Zeeverkenners' : 'Dolfijnen',
-);
+const sectionLabelMap = {
+    dolfijnen: 'Dolfijnen',
+    zeeverkenners: 'Zeeverkenners',
+    bevers: 'Bevers',
+    wilde_vaart: 'Wilde Vaart',
+};
+const speltakLabel = computed(() => sectionLabelMap[page.props.auth?.active_section] || 'Dolfijnen');
 
 const opkomstSavingId = ref(null);
 

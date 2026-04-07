@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\UserSectionRole;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class AdminRoleController extends Controller
@@ -57,7 +58,7 @@ class AdminRoleController extends Controller
     {
         $data = $request->validate([
             'is_admin' => ['required', 'boolean'],
-            'selected_section' => ['required', 'string', 'in:dolfijnen,zeeverkenners'],
+            'selected_section' => ['required', 'string', Rule::in(UserSectionRole::ALL_SECTIONS)],
             'selected_role' => ['required', 'string', 'in:teamleider,leiding,ouder_contact'],
         ]);
 

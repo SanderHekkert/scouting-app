@@ -3,7 +3,9 @@ import { Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
 const page = usePage();
-const showJaarThema = computed(() => page.props.auth?.active_section !== 'zeeverkenners');
+const showJaarThema = computed(
+    () => !['zeeverkenners', 'wilde_vaart'].includes(page.props.auth?.active_section),
+);
 
 function tabClass(active) {
     return [

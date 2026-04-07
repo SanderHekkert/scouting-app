@@ -51,6 +51,7 @@ class TaskItemController extends Controller
                     'title' => $task->title,
                     'owner' => $task->owner,
                     'owner_user_id' => $task->owner_user_id,
+                    'owner_user_ids' => $task->owner_user_ids ?? [],
                     'description' => $task->description,
                     'deadline' => $task->deadline ? Carbon::parse((string) $task->deadline)->toDateString() : null,
                 ];
@@ -89,15 +90,13 @@ class TaskItemController extends Controller
             ],
             'title' => ['required', 'string', 'max:255'],
             'owner_user_id' => ['nullable', 'integer', Rule::exists('users', 'id')],
-            'description' => ['nullable', 'string'],
+            'owner_user_ids' => ['nullable', 'array'],
+            'owner_user_ids.*' => ['integer', Rule::exists('users', 'id')],
+            'description' => ['required', 'string'],
             'deadline' => ['nullable', 'date'],
         ]);
 
-        $data['owner'] = null;
-        if (! empty($data['owner_user_id'])) {
-            $owner = User::query()->find($data['owner_user_id']);
-            $data['owner'] = $owner?->name;
-        }
+        $this->hydrateOwnerFields($data);
 
         TaskItem::create($data);
 
@@ -120,15 +119,13 @@ class TaskItemController extends Controller
             ],
             'title' => ['required', 'string', 'max:255'],
             'owner_user_id' => ['nullable', 'integer', Rule::exists('users', 'id')],
-            'description' => ['nullable', 'string'],
+            'owner_user_ids' => ['nullable', 'array'],
+            'owner_user_ids.*' => ['integer', Rule::exists('users', 'id')],
+            'description' => ['required', 'string'],
             'deadline' => ['nullable', 'date'],
         ]);
 
-        $data['owner'] = null;
-        if (! empty($data['owner_user_id'])) {
-            $owner = User::query()->find($data['owner_user_id']);
-            $data['owner'] = $owner?->name;
-        }
+        $this->hydrateOwnerFields($data);
 
         $taskItem->update($data);
 
@@ -152,16 +149,14 @@ class TaskItemController extends Controller
             ],
             'title' => ['sometimes', 'required', 'string', 'max:255'],
             'owner_user_id' => ['sometimes', 'nullable', 'integer', Rule::exists('users', 'id')],
-            'description' => ['sometimes', 'nullable', 'string'],
+            'owner_user_ids' => ['sometimes', 'nullable', 'array'],
+            'owner_user_ids.*' => ['integer', Rule::exists('users', 'id')],
+            'description' => ['sometimes', 'required', 'string'],
             'deadline' => ['sometimes', 'nullable', 'date'],
         ]);
 
-        if (array_key_exists('owner_user_id', $data)) {
-            $data['owner'] = null;
-            if (! empty($data['owner_user_id'])) {
-                $owner = User::query()->find($data['owner_user_id']);
-                $data['owner'] = $owner?->name;
-            }
+        if (array_key_exists('owner_user_id', $data) || array_key_exists('owner_user_ids', $data)) {
+            $this->hydrateOwnerFields($data);
         }
 
         $taskItem->update($data);
@@ -201,5 +196,39 @@ class TaskItemController extends Controller
         $taskItem->delete();
 
         return to_route('task-items.index');
+    }
+
+    /**
+     * @param  array<string,mixed>  $data
+     */
+    private function hydrateOwnerFields(array &$data): void
+    {
+        $ids = [];
+        if (array_key_exists('owner_user_ids', $data)) {
+            $ids = collect($data['owner_user_ids'] ?? [])->map(fn ($v) => (int) $v)->filter()->unique()->values()->all();
+        } elseif (! empty($data['owner_user_id'])) {
+            $ids = [(int) $data['owner_user_id']];
+        }
+
+        $data['owner_user_ids'] = $ids;
+        $data['owner_user_id'] = $ids[0] ?? null;
+
+        if ($ids === []) {
+            $data['owner'] = null;
+
+            return;
+        }
+
+        $names = User::query()
+            ->whereIn('id', $ids)
+            ->orderBy('last_name')
+            ->orderBy('first_name')
+            ->get()
+            ->map(fn (User $u) => trim(($u->first_name ?? '').' '.($u->last_name ?? '')) ?: $u->name)
+            ->filter()
+            ->values()
+            ->all();
+
+        $data['owner'] = $names !== [] ? implode(', ', $names) : null;
     }
 }

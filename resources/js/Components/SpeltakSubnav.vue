@@ -3,10 +3,16 @@ import { Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
 const page = usePage();
-const speltakLabel = computed(() =>
-    page.props.auth?.active_section === 'zeeverkenners' ? 'Zeeverkenners' : 'Dolfijnen',
+const sectionLabelMap = {
+    dolfijnen: 'Dolfijnen',
+    zeeverkenners: 'Zeeverkenners',
+    bevers: 'Bevers',
+    wilde_vaart: 'Wilde Vaart',
+};
+const speltakLabel = computed(() => sectionLabelMap[page.props.auth?.active_section] || 'Dolfijnen');
+const showTipperTopper = computed(
+    () => !['zeeverkenners', 'wilde_vaart'].includes(page.props.auth?.active_section),
 );
-const showTipperTopper = computed(() => page.props.auth?.active_section !== 'zeeverkenners');
 
 function tabClass(active) {
     return [

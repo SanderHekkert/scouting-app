@@ -9,8 +9,28 @@ const page = usePage();
 const sectionLabels = {
     dolfijnen: 'Dolfijnen',
     zeeverkenners: 'Zeeverkenners',
+    bevers: 'Bevers',
+    wilde_vaart: 'Wilde Vaart',
 };
-const allSections = ['dolfijnen', 'zeeverkenners'];
+const allSections = ['dolfijnen', 'zeeverkenners', 'bevers', 'wilde_vaart'];
+const sectionButtonClass = {
+    dolfijnen: {
+        active: 'bg-emerald-600/20 text-emerald-700',
+        inactive: 'bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20',
+    },
+    zeeverkenners: {
+        active: 'bg-yellow-400/35 text-yellow-900',
+        inactive: 'bg-yellow-300/25 text-yellow-900 hover:bg-yellow-300/40',
+    },
+    bevers: {
+        active: 'bg-red-600/20 text-red-700',
+        inactive: 'bg-red-500/10 text-red-700 hover:bg-red-500/20',
+    },
+    wilde_vaart: {
+        active: 'bg-blue-600/20 text-blue-700',
+        inactive: 'bg-blue-500/10 text-blue-700 hover:bg-blue-500/20',
+    },
+};
 
 const activeSection = computed(() => page.props.auth?.active_section || 'dolfijnen');
 const availableSections = computed(() => {
@@ -161,7 +181,9 @@ onUnmounted(() => {
                                 :key="`desktop-section-${section}`"
                                 type="button"
                                 class="rounded-md px-2.5 py-1 text-xs font-semibold transition"
-                                :class="section === activeSection ? 'bg-brand-red/15 text-brand-red' : 'bg-brand-blue/10 text-brand-blue-dark hover:bg-brand-blue/20'"
+                                :class="section === activeSection
+                                    ? (sectionButtonClass[section]?.active || 'bg-brand-red/15 text-brand-red')
+                                    : (sectionButtonClass[section]?.inactive || 'bg-brand-blue/10 text-brand-blue-dark hover:bg-brand-blue/20')"
                                 @click="switchSection(section)"
                             >
                                 {{ sectionLabels[section] || section }}
@@ -348,7 +370,9 @@ onUnmounted(() => {
                                 :key="`mobile-section-${section}`"
                                 type="button"
                                 class="rounded-md px-2.5 py-1 text-xs font-semibold transition"
-                                :class="section === activeSection ? 'bg-brand-red/15 text-brand-red' : 'bg-brand-blue/10 text-brand-blue-dark hover:bg-brand-blue/20'"
+                                :class="section === activeSection
+                                    ? (sectionButtonClass[section]?.active || 'bg-brand-red/15 text-brand-red')
+                                    : (sectionButtonClass[section]?.inactive || 'bg-brand-blue/10 text-brand-blue-dark hover:bg-brand-blue/20')"
                                 @click="switchSection(section)"
                             >
                                 {{ sectionLabels[section] || section }}

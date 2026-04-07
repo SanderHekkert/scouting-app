@@ -12,6 +12,8 @@ const props = defineProps({
 const labels = {
     dolfijnen: 'Dolfijnen',
     zeeverkenners: 'Zeeverkenners',
+    bevers: 'Bevers',
+    wilde_vaart: 'Wilde Vaart',
     teamleider: 'Teamleider',
     leiding: 'Leiding',
     ouder_contact: 'Oudercontact',

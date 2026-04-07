@@ -11,8 +11,10 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TaskItemController;
 use App\Http\Controllers\TipperTopperOpkomstController;
 use App\Http\Controllers\YearThemeController;
+use App\Models\UserSectionRole;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Validation\Rule;
 
 Route::get('/', function () {
     return to_route('dashboard');
@@ -26,7 +28,7 @@ Route::middleware(['auth', 'section.role:admin'])->group(function () {
 Route::middleware(['auth', 'section.role:teamleider,leiding,ouder_contact'])->group(function () {
     Route::post('/active-section', function (Request $request) {
         $data = $request->validate([
-            'section' => ['required', 'string', 'in:dolfijnen,zeeverkenners'],
+            'section' => ['required', 'string', Rule::in(UserSectionRole::ALL_SECTIONS)],
         ]);
 
         if (! $request->user() || ! $request->user()->hasRoleInSection($data['section'])) {
