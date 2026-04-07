@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue';
 import DolfijnenSubnav from '@/Components/DolfijnenSubnav.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, useForm, router } from '@inertiajs/vue3';
+import { Head, useForm, router, usePage } from '@inertiajs/vue3';
 import { PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
@@ -12,6 +12,13 @@ const props = defineProps({
         default: () => [],
     },
 });
+const page = usePage();
+const speltakLabel = computed(() =>
+    page.props.auth?.active_section === 'zeeverkenners' ? 'Zeeverkenners' : 'Dolfijnen',
+);
+const speltakSingular = computed(() =>
+    page.props.auth?.active_section === 'zeeverkenners' ? 'Zeeverkenner' : 'Dolfijn',
+);
 
 const showLinkForm = ref(false);
 
@@ -108,7 +115,7 @@ function submitLink() {
 
 function removeMembership(membership) {
     if (!membership?.id) return;
-    if (!confirm('Deze Dolfijn uit de vin halen?')) return;
+    if (!confirm(`Deze ${speltakSingular.value} uit de vin halen?`)) return;
     router.delete(route('pods.members.destroy', membership.id), {
         preserveScroll: true,
     });
@@ -125,7 +132,7 @@ function memberOptionLabel(m) {
     <AuthenticatedLayout>
         <template #header>
             <div class="flex w-full flex-wrap items-center justify-between gap-3">
-                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Dolfijnen</h2>
+                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">{{ speltakLabel }}</h2>
                 <div class="flex flex-wrap items-center justify-end gap-2 sm:ms-auto">
                     <button
                         type="button"
@@ -133,7 +140,7 @@ function memberOptionLabel(m) {
                         @click="toggleLinkForm"
                     >
                         <PlusIcon class="h-5 w-5" />
-                        Dolfijn koppelen aan Vin
+                        {{ speltakSingular }} koppelen aan Vin
                     </button>
                 </div>
             </div>
@@ -148,7 +155,7 @@ function memberOptionLabel(m) {
                 class="surface-brand-top grid gap-4 rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5 md:grid-cols-2"
                 @submit.prevent="submitLink"
             >
-                <h3 class="text-base font-semibold text-app-ink dark:text-app-ink-dark md:col-span-2">Dolfijn aan een vin koppelen</h3>
+                <h3 class="text-base font-semibold text-app-ink dark:text-app-ink-dark md:col-span-2">{{ speltakSingular }} aan een vin koppelen</h3>
                 <div class="md:col-span-2 grid gap-4 sm:grid-cols-[7rem_1fr] sm:items-start">
                     <label for="link-pod" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Vin</label>
                     <select
@@ -161,14 +168,14 @@ function memberOptionLabel(m) {
                         <option v-for="pod in pods" :key="pod.id" :value="String(pod.id)">{{ pod.name }}</option>
                     </select>
 
-                    <label for="link-member" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Dolfijn</label>
+                    <label for="link-member" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">{{ speltakSingular }}</label>
                     <select
                         id="link-member"
                         v-model="memberForm.member_id"
                         class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                         required
                     >
-                        <option value="" disabled>Kies Dolfijn</option>
+                        <option value="" disabled>Kies {{ speltakSingular }}</option>
                         <option
                             v-for="m in unassignedMembers"
                             :key="m.id"

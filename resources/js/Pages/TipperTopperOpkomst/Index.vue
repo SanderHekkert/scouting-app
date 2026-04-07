@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue';
 import DolfijnenSubnav from '@/Components/DolfijnenSubnav.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, router } from '@inertiajs/vue3';
+import { Head, router, usePage } from '@inertiajs/vue3';
 
 const props = defineProps({
     members: {
@@ -10,6 +10,10 @@ const props = defineProps({
         default: () => [],
     },
 });
+const page = usePage();
+const speltakLabel = computed(() =>
+    page.props.auth?.active_section === 'zeeverkenners' ? 'Zeeverkenners' : 'Dolfijnen',
+);
 
 const opkomstSavingId = ref(null);
 
@@ -80,7 +84,7 @@ function setTipperTopperOpkomst(member, value) {
     <Head title="Tipper- & Topper opkomst" />
     <AuthenticatedLayout>
         <template #header>
-            <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Dolfijnen</h2>
+            <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">{{ speltakLabel }}</h2>
         </template>
 
         <div class="space-y-4 text-app-ink dark:text-app-ink-dark">
@@ -90,7 +94,7 @@ function setTipperTopperOpkomst(member, value) {
                     Tipper- & Topper opkomst
                 </h3>
                 <p class="mt-2 text-xs text-app-muted dark:text-app-muted-dark">
-                    Alle Dolfijnen staan hieronder. Ja’s bovenaan (laatste Ja het hoogst). Daarna nog geen keuze. Onderaan alle
+                    Alle {{ speltakLabel }} staan hieronder. Ja’s bovenaan (laatste Ja het hoogst). Daarna nog geen keuze. Onderaan alle
                     Nee’s; wie het laatst op Nee is gezet, staat het laagst.
                 </p>
 

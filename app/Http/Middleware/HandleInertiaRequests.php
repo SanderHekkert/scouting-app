@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\UserSectionRole;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -29,11 +30,24 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+        $sectionRoles = $user
+            ? $user->sectionRoles()->get(['section', 'role'])->map(fn (UserSectionRole $r) => [
+                'section' => $r->section,
+                'role' => $r->role,
+            ])->all()
+            : [];
+        $activeSection = app()->bound('currentSection')
+            ? app('currentSection')
+            : UserSectionRole::SECTION_DOLFIJNEN;
+
         return [
             ...parent::share($request),
             'csrf_token' => csrf_token(),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $user,
+                'active_section' => $activeSection,
+                'section_roles' => $sectionRoles,
             ],
         ];
     }

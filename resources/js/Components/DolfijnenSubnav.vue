@@ -1,5 +1,12 @@
 <script setup>
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
+import { computed } from 'vue';
+
+const page = usePage();
+const speltakLabel = computed(() =>
+    page.props.auth?.active_section === 'zeeverkenners' ? 'Zeeverkenners' : 'Dolfijnen',
+);
+const showTipperTopper = computed(() => page.props.auth?.active_section !== 'zeeverkenners');
 
 function tabClass(active) {
     return [
@@ -15,7 +22,7 @@ function tabClass(active) {
     <div
         class="mb-3 flex gap-1 overflow-x-auto overflow-y-hidden border-b border-brand-blue/35 pb-px [-webkit-overflow-scrolling:touch] sm:flex-wrap"
         role="tablist"
-        aria-label="Dolfijnen onderdelen"
+        :aria-label="`${speltakLabel} onderdelen`"
     >
         <Link
             role="tab"
@@ -25,7 +32,7 @@ function tabClass(active) {
             class="shrink-0 touch-manipulation whitespace-nowrap"
             :class="tabClass(route().current('members.index'))"
         >
-            Dolfijnen
+            {{ speltakLabel }}
         </Link>
         <Link
             role="tab"
@@ -38,6 +45,7 @@ function tabClass(active) {
             Bijzonderheden
         </Link>
         <Link
+            v-if="showTipperTopper"
             role="tab"
             :href="route('tipper-topper-opkomst.index')"
             preserve-scroll

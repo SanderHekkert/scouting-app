@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Event;
 use App\Models\Leader;
 use App\Models\Member;
-use App\Models\TaskItem;
 use App\Models\User;
 use Carbon\Carbon;
 use Inertia\Inertia;
@@ -36,9 +35,24 @@ class DashboardController extends Controller
             'upcomingBirthdays' => $this->upcomingBirthdays($today),
             'memberCount' => Member::count(),
             'leaderCount' => Leader::count(),
-            'taskCount' => TaskItem::count(),
+            'yearEventsCount' => $this->yearEventsCountExcludingVacation($today),
             'leaderAbsenceChart' => $this->leaderAbsenceChart($today),
         ]);
+    }
+
+    /**
+     * Aantal opkomsten in huidig jaar exclusief vakantie-opkomsten.
+     */
+    private function yearEventsCountExcludingVacation(Carbon $today): int
+    {
+        return Event::query()
+            ->whereYear('event_date', $today->year)
+            ->where(function ($query) {
+                $query
+                    ->whereNull('event_type')
+                    ->orWhereRaw('LOWER(event_type) NOT LIKE ?', ['%vakantie%']);
+            })
+            ->count();
     }
 
     /**

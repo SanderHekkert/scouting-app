@@ -9,6 +9,10 @@ class TipperTopperOpkomstController extends Controller
 {
     public function __invoke()
     {
+        if (app()->bound('currentSection') && app('currentSection') === 'zeeverkenners') {
+            return to_route('members.index');
+        }
+
         return Inertia::render('TipperTopperOpkomst/Index', [
             'members' => Member::query()
                 ->orderBy('first_name')

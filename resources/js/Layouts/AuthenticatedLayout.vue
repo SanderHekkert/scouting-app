@@ -2,10 +2,32 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import AppShellBackground from '@/Components/AppShellBackground.vue';
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
-import { Link, usePage } from '@inertiajs/vue3';
+import { Link, router, usePage } from '@inertiajs/vue3';
 import { Bars3Icon, XMarkIcon } from '@heroicons/vue/24/outline';
 
 const page = usePage();
+const sectionLabels = {
+    dolfijnen: 'Dolfijnen',
+    zeeverkenners: 'Zeeverkenners',
+};
+
+const activeSection = computed(() => page.props.auth?.active_section || 'dolfijnen');
+const availableSections = computed(() => {
+    const roles = page.props.auth?.section_roles || [];
+    return [...new Set(roles.map((r) => r.section))].filter((section) => section !== '*');
+});
+const isAdmin = computed(() =>
+    (page.props.auth?.section_roles || []).some((r) => r.section === '*' && r.role === 'admin'),
+);
+
+function switchSection(section) {
+    if (!section || section === activeSection.value) return;
+    router.post(
+        route('active-section.update'),
+        { section },
+        { preserveScroll: true, preserveState: false },
+    );
+}
 
 const userInitials = computed(() => {
     const name = (page.props.auth?.user?.name || '').trim();
@@ -29,7 +51,7 @@ const mainNavItems = [
 
 /** Eén sidebar-link; subpagina’s bereik je via DolfijnenSubnav op de pagina zelf. */
 const dolfijnenNavItem = {
-    label: 'Dolfijnen',
+    label: 'Speltak',
     route: 'members.index',
     matchRoutes: [
         'members.index',
@@ -40,11 +62,12 @@ const dolfijnenNavItem = {
     ],
 };
 
-const tailNavItems = [
+const tailNavItems = computed(() => [
     { label: 'Leiding', route: 'leaders.index', matchRoutes: ['leaders.*'] },
     { label: 'Belangrijke info', route: 'info-notes.index', matchRoutes: ['info-notes.*'] },
     { label: 'Taakverdeling', route: 'task-items.index', matchRoutes: ['task-items.*', 'task-categories.*'] },
-];
+    ...(isAdmin.value ? [{ label: 'Rollenbeheer', route: 'admin.roles.index', matchRoutes: ['admin.roles.*'] }] : []),
+]);
 
 const mobileMenuOpen = ref(false);
 
@@ -120,7 +143,19 @@ onUnmounted(() => {
                         <p class="text-lg font-bold leading-tight text-brand-blue-dark">
                             Fridtjof Nansen Groep 12
                         </p>
-                        <p class="mt-1 text-xs text-app-muted">Dolfijnen Applicatie</p>
+                        <p class="mt-1 text-xs text-app-muted">{{ sectionLabels[activeSection] }} Applicatie</p>
+                        <div class="mt-3 flex flex-wrap gap-2">
+                            <button
+                                v-for="section in availableSections"
+                                :key="`desktop-section-${section}`"
+                                type="button"
+                                class="rounded-md px-2.5 py-1 text-xs font-semibold transition"
+                                :class="section === activeSection ? 'bg-brand-red/15 text-brand-red' : 'bg-brand-blue/10 text-brand-blue-dark hover:bg-brand-blue/20'"
+                                @click="switchSection(section)"
+                            >
+                                {{ sectionLabels[section] || section }}
+                            </button>
+                        </div>
                     </div>
 
                     <nav
@@ -292,7 +327,23 @@ onUnmounted(() => {
                     >
                         Profiel
                     </Link>
-                    <p class="px-4 pt-2 text-center text-[11px] text-slate-400 dark:text-slate-500">FN12 · Dolfijnen</p>
+                    <div class="px-4 pt-2">
+                        <p class="text-center text-[11px] text-slate-400 dark:text-slate-500">
+                            FN12 · {{ sectionLabels[activeSection] }}
+                        </p>
+                        <div class="mt-2 flex flex-wrap justify-center gap-2">
+                            <button
+                                v-for="section in availableSections"
+                                :key="`mobile-section-${section}`"
+                                type="button"
+                                class="rounded-md px-2.5 py-1 text-xs font-semibold transition"
+                                :class="section === activeSection ? 'bg-brand-red/15 text-brand-red' : 'bg-brand-blue/10 text-brand-blue-dark hover:bg-brand-blue/20'"
+                                @click="switchSection(section)"
+                            >
+                                {{ sectionLabels[section] || section }}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </nav>
 

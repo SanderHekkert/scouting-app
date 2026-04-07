@@ -1,13 +1,15 @@
 <script setup>
 import EditableTextCell from '@/Components/EditableTextCell.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { ChevronLeftIcon, TrashIcon } from '@heroicons/vue/24/outline';
 import { ref } from 'vue';
 
 const props = defineProps({
     member: { type: Object, required: true },
 });
+const page = usePage();
+const speltakLabel = ref(page.props.auth?.active_section === 'zeeverkenners' ? 'Zeeverkenners' : 'Dolfijnen');
 
 const installedSaving = ref(false);
 
@@ -112,7 +114,7 @@ function isShowSaving(field) {
                     class="inline-flex items-center gap-1 text-sm font-medium text-brand-red hover:text-brand-red-dark dark:text-brand-blue-light dark:hover:text-app-ink-dark"
                 >
                     <ChevronLeftIcon class="h-5 w-5" />
-                    Terug naar Dolfijnen
+                    Terug naar {{ speltakLabel }}
                 </Link>
             </div>
         </template>

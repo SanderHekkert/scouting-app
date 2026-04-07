@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToSection;
 use Illuminate\Database\Eloquent\Model;
 
 class TaskCategory extends Model
 {
+    use BelongsToSection;
+
     public const DEFAULT_NAMES = [
         'Veiligheid',
         'Financiën',
@@ -18,6 +21,7 @@ class TaskCategory extends Model
     ];
 
     protected $fillable = [
+        'section',
         'name',
         'position',
     ];

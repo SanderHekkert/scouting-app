@@ -1,14 +1,13 @@
 <script setup>
 import EditableTextCell from '@/Components/EditableTextCell.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import {
     ArrowTopRightOnSquareIcon,
     CalendarDaysIcon,
     CakeIcon,
     ChartBarIcon,
-    ClipboardDocumentListIcon,
     UserGroupIcon,
     UsersIcon,
 } from '@heroicons/vue/24/outline';
@@ -17,11 +16,15 @@ const props = defineProps({
     todayEvents: { type: Array, default: () => [] },
     upcomingEvents: { type: Array, default: () => [] },
     upcomingBirthdays: { type: Array, default: () => [] },
-    taskCount: { type: Number, default: 0 },
+    yearEventsCount: { type: Number, default: 0 },
     memberCount: { type: Number, default: 0 },
     leaderCount: { type: Number, default: 0 },
     leaderAbsenceChart: { type: Array, default: () => [] },
 });
+const page = usePage();
+const speltakLabel = computed(() =>
+    page.props.auth?.active_section === 'zeeverkenners' ? 'Zeeverkenners' : 'Dolfijnen',
+);
 
 const maxAbsenceCount = computed(() =>
     Math.max(0, ...(props.leaderAbsenceChart || []).map((r) => Number(r?.absence_count) || 0)),
@@ -178,7 +181,7 @@ function agendaUrlForEvent(ev) {
                         <UsersIcon class="h-5 w-5" />
                     </span>
                     <div class="min-w-0">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Dolfijnen</p>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">{{ speltakLabel }}</p>
                         <p class="mt-1 tabular-nums text-2xl font-bold text-app-ink dark:text-app-ink-dark">{{ memberCount }}</p>
                     </div>
                 </div>
@@ -193,11 +196,11 @@ function agendaUrlForEvent(ev) {
                 </div>
                 <div class="surface-brand-top flex gap-3 rounded-xl border border-app-border bg-app-panel p-4 shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark">
                     <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-green/15 text-brand-green ring-1 ring-brand-green/35 dark:bg-brand-green/25 dark:text-app-ink-dark dark:ring-brand-yellow/40">
-                        <ClipboardDocumentListIcon class="h-5 w-5" />
+                        <CalendarDaysIcon class="h-5 w-5" />
                     </span>
                     <div class="min-w-0">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Taken</p>
-                        <p class="mt-1 tabular-nums text-2xl font-bold text-app-ink dark:text-app-ink-dark">{{ taskCount }}</p>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Opkomsten dit jaar</p>
+                        <p class="mt-1 tabular-nums text-2xl font-bold text-app-ink dark:text-app-ink-dark">{{ yearEventsCount }}</p>
                     </div>
                 </div>
             </section>

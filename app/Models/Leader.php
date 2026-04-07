@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToSection;
 use Illuminate\Database\Eloquent\Model;
 
 class Leader extends Model
 {
+    use BelongsToSection;
+
     public function getFullNameAttribute(): string
     {
         return trim("{$this->first_name} {$this->last_name}");

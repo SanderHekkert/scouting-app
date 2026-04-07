@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdminRoleController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\InfoNoteController;
@@ -10,13 +11,33 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TaskItemController;
 use App\Http\Controllers\TipperTopperOpkomstController;
 use App\Http\Controllers\YearThemeController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return to_route('dashboard');
 });
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'section.role:admin'])->group(function () {
+    Route::get('/admin/rollen', [AdminRoleController::class, 'index'])->name('admin.roles.index');
+    Route::patch('/admin/rollen/{user}', [AdminRoleController::class, 'update'])->name('admin.roles.update');
+});
+
+Route::middleware(['auth', 'section.role:teamleider,leiding,ouder_contact'])->group(function () {
+    Route::post('/active-section', function (Request $request) {
+        $data = $request->validate([
+            'section' => ['required', 'string', 'in:dolfijnen,zeeverkenners'],
+        ]);
+
+        if (! $request->user() || ! $request->user()->hasRoleInSection($data['section'])) {
+            abort(403, 'Je hebt geen toegang tot deze speltak.');
+        }
+
+        $request->session()->put('active_section', $data['section']);
+
+        return back();
+    })->name('active-section.update');
+
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/jaar-thema', [YearThemeController::class, 'index'])->name('jaar-thema');
     Route::patch('/jaar-thema/entries/{yearThemeEntry}', [YearThemeController::class, 'updateEntry'])->name('jaar-thema.entries.update');

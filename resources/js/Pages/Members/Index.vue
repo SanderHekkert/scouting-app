@@ -3,7 +3,7 @@ import { computed, nextTick, onMounted, ref } from 'vue';
 import DolfijnenSubnav from '@/Components/DolfijnenSubnav.vue';
 import EditableTextCell from '@/Components/EditableTextCell.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link, useForm, router } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage, router } from '@inertiajs/vue3';
 import { ChevronRightIcon, MagnifyingGlassIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
@@ -13,6 +13,13 @@ const props = defineProps({
         default: null,
     },
 });
+const page = usePage();
+const speltakLabel = computed(() =>
+    page.props.auth?.active_section === 'zeeverkenners' ? 'Zeeverkenners' : 'Dolfijnen',
+);
+const speltakSingular = computed(() =>
+    page.props.auth?.active_section === 'zeeverkenners' ? 'Zeeverkenner' : 'Dolfijn',
+);
 
 const showAddForm = ref(false);
 const rowHighlightMemberId = ref(null);
@@ -271,11 +278,11 @@ function isMemberFieldSaving(member, field) {
 </script>
 
 <template>
-    <Head title="Dolfijnen" />
+    <Head :title="speltakLabel" />
     <AuthenticatedLayout>
         <template #header>
             <div class="flex w-full flex-wrap items-center justify-between gap-3">
-                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Dolfijnen</h2>
+                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">{{ speltakLabel }}</h2>
                 <div class="flex flex-wrap items-center justify-end gap-2 sm:ms-auto">
                     <button
                         type="button"
@@ -283,7 +290,7 @@ function isMemberFieldSaving(member, field) {
                         @click="toggleAddForm"
                     >
                         <PlusIcon class="h-5 w-5" />
-                        Dolfijn toevoegen
+                        {{ speltakSingular }} toevoegen
                     </button>
                 </div>
             </div>
@@ -449,7 +456,7 @@ function isMemberFieldSaving(member, field) {
                 </p>
 
                 <div v-if="!props.members?.length" class="py-6 text-center text-sm text-app-muted dark:text-app-muted-dark">
-                    Nog geen Dolfijnen.
+                    Nog geen {{ speltakLabel }}.
                 </div>
                 <div v-else-if="!filteredMembers.length" class="py-6 text-center text-sm text-app-muted dark:text-app-muted-dark">
                     Geen resultaten voor deze zoekopdracht.

@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToSection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TaskItem extends Model
 {
+    use BelongsToSection;
+
     protected $table = 'task_items';
 
     protected $fillable = [
