@@ -284,7 +284,67 @@ function deleteTask(task) {
                     <div v-if="section.tasks.length === 0" class="py-3 text-sm text-app-muted dark:text-app-muted-dark">
                         Geen taken in deze categorie.
                     </div>
-                    <table v-else class="w-full table-fixed text-sm text-app-ink dark:text-app-ink-dark">
+                    <div v-else class="space-y-2 md:space-y-0">
+                        <div class="md:hidden space-y-2">
+                            <div
+                                v-for="task in section.tasks"
+                                :key="`task-mob-${task.id}`"
+                                class="surface-brand-top rounded-xl border border-brand-blue/30 bg-app-panel px-4 py-3 text-app-ink shadow-sm dark:bg-app-panel-dark/95 dark:text-app-ink-dark"
+                            >
+                                <p class="text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Kopje</p>
+                                <select
+                                    class="mt-1 w-full min-w-0 rounded border border-app-border bg-white px-2 py-1.5 text-app-ink shadow-sm outline-none focus:border-brand-blue dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
+                                    :value="task.category"
+                                    :disabled="isTaskRowSaving(task)"
+                                    @change="patchTaskField(task, 'category', $event.target.value)"
+                                >
+                                    <option v-for="c in taskCategories" :key="`mob-${task.id}-${c}`" :value="c">
+                                        {{ c }}
+                                    </option>
+                                </select>
+
+                                <p class="mt-2 text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Taak</p>
+                                <EditableTextCell
+                                    :text="task.title || ''"
+                                    :multiline="false"
+                                    :saving="isTaskFieldSaving(task, 'title')"
+                                    @save="(v) => patchTaskField(task, 'title', v)"
+                                />
+
+                                <p class="mt-2 text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Wie</p>
+                                <select
+                                    class="mt-1 w-full min-w-0 rounded border border-app-border bg-white px-2 py-1.5 text-app-ink shadow-sm outline-none focus:border-brand-blue dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
+                                    :value="task.owner_user_id != null ? String(task.owner_user_id) : ''"
+                                    :disabled="isTaskRowSaving(task)"
+                                    @change="patchTaskField(task, 'owner_user_id', $event.target.value || null)"
+                                >
+                                    <option value="">Geen toegewezen</option>
+                                    <option
+                                        v-for="leader in leaders"
+                                        :key="`mob-row-leader-${task.id}-${leader.id}`"
+                                        :value="String(leader.id)"
+                                    >
+                                        {{ leader.name }}
+                                    </option>
+                                </select>
+
+                                <p class="mt-2 text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Uitleg</p>
+                                <EditableTextCell
+                                    :text="task.description || ''"
+                                    multiline
+                                    :saving="isTaskFieldSaving(task, 'description')"
+                                    @save="(v) => patchTaskField(task, 'description', v)"
+                                />
+
+                                <div class="mt-3 border-t border-brand-blue/25 pt-3 dark:border-brand-blue/35">
+                                    <button type="button" class="btn-action-delete" @click="deleteTask(task)">
+                                        <TrashIcon class="h-4 w-4" />
+                                        Verwijderen
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <table class="hidden w-full table-fixed text-sm text-app-ink dark:text-app-ink-dark md:table">
                         <colgroup>
                             <col class="w-[14%]" />
                             <col class="w-[22%]" />
@@ -367,6 +427,7 @@ function deleteTask(task) {
                             </tr>
                         </tbody>
                     </table>
+                    </div>
                 </div>
             </div>
         </div>

@@ -8,6 +8,9 @@ use App\Models\User;
 use App\Models\UserSectionRole;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class DashboardController extends Controller
@@ -36,35 +39,88 @@ class DashboardController extends Controller
             'upcomingBirthdays' => $this->upcomingBirthdays($today),
             'memberCount' => Member::count(),
             'leaderCount' => $this->scopedLeadersQuery()->count(),
-            'yearEventsCount' => $this->yearEventsCountExcludingVacation($today),
+            'nextUpcomingAttendance' => $this->nextUpcomingAttendanceState($today),
             'leaderAbsenceChart' => $this->leaderAbsenceChart($today),
         ]);
     }
 
-    /**
-     * Aantal opkomsten in huidig jaar exclusief vakantie-opkomsten.
-     */
-    private function yearEventsCountExcludingVacation(Carbon $today): int
+    public function updateUpcomingAttendance(Request $request): RedirectResponse
     {
-        $archivedThisYear = Event::query()
-            ->whereYear('event_date', $today->year)
-            ->whereDate('event_date', '<', $today)
-            ->count();
+        $data = $request->validate([
+            'present' => ['required', 'boolean'],
+        ]);
 
-        $activeThisYear = Event::query()
-            ->whereYear('event_date', $today->year)
+        $today = Carbon::today();
+        $nextEvent = Event::query()
             ->whereDate('event_date', '>=', $today)
-            ->count();
+            ->orderBy('event_date')
+            ->orderBy('theme')
+            ->first();
 
-        return $archivedThisYear + $activeThisYear;
+        if (! $nextEvent) {
+            return back();
+        }
+
+        $leaderName = $this->currentLeaderName(Auth::user());
+        if ($leaderName === null) {
+            return back();
+        }
+
+        $names = $this->splitAbsentNames((string) ($nextEvent->absent ?? ''));
+        $present = (bool) $data['present'];
+
+        if ($present) {
+            $names = array_values(array_filter($names, fn (string $n): bool => mb_strtolower($n) !== mb_strtolower($leaderName)));
+        } else {
+            $exists = collect($names)->contains(fn (string $n): bool => mb_strtolower($n) === mb_strtolower($leaderName));
+            if (! $exists) {
+                $names[] = $leaderName;
+            }
+        }
+
+        $nextEvent->update([
+            'absent' => $this->joinAbsentNames($names),
+        ]);
+
+        return back();
+    }
+
+    /**
+     * @return array{event_id:int,event_theme:string,event_date:string,is_absent:bool,leader_name:string}|null
+     */
+    private function nextUpcomingAttendanceState(Carbon $today): ?array
+    {
+        $nextEvent = Event::query()
+            ->whereDate('event_date', '>=', $today)
+            ->orderBy('event_date')
+            ->orderBy('theme')
+            ->first();
+        $currentUser = Auth::user();
+        if (! $nextEvent || ! $currentUser) {
+            return null;
+        }
+
+        $leaderName = $this->currentLeaderName($currentUser);
+        if ($leaderName === null) {
+            return null;
+        }
+
+        $names = $this->splitAbsentNames((string) ($nextEvent->absent ?? ''));
+        $isAbsent = collect($names)->contains(fn (string $n): bool => mb_strtolower($n) === mb_strtolower($leaderName));
+
+        return [
+            'event_id' => $nextEvent->id,
+            'event_theme' => (string) ($nextEvent->theme ?? ''),
+            'event_date' => Carbon::parse($nextEvent->event_date)->toDateString(),
+            'is_absent' => $isAbsent,
+            'leader_name' => $leaderName,
+        ];
     }
 
     /**
      * Aantal keer dat een leidinglid genoemd wordt bij agenda-afwezigheden (vrij tekstveld).
-     * Gebruikt users.leader_name (scoutingnaam) als die via hetzelfde e-mailadres als de leider bekend is,
-     * anders de bestaande herkenning op voor-/achternaam.
      *
-     * @return list<array{id: int, name: string, leader_name: ?string, absence_count: int}>
+     * @return list<array{id: int, name: string, real_name: string, absence_count: int}>
      */
     private function leaderAbsenceChart(Carbon $today): array
     {
@@ -78,11 +134,6 @@ class DashboardController extends Controller
             ->orderBy('first_name')
             ->get();
 
-        $usersByEmail = $leaders
-            ->whereNotNull('email')
-            ->where('email', '!=', '')
-            ->keyBy(fn (User $u) => mb_strtolower(trim($u->email)));
-
         $rows = [];
         foreach ($leaders as $leader) {
             $full = trim(implode(' ', array_filter([
@@ -92,19 +143,13 @@ class DashboardController extends Controller
             $first = trim((string) $leader->first_name);
             $last = trim((string) $leader->last_name);
 
-            $emailKey = mb_strtolower(trim((string) $leader->email));
-            $scoutName = ($emailKey !== '' && isset($usersByEmail[$emailKey]))
-                ? trim((string) ($usersByEmail[$emailKey]->leader_name ?? ''))
-                : '';
-            $scoutName = $scoutName !== '' ? $scoutName : null;
-
             $count = 0;
             foreach ($events as $absent) {
                 $text = trim((string) $absent);
                 if ($text === '') {
                     continue;
                 }
-                if ($this->absentTextMentionsInAgenda($text, $scoutName, $full, $first, $last)) {
+                if ($this->absentTextMentionsLeader($text, $full, $first, $last)) {
                     $count++;
                 }
             }
@@ -115,7 +160,6 @@ class DashboardController extends Controller
             $rows[] = [
                 'id' => $leader->id,
                 'name' => $chartLabel,
-                'leader_name' => $scoutName,
                 'real_name' => $realName,
                 'absence_count' => $count,
             ];
@@ -130,25 +174,6 @@ class DashboardController extends Controller
         });
 
         return $rows;
-    }
-
-    /**
-     * Eén match per opkomst: eerst scoutingnaam (heel woord), anders burgerlijke naam-logica.
-     */
-    private function absentTextMentionsInAgenda(
-        string $absent,
-        ?string $scoutName,
-        string $full,
-        string $first,
-        string $last,
-    ): bool {
-        if ($scoutName !== null && $scoutName !== '') {
-            if (preg_match('/\b'.preg_quote($scoutName, '/').'\b/iu', $absent)) {
-                return true;
-            }
-        }
-
-        return $this->absentTextMentionsLeader($absent, $full, $first, $last);
     }
 
     private function absentTextMentionsLeader(string $absent, string $full, string $first, string $last): bool
@@ -322,5 +347,42 @@ class DashboardController extends Controller
                         UserSectionRole::ROLE_OUDERCONTACT,
                     ]);
             });
+    }
+
+    private function currentLeaderName(?User $user): ?string
+    {
+        if (! $user) {
+            return null;
+        }
+        $full = trim(($user->first_name ?? '').' '.($user->last_name ?? ''));
+
+        return $full !== '' ? $full : ($user->name ?: null);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function splitAbsentNames(string $absent): array
+    {
+        $text = trim($absent);
+        if ($text === '') {
+            return [];
+        }
+
+        $items = array_map(
+            static fn (string $name): string => trim($name),
+            explode(',', $text)
+        );
+        $items = array_values(array_filter($items, static fn (string $name): bool => $name !== ''));
+
+        return array_values(array_unique($items));
+    }
+
+    /**
+     * @param  list<string>  $names
+     */
+    private function joinAbsentNames(array $names): string
+    {
+        return implode(', ', $names);
     }
 }

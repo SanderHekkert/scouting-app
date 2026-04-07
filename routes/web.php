@@ -39,6 +39,7 @@ Route::middleware(['auth', 'section.role:teamleider,leiding,ouder_contact'])->gr
     })->name('active-section.update');
 
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::patch('/dashboard/komende-opkomst-aanwezigheid', [DashboardController::class, 'updateUpcomingAttendance'])->name('dashboard.upcoming-attendance.update');
     Route::get('/jaar-thema', [YearThemeController::class, 'index'])->name('jaar-thema');
     Route::patch('/jaar-thema/entries/{yearThemeEntry}', [YearThemeController::class, 'updateEntry'])->name('jaar-thema.entries.update');
     Route::get('/tipper-topper-opkomst', TipperTopperOpkomstController::class)->name('tipper-topper-opkomst.index');

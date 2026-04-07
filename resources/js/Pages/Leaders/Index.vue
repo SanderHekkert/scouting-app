@@ -137,6 +137,11 @@ function deleteLeader(leader) {
     });
 }
 
+function goToLeaderDetail(leader) {
+    if (!leader?.id) return;
+    router.get(route('leaders.show', leader.id));
+}
+
 function formatBirthday(value) {
     if (value == null || value === '') return '–';
     const s = String(value).slice(0, 10);
@@ -382,19 +387,13 @@ function isLeaderFieldSaving(leader, field) {
                         </div>
                     </div>
                     <div class="surface-brand-top-lg hidden overflow-x-auto rounded-lg border border-brand-blue/25 md:block">
-                        <table class="w-full min-w-[64rem] border-collapse text-left text-sm text-app-ink dark:text-app-ink-dark">
+                        <table class="w-full min-w-[42rem] border-collapse text-left text-sm text-app-ink dark:text-app-ink-dark">
                         <thead class="border-b border-brand-blue/35 bg-app-sidebar dark:bg-app-canvas-dark/80">
                             <tr class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Voornaam</th>
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Achternaam</th>
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Rol</th>
-                                <th scope="col" class="min-w-[12rem] px-3 py-2.5">Bijzonderheden</th>
-                                <th scope="col" class="min-w-[10rem] px-3 py-2.5">Adres</th>
-                                <th scope="col" class="whitespace-nowrap px-3 py-2.5">Postcode</th>
-                                <th scope="col" class="whitespace-nowrap px-3 py-2.5">Plaats</th>
-                                <th scope="col" class="whitespace-nowrap px-3 py-2.5">Geboortedatum</th>
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Telefoon</th>
-                                <th scope="col" class="min-w-[11rem] px-3 py-2.5">E-mail</th>
                                 <th scope="col" class="min-w-[11rem] whitespace-nowrap px-3 py-2.5 text-end sm:text-start">
                                     Acties
                                 </th>
@@ -405,111 +404,21 @@ function isLeaderFieldSaving(leader, field) {
                                 v-for="leader in filteredLeaders"
                                 :id="`leader-row-${leader.id}`"
                                 :key="leader.id"
-                                class="bg-brand-blue/5 transition-colors hover:bg-brand-blue/12 dark:bg-app-panel-dark/50 dark:hover:bg-brand-blue/15"
+                                class="cursor-pointer bg-brand-blue/5 transition-colors hover:bg-brand-blue/12 dark:bg-app-panel-dark/50 dark:hover:bg-brand-blue/15"
                                 :class="{ '!bg-brand-blue/15 dark:!bg-app-canvas-dark/90': rowHighlightLeaderId === leader.id }"
+                                @click="goToLeaderDetail(leader)"
                             >
                                 <td class="max-w-[10rem] px-3 py-2.5 align-top">
-                                    <EditableTextCell
-                                        :text="leader.first_name || ''"
-                                        :multiline="false"
-                                        :cell-key="`${leader.id}:first_name`"
-                                        :open-request-key="leaderInlineOpen.key"
-                                        :open-request-nonce="leaderInlineOpen.nonce"
-                                        :saving="isLeaderFieldSaving(leader, 'first_name')"
-                                        @save="(v) => patchLeaderField(leader, 'first_name', v)"
-                                    />
+                                    {{ leader.first_name || '–' }}
                                 </td>
                                 <td class="max-w-[10rem] px-3 py-2.5 align-top">
-                                    <EditableTextCell
-                                        :text="leader.last_name || ''"
-                                        :multiline="false"
-                                        :cell-key="`${leader.id}:last_name`"
-                                        :open-request-key="leaderInlineOpen.key"
-                                        :open-request-nonce="leaderInlineOpen.nonce"
-                                        :saving="isLeaderFieldSaving(leader, 'last_name')"
-                                        @save="(v) => patchLeaderField(leader, 'last_name', v)"
-                                    />
+                                    {{ leader.last_name || '–' }}
                                 </td>
                                 <td class="whitespace-nowrap px-3 py-2.5 align-top">
                                     {{ leader.section_role_label || '–' }}
                                 </td>
-                                <td class="max-w-[16rem] px-3 py-2.5 align-top break-words">
-                                    <EditableTextCell
-                                        :text="leader.bijzonderheden || ''"
-                                        multiline
-                                        :cell-key="`${leader.id}:bijzonderheden`"
-                                        :open-request-key="leaderInlineOpen.key"
-                                        :open-request-nonce="leaderInlineOpen.nonce"
-                                        :saving="isLeaderFieldSaving(leader, 'bijzonderheden')"
-                                        @save="(v) => patchLeaderField(leader, 'bijzonderheden', v)"
-                                    />
-                                </td>
-                                <td class="px-3 py-2.5 align-top">
-                                    <EditableTextCell
-                                        :text="leader.address || ''"
-                                        multiline
-                                        :cell-key="`${leader.id}:address`"
-                                        :open-request-key="leaderInlineOpen.key"
-                                        :open-request-nonce="leaderInlineOpen.nonce"
-                                        :saving="isLeaderFieldSaving(leader, 'address')"
-                                        @save="(v) => patchLeaderField(leader, 'address', v)"
-                                    />
-                                </td>
-                                <td class="whitespace-nowrap px-3 py-2.5 align-top text-app-ink dark:text-app-ink-dark">
-                                    <EditableTextCell
-                                        :text="leader.postal_code || ''"
-                                        :multiline="false"
-                                        :cell-key="`${leader.id}:postal_code`"
-                                        :open-request-key="leaderInlineOpen.key"
-                                        :open-request-nonce="leaderInlineOpen.nonce"
-                                        :saving="isLeaderFieldSaving(leader, 'postal_code')"
-                                        @save="(v) => patchLeaderField(leader, 'postal_code', v)"
-                                    />
-                                </td>
-                                <td class="max-w-[9rem] px-3 py-2.5 align-top">
-                                    <EditableTextCell
-                                        :text="leader.city || ''"
-                                        :multiline="false"
-                                        :cell-key="`${leader.id}:city`"
-                                        :open-request-key="leaderInlineOpen.key"
-                                        :open-request-nonce="leaderInlineOpen.nonce"
-                                        :saving="isLeaderFieldSaving(leader, 'city')"
-                                        @save="(v) => patchLeaderField(leader, 'city', v)"
-                                    />
-                                </td>
                                 <td class="whitespace-nowrap px-3 py-2.5 align-top tabular-nums text-app-ink dark:text-app-ink-dark">
-                                    <EditableTextCell
-                                        :text="leader.birthday ? String(leader.birthday).slice(0, 10) : ''"
-                                        input-kind="date"
-                                        :multiline="false"
-                                        :cell-key="`${leader.id}:birthday`"
-                                        :open-request-key="leaderInlineOpen.key"
-                                        :open-request-nonce="leaderInlineOpen.nonce"
-                                        :saving="isLeaderFieldSaving(leader, 'birthday')"
-                                        @save="(v) => patchLeaderField(leader, 'birthday', v)"
-                                    />
-                                </td>
-                                <td class="whitespace-nowrap px-3 py-2.5 align-top tabular-nums text-app-ink dark:text-app-ink-dark">
-                                    <EditableTextCell
-                                        :text="leader.phone_number || ''"
-                                        :multiline="false"
-                                        :cell-key="`${leader.id}:phone_number`"
-                                        :open-request-key="leaderInlineOpen.key"
-                                        :open-request-nonce="leaderInlineOpen.nonce"
-                                        :saving="isLeaderFieldSaving(leader, 'phone_number')"
-                                        @save="(v) => patchLeaderField(leader, 'phone_number', v)"
-                                    />
-                                </td>
-                                <td class="max-w-[14rem] px-3 py-2.5 align-top break-all">
-                                    <EditableTextCell
-                                        :text="leader.email || ''"
-                                        :multiline="false"
-                                        :cell-key="`${leader.id}:email`"
-                                        :open-request-key="leaderInlineOpen.key"
-                                        :open-request-nonce="leaderInlineOpen.nonce"
-                                        :saving="isLeaderFieldSaving(leader, 'email')"
-                                        @save="(v) => patchLeaderField(leader, 'email', v)"
-                                    />
+                                    {{ leader.phone_number || '–' }}
                                 </td>
                                 <td class="px-3 py-2.5 align-top">
                                     <button type="button" class="btn-action-delete" @click="deleteLeader(leader)">

@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
+use App\Models\User;
+use App\Models\UserSectionRole;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -24,6 +27,7 @@ class EventController extends Controller
 
         return Inertia::render('Events/Index', [
             'events' => $active,
+            'leaders' => $this->leaderNamesForActiveSection(),
         ]);
     }
 
@@ -42,6 +46,7 @@ class EventController extends Controller
 
         return Inertia::render('Events/Archived', [
             'archivedEvents' => $archived,
+            'leaders' => $this->leaderNamesForActiveSection(),
         ]);
     }
 
@@ -131,5 +136,39 @@ class EventController extends Controller
         $event->delete();
 
         return back();
+    }
+
+    private function activeSection(): string
+    {
+        return app()->bound('currentSection') ? app('currentSection') : UserSectionRole::SECTION_DOLFIJNEN;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function leaderNamesForActiveSection(): array
+    {
+        $section = $this->activeSection();
+
+        return User::query()
+            ->whereNotNull('first_name')
+            ->whereHas('sectionRoles', function (Builder $query) use ($section): void {
+                $query->where('section', $section)
+                    ->whereIn('role', [
+                        UserSectionRole::ROLE_TEAMLEIDER,
+                        UserSectionRole::ROLE_LEIDING,
+                        UserSectionRole::ROLE_OUDERCONTACT,
+                    ]);
+            })
+            ->orderBy('first_name')
+            ->orderBy('last_name')
+            ->get()
+            ->map(function (User $leader): string {
+                return trim(($leader->first_name ?? '').' '.($leader->last_name ?? ''));
+            })
+            ->filter(fn (string $name): bool => $name !== '')
+            ->unique()
+            ->values()
+            ->all();
     }
 }

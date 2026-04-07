@@ -8,6 +8,10 @@ import { PlusIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     events: Array,
+    leaders: {
+        type: Array,
+        default: () => [],
+    },
 });
 
 const page = usePage();
@@ -125,7 +129,7 @@ function isEventFieldSaving(event, field) {
                         id="add-event-theme"
                         v-model="form.theme"
                         type="text"
-                        placeholder="Optioneel, bv. Europa"
+                        placeholder="Thema"
                         class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
                     />
 
@@ -146,7 +150,7 @@ function isEventFieldSaving(event, field) {
                         id="add-event-type"
                         v-model="form.event_type"
                         type="text"
-                        placeholder="Normale opkomst"
+                        placeholder="Opkomst"
                         class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
                     />
 
@@ -232,6 +236,7 @@ function isEventFieldSaving(event, field) {
 
                 <AgendaEventsTable
                     :events="props.events"
+                    :leaders="props.leaders"
                     :highlight-event-id="highlightEventId"
                     :is-field-saving="isEventFieldSaving"
                     empty-message="Nog geen actuele opkomsten."

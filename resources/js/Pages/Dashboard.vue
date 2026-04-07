@@ -16,7 +16,7 @@ const props = defineProps({
     todayEvents: { type: Array, default: () => [] },
     upcomingEvents: { type: Array, default: () => [] },
     upcomingBirthdays: { type: Array, default: () => [] },
-    yearEventsCount: { type: Number, default: 0 },
+    nextUpcomingAttendance: { type: Object, default: null },
     memberCount: { type: Number, default: 0 },
     leaderCount: { type: Number, default: 0 },
     leaderAbsenceChart: { type: Array, default: () => [] },
@@ -39,11 +39,7 @@ function absenceBarWidth(count) {
     return `${(c / m) * 100}%`;
 }
 
-/** Tooltip: burgerlijke naam als de staaf de scoutingnaam toont. */
 function absenceChartRowTitle(row) {
-    if (row?.leader_name && row?.real_name) {
-        return `${row.real_name} — scoutingnaam: ${row.leader_name}`;
-    }
     return row?.real_name || row?.name || '';
 }
 
@@ -90,6 +86,23 @@ function saveEventTheme(ev, newTheme) {
 
 function agendaUrlForEvent(ev) {
     return route('events.index', { event: ev.id });
+}
+
+const attendanceSaving = ref(false);
+
+function setUpcomingAttendancePresent(present) {
+    if (!props.nextUpcomingAttendance) return;
+    attendanceSaving.value = true;
+    router.patch(
+        route('dashboard.upcoming-attendance.update'),
+        { present: !!present },
+        {
+            preserveScroll: true,
+            onFinish: () => {
+                attendanceSaving.value = false;
+            },
+        },
+    );
 }
 </script>
 
@@ -198,9 +211,39 @@ function agendaUrlForEvent(ev) {
                     <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-green/15 text-brand-green ring-1 ring-brand-green/35 dark:bg-brand-green/25 dark:text-app-ink-dark dark:ring-brand-yellow/40">
                         <CalendarDaysIcon class="h-5 w-5" />
                     </span>
-                    <div class="min-w-0">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Opkomsten dit jaar</p>
-                        <p class="mt-1 tabular-nums text-2xl font-bold text-app-ink dark:text-app-ink-dark">{{ yearEventsCount }}</p>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Komende opkomst</p>
+                        <p v-if="nextUpcomingAttendance" class="mt-1 text-sm font-semibold text-app-ink dark:text-app-ink-dark">
+                            {{ nextUpcomingAttendance.event_theme || 'Opkomst' }}
+                        </p>
+                        <p v-if="nextUpcomingAttendance" class="text-xs text-app-muted dark:text-app-muted-dark">
+                            {{ formatIsoToNl(nextUpcomingAttendance.event_date) }}
+                        </p>
+                        <p v-else class="mt-1 text-sm text-app-muted dark:text-app-muted-dark">
+                            Geen komende opkomst.
+                        </p>
+                        <label
+                            v-if="nextUpcomingAttendance"
+                            class="mt-2 inline-flex items-center gap-2 text-sm"
+                        >
+                            <button
+                                type="button"
+                                role="switch"
+                                :aria-checked="!nextUpcomingAttendance.is_absent"
+                                class="relative h-6 w-11 rounded-full transition"
+                                :class="!nextUpcomingAttendance.is_absent ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'"
+                                :disabled="attendanceSaving"
+                                @click="setUpcomingAttendancePresent(nextUpcomingAttendance.is_absent)"
+                            >
+                                <span
+                                    class="absolute top-0.5 h-5 w-5 rounded-full bg-white transition"
+                                    :class="!nextUpcomingAttendance.is_absent ? 'left-5' : 'left-0.5'"
+                                />
+                            </button>
+                            <span class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
+                                {{ !nextUpcomingAttendance.is_absent ? 'Aanwezig' : 'Afwezig' }}
+                            </span>
+                        </label>
                     </div>
                 </div>
             </section>

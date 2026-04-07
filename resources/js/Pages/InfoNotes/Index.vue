@@ -160,7 +160,59 @@ function patchNoteField(note, field, raw) {
                 <div v-if="!props.notes?.length" class="py-6 text-center text-sm text-app-muted dark:text-app-muted-dark">
                     Nog geen notities. Voeg er een toe via de knop rechtsboven.
                 </div>
-                <table v-else class="w-full table-fixed text-sm text-app-ink dark:text-app-ink-dark">
+                <div v-else class="space-y-2 md:space-y-0">
+                    <div class="md:hidden space-y-2">
+                        <div
+                            v-for="note in props.notes"
+                            :key="`note-mob-${note.id}`"
+                            class="surface-brand-top rounded-xl border border-brand-blue/30 bg-app-panel px-4 py-3 text-app-ink shadow-sm dark:bg-app-panel-dark/95 dark:text-app-ink-dark"
+                        >
+                            <p class="text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Categorie</p>
+                            <EditableTextCell
+                                :text="note.category ?? ''"
+                                :multiline="false"
+                                :saving="isNoteFieldSaving(note, 'category')"
+                                @save="(v) => patchNoteField(note, 'category', v)"
+                            />
+                            <p class="mt-2 text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Inhoud</p>
+                            <EditableTextCell
+                                :text="note.content ?? ''"
+                                multiline
+                                :saving="isNoteFieldSaving(note, 'content')"
+                                @save="(v) => patchNoteField(note, 'content', v)"
+                            />
+                            <p class="mt-2 text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Linkje</p>
+                            <div class="flex items-start gap-1.5">
+                                <div class="min-w-0 flex-1">
+                                    <EditableTextCell
+                                        :text="note.link ?? ''"
+                                        :multiline="false"
+                                        :saving="isNoteFieldSaving(note, 'link')"
+                                        @save="(v) => patchNoteField(note, 'link', v)"
+                                    />
+                                </div>
+                                <a
+                                    v-if="note.link"
+                                    :href="note.link"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="mt-0.5 shrink-0 rounded p-0.5 text-brand-blue-light hover:bg-brand-blue/15 dark:text-brand-blue-light"
+                                    :title="`Openen: ${linkDisplayText(note.link)}`"
+                                    @click.stop
+                                >
+                                    <ArrowTopRightOnSquareIcon class="h-4 w-4" aria-hidden="true" />
+                                    <span class="sr-only">Link openen</span>
+                                </a>
+                            </div>
+                            <div class="mt-3 border-t border-brand-blue/25 pt-3 dark:border-brand-blue/35">
+                                <button type="button" class="btn-action-delete" @click="deleteNote(note)">
+                                    <TrashIcon class="h-4 w-4" />
+                                    Verwijderen
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <table class="hidden w-full table-fixed text-sm text-app-ink dark:text-app-ink-dark md:table">
                     <colgroup>
                         <col class="w-[18%]" />
                         <col class="w-[38%]" />
@@ -232,6 +284,7 @@ function patchNoteField(note, field, raw) {
                         </tr>
                     </tbody>
                 </table>
+                </div>
             </div>
         </div>
     </AuthenticatedLayout>

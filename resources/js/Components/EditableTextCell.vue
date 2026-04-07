@@ -135,6 +135,14 @@ onUnmounted(() => {
             v-if="!editing"
             class="block cursor-text whitespace-pre-wrap break-words text-inherit"
         >{{ displayLabel }}</span>
+        <button
+            v-if="!editing"
+            type="button"
+            class="mt-1 inline-flex items-center rounded-md border border-brand-blue/30 bg-brand-blue/10 px-2 py-0.5 text-[11px] font-semibold text-brand-blue-dark md:hidden"
+            @click.stop.prevent="startEdit"
+        >
+            Bewerken
+        </button>
         <input
             v-else-if="inputKind === 'date'"
             ref="inputRef"

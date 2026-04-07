@@ -1,6 +1,6 @@
 <script setup>
 import EditableTextCell from '@/Components/EditableTextCell.vue';
-import { TrashIcon } from '@heroicons/vue/24/outline';
+import { TrashIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     events: {
@@ -20,6 +20,10 @@ const props = defineProps({
         type: Number,
         default: null,
     },
+    leaders: {
+        type: Array,
+        default: () => [],
+    },
 });
 
 const emit = defineEmits(['patch-field', 'delete']);
@@ -27,16 +31,167 @@ const emit = defineEmits(['patch-field', 'delete']);
 function patchField(event, field, raw) {
     emit('patch-field', event, field, raw);
 }
+
+function splitAbsentNames(value) {
+    const text = String(value ?? '').trim();
+    if (!text) return [];
+    const items = text
+        .split(',')
+        .map((n) => n.trim())
+        .filter(Boolean);
+    return [...new Set(items)];
+}
+
+function joinAbsentNames(names) {
+    return names.join(', ');
+}
+
+function addAbsentName(event, name) {
+    const candidate = String(name ?? '').trim();
+    if (!candidate) return;
+    const current = splitAbsentNames(event.absent);
+    if (current.includes(candidate)) return;
+    patchField(event, 'absent', joinAbsentNames([...current, candidate]));
+}
+
+function removeAbsentName(event, name) {
+    const current = splitAbsentNames(event.absent);
+    patchField(
+        event,
+        'absent',
+        joinAbsentNames(current.filter((n) => n !== name)),
+    );
+}
+
+function onAbsentSelectChange(event, domEvent) {
+    const name = domEvent?.target?.value;
+    addAbsentName(event, name);
+    if (domEvent?.target) {
+        domEvent.target.value = '';
+    }
+}
+
+function firstNameOnly(name) {
+    const s = String(name ?? '').trim();
+    if (!s) return '';
+    return s.split(/\s+/)[0] || s;
+}
 </script>
 
 <template>
     <div v-if="!props.events?.length" class="py-6 text-center text-sm text-app-muted dark:text-app-muted-dark">
         {{ emptyMessage }}
     </div>
-    <div
-        v-else
-        class="surface-brand-top-lg -mx-1 overflow-x-auto rounded-lg border border-brand-blue/25 sm:mx-0"
-    >
+    <div v-else class="space-y-2 md:space-y-0">
+        <div class="md:hidden space-y-2">
+            <div
+                v-for="event in props.events"
+                :key="`mob-${event.id}`"
+                :id="`agenda-event-row-${event.id}`"
+                class="surface-brand-top rounded-xl border border-brand-blue/30 bg-app-panel px-4 py-3 text-app-ink shadow-sm dark:bg-app-panel-dark/95 dark:text-app-ink-dark"
+                :class="{
+                    'ring-2 ring-brand-yellow/80 ring-offset-2 ring-offset-app-panel dark:ring-brand-yellow/70 dark:ring-offset-app-panel-dark':
+                        props.highlightEventId != null && Number(event.id) === props.highlightEventId,
+                }"
+            >
+                <div class="text-sm font-semibold">
+                    <EditableTextCell
+                        :text="event.theme || ''"
+                        :saving="isFieldSaving(event, 'theme')"
+                        @save="(v) => patchField(event, 'theme', v)"
+                    />
+                </div>
+                <div class="mt-2 grid gap-2 text-sm">
+                    <div>
+                        <p class="text-xs text-app-muted dark:text-app-muted-dark">Datum</p>
+                        <EditableTextCell
+                            :text="event.event_date ? String(event.event_date).slice(0, 10) : ''"
+                            input-kind="date"
+                            :multiline="false"
+                            :saving="isFieldSaving(event, 'event_date')"
+                            @save="(v) => patchField(event, 'event_date', v)"
+                        />
+                    </div>
+                    <div>
+                        <p class="text-xs text-app-muted dark:text-app-muted-dark">Type opkomst</p>
+                        <EditableTextCell
+                            :text="event.event_type || ''"
+                            :multiline="false"
+                            :saving="isFieldSaving(event, 'event_type')"
+                            @save="(v) => patchField(event, 'event_type', v)"
+                        />
+                    </div>
+                    <div>
+                        <p class="text-xs text-app-muted dark:text-app-muted-dark">Wat ga je doen?</p>
+                        <EditableTextCell
+                            :text="event.activity || ''"
+                            multiline
+                            :saving="isFieldSaving(event, 'activity')"
+                            @save="(v) => patchField(event, 'activity', v)"
+                        />
+                    </div>
+                    <div>
+                        <p class="text-xs text-app-muted dark:text-app-muted-dark">Programma door</p>
+                        <select
+                            class="mt-1 w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
+                            :disabled="isFieldSaving(event, 'program_by')"
+                            :value="event.program_by || ''"
+                            @change="patchField(event, 'program_by', $event.target.value || '')"
+                        >
+                            <option value="">Geen gekozen</option>
+                            <option v-for="leader in props.leaders" :key="`mob-program-${event.id}-${leader}`" :value="leader">
+                                {{ leader }}
+                            </option>
+                        </select>
+                    </div>
+                    <div>
+                        <p class="text-xs text-app-muted dark:text-app-muted-dark">Afwezig</p>
+                        <div class="mt-1 flex flex-wrap gap-1.5">
+                            <span
+                                v-for="name in splitAbsentNames(event.absent)"
+                                :key="`mob-absent-chip-${event.id}-${name}`"
+                                class="inline-flex items-center gap-1 rounded-full bg-brand-blue/15 px-2 py-0.5 text-xs"
+                            >
+                                {{ firstNameOnly(name) }}
+                                <button
+                                    type="button"
+                                    class="rounded p-0.5 hover:bg-brand-blue/25"
+                                    @click="removeAbsentName(event, name)"
+                                >
+                                    <XMarkIcon class="h-3.5 w-3.5" />
+                                </button>
+                            </span>
+                        </div>
+                        <select
+                            class="mt-2 w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
+                            :disabled="isFieldSaving(event, 'absent')"
+                            @change="onAbsentSelectChange(event, $event)"
+                        >
+                            <option value="">Naam toevoegen…</option>
+                            <option v-for="leader in props.leaders" :key="`mob-absent-${event.id}-${leader}`" :value="leader">
+                                {{ firstNameOnly(leader) }}
+                            </option>
+                        </select>
+                    </div>
+                    <div>
+                        <p class="text-xs text-app-muted dark:text-app-muted-dark">Bijzonderheden</p>
+                        <EditableTextCell
+                            :text="event.notes || ''"
+                            multiline
+                            :saving="isFieldSaving(event, 'notes')"
+                            @save="(v) => patchField(event, 'notes', v)"
+                        />
+                    </div>
+                </div>
+                <div class="mt-3 border-t border-brand-blue/25 pt-3 dark:border-brand-blue/35">
+                    <button type="button" class="btn-action-delete" @click="$emit('delete', event)">
+                        <TrashIcon class="h-4 w-4 shrink-0" />
+                        Verwijderen
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="surface-brand-top-lg -mx-1 hidden overflow-x-auto rounded-lg border border-brand-blue/25 sm:mx-0 md:block">
         <table class="w-full min-w-[56rem] border-collapse text-left text-sm text-app-ink sm:min-w-[72rem] dark:text-app-ink-dark">
             <thead class="border-b border-brand-blue/35 bg-app-sidebar dark:bg-app-canvas-dark/80">
                 <tr class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
@@ -95,20 +250,45 @@ function patchField(event, field, raw) {
                         />
                     </td>
                     <td class="px-3 py-2.5 align-top">
-                        <EditableTextCell
-                            :text="event.program_by || ''"
-                            :multiline="false"
-                            :saving="isFieldSaving(event, 'program_by')"
-                            @save="(v) => patchField(event, 'program_by', v)"
-                        />
+                        <select
+                            class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
+                            :disabled="isFieldSaving(event, 'program_by')"
+                            :value="event.program_by || ''"
+                            @change="patchField(event, 'program_by', $event.target.value || '')"
+                        >
+                            <option value="">Geen gekozen</option>
+                            <option v-for="leader in props.leaders" :key="`desk-program-${event.id}-${leader}`" :value="leader">
+                                {{ leader }}
+                            </option>
+                        </select>
                     </td>
                     <td class="max-w-[18rem] px-3 py-2.5 align-top">
-                        <EditableTextCell
-                            :text="event.absent || ''"
-                            multiline
-                            :saving="isFieldSaving(event, 'absent')"
-                            @save="(v) => patchField(event, 'absent', v)"
-                        />
+                        <div class="flex flex-wrap gap-1.5">
+                            <span
+                                v-for="name in splitAbsentNames(event.absent)"
+                                :key="`desk-absent-chip-${event.id}-${name}`"
+                                class="inline-flex items-center gap-1 rounded-full bg-brand-blue/15 px-2 py-0.5 text-xs"
+                            >
+                                {{ firstNameOnly(name) }}
+                                <button
+                                    type="button"
+                                    class="rounded p-0.5 hover:bg-brand-blue/25"
+                                    @click="removeAbsentName(event, name)"
+                                >
+                                    <XMarkIcon class="h-3.5 w-3.5" />
+                                </button>
+                            </span>
+                        </div>
+                        <select
+                            class="mt-2 w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
+                            :disabled="isFieldSaving(event, 'absent')"
+                            @change="onAbsentSelectChange(event, $event)"
+                        >
+                            <option value="">Naam toevoegen…</option>
+                            <option v-for="leader in props.leaders" :key="`desk-absent-${event.id}-${leader}`" :value="leader">
+                                {{ firstNameOnly(leader) }}
+                            </option>
+                        </select>
                     </td>
                     <td class="max-w-[16rem] px-3 py-2.5 align-top">
                         <EditableTextCell
@@ -127,5 +307,6 @@ function patchField(event, field, raw) {
                 </tr>
             </tbody>
         </table>
+        </div>
     </div>
 </template>

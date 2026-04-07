@@ -64,7 +64,54 @@ function saveUser(userId) {
                 Beheer per gebruiker de rol per speltak. `Admin` heeft overal toegang.
             </p>
 
-            <div class="-mx-1 overflow-x-auto sm:mx-0">
+            <div class="space-y-2 md:space-y-0">
+                <div class="md:hidden space-y-2">
+                    <div
+                        v-for="user in users"
+                        :key="`mob-user-${user.id}`"
+                        class="surface-brand-top rounded-xl border border-brand-blue/30 bg-app-panel px-4 py-3 text-app-ink shadow-sm dark:bg-app-panel-dark/95 dark:text-app-ink-dark"
+                    >
+                        <div class="font-medium">{{ user.name }}</div>
+                        <div class="text-xs text-app-muted dark:text-app-muted-dark">{{ user.email }}</div>
+
+                        <p class="mt-2 text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Speltak</p>
+                        <select
+                            v-model="stateByUser[user.id].selected_section"
+                            class="mt-1 w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black"
+                        >
+                            <option v-for="section in sections" :key="`mob-s-${user.id}-${section}`" :value="section">
+                                {{ labels[section] || section }}
+                            </option>
+                        </select>
+
+                        <p class="mt-2 text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Rol</p>
+                        <select
+                            v-model="stateByUser[user.id].section_roles[stateByUser[user.id].selected_section]"
+                            class="mt-1 w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black"
+                        >
+                            <option v-for="role in roles" :key="`mob-r-${user.id}-${role}`" :value="role">
+                                {{ labels[role] || role }}
+                            </option>
+                        </select>
+
+                        <label class="mt-3 inline-flex items-center gap-2">
+                            <input v-model="stateByUser[user.id].is_admin" type="checkbox" class="rounded border-app-border" />
+                            <span class="text-sm text-app-ink dark:text-app-ink-dark">Admin</span>
+                        </label>
+
+                        <div class="mt-3 border-t border-brand-blue/25 pt-3 dark:border-brand-blue/35">
+                            <button
+                                type="button"
+                                class="rounded bg-brand-blue px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-blue-dark disabled:opacity-50"
+                                :disabled="stateByUser[user.id].saving"
+                                @click="saveUser(user.id)"
+                            >
+                                Opslaan
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="-mx-1 hidden overflow-x-auto sm:mx-0 md:block">
                 <table class="w-full min-w-[56rem] border-collapse text-left text-sm">
                     <thead class="border-b border-brand-blue/35 text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
                         <tr>
@@ -120,6 +167,7 @@ function saveUser(userId) {
                         </tr>
                     </tbody>
                 </table>
+                </div>
             </div>
         </div>
     </AuthenticatedLayout>

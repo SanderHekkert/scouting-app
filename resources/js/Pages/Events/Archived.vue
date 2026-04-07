@@ -7,6 +7,10 @@ import { ref } from 'vue';
 
 const props = defineProps({
     archivedEvents: Array,
+    leaders: {
+        type: Array,
+        default: () => [],
+    },
 });
 
 function deleteEvent(event) {
@@ -67,6 +71,7 @@ function isEventFieldSaving(event, field) {
 
                 <AgendaEventsTable
                     :events="props.archivedEvents"
+                    :leaders="props.leaders"
                     :is-field-saving="isEventFieldSaving"
                     empty-message="Nog geen gearchiveerde opkomsten."
                     @patch-field="(ev, field, val) => patchEventField(ev, field, val)"
