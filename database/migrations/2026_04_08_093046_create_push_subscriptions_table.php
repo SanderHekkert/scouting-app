@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('push_subscriptions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
-            $table->text('endpoint')->unique();
+            $table->string('endpoint', 700)->unique();
             $table->string('public_key');
             $table->string('auth_token');
             $table->string('content_encoding', 20)->default('aes128gcm');

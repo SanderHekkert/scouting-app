@@ -81,7 +81,7 @@ const sectionLabels = {
     bestuur: 'Bestuur',
 };
 const shareableSections = computed(() =>
-    (props.allSections || []).filter((s) => s !== activeSection.value),
+    (props.allSections || []).filter((s) => s !== activeSection.value && !['bestuur', 'loodsen'].includes(s)),
 );
 
 function toggleAddForm() {

@@ -25,8 +25,10 @@ class EventController extends Controller
 
         $active = Event::withoutGlobalScope('section')
             ->where(function (Builder $query) use ($section): void {
-                $query->where('section', $section)
-                    ->orWhereJsonContains('shared_sections', $section);
+                $query->where('section', $section);
+                if ($this->supportsSharedEventsForSection($section)) {
+                    $query->orWhereJsonContains('shared_sections', $section);
+                }
             })
             ->whereDate('event_date', '>=', $today)
             ->orderBy('event_date')
@@ -36,8 +38,10 @@ class EventController extends Controller
         $taskItems = TaskItem::query()
             ->withoutGlobalScope('section')
             ->where(function (Builder $query) use ($section): void {
-                $query->where('section', $section)
-                    ->orWhereJsonContains('shared_sections', $section);
+                $query->where('section', $section);
+                if ($this->supportsSharedEventsForSection($section)) {
+                    $query->orWhereJsonContains('shared_sections', $section);
+                }
             })
             ->orderBy('title')
             ->get(['id', 'title'])
@@ -66,8 +70,10 @@ class EventController extends Controller
 
         $archived = Event::withoutGlobalScope('section')
             ->where(function (Builder $query) use ($section): void {
-                $query->where('section', $section)
-                    ->orWhereJsonContains('shared_sections', $section);
+                $query->where('section', $section);
+                if ($this->supportsSharedEventsForSection($section)) {
+                    $query->orWhereJsonContains('shared_sections', $section);
+                }
             })
             ->whereDate('event_date', '<', $today)
             ->orderByDesc('event_date')
@@ -88,8 +94,10 @@ class EventController extends Controller
         $section = $this->activeSection();
         $taskItems = TaskItem::withoutGlobalScope('section')
             ->where(function (Builder $query) use ($section): void {
-                $query->where('section', $section)
-                    ->orWhereJsonContains('shared_sections', $section);
+                $query->where('section', $section);
+                if ($this->supportsSharedEventsForSection($section)) {
+                    $query->orWhereJsonContains('shared_sections', $section);
+                }
             })
             ->orderBy('title')
             ->get(['id', 'title'])
@@ -352,8 +360,10 @@ class EventController extends Controller
 
         $allowed = TaskItem::withoutGlobalScope('section')
             ->where(function (Builder $query) use ($section): void {
-                $query->where('section', $section)
-                    ->orWhereJsonContains('shared_sections', $section);
+                $query->where('section', $section);
+                if ($this->supportsSharedEventsForSection($section)) {
+                    $query->orWhereJsonContains('shared_sections', $section);
+                }
             })
             ->whereIn('id', $ids)
             ->pluck('id')
@@ -370,13 +380,29 @@ class EventController extends Controller
     private function normalizeSharedSections(?array $raw): array
     {
         $active = $this->activeSection();
+        $allowed = [
+            UserSectionRole::SECTION_BEVERS,
+            UserSectionRole::SECTION_DOLFIJNEN,
+            UserSectionRole::SECTION_ZEEVERKENNERS,
+            UserSectionRole::SECTION_WILDE_VAART,
+        ];
 
         return collect($raw ?? [])
             ->map(fn ($v): string => (string) $v)
             ->filter(fn (string $v): bool => $v !== '' && $v !== $active)
-            ->filter(fn (string $v): bool => in_array($v, UserSectionRole::ALL_SECTIONS, true))
+            ->filter(fn (string $v): bool => in_array($v, $allowed, true))
             ->unique()
             ->values()
             ->all();
+    }
+
+    private function supportsSharedEventsForSection(string $section): bool
+    {
+        return in_array($section, [
+            UserSectionRole::SECTION_BEVERS,
+            UserSectionRole::SECTION_DOLFIJNEN,
+            UserSectionRole::SECTION_ZEEVERKENNERS,
+            UserSectionRole::SECTION_WILDE_VAART,
+        ], true);
     }
 }

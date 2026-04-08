@@ -11,7 +11,7 @@ class PushSubscriptionController extends Controller
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'endpoint' => ['required', 'string', 'max:4096'],
+            'endpoint' => ['required', 'string', 'max:700'],
             'keys.p256dh' => ['required', 'string', 'max:512'],
             'keys.auth' => ['required', 'string', 'max:512'],
             'contentEncoding' => ['nullable', 'string', 'max:20'],
@@ -34,7 +34,7 @@ class PushSubscriptionController extends Controller
     public function destroy(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'endpoint' => ['required', 'string', 'max:4096'],
+            'endpoint' => ['required', 'string', 'max:700'],
         ]);
 
         PushSubscription::query()
