@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue';
 import SpeltakSubnav from '@/Components/SpeltakSubnav.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, useForm, router, usePage } from '@inertiajs/vue3';
-import { PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import { Bars3Icon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     pods: Array,
@@ -34,9 +34,12 @@ const speltakSingular = computed(() => sectionSingularMap[page.props.auth?.activ
 const groupWord = computed(() => ['zeeverkenners', 'loodsen'].includes(page.props.auth?.active_section) ? 'bak' : 'vin');
 const groupWordCapitalized = computed(() => groupWord.value.charAt(0).toUpperCase() + groupWord.value.slice(1));
 const groupingTitle = computed(() => ['zeeverkenners', 'loodsen'].includes(page.props.auth?.active_section) ? 'Bakindeling' : 'Vinindeling');
+const useZeeverkennersBakRoles = computed(() => page.props.auth?.active_section === 'zeeverkenners');
 
 const showLinkForm = ref(false);
 const showGroupForm = ref(false);
+const draggingMembershipId = ref(null);
+const draggingOverKey = ref('');
 
 const memberForm = useForm({
     pod_id: '',
@@ -89,6 +92,17 @@ function tier(role) {
     return 2;
 }
 
+function roleLabel(role) {
+    if (!useZeeverkennersBakRoles.value) {
+        if (role === 'Vinlid') return 'Vinlid';
+        return role;
+    }
+    if (role === 'Topper') return 'Boots';
+    if (role === 'Tipper') return 'Kwartier';
+    if (role === 'Vinlid') return 'Baksmatje';
+    return role;
+}
+
 function sortedMemberships(memberships) {
     if (!memberships?.length) return [];
     return [...memberships].sort((a, b) => {
@@ -112,9 +126,9 @@ function podSections(memberships) {
     const tipper = sorted.filter((m) => m.role === 'Tipper');
     const vinlids = sorted.filter((m) => m.role === 'Vinlid');
     return [
-        { key: 'topper', label: 'Topper', items: topper },
-        { key: 'tipper', label: 'Tipper', items: tipper },
-        { key: 'vinlid', label: 'Vinleden', items: vinlids },
+        { key: 'topper', label: roleLabel('Topper'), items: topper },
+        { key: 'tipper', label: roleLabel('Tipper'), items: tipper },
+        { key: 'vinlid', label: useZeeverkennersBakRoles.value ? 'Baksmatjes' : 'Vinleden', items: vinlids },
     ];
 }
 
@@ -172,6 +186,45 @@ function removeGroup(pod) {
 function memberOptionLabel(m) {
     const base = `${m.first_name} ${m.last_name}`.trim();
     return m.age != null ? `${base} (${m.age})` : base;
+}
+
+function roleForSectionKey(key) {
+    if (key === 'topper') return 'Topper';
+    if (key === 'tipper') return 'Tipper';
+    return 'Vinlid';
+}
+
+function onDragStart(membership, evt) {
+    draggingMembershipId.value = membership?.id ?? null;
+    if (evt?.dataTransfer) {
+        evt.dataTransfer.effectAllowed = 'move';
+        evt.dataTransfer.setData('text/plain', String(membership?.id ?? ''));
+    }
+}
+
+function onDragEnd() {
+    draggingMembershipId.value = null;
+    draggingOverKey.value = '';
+}
+
+function onDropMembership(targetPod, sectionKey, evt) {
+    evt?.preventDefault?.();
+    const rawId = evt?.dataTransfer?.getData('text/plain') || String(draggingMembershipId.value || '');
+    const membershipId = Number.parseInt(rawId, 10);
+    if (!Number.isFinite(membershipId) || !targetPod?.id) return;
+    draggingOverKey.value = '';
+    router.patch(
+        route('pods.members.move', membershipId),
+        {
+            pod_id: targetPod.id,
+            role: roleForSectionKey(sectionKey),
+        },
+        { preserveScroll: true },
+    );
+}
+
+function onDragEnterZone(podId, sectionKey) {
+    draggingOverKey.value = `${podId}:${sectionKey}`;
 }
 </script>
 
@@ -290,12 +343,12 @@ function memberOptionLabel(m) {
                         class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                     >
                         <option value="Topper" :disabled="podHasTopper">
-                            Topper{{ podHasTopper ? ' (bezet)' : '' }}
+                            {{ roleLabel('Topper') }}{{ podHasTopper ? ' (bezet)' : '' }}
                         </option>
                         <option value="Tipper" :disabled="podHasTipper">
-                            Tipper{{ podHasTipper ? ' (bezet)' : '' }}
+                            {{ roleLabel('Tipper') }}{{ podHasTipper ? ' (bezet)' : '' }}
                         </option>
-                        <option value="Vinlid">Vinlid</option>
+                        <option value="Vinlid">{{ roleLabel('Vinlid') }}</option>
                     </select>
                 </div>
                 <div class="flex flex-wrap gap-2 md:col-span-2">
@@ -352,6 +405,12 @@ function memberOptionLabel(m) {
                             v-for="section in podSections(pod.memberships)"
                             :key="`${pod.id}-${section.key}`"
                             class="min-w-0"
+                            :class="{
+                                'rounded-md ring-2 ring-brand-blue/40': draggingOverKey === `${pod.id}:${section.key}`,
+                            }"
+                            @dragover.prevent
+                            @dragenter.prevent="onDragEnterZone(pod.id, section.key)"
+                            @drop="onDropMembership(pod, section.key, $event)"
                         >
                             <h4 class="mb-2 text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
                                 {{ section.label }}
@@ -360,14 +419,20 @@ function memberOptionLabel(m) {
                                 <li
                                     v-for="membership in section.items"
                                     :key="membership.id"
-                                    class="flex items-start justify-between gap-2"
+                                    class="flex items-start justify-between gap-2 cursor-grab active:cursor-grabbing"
+                                    draggable="true"
+                                    @dragstart="onDragStart(membership, $event)"
+                                    @dragend="onDragEnd"
                                 >
                                     <div class="min-w-0 text-app-ink dark:text-app-ink-dark">
+                                        <span class="me-1 inline-flex align-middle text-app-muted dark:text-app-muted-dark">
+                                            <Bars3Icon class="h-4 w-4" />
+                                        </span>
                                         <span
                                             class="mr-2 inline-block rounded px-2 py-0.5 text-xs font-semibold"
                                             :class="roleBadgeClass(membership.role)"
                                         >
-                                            {{ membership.role }}
+                                            {{ roleLabel(membership.role) }}
                                         </span>
                                         <span>
                                             {{ membership.member?.first_name }} {{ membership.member?.last_name }}

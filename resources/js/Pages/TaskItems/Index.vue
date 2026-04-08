@@ -14,6 +14,10 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
+    events: {
+        type: Array,
+        default: () => [],
+    },
 });
 const page = usePage();
 const hideCategories = computed(() =>
@@ -208,6 +212,54 @@ function normalizeDeadlines(values) {
 
 function deadlinesForTask(task) {
     return normalizeDeadlines(task?.deadlines);
+}
+
+function eventIdsForTask(task) {
+    return [...new Set((Array.isArray(task?.event_ids) ? task.event_ids : [])
+        .map((v) => Number(v))
+        .filter((n) => Number.isFinite(n)))];
+}
+
+function eventLabelById(id) {
+    const ev = (props.events || []).find((e) => Number(e.id) === Number(id));
+    if (!ev) return `Opkomst #${id}`;
+    const date = String(ev.event_date || '').slice(0, 10);
+    const theme = String(ev.theme || '').trim();
+    return theme ? `${date} - ${theme}` : date;
+}
+
+function availableEvents(task) {
+    const selected = new Set(eventIdsForTask(task));
+    return (props.events || []).filter((ev) => !selected.has(Number(ev.id)));
+}
+
+function patchTaskEvents(task, ids) {
+    if (!task?.id) return;
+    taskFieldSaving.value = `${task.id}:events`;
+    router.patch(route('task-items.linked-events.update', task.id), { event_ids: ids }, {
+        preserveScroll: true,
+        onFinish: () => {
+            taskFieldSaving.value = null;
+        },
+    });
+}
+
+function addTaskEvent(task, eventId) {
+    const id = Number(eventId);
+    if (!Number.isFinite(id)) return;
+    const next = [...new Set([...eventIdsForTask(task), id])];
+    patchTaskEvents(task, next);
+}
+
+function removeTaskEvent(task, eventId) {
+    const next = eventIdsForTask(task).filter((id) => id !== Number(eventId));
+    patchTaskEvents(task, next);
+}
+
+function onTaskEventSelectChange(task, domEvent) {
+    const id = domEvent?.target?.value;
+    addTaskEvent(task, id);
+    if (domEvent?.target) domEvent.target.value = '';
 }
 
 function addFormDeadline() {
@@ -584,6 +636,35 @@ function onCategoryDrop(category, event) {
                                     @change="addTaskDeadline(task, $event.target.value); $event.target.value = ''"
                                 />
 
+                                <p class="mt-2 text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Opkomsten</p>
+                                <div class="mt-1 flex flex-wrap gap-1.5">
+                                    <span
+                                        v-for="eventId in eventIdsForTask(task)"
+                                        :key="`mob-event-chip-${task.id}-${eventId}`"
+                                        class="inline-flex items-center gap-1 rounded-full bg-brand-blue/15 px-2 py-0.5 text-xs"
+                                    >
+                                        {{ eventLabelById(eventId) }}
+                                        <button type="button" class="rounded p-0.5 hover:bg-brand-blue/25" :disabled="!isTaskEditing(task) || isTaskRowSaving(task)" @click="removeTaskEvent(task, eventId)">
+                                            <XMarkIcon class="h-3.5 w-3.5" />
+                                        </button>
+                                    </span>
+                                </div>
+                                <select
+                                    v-if="isTaskEditing(task)"
+                                    class="mt-2 w-full min-w-0 rounded border border-app-border bg-white px-2 py-1.5 text-app-ink shadow-sm outline-none focus:border-brand-blue dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
+                                    :disabled="isTaskRowSaving(task)"
+                                    @change="onTaskEventSelectChange(task, $event)"
+                                >
+                                    <option value="">Opkomst toevoegen…</option>
+                                    <option
+                                        v-for="ev in availableEvents(task)"
+                                        :key="`mob-event-${task.id}-${ev.id}`"
+                                        :value="String(ev.id)"
+                                    >
+                                        {{ eventLabelById(ev.id) }}
+                                    </option>
+                                </select>
+
                                 <div class="mt-3 border-t border-brand-blue/25 pt-3 dark:border-brand-blue/35">
                                     <button
                                         type="button"
@@ -609,6 +690,7 @@ function onCategoryDrop(category, event) {
                             <col class="w-[18%]" />
                             <col class="w-[32%]" />
                             <col class="w-[10%]" />
+                            <col class="w-[14%]" />
                             <col class="w-[10%]" />
                         </colgroup>
                         <thead>
@@ -618,6 +700,7 @@ function onCategoryDrop(category, event) {
                                 <th class="pb-2">Wie</th>
                                 <th class="pb-2">Uitleg</th>
                                 <th class="pb-2">Deadlines</th>
+                                <th class="pb-2">Opkomsten</th>
                                 <th class="pb-2 text-right sm:text-left">Acties</th>
                             </tr>
                         </thead>
@@ -713,6 +796,35 @@ function onCategoryDrop(category, event) {
                                         :disabled="isTaskRowSaving(task)"
                                         @change="addTaskDeadline(task, $event.target.value); $event.target.value = ''"
                                     />
+                                </td>
+                                <td class="py-2 align-middle">
+                                    <div class="flex flex-wrap gap-1.5">
+                                        <span
+                                            v-for="eventId in eventIdsForTask(task)"
+                                            :key="`desk-event-chip-${task.id}-${eventId}`"
+                                            class="inline-flex items-center gap-1 rounded-full bg-brand-blue/15 px-2 py-0.5 text-xs"
+                                        >
+                                            {{ eventLabelById(eventId) }}
+                                            <button type="button" class="rounded p-0.5 hover:bg-brand-blue/25" :disabled="!isTaskEditing(task) || isTaskRowSaving(task)" @click="removeTaskEvent(task, eventId)">
+                                                <XMarkIcon class="h-3.5 w-3.5" />
+                                            </button>
+                                        </span>
+                                    </div>
+                                    <select
+                                        v-if="isTaskEditing(task)"
+                                        class="mt-2 w-full min-w-0 rounded border border-app-border bg-white px-2 py-1.5 text-app-ink shadow-sm outline-none focus:border-brand-blue dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
+                                        :disabled="isTaskRowSaving(task)"
+                                        @change="onTaskEventSelectChange(task, $event)"
+                                    >
+                                        <option value="">Opkomst toevoegen…</option>
+                                        <option
+                                            v-for="ev in availableEvents(task)"
+                                            :key="`desk-event-${task.id}-${ev.id}`"
+                                            :value="String(ev.id)"
+                                        >
+                                            {{ eventLabelById(ev.id) }}
+                                        </option>
+                                    </select>
                                 </td>
                                 <td class="py-2 align-middle">
                                     <button

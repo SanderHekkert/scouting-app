@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Event;
 use App\Models\TaskCategory;
 use App\Models\TaskItem;
 use App\Models\User;
@@ -27,11 +28,27 @@ class TaskItemController extends Controller
      */
     public function index()
     {
+        $section = $this->activeSection();
         $taskCategories = TaskCategory::query()
             ->orderBy('position')
             ->orderBy('name')
             ->pluck('name')
             ->all();
+
+        $events = Event::query()
+            ->where('section', $section)
+            ->orderBy('event_date')
+            ->orderBy('theme')
+            ->get(['id', 'event_date', 'theme', 'task_item_ids']);
+
+        $eventIdsByTask = [];
+        foreach ($events as $event) {
+            $ids = collect($event->task_item_ids ?? [])->map(fn ($v): int => (int) $v)->filter(fn (int $v): bool => $v > 0)->unique()->values();
+            foreach ($ids as $taskId) {
+                $eventIdsByTask[$taskId] ??= [];
+                $eventIdsByTask[$taskId][] = (int) $event->id;
+            }
+        }
 
         $tasks = TaskItem::query()
             ->get()
@@ -54,6 +71,7 @@ class TaskItemController extends Controller
                     'owner_user_ids' => $task->owner_user_ids ?? [],
                     'description' => $task->description,
                     'deadlines' => $this->normalizedDeadlines($task->deadlines),
+                    'event_ids' => collect($eventIdsByTask[(int) $task->id] ?? [])->map(fn ($v): int => (int) $v)->unique()->values()->all(),
                 ];
             });
 
@@ -71,6 +89,11 @@ class TaskItemController extends Controller
             'tasks' => $tasks,
             'taskCategories' => $taskCategories,
             'leaders' => $leaders,
+            'events' => $events->map(fn (Event $event): array => [
+                'id' => (int) $event->id,
+                'event_date' => (string) $event->event_date,
+                'theme' => (string) ($event->theme ?? ''),
+            ])->values()->all(),
         ]);
     }
 
@@ -204,6 +227,42 @@ class TaskItemController extends Controller
         $task_item->delete();
 
         return to_route('task-items.index');
+    }
+
+    public function updateLinkedEvents(Request $request, TaskItem $taskItem)
+    {
+        $section = $this->activeSection();
+        $data = $request->validate([
+            'event_ids' => ['nullable', 'array'],
+            'event_ids.*' => ['integer', Rule::exists('events', 'id')->where(fn ($q) => $q->where('section', $section))],
+        ]);
+
+        $eventIds = collect($data['event_ids'] ?? [])
+            ->map(fn ($v): int => (int) $v)
+            ->filter(fn (int $v): bool => $v > 0)
+            ->unique()
+            ->values()
+            ->all();
+
+        $taskId = (int) $taskItem->id;
+        $events = Event::query()->where('section', $section)->get();
+        foreach ($events as $event) {
+            $current = collect($event->task_item_ids ?? [])
+                ->map(fn ($v): int => (int) $v)
+                ->filter(fn (int $v): bool => $v > 0)
+                ->reject(fn (int $v): bool => $v === $taskId)
+                ->values();
+
+            if (in_array((int) $event->id, $eventIds, true)) {
+                $current->push($taskId);
+            }
+
+            $event->update([
+                'task_item_ids' => $current->unique()->values()->all(),
+            ]);
+        }
+
+        return back();
     }
 
     /**

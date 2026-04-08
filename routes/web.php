@@ -82,10 +82,12 @@ Route::middleware(['auth', 'has.role', 'section.role:teamleider,leiding,ouder_co
     Route::resource('leaders', LeaderController::class)->middleware('section.permission:leaders')->except(['create', 'show', 'edit']);
     Route::resource('pods', PodController::class)->middleware('section.permission:pods')->except(['create', 'show', 'edit']);
     Route::post('/pods/{pod}/members', [PodController::class, 'addMember'])->middleware('section.permission:pods')->name('pods.members.store');
+    Route::patch('/pod-memberships/{podMembership}', [PodController::class, 'moveMember'])->middleware('section.permission:pods')->name('pods.members.move');
     Route::delete('/pod-memberships/{podMembership}', [PodController::class, 'removeMember'])->middleware('section.permission:pods')->name('pods.members.destroy');
     Route::patch('/info-notes/{info_note}/fields', [InfoNoteController::class, 'quickUpdate'])->middleware('section.permission:info_notes')->name('info-notes.quick-update');
     Route::resource('info-notes', InfoNoteController::class)->middleware('section.permission:info_notes')->except(['create', 'show', 'edit']);
     Route::patch('/task-items/{taskItem}/fields', [TaskItemController::class, 'quickUpdate'])->middleware('section.permission:task_items')->name('task-items.quick-update');
+    Route::patch('/task-items/{taskItem}/linked-events', [TaskItemController::class, 'updateLinkedEvents'])->middleware('section.permission:task_items')->name('task-items.linked-events.update');
     Route::resource('task-items', TaskItemController::class)->middleware('section.permission:task_items')->except(['create', 'show', 'edit']);
     Route::post('/task-categories', [TaskItemController::class, 'storeCategory'])->middleware('section.permission:task_items')->name('task-categories.store');
 

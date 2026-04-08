@@ -3,7 +3,18 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import AppShellBackground from '@/Components/AppShellBackground.vue';
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
-import { Bars3Icon, XMarkIcon } from '@heroicons/vue/24/outline';
+import {
+    Bars3Icon,
+    CalendarDaysIcon,
+    ClipboardDocumentListIcon,
+    HomeIcon,
+    IdentificationIcon,
+    InformationCircleIcon,
+    ShieldCheckIcon,
+    UserGroupIcon,
+    UsersIcon,
+    XMarkIcon,
+} from '@heroicons/vue/24/outline';
 
 const page = usePage();
 const sectionLabels = {
@@ -98,8 +109,8 @@ const userInitials = computed(() => {
 });
 
 const mainNavItems = computed(() => ([
-    { label: 'Dashboard', route: 'dashboard', module: 'dashboard' },
-    { label: 'Agenda', route: 'events.index', matchRoutes: ['events.*', 'jaar-thema'], module: 'events' },
+    { label: 'Dashboard', route: 'dashboard', module: 'dashboard', icon: HomeIcon },
+    { label: 'Agenda', route: 'events.index', matchRoutes: ['events.*', 'jaar-thema'], module: 'events', icon: CalendarDaysIcon },
 ]).filter((item) => canView(item.module)));
 
 /** Eén sidebar-link; subpagina’s bereik je via SpeltakSubnav op de pagina zelf. */
@@ -114,18 +125,19 @@ const dolfijnenNavItem = {
         'pods.*',
     ],
     module: 'members',
+    icon: UserGroupIcon,
 };
 const showSpeltakNav = computed(() => canView(dolfijnenNavItem.module));
 
 const tailNavItems = computed(() => ([
-    { label: 'Leiding', route: 'leaders.index', matchRoutes: ['leaders.*'], module: 'leaders' },
-    { label: 'Belangrijke info', route: 'info-notes.index', matchRoutes: ['info-notes.*'], module: 'info_notes' },
-    { label: 'Taakverdeling', route: 'task-items.index', matchRoutes: ['task-items.*', 'task-categories.*'], module: 'task_items' },
+    { label: 'Leiding', route: 'leaders.index', matchRoutes: ['leaders.*'], module: 'leaders', icon: UsersIcon },
+    { label: 'Belangrijke info', route: 'info-notes.index', matchRoutes: ['info-notes.*'], module: 'info_notes', icon: InformationCircleIcon },
+    { label: 'Taakverdeling', route: 'task-items.index', matchRoutes: ['task-items.*', 'task-categories.*'], module: 'task_items', icon: ClipboardDocumentListIcon },
     ...((isAdmin.value || isBoardMember.value)
-        ? [{ label: 'Gebruikers', route: 'admin.users.index', matchRoutes: ['admin.users.*'] }]
+        ? [{ label: 'Gebruikers', route: 'admin.users.index', matchRoutes: ['admin.users.*'], icon: IdentificationIcon }]
         : []),
     ...((isAdmin.value || (page.props.auth?.section_roles || []).some((r) => r.section !== '*' && r.role === 'teamleider'))
-        ? [{ label: 'Rechtenbeheer', route: 'permissions.index', matchRoutes: ['permissions.*'] }]
+        ? [{ label: 'Rechtenbeheer', route: 'permissions.index', matchRoutes: ['permissions.*'], icon: ShieldCheckIcon }]
         : []),
 ]).filter((item) => !item.module || canView(item.module)));
 
@@ -234,7 +246,10 @@ onUnmounted(() => {
                                     : 'text-slate-800 hover:bg-brand-blue/10'
                             "
                         >
-                            {{ item.label }}
+                            <span class="inline-flex items-center gap-2">
+                                <component :is="item.icon" class="h-5 w-5 shrink-0 stroke-2" />
+                                <span>{{ item.label }}</span>
+                            </span>
                         </Link>
 
                         <Link
@@ -247,7 +262,10 @@ onUnmounted(() => {
                                     : 'text-slate-800 hover:bg-brand-blue/10'
                             "
                         >
-                            {{ dolfijnenNavItem.label }}
+                            <span class="inline-flex items-center gap-2">
+                                <component :is="dolfijnenNavItem.icon" class="h-5 w-5 shrink-0 stroke-2" />
+                                <span>{{ dolfijnenNavItem.label }}</span>
+                            </span>
                         </Link>
 
                         <Link
@@ -261,7 +279,10 @@ onUnmounted(() => {
                                     : 'text-slate-800 hover:bg-brand-blue/10'
                             "
                         >
-                            {{ item.label }}
+                            <span class="inline-flex items-center gap-2">
+                                <component :is="item.icon" class="h-5 w-5 shrink-0 stroke-2" />
+                                <span>{{ item.label }}</span>
+                            </span>
                         </Link>
                     </nav>
 
@@ -352,7 +373,8 @@ onUnmounted(() => {
                         "
                         @click="closeMobileMenu"
                     >
-                        {{ item.label }}
+                        <component :is="item.icon" class="me-2 h-6 w-6 shrink-0 stroke-2" />
+                        <span>{{ item.label }}</span>
                     </Link>
                     <Link
                         v-if="showSpeltakNav"
@@ -365,7 +387,8 @@ onUnmounted(() => {
                         "
                         @click="closeMobileMenu"
                     >
-                        {{ dolfijnenNavItem.label }}
+                        <component :is="dolfijnenNavItem.icon" class="me-2 h-6 w-6 shrink-0 stroke-2" />
+                        <span>{{ dolfijnenNavItem.label }}</span>
                     </Link>
                     <Link
                         v-for="item in tailNavItems"
@@ -379,7 +402,8 @@ onUnmounted(() => {
                         "
                         @click="closeMobileMenu"
                     >
-                        {{ item.label }}
+                        <component :is="item.icon" class="me-2 h-6 w-6 shrink-0 stroke-2" />
+                        <span>{{ item.label }}</span>
                     </Link>
                     <div class="my-2 border-t border-slate-200 dark:border-slate-700" />
                     <Link

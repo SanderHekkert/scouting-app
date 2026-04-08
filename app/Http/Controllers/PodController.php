@@ -90,6 +90,8 @@ class PodController extends Controller
 
     public function addMember(Request $request, Pod $pod)
     {
+        $useZeeverkennersBakRoles = $this->activeSection() === UserSectionRole::SECTION_ZEEVERKENNERS;
+
         $data = $request->validate([
             'member_id' => ['required', 'exists:members,id'],
             'role' => ['required', 'string', 'in:Topper,Tipper,Vinlid'],
@@ -118,7 +120,9 @@ class PodController extends Controller
 
             if ($hasTopper) {
                 throw ValidationException::withMessages([
-                    'role' => 'Er is al een Topper in deze vin.',
+                    'role' => $useZeeverkennersBakRoles
+                        ? 'Er is al een Boots in deze bak.'
+                        : 'Er is al een Topper in deze vin.',
                 ]);
             }
         }
@@ -132,7 +136,9 @@ class PodController extends Controller
 
             if ($hasTipper) {
                 throw ValidationException::withMessages([
-                    'role' => 'Er is al een Tipper in deze vin.',
+                    'role' => $useZeeverkennersBakRoles
+                        ? 'Er is al een Kwartier in deze bak.'
+                        : 'Er is al een Tipper in deze vin.',
                 ]);
             }
         }
@@ -150,5 +156,57 @@ class PodController extends Controller
         $podMembership->delete();
 
         return to_route('pods.index');
+    }
+
+    public function moveMember(Request $request, PodMembership $podMembership)
+    {
+        $data = $request->validate([
+            'pod_id' => ['required', 'exists:pods,id'],
+            'role' => ['required', 'string', 'in:Topper,Tipper,Vinlid'],
+        ]);
+
+        $podId = (int) $data['pod_id'];
+        $role = (string) $data['role'];
+        $memberId = (int) $podMembership->member_id;
+
+        if ($role === 'Topper') {
+            $hasTopper = PodMembership::query()
+                ->where('pod_id', $podId)
+                ->where('role', 'Topper')
+                ->where('member_id', '!=', $memberId)
+                ->exists();
+
+            if ($hasTopper) {
+                return back()->withErrors([
+                    'role' => 'Er is al een Topper/Boots in deze vin/bak.',
+                ]);
+            }
+        }
+
+        if ($role === 'Tipper') {
+            $hasTipper = PodMembership::query()
+                ->where('pod_id', $podId)
+                ->where('role', 'Tipper')
+                ->where('member_id', '!=', $memberId)
+                ->exists();
+
+            if ($hasTipper) {
+                return back()->withErrors([
+                    'role' => 'Er is al een Tipper/Kwartier in deze vin/bak.',
+                ]);
+            }
+        }
+
+        $podMembership->update([
+            'pod_id' => $podId,
+            'role' => $role,
+        ]);
+
+        return back();
+    }
+
+    private function activeSection(): string
+    {
+        return session('active_section', UserSectionRole::SECTION_DOLFIJNEN);
     }
 }
