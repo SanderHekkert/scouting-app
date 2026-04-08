@@ -1,6 +1,5 @@
 <script setup>
-import EditableTextCell from '@/Components/EditableTextCell.vue';
-import { TrashIcon, XMarkIcon } from '@heroicons/vue/24/outline';
+import { PencilSquareIcon, TrashIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     events: {
@@ -42,11 +41,7 @@ const props = defineProps({
     },
 });
 
-const emit = defineEmits(['patch-field', 'delete', 'set-own-attendance']);
-
-function patchField(event, field, raw) {
-    emit('patch-field', event, field, raw);
-}
+const emit = defineEmits(['delete', 'edit', 'set-own-attendance']);
 
 function splitAbsentNames(value) {
     const text = String(value ?? '').trim();
@@ -58,55 +53,10 @@ function splitAbsentNames(value) {
     return [...new Set(items)];
 }
 
-function joinAbsentNames(names) {
-    return names.join(', ');
-}
-
-function addAbsentName(event, name) {
-    const candidate = String(name ?? '').trim();
-    if (!candidate) return;
-    const current = splitAbsentNames(event.absent);
-    if (current.includes(candidate)) return;
-    patchField(event, 'absent', joinAbsentNames([...current, candidate]));
-}
-
-function removeAbsentName(event, name) {
-    const current = splitAbsentNames(event.absent);
-    patchField(
-        event,
-        'absent',
-        joinAbsentNames(current.filter((n) => n !== name)),
-    );
-}
-
-function onAbsentSelectChange(event, domEvent) {
-    const name = domEvent?.target?.value;
-    addAbsentName(event, name);
-    if (domEvent?.target) {
-        domEvent.target.value = '';
-    }
-}
-
 function firstNameOnly(name) {
     const s = String(name ?? '').trim();
     if (!s) return '';
     return s.split(/\s+/)[0] || s;
-}
-
-function availableLeaders(event) {
-    const selectedNames = splitAbsentNames(event?.absent);
-    const selectedFull = new Set(
-        selectedNames.map((name) => String(name || '').trim().toLowerCase()).filter(Boolean),
-    );
-    const selectedFirst = new Set(
-        selectedNames.map((name) => firstNameOnly(name).toLowerCase()).filter(Boolean),
-    );
-
-    return (props.leaders || []).filter((leader) => {
-        const full = String(leader || '').trim().toLowerCase();
-        const first = firstNameOnly(leader).toLowerCase();
-        return !selectedFull.has(full) && !selectedFirst.has(first);
-    });
 }
 
 function isCurrentUserAbsent(event) {
@@ -123,28 +73,6 @@ function taskLabelById(id) {
     return props.taskItems.find((task) => Number(task.id) === Number(id))?.title || `Taak #${id}`;
 }
 
-function availableTasks(event) {
-    const selected = new Set(taskIdsForEvent(event));
-    return (props.taskItems || []).filter((task) => !selected.has(Number(task.id)));
-}
-
-function addTaskToEvent(event, taskId) {
-    const id = Number(taskId);
-    if (!Number.isFinite(id) || id <= 0) return;
-    const next = [...new Set([...taskIdsForEvent(event), id])];
-    patchField(event, 'task_item_ids', next);
-}
-
-function removeTaskFromEvent(event, taskId) {
-    const next = taskIdsForEvent(event).filter((id) => Number(id) !== Number(taskId));
-    patchField(event, 'task_item_ids', next);
-}
-
-function onTaskSelectChange(event, domEvent) {
-    const id = domEvent?.target?.value;
-    addTaskToEvent(event, id);
-    if (domEvent?.target) domEvent.target.value = '';
-}
 </script>
 
 <template>
@@ -163,59 +91,23 @@ function onTaskSelectChange(event, domEvent) {
                         props.highlightEventId != null && Number(event.id) === props.highlightEventId,
                 }"
             >
-                <div class="text-sm font-semibold">
-                    <EditableTextCell
-                        :text="event.theme || ''"
-                        :disabled="!props.canEditAgenda"
-                        :saving="isFieldSaving(event, 'theme')"
-                        @save="(v) => patchField(event, 'theme', v)"
-                    />
-                </div>
+                <div class="text-sm font-semibold">{{ event.theme || '-' }}</div>
                 <div class="mt-2 grid gap-2 text-sm">
                     <div>
                         <p class="text-xs text-app-muted dark:text-app-muted-dark">Datum</p>
-                        <EditableTextCell
-                            :text="event.event_date ? String(event.event_date).slice(0, 10) : ''"
-                            :disabled="!props.canEditAgenda"
-                            input-kind="date"
-                            :multiline="false"
-                            :saving="isFieldSaving(event, 'event_date')"
-                            @save="(v) => patchField(event, 'event_date', v)"
-                        />
+                        <p>{{ event.event_date ? String(event.event_date).slice(0, 10) : '-' }}</p>
                     </div>
                     <div>
                         <p class="text-xs text-app-muted dark:text-app-muted-dark">Type opkomst</p>
-                        <EditableTextCell
-                            :text="event.event_type || ''"
-                            :disabled="!props.canEditAgenda"
-                            :multiline="false"
-                            :saving="isFieldSaving(event, 'event_type')"
-                            @save="(v) => patchField(event, 'event_type', v)"
-                        />
+                        <p>{{ event.event_type || '-' }}</p>
                     </div>
                     <div>
                         <p class="text-xs text-app-muted dark:text-app-muted-dark">Wat ga je doen?</p>
-                        <EditableTextCell
-                            :text="event.activity || ''"
-                            :disabled="!props.canEditAgenda"
-                            multiline
-                            :saving="isFieldSaving(event, 'activity')"
-                            @save="(v) => patchField(event, 'activity', v)"
-                        />
+                        <p>{{ event.activity || '-' }}</p>
                     </div>
                     <div>
                         <p class="text-xs text-app-muted dark:text-app-muted-dark">Programma door</p>
-                        <select
-                            class="mt-1 w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                            :disabled="isFieldSaving(event, 'program_by') || !props.canEditAgenda"
-                            :value="event.program_by || ''"
-                            @change="patchField(event, 'program_by', $event.target.value || '')"
-                        >
-                            <option value="">Geen gekozen</option>
-                            <option v-for="leader in props.leaders" :key="`mob-program-${event.id}-${leader}`" :value="leader">
-                                {{ leader }}
-                            </option>
-                        </select>
+                        <p>{{ event.program_by || '-' }}</p>
                     </div>
                     <div>
                         <p class="text-xs text-app-muted dark:text-app-muted-dark">Afwezig</p>
@@ -226,27 +118,8 @@ function onTaskSelectChange(event, domEvent) {
                                 class="inline-flex items-center gap-1 rounded-full bg-brand-blue/15 px-2 py-0.5 text-xs"
                             >
                                 {{ firstNameOnly(name) }}
-                                <button
-                                    v-if="props.canEditAgenda"
-                                    type="button"
-                                    class="rounded p-0.5 hover:bg-brand-blue/25"
-                                    @click="removeAbsentName(event, name)"
-                                >
-                                    <XMarkIcon class="h-3.5 w-3.5" />
-                                </button>
                             </span>
                         </div>
-                        <select
-                            v-if="props.canEditAgenda"
-                            class="mt-2 w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                            :disabled="isFieldSaving(event, 'absent')"
-                            @change="onAbsentSelectChange(event, $event)"
-                        >
-                            <option value="">Naam toevoegen…</option>
-                            <option v-for="leader in availableLeaders(event)" :key="`mob-absent-${event.id}-${leader}`" :value="leader">
-                                {{ firstNameOnly(leader) }}
-                            </option>
-                        </select>
                         <button
                             v-if="props.canMarkOwnPresence"
                             type="button"
@@ -265,39 +138,18 @@ function onTaskSelectChange(event, domEvent) {
                                 class="inline-flex items-center gap-1 rounded-full bg-brand-blue/15 px-2 py-0.5 text-xs"
                             >
                                 {{ taskLabelById(taskId) }}
-                                <button
-                                    v-if="props.canEditAgenda"
-                                    type="button"
-                                    class="rounded p-0.5 hover:bg-brand-blue/25"
-                                    @click="removeTaskFromEvent(event, taskId)"
-                                >
-                                    <XMarkIcon class="h-3.5 w-3.5" />
-                                </button>
                             </span>
                         </div>
-                        <select
-                            v-if="props.canEditAgenda"
-                            class="mt-2 w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                            @change="onTaskSelectChange(event, $event)"
-                        >
-                            <option value="">Taak toevoegen…</option>
-                            <option v-for="task in availableTasks(event)" :key="`mob-task-${event.id}-${task.id}`" :value="task.id">
-                                {{ task.title }}
-                            </option>
-                        </select>
                     </div>
                     <div>
                         <p class="text-xs text-app-muted dark:text-app-muted-dark">Bijzonderheden</p>
-                        <EditableTextCell
-                            :text="event.notes || ''"
-                            :disabled="!props.canEditAgenda"
-                            multiline
-                            :saving="isFieldSaving(event, 'notes')"
-                            @save="(v) => patchField(event, 'notes', v)"
-                        />
+                        <p class="whitespace-pre-wrap">{{ event.notes || '-' }}</p>
                     </div>
                 </div>
-                <div v-if="props.canEditAgenda" class="mt-3 border-t border-brand-blue/25 pt-3 dark:border-brand-blue/35">
+                <div v-if="props.canEditAgenda" class="mt-3 flex items-center gap-2 border-t border-brand-blue/25 pt-3 dark:border-brand-blue/35">
+                    <button type="button" class="btn-action-edit" title="Bewerken" @click="$emit('edit', event)">
+                        <PencilSquareIcon class="h-4 w-4 shrink-0" />
+                    </button>
                     <button type="button" class="btn-action-delete" title="Verwijderen" @click="$emit('delete', event)">
                         <TrashIcon class="h-4 w-4 shrink-0" />
                     </button>
@@ -330,56 +182,11 @@ function onTaskSelectChange(event, domEvent) {
                             props.highlightEventId != null && Number(event.id) === props.highlightEventId,
                     }"
                 >
-                    <td class="px-3 py-2.5 align-top">
-                        <EditableTextCell
-                            :text="event.theme || ''"
-                            :disabled="!props.canEditAgenda"
-                            multiline
-                            :saving="isFieldSaving(event, 'theme')"
-                            @save="(v) => patchField(event, 'theme', v)"
-                        />
-                    </td>
-                    <td class="whitespace-nowrap px-3 py-2.5 align-top tabular-nums">
-                        <EditableTextCell
-                            :text="event.event_date ? String(event.event_date).slice(0, 10) : ''"
-                            :disabled="!props.canEditAgenda"
-                            input-kind="date"
-                            :multiline="false"
-                            :saving="isFieldSaving(event, 'event_date')"
-                            @save="(v) => patchField(event, 'event_date', v)"
-                        />
-                    </td>
-                    <td class="px-3 py-2.5 align-top">
-                        <EditableTextCell
-                            :text="event.event_type || ''"
-                            :disabled="!props.canEditAgenda"
-                            :multiline="false"
-                            :saving="isFieldSaving(event, 'event_type')"
-                            @save="(v) => patchField(event, 'event_type', v)"
-                        />
-                    </td>
-                    <td class="px-3 py-2.5 align-top">
-                        <EditableTextCell
-                            :text="event.activity || ''"
-                            :disabled="!props.canEditAgenda"
-                            multiline
-                            :saving="isFieldSaving(event, 'activity')"
-                            @save="(v) => patchField(event, 'activity', v)"
-                        />
-                    </td>
-                    <td class="px-3 py-2.5 align-top">
-                        <select
-                            class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                            :disabled="isFieldSaving(event, 'program_by') || !props.canEditAgenda"
-                            :value="event.program_by || ''"
-                            @change="patchField(event, 'program_by', $event.target.value || '')"
-                        >
-                            <option value="">Geen gekozen</option>
-                            <option v-for="leader in props.leaders" :key="`desk-program-${event.id}-${leader}`" :value="leader">
-                                {{ leader }}
-                            </option>
-                        </select>
-                    </td>
+                    <td class="px-3 py-2.5 align-top">{{ event.theme || '-' }}</td>
+                    <td class="whitespace-nowrap px-3 py-2.5 align-top tabular-nums">{{ event.event_date ? String(event.event_date).slice(0, 10) : '-' }}</td>
+                    <td class="px-3 py-2.5 align-top">{{ event.event_type || '-' }}</td>
+                    <td class="px-3 py-2.5 align-top">{{ event.activity || '-' }}</td>
+                    <td class="px-3 py-2.5 align-top">{{ event.program_by || '-' }}</td>
                     <td class="max-w-[18rem] px-3 py-2.5 align-top">
                         <div class="flex flex-wrap gap-1.5">
                             <span
@@ -388,27 +195,8 @@ function onTaskSelectChange(event, domEvent) {
                                 class="inline-flex items-center gap-1 rounded-full bg-brand-blue/15 px-2 py-0.5 text-xs"
                             >
                                 {{ firstNameOnly(name) }}
-                                <button
-                                    v-if="props.canEditAgenda"
-                                    type="button"
-                                    class="rounded p-0.5 hover:bg-brand-blue/25"
-                                    @click="removeAbsentName(event, name)"
-                                >
-                                    <XMarkIcon class="h-3.5 w-3.5" />
-                                </button>
                             </span>
                         </div>
-                        <select
-                            v-if="props.canEditAgenda"
-                            class="mt-2 w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                            :disabled="isFieldSaving(event, 'absent')"
-                            @change="onAbsentSelectChange(event, $event)"
-                        >
-                            <option value="">Naam toevoegen…</option>
-                            <option v-for="leader in availableLeaders(event)" :key="`desk-absent-${event.id}-${leader}`" :value="leader">
-                                {{ firstNameOnly(leader) }}
-                            </option>
-                        </select>
                         <button
                             v-if="props.canMarkOwnPresence"
                             type="button"
@@ -426,37 +214,14 @@ function onTaskSelectChange(event, domEvent) {
                                 class="inline-flex items-center gap-1 rounded-full bg-brand-blue/15 px-2 py-0.5 text-xs"
                             >
                                 {{ taskLabelById(taskId) }}
-                                <button
-                                    v-if="props.canEditAgenda"
-                                    type="button"
-                                    class="rounded p-0.5 hover:bg-brand-blue/25"
-                                    @click="removeTaskFromEvent(event, taskId)"
-                                >
-                                    <XMarkIcon class="h-3.5 w-3.5" />
-                                </button>
                             </span>
                         </div>
-                        <select
-                            v-if="props.canEditAgenda"
-                            class="mt-2 w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                            @change="onTaskSelectChange(event, $event)"
-                        >
-                            <option value="">Taak toevoegen…</option>
-                            <option v-for="task in availableTasks(event)" :key="`desk-task-${event.id}-${task.id}`" :value="task.id">
-                                {{ task.title }}
-                            </option>
-                        </select>
                     </td>
-                    <td class="max-w-[16rem] px-3 py-2.5 align-top">
-                        <EditableTextCell
-                            :text="event.notes || ''"
-                            :disabled="!props.canEditAgenda"
-                            multiline
-                            :saving="isFieldSaving(event, 'notes')"
-                            @save="(v) => patchField(event, 'notes', v)"
-                        />
-                    </td>
-                    <td class="px-3 py-2.5 align-top">
+                    <td class="max-w-[16rem] px-3 py-2.5 align-top whitespace-pre-wrap">{{ event.notes || '-' }}</td>
+                    <td class="px-3 py-2.5 align-top space-x-2">
+                        <button v-if="props.canEditAgenda" type="button" class="btn-action-edit" title="Bewerken" @click="$emit('edit', event)">
+                            <PencilSquareIcon class="h-4 w-4 shrink-0" />
+                        </button>
                         <button v-if="props.canEditAgenda" type="button" class="btn-action-delete" title="Verwijderen" @click="$emit('delete', event)">
                             <TrashIcon class="h-4 w-4 shrink-0" />
                         </button>

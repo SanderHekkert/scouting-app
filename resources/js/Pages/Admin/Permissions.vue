@@ -56,7 +56,21 @@ const groupedRows = computed(() => {
         if (!groups[row.role]) groups[row.role] = [];
         groups[row.role].push(row);
     }
-    return groups;
+    const roleOrder = ['teamleider', 'lid', 'leiding', 'ouder_contact', 'bestuurslid'];
+    const sorted = {};
+    Object.keys(groups)
+        .sort((a, b) => {
+            const ai = roleOrder.indexOf(a);
+            const bi = roleOrder.indexOf(b);
+            const av = ai === -1 ? 99 : ai;
+            const bv = bi === -1 ? 99 : bi;
+            if (av !== bv) return av - bv;
+            return a.localeCompare(b);
+        })
+        .forEach((role) => {
+            sorted[role] = groups[role];
+        });
+    return sorted;
 });
 
 const orderedManageableSections = computed(() => {

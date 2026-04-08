@@ -21,6 +21,7 @@ return new class extends Migration
             $table->text('absent')->nullable();
             $table->text('notes')->nullable();
             $table->json('task_item_ids')->nullable();
+            $table->json('shared_sections')->nullable();
             $table->string('section', 40)->default('dolfijnen')->index();
             $table->timestamps();
         });

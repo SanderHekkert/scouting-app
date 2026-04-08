@@ -1,7 +1,9 @@
 <?php
 
+use App\Http\Controllers\AdminPushNotificationController;
 use App\Http\Controllers\AdminRoleController;
 use App\Http\Controllers\AdminUserController;
+use App\Http\Controllers\AdminUserInvitationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\InfoNoteController;
@@ -9,6 +11,7 @@ use App\Http\Controllers\LeaderController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\PodController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\SectionPermissionController;
 use App\Http\Controllers\TaskItemController;
 use App\Http\Controllers\TipperTopperOpkomstController;
@@ -28,14 +31,16 @@ Route::middleware(['auth', 'section.role:admin'])->group(function () {
     Route::patch('/admin/rollen/{user}/basis', [AdminRoleController::class, 'updateBasics'])->name('admin.roles.update-basics');
 });
 
-Route::middleware(['auth', 'has.role', 'section.role:admin,bestuurslid'])->group(function () {
+Route::middleware(['auth', 'verified', 'has.role', 'section.role:admin,bestuurslid'])->group(function () {
     Route::get('/admin/gebruikers', [AdminUserController::class, 'index'])->name('admin.users.index');
     Route::get('/admin/gebruikers/{user}', [AdminUserController::class, 'show'])->name('admin.users.show');
     Route::patch('/admin/gebruikers/{user}', [AdminUserController::class, 'update'])->name('admin.users.update');
     Route::delete('/admin/gebruikers/{user}', [AdminUserController::class, 'destroy'])->name('admin.users.destroy');
+    Route::post('/admin/gebruikers/uitnodigen', [AdminUserInvitationController::class, 'store'])->name('admin.users.invite');
+    Route::post('/admin/push-notifications', [AdminPushNotificationController::class, 'store'])->name('admin.push-notifications.store');
 });
 
-Route::middleware(['auth', 'has.role', 'section.role:teamleider'])->group(function () {
+Route::middleware(['auth', 'verified', 'has.role', 'section.role:teamleider'])->group(function () {
     Route::get('/admin/rechten', [SectionPermissionController::class, 'index'])->name('permissions.index');
     Route::patch('/admin/rechten/{sectionPermission}', [SectionPermissionController::class, 'update'])->name('permissions.update');
 });
@@ -46,7 +51,15 @@ Route::middleware(['auth'])->group(function () {
     })->name('no-access');
 });
 
-Route::middleware(['auth', 'has.role', 'section.role:teamleider,leiding,ouder_contact,bestuurslid,lid'])->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
+Route::middleware(['auth', 'verified', 'has.role', 'section.role:teamleider,leiding,ouder_contact,bestuurslid,lid'])->group(function () {
+    Route::post('/push/subscriptions', [PushSubscriptionController::class, 'store'])->name('push.subscriptions.store');
+    Route::delete('/push/subscriptions', [PushSubscriptionController::class, 'destroy'])->name('push.subscriptions.destroy');
     Route::post('/active-section', function (Request $request) {
         $data = $request->validate([
             'section' => ['required', 'string', Rule::in(UserSectionRole::ALL_SECTIONS)],
@@ -70,6 +83,7 @@ Route::middleware(['auth', 'has.role', 'section.role:teamleider,leiding,ouder_co
     Route::patch('/events/{event}/fields', [EventController::class, 'quickUpdate'])->middleware('section.permission:events')->name('events.quick-update');
     Route::patch('/events/{event}/attendance', [EventController::class, 'updateOwnAttendance'])->name('events.attendance.update');
     Route::get('/events/archived', [EventController::class, 'archived'])->middleware('section.permission:events')->name('events.archived');
+    Route::get('/events/{event}', [EventController::class, 'show'])->middleware('section.permission:events')->name('events.show');
     Route::resource('events', EventController::class)->middleware('section.permission:events')->except(['create', 'show', 'edit']);
     Route::patch('/members/{member}/installed', [MemberController::class, 'updateInstalled'])->middleware('section.permission:members')->name('members.update-installed');
     Route::patch('/members/{member}/fields', [MemberController::class, 'quickUpdate'])->middleware('section.permission:members')->name('members.quick-update');
@@ -91,9 +105,6 @@ Route::middleware(['auth', 'has.role', 'section.role:teamleider,leiding,ouder_co
     Route::resource('task-items', TaskItemController::class)->middleware('section.permission:task_items')->except(['create', 'show', 'edit']);
     Route::post('/task-categories', [TaskItemController::class, 'storeCategory'])->middleware('section.permission:task_items')->name('task-categories.store');
 
-    Route::get('/profile', [ProfileController::class, 'edit'])->middleware('section.permission:profile')->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->middleware('section.permission:profile')->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->middleware('section.permission:profile')->name('profile.destroy');
 });
 
 require __DIR__.'/auth.php';

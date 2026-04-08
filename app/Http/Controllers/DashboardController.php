@@ -19,14 +19,23 @@ class DashboardController extends Controller
     public function __invoke()
     {
         $today = Carbon::today();
+        $section = $this->activeSection();
 
-        $todayEvents = Event::query()
+        $todayEvents = Event::withoutGlobalScope('section')
+            ->where(function (Builder $query) use ($section): void {
+                $query->where('section', $section)
+                    ->orWhereJsonContains('shared_sections', $section);
+            })
             ->whereDate('event_date', $today)
             ->orderBy('theme')
             ->get()
             ->map(fn (Event $e) => $this->serializeEvent($e, $today));
 
-        $upcomingEvents = Event::query()
+        $upcomingEvents = Event::withoutGlobalScope('section')
+            ->where(function (Builder $query) use ($section): void {
+                $query->where('section', $section)
+                    ->orWhereJsonContains('shared_sections', $section);
+            })
             ->whereDate('event_date', '>=', $today)
             ->orderBy('event_date')
             ->orderBy('theme')
@@ -53,7 +62,12 @@ class DashboardController extends Controller
         ]);
 
         $today = Carbon::today();
-        $nextEvent = Event::query()
+        $section = $this->activeSection();
+        $nextEvent = Event::withoutGlobalScope('section')
+            ->where(function (Builder $query) use ($section): void {
+                $query->where('section', $section)
+                    ->orWhereJsonContains('shared_sections', $section);
+            })
             ->whereDate('event_date', '>=', $today)
             ->orderBy('event_date')
             ->orderBy('theme')
@@ -92,7 +106,12 @@ class DashboardController extends Controller
      */
     private function nextUpcomingAttendanceState(Carbon $today): ?array
     {
-        $nextEvent = Event::query()
+        $section = $this->activeSection();
+        $nextEvent = Event::withoutGlobalScope('section')
+            ->where(function (Builder $query) use ($section): void {
+                $query->where('section', $section)
+                    ->orWhereJsonContains('shared_sections', $section);
+            })
             ->whereDate('event_date', '>=', $today)
             ->orderBy('event_date')
             ->orderBy('theme')
@@ -126,7 +145,12 @@ class DashboardController extends Controller
      */
     private function leaderAbsenceChart(Carbon $today): array
     {
-        $events = Event::query()
+        $section = $this->activeSection();
+        $events = Event::withoutGlobalScope('section')
+            ->where(function (Builder $query) use ($section): void {
+                $query->where('section', $section)
+                    ->orWhereJsonContains('shared_sections', $section);
+            })
             ->whereNotNull('absent')
             ->pluck('absent');
 
@@ -390,7 +414,13 @@ class DashboardController extends Controller
             return [];
         }
 
-        return TaskItem::query()
+        $section = $this->activeSection();
+
+        return TaskItem::withoutGlobalScope('section')
+            ->where(function (Builder $query) use ($section): void {
+                $query->where('section', $section)
+                    ->orWhereJsonContains('shared_sections', $section);
+            })
             ->where(function (Builder $query) use ($user): void {
                 $query->where('owner_user_id', $user->id)
                     ->orWhereJsonContains('owner_user_ids', $user->id);

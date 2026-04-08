@@ -7,52 +7,122 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
-## About Laravel
+## Production Setup (Scouting App)
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Gebruik deze stappen om de app op production werkend te krijgen, inclusief:
+- uitnodigen van gebruikers via e-mail
+- e-mailverificatie bij eerste account-aanmaak
+- web push notificaties (iPhone + Android)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### 1) Vereisten op server
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- PHP 8.3+
+- Composer
+- Node.js + npm
+- MySQL/MariaDB
+- HTTPS (verplicht voor Web Push en iPhone PWA)
 
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+### 2) Deploy en dependencies
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+composer install --no-dev --optimize-autoloader
+npm ci
+npm run build
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+### 3) Environment instellen
 
-## Contributing
+Zet minimaal deze variabelen in `.env`:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```env
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://jouwdomein.nl
 
-## Code of Conduct
+DB_CONNECTION=mysql
+DB_HOST=...
+DB_PORT=3306
+DB_DATABASE=...
+DB_USERNAME=...
+DB_PASSWORD=...
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+MAIL_MAILER=smtp
+MAIL_HOST=...
+MAIL_PORT=587
+MAIL_USERNAME=...
+MAIL_PASSWORD=...
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=info@fn12.nl
+MAIL_FROM_NAME="Scouting App"
 
-## Security Vulnerabilities
+VITE_WEBPUSH_VAPID_PUBLIC_KEY=...
+WEBPUSH_VAPID_PUBLIC_KEY=...
+WEBPUSH_VAPID_PRIVATE_KEY=...
+WEBPUSH_VAPID_SUBJECT=mailto:beheer@jouwdomein.nl
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### 4) VAPID keys genereren (eenmalig)
 
-## License
+```bash
+npx web-push generate-vapid-keys
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Plak de output in:
+- `WEBPUSH_VAPID_PUBLIC_KEY`
+- `WEBPUSH_VAPID_PRIVATE_KEY`
+- `VITE_WEBPUSH_VAPID_PUBLIC_KEY` (zelfde waarde als public key)
+
+### 5) Laravel productie-commando’s
+
+```bash
+php artisan key:generate --force
+php artisan migrate --force
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+```
+
+### 6) Rechten voor storage/cache
+
+Zorg dat webserver kan schrijven naar:
+- `storage/`
+- `bootstrap/cache/`
+
+### 7) Belangrijk voor uitnodigingen + verificatie
+
+- Alleen `admin` en `bestuurslid` kunnen uitnodigingen versturen via `Gebruikers`.
+- Uitgenodigde gebruiker vult eerst profielgegevens in via uitnodigingslink.
+- Daarna wordt verificatiemail verstuurd.
+- Zonder e-mailverificatie krijgt gebruiker geen toegang tot beschermde app-routes.
+
+### 8) Push notificaties gedrag
+
+- **iPhone**: gebruiker moet app toevoegen aan beginscherm en meldingen toestaan.
+- **Android**: meldingen werken na toestemming, ook zonder homescreen-install.
+- Voor beide geldt: de site moet op HTTPS draaien.
+
+### 9) Snelle post-deploy check
+
+1. Login als `admin` of `bestuurslid`.
+2. Open `Gebruikers` en verstuur een uitnodiging.
+3. Controleer of uitnodigingsmail aankomt.
+4. Maak account via link aan en klik verificatielink in mail.
+5. Ga in profiel naar push en zet meldingen aan.
+6. Verstuur test-push en controleer ontvangst op toestel.
+
+### 10) Automatische push-reminders (taken/opkomsten)
+
+De app verstuurt automatisch:
+- taakmelding **1 week voor deadline**
+- taakmelding **op de dag van deadline**
+- op **zaterdag** een melding als er die dag een opkomst is en je je niet afwezig of juist aanwezig hebt gemeld.
+
+Hiervoor moet de Laravel scheduler draaien op productie:
+
+```bash
+* * * * * cd /pad/naar/scouting-app && php artisan schedule:run >> /dev/null 2>&1
+```
+
+Intern draait dan dagelijks om 08:00:
+- `php artisan app:send-scheduled-push-notifications`
+

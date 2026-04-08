@@ -16,11 +16,15 @@ class Event extends Model
         'activity',
         'program_by',
         'absent',
+        'present_names',
         'notes',
         'task_item_ids',
+        'shared_sections',
     ];
 
     protected $casts = [
+        'present_names' => 'array',
         'task_item_ids' => 'array',
+        'shared_sections' => 'array',
     ];
 }

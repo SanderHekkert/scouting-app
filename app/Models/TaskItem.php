@@ -20,11 +20,13 @@ class TaskItem extends Model
         'owner_user_ids',
         'description',
         'deadlines',
+        'shared_sections',
     ];
 
     protected $casts = [
         'owner_user_ids' => 'array',
         'deadlines' => 'array',
+        'shared_sections' => 'array',
     ];
 
     public function ownerUser(): BelongsTo

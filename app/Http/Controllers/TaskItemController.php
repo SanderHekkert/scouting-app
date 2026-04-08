@@ -6,6 +6,7 @@ use App\Models\Event;
 use App\Models\TaskCategory;
 use App\Models\TaskItem;
 use App\Models\User;
+use App\Models\UserSectionRole;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -35,8 +36,11 @@ class TaskItemController extends Controller
             ->pluck('name')
             ->all();
 
-        $events = Event::query()
-            ->where('section', $section)
+        $events = Event::withoutGlobalScope('section')
+            ->where(function ($query) use ($section): void {
+                $query->where('section', $section)
+                    ->orWhereJsonContains('shared_sections', $section);
+            })
             ->orderBy('event_date')
             ->orderBy('theme')
             ->get(['id', 'event_date', 'theme', 'task_item_ids']);
@@ -50,7 +54,11 @@ class TaskItemController extends Controller
             }
         }
 
-        $tasks = TaskItem::query()
+        $tasks = TaskItem::withoutGlobalScope('section')
+            ->where(function ($query) use ($section): void {
+                $query->where('section', $section)
+                    ->orWhereJsonContains('shared_sections', $section);
+            })
             ->get()
             ->sortBy(function (TaskItem $task) use ($taskCategories) {
                 $categoryIndex = array_search($task->category, $taskCategories, true);
@@ -72,6 +80,7 @@ class TaskItemController extends Controller
                     'description' => $task->description,
                     'deadlines' => $this->normalizedDeadlines($task->deadlines),
                     'event_ids' => collect($eventIdsByTask[(int) $task->id] ?? [])->map(fn ($v): int => (int) $v)->unique()->values()->all(),
+                    'shared_sections' => $this->normalizedSharedSections($task->shared_sections ?? null),
                 ];
             });
 
@@ -118,10 +127,13 @@ class TaskItemController extends Controller
             'description' => ['required', 'string'],
             'deadlines' => ['nullable', 'array'],
             'deadlines.*' => ['date_format:Y-m-d'],
+            'shared_sections' => ['nullable', 'array'],
+            'shared_sections.*' => ['string', Rule::in(UserSectionRole::ALL_SECTIONS)],
         ]);
 
         $this->hydrateOwnerFields($data);
         $this->hydrateDeadlineFields($data);
+        $data['shared_sections'] = $this->normalizedSharedSections($data['shared_sections'] ?? null);
 
         TaskItem::create($data);
 
@@ -149,10 +161,13 @@ class TaskItemController extends Controller
             'description' => ['required', 'string'],
             'deadlines' => ['nullable', 'array'],
             'deadlines.*' => ['date_format:Y-m-d'],
+            'shared_sections' => ['nullable', 'array'],
+            'shared_sections.*' => ['string', Rule::in(UserSectionRole::ALL_SECTIONS)],
         ]);
 
         $this->hydrateOwnerFields($data);
         $this->hydrateDeadlineFields($data);
+        $data['shared_sections'] = $this->normalizedSharedSections($data['shared_sections'] ?? null);
 
         $task_item->update($data);
 
@@ -181,6 +196,8 @@ class TaskItemController extends Controller
             'description' => ['sometimes', 'required', 'string'],
             'deadlines' => ['sometimes', 'nullable', 'array'],
             'deadlines.*' => ['date_format:Y-m-d'],
+            'shared_sections' => ['sometimes', 'nullable', 'array'],
+            'shared_sections.*' => ['string', Rule::in(UserSectionRole::ALL_SECTIONS)],
         ]);
 
         if (array_key_exists('owner_user_id', $data) || array_key_exists('owner_user_ids', $data)) {
@@ -188,6 +205,9 @@ class TaskItemController extends Controller
         }
         if (array_key_exists('deadlines', $data)) {
             $this->hydrateDeadlineFields($data);
+        }
+        if (array_key_exists('shared_sections', $data)) {
+            $data['shared_sections'] = $this->normalizedSharedSections($data['shared_sections']);
         }
 
         $taskItem->update($data);
@@ -234,7 +254,7 @@ class TaskItemController extends Controller
         $section = $this->activeSection();
         $data = $request->validate([
             'event_ids' => ['nullable', 'array'],
-            'event_ids.*' => ['integer', Rule::exists('events', 'id')->where(fn ($q) => $q->where('section', $section))],
+            'event_ids.*' => ['integer'],
         ]);
 
         $eventIds = collect($data['event_ids'] ?? [])
@@ -245,7 +265,22 @@ class TaskItemController extends Controller
             ->all();
 
         $taskId = (int) $taskItem->id;
-        $events = Event::query()->where('section', $section)->get();
+        $validEventIds = Event::withoutGlobalScope('section')
+            ->where(function ($query) use ($section): void {
+                $query->where('section', $section)
+                    ->orWhereJsonContains('shared_sections', $section);
+            })
+            ->whereIn('id', $eventIds)
+            ->pluck('id')
+            ->map(fn ($v): int => (int) $v)
+            ->all();
+
+        $events = Event::withoutGlobalScope('section')
+            ->where(function ($query) use ($section): void {
+                $query->where('section', $section)
+                    ->orWhereJsonContains('shared_sections', $section);
+            })
+            ->get();
         foreach ($events as $event) {
             $current = collect($event->task_item_ids ?? [])
                 ->map(fn ($v): int => (int) $v)
@@ -253,7 +288,7 @@ class TaskItemController extends Controller
                 ->reject(fn (int $v): bool => $v === $taskId)
                 ->values();
 
-            if (in_array((int) $event->id, $eventIds, true)) {
+            if (in_array((int) $event->id, $validEventIds, true)) {
                 $current->push($taskId);
             }
 
@@ -315,6 +350,23 @@ class TaskItemController extends Controller
             ->map(fn (string $v): string => Carbon::parse($v)->toDateString())
             ->unique()
             ->sort()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function normalizedSharedSections(mixed $sharedSections): array
+    {
+        $active = $this->activeSection();
+
+        return collect(is_array($sharedSections) ? $sharedSections : [])
+            ->map(fn ($v): string => trim((string) $v))
+            ->filter()
+            ->filter(fn (string $v): bool => $v !== $active)
+            ->filter(fn (string $v): bool => in_array($v, UserSectionRole::ALL_SECTIONS, true))
+            ->unique()
             ->values()
             ->all();
     }

@@ -10,6 +10,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class EventController extends Controller
@@ -22,14 +23,22 @@ class EventController extends Controller
         $today = Carbon::today();
         $section = $this->activeSection();
 
-        $active = Event::query()
+        $active = Event::withoutGlobalScope('section')
+            ->where(function (Builder $query) use ($section): void {
+                $query->where('section', $section)
+                    ->orWhereJsonContains('shared_sections', $section);
+            })
             ->whereDate('event_date', '>=', $today)
             ->orderBy('event_date')
             ->orderBy('theme')
             ->get();
 
         $taskItems = TaskItem::query()
-            ->where('section', $section)
+            ->withoutGlobalScope('section')
+            ->where(function (Builder $query) use ($section): void {
+                $query->where('section', $section)
+                    ->orWhereJsonContains('shared_sections', $section);
+            })
             ->orderBy('title')
             ->get(['id', 'title'])
             ->map(fn (TaskItem $task): array => [
@@ -43,6 +52,7 @@ class EventController extends Controller
             'events' => $active,
             'leaders' => $this->leaderNamesForActiveSection(),
             'taskItems' => $taskItems,
+            'allSections' => UserSectionRole::ALL_SECTIONS,
         ]);
     }
 
@@ -52,8 +62,13 @@ class EventController extends Controller
     public function archived()
     {
         $today = Carbon::today();
+        $section = $this->activeSection();
 
-        $archived = Event::query()
+        $archived = Event::withoutGlobalScope('section')
+            ->where(function (Builder $query) use ($section): void {
+                $query->where('section', $section)
+                    ->orWhereJsonContains('shared_sections', $section);
+            })
             ->whereDate('event_date', '<', $today)
             ->orderByDesc('event_date')
             ->orderBy('theme')
@@ -62,6 +77,46 @@ class EventController extends Controller
         return Inertia::render('Events/Archived', [
             'archivedEvents' => $archived,
             'leaders' => $this->leaderNamesForActiveSection(),
+        ]);
+    }
+
+    /**
+     * Show a single event edit page.
+     */
+    public function show(Event $event)
+    {
+        $section = $this->activeSection();
+        $taskItems = TaskItem::withoutGlobalScope('section')
+            ->where(function (Builder $query) use ($section): void {
+                $query->where('section', $section)
+                    ->orWhereJsonContains('shared_sections', $section);
+            })
+            ->orderBy('title')
+            ->get(['id', 'title'])
+            ->map(fn (TaskItem $task): array => [
+                'id' => (int) $task->id,
+                'title' => (string) $task->title,
+            ])
+            ->values()
+            ->all();
+
+        return Inertia::render('Events/Show', [
+            'event' => [
+                'id' => (int) $event->id,
+                'theme' => (string) ($event->theme ?? ''),
+                'event_date' => (string) ($event->event_date ?? ''),
+                'event_type' => (string) ($event->event_type ?? ''),
+                'activity' => (string) ($event->activity ?? ''),
+                'program_by' => (string) ($event->program_by ?? ''),
+                'absent' => (string) ($event->absent ?? ''),
+                'present_names' => collect($event->present_names ?? [])->map(fn ($v): string => trim((string) $v))->filter()->values()->all(),
+                'notes' => (string) ($event->notes ?? ''),
+                'task_item_ids' => collect($event->task_item_ids ?? [])->map(fn ($v): int => (int) $v)->filter()->values()->all(),
+                'shared_sections' => $this->normalizeSharedSections($event->shared_sections ?? null),
+            ],
+            'leaders' => $this->leaderNamesForActiveSection(),
+            'taskItems' => $taskItems,
+            'allSections' => UserSectionRole::ALL_SECTIONS,
         ]);
     }
 
@@ -80,8 +135,11 @@ class EventController extends Controller
             'notes' => ['nullable', 'string'],
             'task_item_ids' => ['nullable', 'array'],
             'task_item_ids.*' => ['integer'],
+            'shared_sections' => ['nullable', 'array'],
+            'shared_sections.*' => ['string', Rule::in(UserSectionRole::ALL_SECTIONS)],
         ]);
         $data['task_item_ids'] = $this->normalizeTaskItemIds($data['task_item_ids'] ?? null);
+        $data['shared_sections'] = $this->normalizeSharedSections($data['shared_sections'] ?? null);
 
         Event::create($data);
 
@@ -103,8 +161,11 @@ class EventController extends Controller
             'notes' => ['nullable', 'string'],
             'task_item_ids' => ['nullable', 'array'],
             'task_item_ids.*' => ['integer'],
+            'shared_sections' => ['nullable', 'array'],
+            'shared_sections.*' => ['string', Rule::in(UserSectionRole::ALL_SECTIONS)],
         ]);
         $data['task_item_ids'] = $this->normalizeTaskItemIds($data['task_item_ids'] ?? null);
+        $data['shared_sections'] = $this->normalizeSharedSections($data['shared_sections'] ?? null);
 
         $event->update($data);
 
@@ -140,6 +201,8 @@ class EventController extends Controller
             'notes' => ['sometimes', 'nullable', 'string'],
             'task_item_ids' => ['sometimes', 'nullable', 'array'],
             'task_item_ids.*' => ['integer'],
+            'shared_sections' => ['sometimes', 'nullable', 'array'],
+            'shared_sections.*' => ['string', Rule::in(UserSectionRole::ALL_SECTIONS)],
         ]);
 
         if (array_key_exists('theme', $data) && $data['theme'] === null) {
@@ -147,6 +210,9 @@ class EventController extends Controller
         }
         if (array_key_exists('task_item_ids', $data)) {
             $data['task_item_ids'] = $this->normalizeTaskItemIds($data['task_item_ids']);
+        }
+        if (array_key_exists('shared_sections', $data)) {
+            $data['shared_sections'] = $this->normalizeSharedSections($data['shared_sections']);
         }
         $event->update($data);
 
@@ -190,19 +256,29 @@ class EventController extends Controller
             ->map(fn (string $item): string => trim($item))
             ->filter(fn (string $item): bool => $item !== '')
             ->values();
+        $present = collect($event->present_names ?? [])
+            ->map(fn ($item): string => trim((string) $item))
+            ->filter(fn (string $item): bool => $item !== '')
+            ->values();
 
         $normalizedSelf = Str::lower($name);
 
         $filtered = $existing->reject(function (string $item) use ($normalizedSelf): bool {
             return Str::lower($item) === $normalizedSelf;
         })->values();
+        $presentFiltered = $present->reject(function (string $item) use ($normalizedSelf): bool {
+            return Str::lower($item) === $normalizedSelf;
+        })->values();
 
-        if (! $data['present']) {
+        if ($data['present']) {
+            $presentFiltered->push($name);
+        } else {
             $filtered->push($name);
         }
 
         $event->update([
             'absent' => $filtered->unique()->implode(', '),
+            'present_names' => $presentFiltered->unique()->values()->all(),
         ]);
 
         return back();
@@ -274,13 +350,33 @@ class EventController extends Controller
             return [];
         }
 
-        $allowed = TaskItem::query()
-            ->where('section', $section)
+        $allowed = TaskItem::withoutGlobalScope('section')
+            ->where(function (Builder $query) use ($section): void {
+                $query->where('section', $section)
+                    ->orWhereJsonContains('shared_sections', $section);
+            })
             ->whereIn('id', $ids)
             ->pluck('id')
             ->map(fn ($id): int => (int) $id)
             ->all();
 
         return array_values($allowed);
+    }
+
+    /**
+     * @param  array<int, mixed>|null  $raw
+     * @return list<string>
+     */
+    private function normalizeSharedSections(?array $raw): array
+    {
+        $active = $this->activeSection();
+
+        return collect($raw ?? [])
+            ->map(fn ($v): string => (string) $v)
+            ->filter(fn (string $v): bool => $v !== '' && $v !== $active)
+            ->filter(fn (string $v): bool => in_array($v, UserSectionRole::ALL_SECTIONS, true))
+            ->unique()
+            ->values()
+            ->all();
     }
 }

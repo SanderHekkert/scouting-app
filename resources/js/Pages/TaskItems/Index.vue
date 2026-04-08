@@ -23,6 +23,17 @@ const page = usePage();
 const hideCategories = computed(() =>
     ['bevers', 'zeeverkenners', 'loodsen', 'wilde_vaart', 'bestuur'].includes(page.props.auth?.active_section),
 );
+const activeSection = computed(() => page.props.auth?.active_section ?? 'dolfijnen');
+const sectionLabels = {
+    bevers: 'Bevers',
+    dolfijnen: 'Dolfijnen',
+    zeeverkenners: 'Zeeverkenners',
+    wilde_vaart: 'Wilde Vaart',
+    loodsen: 'Loodsen',
+    bestuur: 'Bestuur',
+};
+const allSections = ['bevers', 'dolfijnen', 'zeeverkenners', 'wilde_vaart', 'loodsen', 'bestuur'];
+const shareableSections = computed(() => allSections.filter((s) => s !== activeSection.value));
 
 function defaultCategory() {
     return props.taskCategories?.length ? props.taskCategories[0] : 'Algemeen';
@@ -67,6 +78,7 @@ const form = useForm({
     owner_user_ids: [],
     description: '',
     deadlines: [],
+    shared_sections: [],
 });
 const addDeadlineInput = ref('');
 
@@ -146,6 +158,8 @@ function patchTaskField(task, field, raw) {
         payload = { description: raw ?? '' };
     } else if (field === 'deadlines') {
         payload = { deadlines: Array.isArray(raw) ? raw : [] };
+    } else if (field === 'shared_sections') {
+        payload = { shared_sections: Array.isArray(raw) ? raw : [] };
     } else {
         return;
     }
@@ -218,6 +232,23 @@ function eventIdsForTask(task) {
     return [...new Set((Array.isArray(task?.event_ids) ? task.event_ids : [])
         .map((v) => Number(v))
         .filter((n) => Number.isFinite(n)))];
+}
+
+function sharedSectionsForTask(task) {
+    return [...new Set((Array.isArray(task?.shared_sections) ? task.shared_sections : [])
+        .map((v) => String(v || '').trim())
+        .filter(Boolean))];
+}
+
+function addTaskSharedSection(task, section) {
+    if (!section || section === activeSection.value) return;
+    const next = [...new Set([...sharedSectionsForTask(task), section])];
+    patchTaskField(task, 'shared_sections', next);
+}
+
+function removeTaskSharedSection(task, section) {
+    const next = sharedSectionsForTask(task).filter((s) => s !== section);
+    patchTaskField(task, 'shared_sections', next);
 }
 
 function eventLabelById(id) {
@@ -506,6 +537,25 @@ function onCategoryDrop(category, event) {
                         </div>
                     </div>
 
+                    <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
+                        Gezamenlijk met
+                    </label>
+                    <div class="flex flex-wrap gap-2">
+                        <label
+                            v-for="section in shareableSections"
+                            :key="`add-task-share-${section}`"
+                            class="inline-flex items-center gap-2 rounded border border-app-border bg-white px-2 py-1 text-xs dark:border-app-border-dark dark:bg-app-canvas-dark"
+                        >
+                            <input
+                                v-model="form.shared_sections"
+                                type="checkbox"
+                                :value="section"
+                                class="rounded border-app-border"
+                            />
+                            {{ sectionLabels[section] || section }}
+                        </label>
+                    </div>
+
                     <span class="hidden sm:block" aria-hidden="true" />
                     <div>
                         <button
@@ -662,6 +712,35 @@ function onCategoryDrop(category, event) {
                                         :value="String(ev.id)"
                                     >
                                         {{ eventLabelById(ev.id) }}
+                                    </option>
+                                </select>
+
+                                <p class="mt-2 text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Gezamenlijk met</p>
+                                <div class="mt-1 flex flex-wrap gap-1.5">
+                                    <span
+                                        v-for="section in sharedSectionsForTask(task)"
+                                        :key="`mob-shared-chip-${task.id}-${section}`"
+                                        class="inline-flex items-center gap-1 rounded-full bg-brand-blue/15 px-2 py-0.5 text-xs"
+                                    >
+                                        {{ sectionLabels[section] || section }}
+                                        <button type="button" class="rounded p-0.5 hover:bg-brand-blue/25" :disabled="!isTaskEditing(task) || isTaskRowSaving(task)" @click="removeTaskSharedSection(task, section)">
+                                            <XMarkIcon class="h-3.5 w-3.5" />
+                                        </button>
+                                    </span>
+                                </div>
+                                <select
+                                    v-if="isTaskEditing(task)"
+                                    class="mt-2 w-full min-w-0 rounded border border-app-border bg-white px-2 py-1.5 text-app-ink shadow-sm outline-none focus:border-brand-blue dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
+                                    :disabled="isTaskRowSaving(task)"
+                                    @change="addTaskSharedSection(task, $event.target.value); $event.target.value = ''"
+                                >
+                                    <option value="">Speltak toevoegen…</option>
+                                    <option
+                                        v-for="section in shareableSections.filter((s) => !sharedSectionsForTask(task).includes(s))"
+                                        :key="`mob-shared-${task.id}-${section}`"
+                                        :value="section"
+                                    >
+                                        {{ sectionLabels[section] || section }}
                                     </option>
                                 </select>
 
@@ -823,6 +902,33 @@ function onCategoryDrop(category, event) {
                                             :value="String(ev.id)"
                                         >
                                             {{ eventLabelById(ev.id) }}
+                                        </option>
+                                    </select>
+                                    <div class="mt-2 flex flex-wrap gap-1.5">
+                                        <span
+                                            v-for="section in sharedSectionsForTask(task)"
+                                            :key="`desk-shared-chip-${task.id}-${section}`"
+                                            class="inline-flex items-center gap-1 rounded-full bg-brand-blue/15 px-2 py-0.5 text-xs"
+                                        >
+                                            {{ sectionLabels[section] || section }}
+                                            <button type="button" class="rounded p-0.5 hover:bg-brand-blue/25" :disabled="!isTaskEditing(task) || isTaskRowSaving(task)" @click="removeTaskSharedSection(task, section)">
+                                                <XMarkIcon class="h-3.5 w-3.5" />
+                                            </button>
+                                        </span>
+                                    </div>
+                                    <select
+                                        v-if="isTaskEditing(task)"
+                                        class="mt-2 w-full min-w-0 rounded border border-app-border bg-white px-2 py-1.5 text-app-ink shadow-sm outline-none focus:border-brand-blue dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
+                                        :disabled="isTaskRowSaving(task)"
+                                        @change="addTaskSharedSection(task, $event.target.value); $event.target.value = ''"
+                                    >
+                                        <option value="">Speltak toevoegen…</option>
+                                        <option
+                                            v-for="section in shareableSections.filter((s) => !sharedSectionsForTask(task).includes(s))"
+                                            :key="`desk-shared-${task.id}-${section}`"
+                                            :value="section"
+                                        >
+                                            {{ sectionLabels[section] || section }}
                                         </option>
                                     </select>
                                 </td>

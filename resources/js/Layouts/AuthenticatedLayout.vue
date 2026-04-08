@@ -115,7 +115,7 @@ const mainNavItems = computed(() => ([
 
 /** Eén sidebar-link; subpagina’s bereik je via SpeltakSubnav op de pagina zelf. */
 const dolfijnenNavItem = {
-    label: 'Speltak',
+    label: 'Leden',
     route: 'members.index',
     matchRoutes: [
         'members.index',

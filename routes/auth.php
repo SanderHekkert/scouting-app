@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\EmailVerificationPromptController;
+use App\Http\Controllers\Auth\InvitationRegistrationController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
@@ -11,6 +12,11 @@ use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
+    Route::get('uitnodiging/{token}', [InvitationRegistrationController::class, 'create'])
+        ->name('invitations.accept');
+    Route::post('uitnodiging/{token}', [InvitationRegistrationController::class, 'store'])
+        ->name('invitations.complete');
+
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
 

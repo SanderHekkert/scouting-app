@@ -16,6 +16,10 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
+    allSections: {
+        type: Array,
+        default: () => [],
+    },
 });
 
 const page = usePage();
@@ -66,7 +70,19 @@ const form = useForm({
     program_by: '',
     absent: '',
     notes: '',
+    shared_sections: [],
 });
+const sectionLabels = {
+    bevers: 'Bevers',
+    dolfijnen: 'Dolfijnen',
+    zeeverkenners: 'Zeeverkenners',
+    wilde_vaart: 'Wilde Vaart',
+    loodsen: 'Loodsen',
+    bestuur: 'Bestuur',
+};
+const shareableSections = computed(() =>
+    (props.allSections || []).filter((s) => s !== activeSection.value),
+);
 
 function toggleAddForm() {
     showAddForm.value = !showAddForm.value;
@@ -94,6 +110,11 @@ function deleteEvent(event) {
     });
 }
 
+function editEvent(event) {
+    if (!event?.id) return;
+    router.get(route('events.show', event.id));
+}
+
 function setOwnAttendance(event, present) {
     if (!event?.id) return;
     router.patch(
@@ -103,25 +124,6 @@ function setOwnAttendance(event, present) {
     );
 }
 
-const eventFieldSaving = ref(null);
-
-function patchEventField(event, field, raw) {
-    eventFieldSaving.value = `${event.id}:${field}`;
-    router.patch(
-        route('events.quick-update', event.id),
-        { [field]: raw ?? '' },
-        {
-            preserveScroll: true,
-            onFinish: () => {
-                eventFieldSaving.value = null;
-            },
-        },
-    );
-}
-
-function isEventFieldSaving(event, field) {
-    return eventFieldSaving.value === `${event.id}:${field}`;
-}
 </script>
 
 <template>
@@ -227,6 +229,25 @@ function isEventFieldSaving(event, field) {
                         class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
                     />
 
+                    <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
+                        Gezamenlijk met
+                    </label>
+                    <div class="flex flex-wrap gap-2">
+                        <label
+                            v-for="section in shareableSections"
+                            :key="`add-share-${section}`"
+                            class="inline-flex items-center gap-2 rounded border border-app-border bg-white px-2 py-1 text-xs dark:border-app-border-dark dark:bg-app-canvas-dark"
+                        >
+                            <input
+                                v-model="form.shared_sections"
+                                type="checkbox"
+                                :value="section"
+                                class="rounded border-app-border"
+                            />
+                            {{ sectionLabels[section] || section }}
+                        </label>
+                    </div>
+
                     <span class="hidden sm:block" aria-hidden="true" />
                     <div>
                         <button
@@ -264,13 +285,13 @@ function isEventFieldSaving(event, field) {
                     :leaders="props.leaders"
                     :task-items="props.taskItems"
                     :highlight-event-id="highlightEventId"
-                    :is-field-saving="isEventFieldSaving"
+                    :is-field-saving="() => false"
                     :can-edit-agenda="canManageAgenda"
                     :can-mark-own-presence="canMarkOwnPresence"
                     :current-user-name="currentUserName"
                     empty-message="Nog geen actuele opkomsten."
-                    @patch-field="(ev, field, val) => patchEventField(ev, field, val)"
                     @delete="deleteEvent"
+                    @edit="editEvent"
                     @set-own-attendance="(ev, present) => setOwnAttendance(ev, present)"
                 />
             </div>

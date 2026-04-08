@@ -1,10 +1,14 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, router } from '@inertiajs/vue3';
+import { Head, router, useForm } from '@inertiajs/vue3';
 import { TrashIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     users: { type: Array, default: () => [] },
+});
+
+const inviteForm = useForm({
+    email: '',
 });
 
 const sectionLabel = {
@@ -43,6 +47,13 @@ function roleEntries(user) {
     const roles = user.section_roles || {};
     return Object.entries(roles).sort((a, b) => order.indexOf(a[0]) - order.indexOf(b[0]));
 }
+
+function sendInvite() {
+    inviteForm.post(route('admin.users.invite'), {
+        preserveScroll: true,
+        onSuccess: () => inviteForm.reset(),
+    });
+}
 </script>
 
 <template>
@@ -55,6 +66,30 @@ function roleEntries(user) {
         </template>
 
         <div class="surface-brand-top rounded-xl border border-app-border bg-app-panel p-4 shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark">
+            <form class="mb-4 rounded-lg border border-brand-blue/25 bg-brand-blue/5 p-3" @submit.prevent="sendInvite">
+                <h3 class="text-sm font-semibold">Gebruiker uitnodigen via e-mail</h3>
+                <p class="mt-1 text-xs text-app-muted dark:text-app-muted-dark">
+                    De gebruiker ontvangt een link, vult zijn gegevens in en moet daarna e-mail verifiëren.
+                </p>
+                <div class="mt-2 flex flex-wrap items-center gap-2">
+                    <input
+                        v-model="inviteForm.email"
+                        type="email"
+                        required
+                        class="min-w-[18rem] flex-1 rounded border border-app-border bg-white px-3 py-2 text-sm dark:border-app-border-dark dark:bg-app-canvas-dark"
+                        placeholder="naam@voorbeeld.nl"
+                    >
+                    <button
+                        type="submit"
+                        class="rounded bg-brand-blue px-4 py-2 text-sm font-semibold text-white hover:bg-brand-blue-dark disabled:opacity-50"
+                        :disabled="inviteForm.processing"
+                    >
+                        Uitnodiging versturen
+                    </button>
+                </div>
+                <p v-if="inviteForm.errors.email" class="mt-2 text-xs text-red-600 dark:text-red-400">{{ inviteForm.errors.email }}</p>
+            </form>
+
             <div class="mb-3 border-b border-brand-blue/35 pb-2">
                 <h3 class="text-lg font-semibold text-app-ink dark:text-app-ink-dark">Alle gebruikers in het systeem</h3>
             </div>
