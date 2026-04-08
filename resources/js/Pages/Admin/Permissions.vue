@@ -15,6 +15,8 @@ const sectionLabels = {
     dolfijnen: 'Dolfijnen',
     zeeverkenners: 'Zeeverkenners',
     wilde_vaart: 'Wilde Vaart',
+    loodsen: 'Loodsen',
+    bestuur: 'Bestuur',
 };
 
 const roleLabels = {

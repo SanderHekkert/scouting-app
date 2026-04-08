@@ -4,7 +4,7 @@ import { computed } from 'vue';
 
 const page = usePage();
 const showJaarThema = computed(
-    () => !['zeeverkenners', 'wilde_vaart'].includes(page.props.auth?.active_section),
+    () => !['zeeverkenners', 'loodsen', 'wilde_vaart'].includes(page.props.auth?.active_section),
 );
 
 function tabClass(active) {

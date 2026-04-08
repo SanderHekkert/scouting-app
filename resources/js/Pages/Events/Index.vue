@@ -15,6 +15,21 @@ const props = defineProps({
 });
 
 const page = usePage();
+const activeSection = computed(() => page.props.auth?.active_section ?? 'dolfijnen');
+const currentRole = computed(() => {
+    const roles = page.props.auth?.section_roles ?? [];
+    return roles.find((r) => r.section === activeSection.value)?.role ?? null;
+});
+const canManageAgenda = computed(() => currentRole.value !== 'lid');
+const canMarkOwnPresence = computed(
+    () => currentRole.value === 'lid' && ['loodsen', 'wilde_vaart'].includes(activeSection.value),
+);
+const currentUserName = computed(() => {
+    const first = String(page.props.auth?.user?.first_name ?? '').trim();
+    const last = String(page.props.auth?.user?.last_name ?? '').trim();
+    const full = `${first} ${last}`.trim();
+    return full || String(page.props.auth?.user?.name ?? '').trim();
+});
 
 /** Query ?event=123: focus op die rij na navigatie vanaf dashboard */
 const highlightEventId = computed(() => {
@@ -75,6 +90,15 @@ function deleteEvent(event) {
     });
 }
 
+function setOwnAttendance(event, present) {
+    if (!event?.id) return;
+    router.patch(
+        route('events.attendance.update', event.id),
+        { present },
+        { preserveScroll: true },
+    );
+}
+
 const eventFieldSaving = ref(null);
 
 function patchEventField(event, field, raw) {
@@ -102,7 +126,7 @@ function isEventFieldSaving(event, field) {
         <template #header>
             <div class="flex w-full flex-wrap items-center justify-between gap-3">
                 <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Agenda</h2>
-                <div class="flex flex-wrap items-center justify-end gap-2 sm:ms-auto">
+                <div v-if="canManageAgenda" class="flex flex-wrap items-center justify-end gap-2 sm:ms-auto">
                     <button
                         type="button"
                         class="inline-flex items-center gap-2 rounded-lg border border-app-border bg-app-panel px-3 py-2 text-sm font-medium text-app-ink shadow-sm transition hover:border-brand-blue/40 hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:border-brand-blue/45 dark:hover:bg-brand-blue/15"
@@ -116,6 +140,7 @@ function isEventFieldSaving(event, field) {
         </template>
         <div class="space-y-4 text-app-ink dark:text-app-ink-dark">
             <form
+                v-if="canManageAgenda"
                 v-show="showAddForm"
                 class="surface-brand-top space-y-4 rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5"
                 @submit.prevent="submitAdd"
@@ -235,9 +260,13 @@ function isEventFieldSaving(event, field) {
                     :leaders="props.leaders"
                     :highlight-event-id="highlightEventId"
                     :is-field-saving="isEventFieldSaving"
+                    :can-edit-agenda="canManageAgenda"
+                    :can-mark-own-presence="canMarkOwnPresence"
+                    :current-user-name="currentUserName"
                     empty-message="Nog geen actuele opkomsten."
                     @patch-field="(ev, field, val) => patchEventField(ev, field, val)"
                     @delete="deleteEvent"
+                    @set-own-attendance="(ev, present) => setOwnAttendance(ev, present)"
                 />
             </div>
         </div>

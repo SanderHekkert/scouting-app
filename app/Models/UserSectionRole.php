@@ -17,6 +17,10 @@ class UserSectionRole extends Model
 
     public const SECTION_WILDE_VAART = 'wilde_vaart';
 
+    public const SECTION_LOODSEN = 'loodsen';
+
+    public const SECTION_BESTUUR = 'bestuur';
+
     public const ROLE_ADMIN = 'admin';
 
     public const ROLE_BESTUURSLID = 'bestuurslid';
@@ -27,11 +31,15 @@ class UserSectionRole extends Model
 
     public const ROLE_OUDERCONTACT = 'ouder_contact';
 
+    public const ROLE_LID = 'lid';
+
     public const ALL_SECTIONS = [
+        self::SECTION_BEVERS,
         self::SECTION_DOLFIJNEN,
         self::SECTION_ZEEVERKENNERS,
-        self::SECTION_BEVERS,
         self::SECTION_WILDE_VAART,
+        self::SECTION_LOODSEN,
+        self::SECTION_BESTUUR,
     ];
 
     public const ALL_ROLES = [
@@ -40,6 +48,7 @@ class UserSectionRole extends Model
         self::ROLE_TEAMLEIDER,
         self::ROLE_LEIDING,
         self::ROLE_OUDERCONTACT,
+        self::ROLE_LID,
     ];
 
     protected $fillable = [

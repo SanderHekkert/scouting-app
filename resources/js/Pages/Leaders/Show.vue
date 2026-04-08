@@ -166,9 +166,8 @@ function deleteLeader() {
                 </dl>
 
                 <div class="mt-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                    <button type="button" class="btn-action-delete btn-action-delete--lg" @click="deleteLeader">
+                    <button type="button" class="btn-action-delete btn-action-delete--lg" title="Verwijderen" @click="deleteLeader">
                         <TrashIcon class="h-5 w-5" />
-                        Verwijderen
                     </button>
                 </div>
             </div>

@@ -14,8 +14,10 @@ const page = usePage();
 const sectionLabelMap = {
     dolfijnen: 'Dolfijnen',
     zeeverkenners: 'Zeeverkenners',
+    loodsen: 'Loodsen',
     bevers: 'Bevers',
     wilde_vaart: 'Wilde Vaart',
+    bestuur: 'Bestuur',
 };
 const speltakLabel = computed(() => sectionLabelMap[page.props.auth?.active_section] || 'Dolfijnen');
 

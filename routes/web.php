@@ -32,7 +32,7 @@ Route::middleware(['auth', 'section.role:teamleider'])->group(function () {
     Route::patch('/admin/rechten/{sectionPermission}', [SectionPermissionController::class, 'update'])->name('permissions.update');
 });
 
-Route::middleware(['auth', 'section.role:teamleider,leiding,ouder_contact,bestuurslid'])->group(function () {
+Route::middleware(['auth', 'section.role:teamleider,leiding,ouder_contact,bestuurslid,lid'])->group(function () {
     Route::post('/active-section', function (Request $request) {
         $data = $request->validate([
             'section' => ['required', 'string', Rule::in(UserSectionRole::ALL_SECTIONS)],
@@ -54,6 +54,7 @@ Route::middleware(['auth', 'section.role:teamleider,leiding,ouder_contact,bestuu
     Route::get('/tipper-topper-opkomst', TipperTopperOpkomstController::class)->middleware('section.permission:tipper_topper')->name('tipper-topper-opkomst.index');
     Route::patch('/events/{event}/theme', [EventController::class, 'updateTheme'])->middleware('section.permission:events')->name('events.update-theme');
     Route::patch('/events/{event}/fields', [EventController::class, 'quickUpdate'])->middleware('section.permission:events')->name('events.quick-update');
+    Route::patch('/events/{event}/attendance', [EventController::class, 'updateOwnAttendance'])->name('events.attendance.update');
     Route::get('/events/archived', [EventController::class, 'archived'])->middleware('section.permission:events')->name('events.archived');
     Route::resource('events', EventController::class)->middleware('section.permission:events')->except(['create', 'show', 'edit']);
     Route::patch('/members/{member}/installed', [MemberController::class, 'updateInstalled'])->middleware('section.permission:members')->name('members.update-installed');

@@ -421,9 +421,8 @@ function isLeaderFieldSaving(leader, field) {
                                     {{ leader.phone_number || '–' }}
                                 </td>
                                 <td class="px-3 py-2.5 align-top">
-                                    <button type="button" class="btn-action-delete" @click="deleteLeader(leader)">
+                                    <button type="button" class="btn-action-delete" title="Verwijderen" @click="deleteLeader(leader)">
                                         <TrashIcon class="h-4 w-4 shrink-0" />
-                                        Verwijderen
                                     </button>
                                 </td>
                             </tr>

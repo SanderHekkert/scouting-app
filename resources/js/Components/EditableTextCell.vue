@@ -1,5 +1,6 @@
 <script setup>
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { PencilSquareIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     text: { type: String, default: '' },
@@ -11,6 +12,7 @@ const props = defineProps({
     cellKey: { type: String, default: '' },
     openRequestKey: { type: String, default: '' },
     openRequestNonce: { type: Number, default: 0 },
+    disabled: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(['save']);
@@ -66,7 +68,7 @@ watch(
 );
 
 function startEdit() {
-    if (props.saving) {
+    if (props.saving || props.disabled) {
         return;
     }
     if (props.inputKind === 'date') {
@@ -128,20 +130,21 @@ onUnmounted(() => {
         ref="root"
         class="relative min-h-[1.5rem]"
         :class="{ 'pointer-events-none opacity-60': saving }"
-        :title="saving ? '' : 'Dubbelklik om te bewerken'"
-        @dblclick.prevent="startEdit"
+        :title="saving || disabled ? '' : 'Dubbelklik om te bewerken'"
+        @dblclick.prevent="!disabled && startEdit()"
     >
         <span
             v-if="!editing"
             class="block cursor-text whitespace-pre-wrap break-words text-inherit"
         >{{ displayLabel }}</span>
         <button
-            v-if="!editing"
+            v-if="!editing && !disabled"
             type="button"
-            class="mt-1 inline-flex items-center rounded-md border border-brand-blue/30 bg-brand-blue/10 px-2 py-0.5 text-[11px] font-semibold text-brand-blue-dark md:hidden"
+            class="mt-1 inline-flex items-center rounded-md border border-brand-blue/30 bg-brand-blue/10 p-1 text-brand-blue-dark md:hidden"
+            title="Bewerken"
             @click.stop.prevent="startEdit"
         >
-            Bewerken
+            <PencilSquareIcon class="h-4 w-4" />
         </button>
         <input
             v-else-if="inputKind === 'date'"

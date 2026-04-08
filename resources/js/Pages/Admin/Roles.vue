@@ -13,14 +13,17 @@ const props = defineProps({
 const labels = {
     dolfijnen: 'Dolfijnen',
     zeeverkenners: 'Zeeverkenners',
+    loodsen: 'Loodsen',
     bevers: 'Bevers',
     wilde_vaart: 'Wilde Vaart',
+    bestuur: 'Bestuur',
     bestuurslid: 'Bestuurslid',
     teamleider: 'Teamleider',
     leiding: 'Leiding',
     ouder_contact: 'Oudercontact',
+    lid: 'Lid',
 };
-const sectionOrder = ['bevers', 'dolfijnen', 'zeeverkenners', 'wilde_vaart'];
+const sectionOrder = ['bevers', 'dolfijnen', 'zeeverkenners', 'wilde_vaart', 'loodsen', 'bestuur'];
 const orderedSections = computed(() => {
     const input = Array.isArray(props.sections) ? props.sections : [];
     const allowed = new Set(input);
@@ -48,6 +51,7 @@ const stateByUser = reactive(
         ]),
     ),
 );
+const autosaveTimers = new Map();
 
 function saveUser(userId) {
     const state = stateByUser[userId];
@@ -66,6 +70,18 @@ function saveUser(userId) {
                 state.saving = false;
             },
         },
+    );
+}
+
+function scheduleRoleSave(userId) {
+    const key = `roles:${userId}`;
+    clearTimeout(autosaveTimers.get(key));
+    autosaveTimers.set(
+        key,
+        setTimeout(() => {
+            saveUser(userId);
+            autosaveTimers.delete(key);
+        }, 250),
     );
 }
 
@@ -96,6 +112,18 @@ function saveBasics(userId) {
         },
     );
 }
+
+function scheduleBasicsSave(userId) {
+    const key = `basics:${userId}`;
+    clearTimeout(autosaveTimers.get(key));
+    autosaveTimers.set(
+        key,
+        setTimeout(() => {
+            saveBasics(userId);
+            autosaveTimers.delete(key);
+        }, 300),
+    );
+}
 </script>
 
 <template>
@@ -117,11 +145,11 @@ function saveBasics(userId) {
                         <div class="font-medium">{{ user.name }}</div>
                         <div class="text-xs text-app-muted dark:text-app-muted-dark">{{ user.email }}</div>
                         <div v-if="stateByUser[user.id].editing_basics" class="mt-2 grid gap-2">
-                            <input v-model="stateByUser[user.id].name" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" placeholder="Naam" />
-                            <input v-model="stateByUser[user.id].email" type="email" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" placeholder="E-mail" />
+                            <input v-model="stateByUser[user.id].name" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" placeholder="Naam" @change="scheduleBasicsSave(user.id)" />
+                            <input v-model="stateByUser[user.id].email" type="email" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" placeholder="E-mail" @change="scheduleBasicsSave(user.id)" />
                             <div class="grid grid-cols-2 gap-2">
-                                <input v-model="stateByUser[user.id].first_name" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" placeholder="Voornaam" />
-                                <input v-model="stateByUser[user.id].last_name" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" placeholder="Achternaam" />
+                                <input v-model="stateByUser[user.id].first_name" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" placeholder="Voornaam" @change="scheduleBasicsSave(user.id)" />
+                                <input v-model="stateByUser[user.id].last_name" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" placeholder="Achternaam" @change="scheduleBasicsSave(user.id)" />
                             </div>
                         </div>
 
@@ -129,6 +157,7 @@ function saveBasics(userId) {
                         <select
                             v-model="stateByUser[user.id].selected_section"
                             class="mt-1 w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black"
+                            @change="scheduleRoleSave(user.id)"
                         >
                             <option v-for="section in orderedSections" :key="`mob-s-${user.id}-${section}`" :value="section">
                                 {{ labels[section] || section }}
@@ -139,6 +168,7 @@ function saveBasics(userId) {
                         <select
                             v-model="stateByUser[user.id].section_roles[stateByUser[user.id].selected_section]"
                             class="mt-1 w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black"
+                            @change="scheduleRoleSave(user.id)"
                         >
                             <option v-for="role in roles" :key="`mob-r-${user.id}-${role}`" :value="role">
                                 {{ labels[role] || role }}
@@ -146,35 +176,15 @@ function saveBasics(userId) {
                         </select>
 
                         <label class="mt-3 inline-flex items-center gap-2">
-                            <input v-model="stateByUser[user.id].is_admin" type="checkbox" class="rounded border-app-border" />
+                            <input v-model="stateByUser[user.id].is_admin" type="checkbox" class="rounded border-app-border" @change="scheduleRoleSave(user.id)" />
                             <span class="text-sm text-app-ink dark:text-app-ink-dark">Admin</span>
                         </label>
 
                         <div class="mt-3 border-t border-brand-blue/25 pt-3 dark:border-brand-blue/35">
-                            <button
-                                type="button"
-                                class="me-2 rounded border border-app-border px-2 py-1.5 text-xs font-semibold text-app-ink hover:bg-brand-blue/10 dark:border-app-border-dark dark:text-app-ink-dark"
-                                @click="toggleBasicsEdit(user.id)"
-                            >
+                            <button type="button" class="me-2 rounded border border-app-border px-2 py-1.5 text-xs font-semibold text-app-ink hover:bg-brand-blue/10 dark:border-app-border-dark dark:text-app-ink-dark" @click="toggleBasicsEdit(user.id)">
                                 <PencilSquareIcon class="h-4 w-4" />
                             </button>
-                            <button
-                                v-if="stateByUser[user.id].editing_basics"
-                                type="button"
-                                class="me-2 rounded bg-brand-blue px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-blue-dark disabled:opacity-50"
-                                :disabled="stateByUser[user.id].saving_basics"
-                                @click="saveBasics(user.id)"
-                            >
-                                Opslaan basis
-                            </button>
-                            <button
-                                type="button"
-                                class="rounded bg-brand-blue px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-blue-dark disabled:opacity-50"
-                                :disabled="stateByUser[user.id].saving"
-                                @click="saveUser(user.id)"
-                            >
-                                Opslaan
-                            </button>
+                            <span v-if="stateByUser[user.id].saving || stateByUser[user.id].saving_basics" class="text-xs text-app-muted dark:text-app-muted-dark">Opslaan...</span>
                         </div>
                     </div>
                 </div>
@@ -197,11 +207,11 @@ function saveBasics(userId) {
                                     <div class="text-xs text-app-muted dark:text-app-muted-dark">{{ user.email }}</div>
                                 </div>
                                 <div v-else class="grid gap-2">
-                                    <input v-model="stateByUser[user.id].name" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" placeholder="Naam" />
-                                    <input v-model="stateByUser[user.id].email" type="email" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" placeholder="E-mail" />
+                                    <input v-model="stateByUser[user.id].name" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" placeholder="Naam" @change="scheduleBasicsSave(user.id)" />
+                                    <input v-model="stateByUser[user.id].email" type="email" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" placeholder="E-mail" @change="scheduleBasicsSave(user.id)" />
                                     <div class="grid grid-cols-2 gap-2">
-                                        <input v-model="stateByUser[user.id].first_name" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" placeholder="Voornaam" />
-                                        <input v-model="stateByUser[user.id].last_name" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" placeholder="Achternaam" />
+                                        <input v-model="stateByUser[user.id].first_name" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" placeholder="Voornaam" @change="scheduleBasicsSave(user.id)" />
+                                        <input v-model="stateByUser[user.id].last_name" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" placeholder="Achternaam" @change="scheduleBasicsSave(user.id)" />
                                     </div>
                                 </div>
                             </td>
@@ -209,6 +219,7 @@ function saveBasics(userId) {
                                 <select
                                     v-model="stateByUser[user.id].selected_section"
                                     class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black"
+                                    @change="scheduleRoleSave(user.id)"
                                 >
                                     <option v-for="section in orderedSections" :key="`s-${user.id}-${section}`" :value="section">
                                         {{ labels[section] || section }}
@@ -219,6 +230,7 @@ function saveBasics(userId) {
                                 <select
                                     v-model="stateByUser[user.id].section_roles[stateByUser[user.id].selected_section]"
                                     class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black"
+                                    @change="scheduleRoleSave(user.id)"
                                 >
                                     <option v-for="role in roles" :key="`r-${user.id}-${role}`" :value="role">
                                         {{ labels[role] || role }}
@@ -227,7 +239,7 @@ function saveBasics(userId) {
                             </td>
                             <td class="px-3 py-2 align-top">
                                 <label class="inline-flex items-center gap-2">
-                                    <input v-model="stateByUser[user.id].is_admin" type="checkbox" class="rounded border-app-border" />
+                                    <input v-model="stateByUser[user.id].is_admin" type="checkbox" class="rounded border-app-border" @change="scheduleRoleSave(user.id)" />
                                     <span class="text-sm text-app-ink dark:text-app-ink-dark">Admin</span>
                                 </label>
                             </td>
@@ -240,23 +252,7 @@ function saveBasics(userId) {
                                 >
                                     <PencilSquareIcon class="h-4 w-4" />
                                 </button>
-                                <button
-                                    v-if="stateByUser[user.id].editing_basics"
-                                    type="button"
-                                    class="me-2 rounded bg-brand-blue px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-blue-dark disabled:opacity-50"
-                                    :disabled="stateByUser[user.id].saving_basics"
-                                    @click="saveBasics(user.id)"
-                                >
-                                    Opslaan basis
-                                </button>
-                                <button
-                                    type="button"
-                                    class="rounded bg-brand-blue px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-blue-dark disabled:opacity-50"
-                                    :disabled="stateByUser[user.id].saving"
-                                    @click="saveUser(user.id)"
-                                >
-                                    Opslaan
-                                </button>
+                                <span v-if="stateByUser[user.id].saving || stateByUser[user.id].saving_basics" class="text-xs text-app-muted dark:text-app-muted-dark">Opslaan...</span>
                             </td>
                         </tr>
                     </tbody>

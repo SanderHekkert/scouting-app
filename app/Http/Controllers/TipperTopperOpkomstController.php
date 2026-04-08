@@ -12,7 +12,7 @@ class TipperTopperOpkomstController extends Controller
     {
         if (
             app()->bound('currentSection') &&
-            in_array(app('currentSection'), [UserSectionRole::SECTION_BEVERS, UserSectionRole::SECTION_ZEEVERKENNERS, UserSectionRole::SECTION_WILDE_VAART], true)
+            in_array(app('currentSection'), [UserSectionRole::SECTION_BEVERS, UserSectionRole::SECTION_ZEEVERKENNERS, UserSectionRole::SECTION_LOODSEN, UserSectionRole::SECTION_WILDE_VAART, UserSectionRole::SECTION_BESTUUR], true)
         ) {
             return to_route('members.index');
         }

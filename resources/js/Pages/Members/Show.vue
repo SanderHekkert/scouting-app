@@ -12,8 +12,10 @@ const page = usePage();
 const sectionLabelMap = {
     dolfijnen: 'Dolfijnen',
     zeeverkenners: 'Zeeverkenners',
+    loodsen: 'Loodsen',
     bevers: 'Bevers',
     wilde_vaart: 'Wilde Vaart',
+    bestuur: 'Bestuur',
 };
 const speltakLabel = ref(sectionLabelMap[page.props.auth?.active_section] || 'Dolfijnen');
 
@@ -248,9 +250,8 @@ function isShowSaving(field) {
                 </dl>
 
                 <div class="mt-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                    <button type="button" class="btn-action-delete btn-action-delete--lg" @click="deleteMember">
+                    <button type="button" class="btn-action-delete btn-action-delete--lg" title="Verwijderen" @click="deleteMember">
                         <TrashIcon class="h-5 w-5" />
-                        Verwijderen
                     </button>
                 </div>
             </div>

@@ -38,9 +38,7 @@ class HandleInertiaRequests extends Middleware
                 'role' => $r->role,
             ])->all()
             : [];
-        $activeSection = app()->bound('currentSection')
-            ? app('currentSection')
-            : UserSectionRole::SECTION_DOLFIJNEN;
+        $activeSection = session('active_section', UserSectionRole::SECTION_DOLFIJNEN);
         $permissions = [];
         if ($user) {
             $isAdmin = $user->isGlobalAdmin();
@@ -76,6 +74,15 @@ class HandleInertiaRequests extends Middleware
                         'create' => (bool) $row->can_create,
                         'update' => (bool) $row->can_update,
                         'delete' => (bool) $row->can_delete,
+                    ];
+                }
+            } elseif ($role === UserSectionRole::ROLE_LID) {
+                foreach (SectionPermission::ALL_MODULES as $module) {
+                    $permissions[$module] = [
+                        'view' => $module === SectionPermission::MODULE_EVENTS,
+                        'create' => false,
+                        'update' => false,
+                        'delete' => false,
                     ];
                 }
             }

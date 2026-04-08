@@ -16,20 +16,24 @@ const page = usePage();
 const sectionLabelMap = {
     dolfijnen: 'Dolfijnen',
     zeeverkenners: 'Zeeverkenners',
+    loodsen: 'Loodsen',
     bevers: 'Bevers',
     wilde_vaart: 'Wilde Vaart',
+    bestuur: 'Bestuur',
 };
 const sectionSingularMap = {
     dolfijnen: 'Dolfijn',
     zeeverkenners: 'Zeeverkenner',
+    loodsen: 'Loods',
     bevers: 'Bever',
     wilde_vaart: 'Wilde Vaart-lid',
+    bestuur: 'Bestuurslid',
 };
 const speltakLabel = computed(() => sectionLabelMap[page.props.auth?.active_section] || 'Dolfijnen');
 const speltakSingular = computed(() => sectionSingularMap[page.props.auth?.active_section] || 'Dolfijn');
-const groupWord = computed(() => page.props.auth?.active_section === 'zeeverkenners' ? 'bak' : 'vin');
+const groupWord = computed(() => ['zeeverkenners', 'loodsen'].includes(page.props.auth?.active_section) ? 'bak' : 'vin');
 const groupWordCapitalized = computed(() => groupWord.value.charAt(0).toUpperCase() + groupWord.value.slice(1));
-const groupingTitle = computed(() => page.props.auth?.active_section === 'zeeverkenners' ? 'Bakindeling' : 'Vinindeling');
+const groupingTitle = computed(() => ['zeeverkenners', 'loodsen'].includes(page.props.auth?.active_section) ? 'Bakindeling' : 'Vinindeling');
 
 const showLinkForm = ref(false);
 const showGroupForm = ref(false);
@@ -332,10 +336,10 @@ function memberOptionLabel(m) {
                         <button
                             type="button"
                             class="btn-action-delete shrink-0"
+                            title="Verwijderen"
                             @click="removeGroup(pod)"
                         >
                             <TrashIcon class="h-4 w-4" />
-                            Verwijderen
                         </button>
                     </div>
 
@@ -378,10 +382,10 @@ function memberOptionLabel(m) {
                                     <button
                                         type="button"
                                         class="btn-action-delete shrink-0"
+                                        title="Verwijderen"
                                         @click="removeMembership(membership)"
                                     >
                                         <TrashIcon class="h-4 w-4" />
-                                        Verwijderen
                                     </button>
                                 </li>
                                 <li

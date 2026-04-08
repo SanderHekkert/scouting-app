@@ -205,9 +205,8 @@ function patchNoteField(note, field, raw) {
                                 </a>
                             </div>
                             <div class="mt-3 border-t border-brand-blue/25 pt-3 dark:border-brand-blue/35">
-                                <button type="button" class="btn-action-delete" @click="deleteNote(note)">
+                                <button type="button" class="btn-action-delete" title="Verwijderen" @click="deleteNote(note)">
                                     <TrashIcon class="h-4 w-4" />
-                                    Verwijderen
                                 </button>
                             </div>
                         </div>
@@ -276,9 +275,8 @@ function patchNoteField(note, field, raw) {
                                 </div>
                             </td>
                             <td class="py-2 align-top">
-                                <button type="button" class="btn-action-delete" @click="deleteNote(note)">
+                                <button type="button" class="btn-action-delete" title="Verwijderen" @click="deleteNote(note)">
                                     <TrashIcon class="h-4 w-4" />
-                                    Verwijderen
                                 </button>
                             </td>
                         </tr>

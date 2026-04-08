@@ -10,9 +10,11 @@ const sectionLabels = {
     bevers: 'Bevers',
     dolfijnen: 'Dolfijnen',
     zeeverkenners: 'Zeeverkenners',
+    loodsen: 'Loodsen',
     wilde_vaart: 'Wilde Vaart',
+    bestuur: 'Bestuur',
 };
-const allSections = ['bevers', 'dolfijnen', 'zeeverkenners', 'wilde_vaart'];
+const allSections = ['bevers', 'dolfijnen', 'zeeverkenners', 'wilde_vaart', 'loodsen', 'bestuur'];
 const sectionButtonClass = {
     dolfijnen: {
         active: 'bg-emerald-600/20 text-emerald-700',
@@ -22,6 +24,10 @@ const sectionButtonClass = {
         active: 'bg-yellow-400/35 text-yellow-900',
         inactive: 'bg-yellow-300/25 text-yellow-900 hover:bg-yellow-300/40',
     },
+    loodsen: {
+        active: 'bg-amber-500/30 text-amber-900',
+        inactive: 'bg-amber-300/25 text-amber-900 hover:bg-amber-300/40',
+    },
     bevers: {
         active: 'bg-red-600/20 text-red-700',
         inactive: 'bg-red-500/10 text-red-700 hover:bg-red-500/20',
@@ -29,6 +35,10 @@ const sectionButtonClass = {
     wilde_vaart: {
         active: 'bg-blue-600/20 text-blue-700',
         inactive: 'bg-blue-500/10 text-blue-700 hover:bg-blue-500/20',
+    },
+    bestuur: {
+        active: 'bg-slate-600/20 text-slate-700',
+        inactive: 'bg-slate-500/10 text-slate-700 hover:bg-slate-500/20',
     },
 };
 
@@ -380,7 +390,7 @@ onUnmounted(() => {
                     </Link>
                     <div class="px-4 pt-2">
                         <p class="text-center text-[11px] text-slate-400 dark:text-slate-500">
-                            FN12 · {{ sectionLabels[activeSection] }}
+                            FN12 · {{ sectionLabels[activeSection] || activeSection }}
                         </p>
                         <div class="mt-2 flex flex-wrap justify-center gap-2">
                             <button

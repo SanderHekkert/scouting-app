@@ -24,9 +24,21 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
+    canEditAgenda: {
+        type: Boolean,
+        default: true,
+    },
+    canMarkOwnPresence: {
+        type: Boolean,
+        default: false,
+    },
+    currentUserName: {
+        type: String,
+        default: '',
+    },
 });
 
-const emit = defineEmits(['patch-field', 'delete']);
+const emit = defineEmits(['patch-field', 'delete', 'set-own-attendance']);
 
 function patchField(event, field, raw) {
     emit('patch-field', event, field, raw);
@@ -92,6 +104,12 @@ function availableLeaders(event) {
         return !selectedFull.has(full) && !selectedFirst.has(first);
     });
 }
+
+function isCurrentUserAbsent(event) {
+    const self = String(props.currentUserName || '').trim().toLowerCase();
+    if (!self) return false;
+    return splitAbsentNames(event?.absent).some((name) => String(name).trim().toLowerCase() === self);
+}
 </script>
 
 <template>
@@ -113,6 +131,7 @@ function availableLeaders(event) {
                 <div class="text-sm font-semibold">
                     <EditableTextCell
                         :text="event.theme || ''"
+                        :disabled="!props.canEditAgenda"
                         :saving="isFieldSaving(event, 'theme')"
                         @save="(v) => patchField(event, 'theme', v)"
                     />
@@ -122,6 +141,7 @@ function availableLeaders(event) {
                         <p class="text-xs text-app-muted dark:text-app-muted-dark">Datum</p>
                         <EditableTextCell
                             :text="event.event_date ? String(event.event_date).slice(0, 10) : ''"
+                            :disabled="!props.canEditAgenda"
                             input-kind="date"
                             :multiline="false"
                             :saving="isFieldSaving(event, 'event_date')"
@@ -132,6 +152,7 @@ function availableLeaders(event) {
                         <p class="text-xs text-app-muted dark:text-app-muted-dark">Type opkomst</p>
                         <EditableTextCell
                             :text="event.event_type || ''"
+                            :disabled="!props.canEditAgenda"
                             :multiline="false"
                             :saving="isFieldSaving(event, 'event_type')"
                             @save="(v) => patchField(event, 'event_type', v)"
@@ -141,6 +162,7 @@ function availableLeaders(event) {
                         <p class="text-xs text-app-muted dark:text-app-muted-dark">Wat ga je doen?</p>
                         <EditableTextCell
                             :text="event.activity || ''"
+                            :disabled="!props.canEditAgenda"
                             multiline
                             :saving="isFieldSaving(event, 'activity')"
                             @save="(v) => patchField(event, 'activity', v)"
@@ -150,7 +172,7 @@ function availableLeaders(event) {
                         <p class="text-xs text-app-muted dark:text-app-muted-dark">Programma door</p>
                         <select
                             class="mt-1 w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                            :disabled="isFieldSaving(event, 'program_by')"
+                            :disabled="isFieldSaving(event, 'program_by') || !props.canEditAgenda"
                             :value="event.program_by || ''"
                             @change="patchField(event, 'program_by', $event.target.value || '')"
                         >
@@ -170,6 +192,7 @@ function availableLeaders(event) {
                             >
                                 {{ firstNameOnly(name) }}
                                 <button
+                                    v-if="props.canEditAgenda"
                                     type="button"
                                     class="rounded p-0.5 hover:bg-brand-blue/25"
                                     @click="removeAbsentName(event, name)"
@@ -179,6 +202,7 @@ function availableLeaders(event) {
                             </span>
                         </div>
                         <select
+                            v-if="props.canEditAgenda"
                             class="mt-2 w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                             :disabled="isFieldSaving(event, 'absent')"
                             @change="onAbsentSelectChange(event, $event)"
@@ -188,21 +212,29 @@ function availableLeaders(event) {
                                 {{ firstNameOnly(leader) }}
                             </option>
                         </select>
+                        <button
+                            v-if="props.canMarkOwnPresence"
+                            type="button"
+                            class="mt-2 rounded-md border border-brand-blue/40 bg-brand-blue/10 px-2 py-1 text-xs font-medium text-brand-blue-dark hover:bg-brand-blue/20"
+                            @click="$emit('set-own-attendance', event, isCurrentUserAbsent(event))"
+                        >
+                            {{ isCurrentUserAbsent(event) ? 'Meld aanwezig' : 'Meld afwezig' }}
+                        </button>
                     </div>
                     <div>
                         <p class="text-xs text-app-muted dark:text-app-muted-dark">Bijzonderheden</p>
                         <EditableTextCell
                             :text="event.notes || ''"
+                            :disabled="!props.canEditAgenda"
                             multiline
                             :saving="isFieldSaving(event, 'notes')"
                             @save="(v) => patchField(event, 'notes', v)"
                         />
                     </div>
                 </div>
-                <div class="mt-3 border-t border-brand-blue/25 pt-3 dark:border-brand-blue/35">
-                    <button type="button" class="btn-action-delete" @click="$emit('delete', event)">
+                <div v-if="props.canEditAgenda" class="mt-3 border-t border-brand-blue/25 pt-3 dark:border-brand-blue/35">
+                    <button type="button" class="btn-action-delete" title="Verwijderen" @click="$emit('delete', event)">
                         <TrashIcon class="h-4 w-4 shrink-0" />
-                        Verwijderen
                     </button>
                 </div>
             </div>
@@ -235,6 +267,7 @@ function availableLeaders(event) {
                     <td class="px-3 py-2.5 align-top">
                         <EditableTextCell
                             :text="event.theme || ''"
+                            :disabled="!props.canEditAgenda"
                             multiline
                             :saving="isFieldSaving(event, 'theme')"
                             @save="(v) => patchField(event, 'theme', v)"
@@ -243,6 +276,7 @@ function availableLeaders(event) {
                     <td class="whitespace-nowrap px-3 py-2.5 align-top tabular-nums">
                         <EditableTextCell
                             :text="event.event_date ? String(event.event_date).slice(0, 10) : ''"
+                            :disabled="!props.canEditAgenda"
                             input-kind="date"
                             :multiline="false"
                             :saving="isFieldSaving(event, 'event_date')"
@@ -252,6 +286,7 @@ function availableLeaders(event) {
                     <td class="px-3 py-2.5 align-top">
                         <EditableTextCell
                             :text="event.event_type || ''"
+                            :disabled="!props.canEditAgenda"
                             :multiline="false"
                             :saving="isFieldSaving(event, 'event_type')"
                             @save="(v) => patchField(event, 'event_type', v)"
@@ -260,6 +295,7 @@ function availableLeaders(event) {
                     <td class="px-3 py-2.5 align-top">
                         <EditableTextCell
                             :text="event.activity || ''"
+                            :disabled="!props.canEditAgenda"
                             multiline
                             :saving="isFieldSaving(event, 'activity')"
                             @save="(v) => patchField(event, 'activity', v)"
@@ -268,7 +304,7 @@ function availableLeaders(event) {
                     <td class="px-3 py-2.5 align-top">
                         <select
                             class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                            :disabled="isFieldSaving(event, 'program_by')"
+                            :disabled="isFieldSaving(event, 'program_by') || !props.canEditAgenda"
                             :value="event.program_by || ''"
                             @change="patchField(event, 'program_by', $event.target.value || '')"
                         >
@@ -287,6 +323,7 @@ function availableLeaders(event) {
                             >
                                 {{ firstNameOnly(name) }}
                                 <button
+                                    v-if="props.canEditAgenda"
                                     type="button"
                                     class="rounded p-0.5 hover:bg-brand-blue/25"
                                     @click="removeAbsentName(event, name)"
@@ -296,6 +333,7 @@ function availableLeaders(event) {
                             </span>
                         </div>
                         <select
+                            v-if="props.canEditAgenda"
                             class="mt-2 w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                             :disabled="isFieldSaving(event, 'absent')"
                             @change="onAbsentSelectChange(event, $event)"
@@ -305,19 +343,27 @@ function availableLeaders(event) {
                                 {{ firstNameOnly(leader) }}
                             </option>
                         </select>
+                        <button
+                            v-if="props.canMarkOwnPresence"
+                            type="button"
+                            class="mt-2 rounded-md border border-brand-blue/40 bg-brand-blue/10 px-2 py-1 text-xs font-medium text-brand-blue-dark hover:bg-brand-blue/20"
+                            @click="$emit('set-own-attendance', event, isCurrentUserAbsent(event))"
+                        >
+                            {{ isCurrentUserAbsent(event) ? 'Meld aanwezig' : 'Meld afwezig' }}
+                        </button>
                     </td>
                     <td class="max-w-[16rem] px-3 py-2.5 align-top">
                         <EditableTextCell
                             :text="event.notes || ''"
+                            :disabled="!props.canEditAgenda"
                             multiline
                             :saving="isFieldSaving(event, 'notes')"
                             @save="(v) => patchField(event, 'notes', v)"
                         />
                     </td>
                     <td class="px-3 py-2.5 align-top">
-                        <button type="button" class="btn-action-delete" @click="$emit('delete', event)">
+                        <button v-if="props.canEditAgenda" type="button" class="btn-action-delete" title="Verwijderen" @click="$emit('delete', event)">
                             <TrashIcon class="h-4 w-4 shrink-0" />
-                            Verwijderen
                         </button>
                     </td>
                 </tr>

@@ -17,7 +17,7 @@ const props = defineProps({
 });
 const page = usePage();
 const hideCategories = computed(() =>
-    ['bevers', 'zeeverkenners', 'wilde_vaart'].includes(page.props.auth?.active_section),
+    ['bevers', 'zeeverkenners', 'loodsen', 'wilde_vaart', 'bestuur'].includes(page.props.auth?.active_section),
 );
 
 function defaultCategory() {

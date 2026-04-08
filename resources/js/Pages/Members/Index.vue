@@ -17,14 +17,18 @@ const page = usePage();
 const sectionLabelMap = {
     dolfijnen: 'Dolfijnen',
     zeeverkenners: 'Zeeverkenners',
+    loodsen: 'Loodsen',
     bevers: 'Bevers',
     wilde_vaart: 'Wilde Vaart',
+    bestuur: 'Bestuur',
 };
 const sectionSingularMap = {
     dolfijnen: 'Dolfijn',
     zeeverkenners: 'Zeeverkenner',
+    loodsen: 'Loods',
     bevers: 'Bever',
     wilde_vaart: 'Wilde Vaart-lid',
+    bestuur: 'Bestuurslid',
 };
 const speltakLabel = computed(() => sectionLabelMap[page.props.auth?.active_section] || 'Dolfijnen');
 const speltakSingular = computed(() => sectionSingularMap[page.props.auth?.active_section] || 'Dolfijn');
@@ -635,9 +639,8 @@ function isMemberFieldSaving(member, field) {
                                     />
                                 </td>
                                 <td class="px-3 py-2.5 align-top">
-                                    <button type="button" class="btn-action-delete" @click="deleteMember(member)">
+                                    <button type="button" class="btn-action-delete" title="Verwijderen" @click="deleteMember(member)">
                                         <TrashIcon class="h-4 w-4 shrink-0" />
-                                        Verwijderen
                                     </button>
                                 </td>
                             </tr>

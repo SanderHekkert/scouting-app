@@ -8,6 +8,7 @@ use App\Models\UserSectionRole;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class EventController extends Controller
@@ -137,9 +138,68 @@ class EventController extends Controller
         return back();
     }
 
+    /**
+     * Leden kunnen hier alleen hun eigen aanwezigheid melden.
+     */
+    public function updateOwnAttendance(Request $request, Event $event)
+    {
+        $section = $this->activeSection();
+        $role = $request->user()?->roleInSection($section);
+        if (
+            $role !== UserSectionRole::ROLE_LID
+            || ! in_array($section, [UserSectionRole::SECTION_LOODSEN, UserSectionRole::SECTION_WILDE_VAART], true)
+        ) {
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'present' => ['required', 'boolean'],
+        ]);
+
+        $name = $this->currentUserDisplayName($request->user());
+        if ($name === '') {
+            return back()->withErrors(['attendance' => 'Kon je naam niet bepalen.']);
+        }
+
+        $existing = collect(explode(',', (string) ($event->absent ?? '')))
+            ->map(fn (string $item): string => trim($item))
+            ->filter(fn (string $item): bool => $item !== '')
+            ->values();
+
+        $normalizedSelf = Str::lower($name);
+
+        $filtered = $existing->reject(function (string $item) use ($normalizedSelf): bool {
+            return Str::lower($item) === $normalizedSelf;
+        })->values();
+
+        if (! $data['present']) {
+            $filtered->push($name);
+        }
+
+        $event->update([
+            'absent' => $filtered->unique()->implode(', '),
+        ]);
+
+        return back();
+    }
+
     private function activeSection(): string
     {
-        return app()->bound('currentSection') ? app('currentSection') : UserSectionRole::SECTION_DOLFIJNEN;
+        return session('active_section', UserSectionRole::SECTION_DOLFIJNEN);
+    }
+
+    private function currentUserDisplayName(?User $user): string
+    {
+        if (! $user) {
+            return '';
+        }
+
+        $full = trim(($user->first_name ?? '').' '.($user->last_name ?? ''));
+        if ($full !== '') {
+            return $full;
+        }
+
+        return trim((string) ($user->name ?? ''));
     }
 
     /**

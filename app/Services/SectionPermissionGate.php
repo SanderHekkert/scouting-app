@@ -30,6 +30,10 @@ class SectionPermissionGate
             return true;
         }
 
+        if ($role === UserSectionRole::ROLE_LID) {
+            return $module === SectionPermission::MODULE_EVENTS && $action === 'view';
+        }
+
         if (! in_array($role, [UserSectionRole::ROLE_LEIDING, UserSectionRole::ROLE_OUDERCONTACT], true)) {
             return false;
         }

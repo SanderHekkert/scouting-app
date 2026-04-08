@@ -6,18 +6,20 @@ const page = usePage();
 const sectionLabelMap = {
     dolfijnen: 'Dolfijnen',
     zeeverkenners: 'Zeeverkenners',
+    loodsen: 'Loodsen',
     bevers: 'Bevers',
     wilde_vaart: 'Wilde Vaart',
+    bestuur: 'Bestuur',
 };
 const speltakLabel = computed(() => sectionLabelMap[page.props.auth?.active_section] || 'Dolfijnen');
 const showTipperTopper = computed(
-    () => !['bevers', 'zeeverkenners', 'wilde_vaart'].includes(page.props.auth?.active_section),
+    () => !['bevers', 'zeeverkenners', 'loodsen', 'wilde_vaart', 'bestuur'].includes(page.props.auth?.active_section),
 );
 const showPods = computed(
     () => !['bevers'].includes(page.props.auth?.active_section),
 );
 const podsLabel = computed(
-    () => page.props.auth?.active_section === 'zeeverkenners' ? 'Bakindeling' : 'Vinindeling',
+    () => ['zeeverkenners', 'loodsen'].includes(page.props.auth?.active_section) ? 'Bakindeling' : 'Vinindeling',
 );
 
 function tabClass(active) {

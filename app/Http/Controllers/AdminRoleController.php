@@ -50,6 +50,7 @@ class AdminRoleController extends Controller
                 UserSectionRole::ROLE_TEAMLEIDER,
                 UserSectionRole::ROLE_LEIDING,
                 UserSectionRole::ROLE_OUDERCONTACT,
+                UserSectionRole::ROLE_LID,
             ],
         ]);
     }
@@ -64,6 +65,7 @@ class AdminRoleController extends Controller
                 UserSectionRole::ROLE_TEAMLEIDER,
                 UserSectionRole::ROLE_LEIDING,
                 UserSectionRole::ROLE_OUDERCONTACT,
+                UserSectionRole::ROLE_LID,
             ])],
         ]);
 
