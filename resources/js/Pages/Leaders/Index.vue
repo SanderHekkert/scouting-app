@@ -128,6 +128,21 @@ function formatBirthday(value) {
     return `${d}-${m}-${y}`;
 }
 
+function leaderAge(value) {
+    if (value == null || value === '') return '–';
+    const bday = new Date(String(value).slice(0, 10));
+    if (Number.isNaN(bday.getTime())) return '–';
+
+    const today = new Date();
+    let age = today.getFullYear() - bday.getFullYear();
+    const monthDiff = today.getMonth() - bday.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < bday.getDate())) {
+        age -= 1;
+    }
+
+    return age >= 0 ? String(age) : '–';
+}
+
 </script>
 
 <template>
@@ -325,6 +340,7 @@ function formatBirthday(value) {
                             <div class="mt-2 border-t border-brand-blue/25 pt-2 text-sm dark:border-brand-blue/35">
                                 <p><span class="font-medium">Bijzonderheden:</span> {{ leader.bijzonderheden || '–' }}</p>
                                 <p><span class="font-medium">Geboortedatum:</span> {{ formatBirthday(leader.birthday) }}</p>
+                                <p><span class="font-medium">Leeftijd:</span> {{ leaderAge(leader.birthday) }}</p>
                                 <p><span class="font-medium">Telefoon:</span> {{ leader.phone_number || '–' }}</p>
                                 <p><span class="font-medium">E-mail:</span> {{ leader.email || '–' }}</p>
                             </div>
@@ -346,6 +362,7 @@ function formatBirthday(value) {
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Volledig adres</th>
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Bijzonderheden</th>
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Geboortedatum</th>
+                                <th scope="col" class="whitespace-nowrap px-3 py-2.5">Leeftijd</th>
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Telefoonnummer</th>
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">E-mail</th>
                                 <th scope="col" class="min-w-[11rem] whitespace-nowrap px-3 py-2.5 text-end sm:text-start">
@@ -371,6 +388,9 @@ function formatBirthday(value) {
                                 </td>
                                 <td class="whitespace-nowrap px-3 py-2.5 align-top tabular-nums">
                                     {{ formatBirthday(leader.birthday) }}
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-2.5 align-top tabular-nums">
+                                    {{ leaderAge(leader.birthday) }}
                                 </td>
                                 <td class="whitespace-nowrap px-3 py-2.5 align-top tabular-nums text-app-ink dark:text-app-ink-dark">
                                     {{ leader.phone_number || '–' }}

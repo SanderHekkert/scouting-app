@@ -139,7 +139,11 @@ const tailNavItems = computed(() => ([
     ...((isAdmin.value || isBoardMember.value)
         ? [{ label: 'Gebruikers', route: 'admin.users.index', matchRoutes: ['admin.users.*'], icon: IdentificationIcon }]
         : []),
-    ...((canView('members') && (isAdmin.value || isBoardMember.value || ['teamleider', 'leiding', 'ouder_contact'].includes(page.props.auth?.section_roles?.find((r) => r.section === activeSection.value)?.role)))
+    ...((canView('members') && (
+        isAdmin.value
+        || (activeSection.value === 'bestuur' && isBoardMember.value)
+        || (page.props.auth?.section_roles || []).some((r) => r.section === activeSection.value && ['teamleider', 'ouder_contact'].includes(r.role))
+    ))
         ? [{ label: 'Gezondheidsformulieren', route: 'admin.health-forms.index', matchRoutes: ['admin.health-forms.*'], icon: DocumentTextIcon }]
         : []),
     ...((isAdmin.value || (page.props.auth?.section_roles || []).some((r) => r.section !== '*' && r.role === 'teamleider'))

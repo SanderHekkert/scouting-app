@@ -44,16 +44,34 @@ class HealthFormController extends Controller
             'can_manage' => $canManage,
             'active_section' => $activeSection,
             'forms' => $forms
-                ->map(fn (HealthForm $form) => [
-                    'id' => $form->id,
-                    'section' => $form->section,
-                    'member_name' => trim(($membersById->get($form->member_id)?->first_name ?? '').' '.($membersById->get($form->member_id)?->last_name ?? '')),
-                    'original_name' => $form->original_name,
-                    'mime_type' => $form->mime_type,
-                    'size' => (int) $form->size,
-                    'uploader_name' => $form->uploader?->name,
-                    'created_at' => optional($form->created_at)?->toDateTimeString(),
-                ])
+                ->map(function (HealthForm $form) use ($membersById) {
+                    $member = $membersById->get($form->member_id);
+
+                    return [
+                        'id' => $form->id,
+                        'section' => $form->section,
+                        'member_name' => trim(($member?->first_name ?? '').' '.($member?->last_name ?? '')),
+                        'original_name' => $form->original_name,
+                        'mime_type' => $form->mime_type,
+                        'size' => (int) $form->size,
+                        'uploader_name' => $form->uploader?->name,
+                        'created_at' => $form->created_at?->format('d-m-Y H:i')
+                            ?? $form->updated_at?->format('d-m-Y H:i')
+                            ?? null,
+                        'member' => [
+                            'first_name' => $member?->first_name,
+                            'last_name' => $member?->last_name,
+                            'address' => $member?->address,
+                            'postal_code' => $member?->postal_code,
+                            'city' => $member?->city,
+                            'birthday' => $member?->birthday,
+                            'phone_mother' => $member?->phone_mother,
+                            'phone_father' => $member?->phone_father,
+                            'email_parents' => $member?->email_parents,
+                            'bijzonderheden' => $member?->bijzonderheden,
+                        ],
+                    ];
+                })
                 ->values(),
         ]);
     }
@@ -99,7 +117,7 @@ class HealthFormController extends Controller
 
     public function confirm(Request $request)
     {
-        $this->ensureCanManage($request);
+        [, $activeSection] = $this->ensureCanManage($request);
 
         $data = $request->validate([
             'token' => ['required', 'string'],
@@ -135,6 +153,12 @@ class HealthFormController extends Controller
             ]);
         }
 
+        if ($activeSection !== UserSectionRole::SECTION_BESTUUR && $data['section'] !== $activeSection) {
+            throw ValidationException::withMessages([
+                'section' => 'Je kunt alleen gezondheidsformulieren voor je eigen speltak opslaan.',
+            ]);
+        }
+
         $member = Member::query()->create([
             'section' => $data['section'],
             'first_name' => $data['first_name'],
@@ -143,6 +167,7 @@ class HealthFormController extends Controller
             'postal_code' => $this->sanitizeExtractedValue($data['postal_code'] ?? null),
             'city' => $this->sanitizeExtractedValue($data['city'] ?? null),
             'birthday' => $data['birthday'] ?: null,
+            'age' => Member::calculateAgeFromBirthday($data['birthday'] ?? null),
             'phone_mother' => $this->sanitizePhoneValue($data['phone_mother'] ?? null),
             'phone_father' => $this->sanitizePhoneValue($data['phone_father'] ?? null),
             'email_parents' => $this->sanitizeEmailValue($data['email_parents'] ?? null),
@@ -233,12 +258,30 @@ class HealthFormController extends Controller
         abort_unless($user, 403);
 
         $activeSection = session('active_section', UserSectionRole::SECTION_DOLFIJNEN);
-        $hasRoleInSection = $user->sectionRoles()->where('section', $activeSection)->exists();
-        $isGlobal = $user->isGlobalAdmin() || $user->isGlobalBoardMember();
+        $hasAllowedRoleInSection = $user->sectionRoles()
+            ->where('section', $activeSection)
+            ->whereIn('role', [
+                UserSectionRole::ROLE_TEAMLEIDER,
+                UserSectionRole::ROLE_OUDERCONTACT,
+            ])
+            ->exists();
+        $hasBoardAccessRole = $user->sectionRoles()
+            ->where('section', UserSectionRole::SECTION_BESTUUR)
+            ->whereIn('role', [
+                UserSectionRole::ROLE_ADMIN,
+                UserSectionRole::ROLE_BESTUURSLID,
+            ])
+            ->exists();
+        $isGlobalAdmin = $user->isGlobalAdmin();
+        $isGlobalBoardMember = $user->isGlobalBoardMember();
+        $isGlobal = $isGlobalAdmin || $isGlobalBoardMember;
 
-        abort_unless($isGlobal || $hasRoleInSection, 403);
+        $canViewAllSections = $activeSection === UserSectionRole::SECTION_BESTUUR && ($isGlobal || $hasBoardAccessRole);
+        $canViewOwnSection = $activeSection !== UserSectionRole::SECTION_BESTUUR && ($hasAllowedRoleInSection || $isGlobalAdmin);
 
-        $canManage = $isGlobal && $activeSection === UserSectionRole::SECTION_BESTUUR;
+        abort_unless($canViewAllSections || $canViewOwnSection, 403);
+
+        $canManage = $canViewAllSections || $canViewOwnSection;
 
         return [$user, $activeSection, $canManage];
     }
@@ -353,19 +396,18 @@ class HealthFormController extends Controller
 
     private function normalizeUploadData(Request $request, UploadedFile $file): array
     {
+        [, $activeSection] = $this->ensureCanView($request);
         $extracted = $this->extractor->extract($file);
         $filenameHints = $this->extractNameFromFilename((string) $file->getClientOriginalName());
-
-        $activeSection = (string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN);
-        if (! in_array($activeSection, UserSectionRole::ALL_SECTIONS, true) || $activeSection === UserSectionRole::SECTION_BESTUUR) {
-            $activeSection = UserSectionRole::SECTION_DOLFIJNEN;
-        }
 
         $section = $extracted['section']
             ?? $this->detectSectionFromFilename((string) $file->getClientOriginalName());
         $section = $section ?: $activeSection;
 
         if (! in_array($section, UserSectionRole::ALL_SECTIONS, true) || $section === UserSectionRole::SECTION_BESTUUR) {
+            $section = $activeSection;
+        }
+        if ($activeSection !== UserSectionRole::SECTION_BESTUUR) {
             $section = $activeSection;
         }
 

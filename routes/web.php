@@ -107,6 +107,9 @@ Route::middleware(['auth', 'verified', 'has.role', 'section.role:admin,bestuursl
     Route::patch('/task-items/{taskItem}/linked-events', [TaskItemController::class, 'updateLinkedEvents'])->middleware('section.permission:task_items')->name('task-items.linked-events.update');
     Route::resource('task-items', TaskItemController::class)->middleware('section.permission:task_items')->except(['create', 'show', 'edit']);
     Route::post('/task-categories', [TaskItemController::class, 'storeCategory'])->middleware('section.permission:task_items')->name('task-categories.store');
+});
+
+Route::middleware(['auth', 'verified', 'has.role'])->group(function () {
     Route::get('/admin/gezondheidsformulieren', [HealthFormController::class, 'index'])->name('admin.health-forms.index');
     Route::get('/admin/gezondheidsformulieren/nieuw', [HealthFormController::class, 'create'])->name('admin.health-forms.create');
     Route::post('/admin/gezondheidsformulieren', [HealthFormController::class, 'store'])->name('admin.health-forms.store');
@@ -114,7 +117,6 @@ Route::middleware(['auth', 'verified', 'has.role', 'section.role:admin,bestuursl
     Route::get('/admin/gezondheidsformulieren/{health_form}', [HealthFormController::class, 'show'])->name('admin.health-forms.show');
     Route::get('/admin/gezondheidsformulieren/{health_form}/download', [HealthFormController::class, 'download'])->name('admin.health-forms.download');
     Route::delete('/admin/gezondheidsformulieren/{health_form}', [HealthFormController::class, 'destroy'])->name('admin.health-forms.destroy');
-
 });
 
 require __DIR__.'/auth.php';

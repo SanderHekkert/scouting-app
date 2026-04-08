@@ -36,7 +36,14 @@ class MemberController extends Controller
                 ->orderByDesc('age')
                 ->orderBy('first_name')
                 ->orderBy('last_name')
-                ->get(),
+                ->get()
+                ->map(function (Member $member) {
+                    if ($member->age === null && ! empty($member->birthday)) {
+                        $member->age = Member::calculateAgeFromBirthday($member->birthday);
+                    }
+
+                    return $member;
+                }),
             'open_edit_member_id' => $editId > 0 ? $editId : null,
         ]);
     }
@@ -58,7 +65,6 @@ class MemberController extends Controller
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['nullable', 'string', 'max:255'],
             'birthday' => ['nullable', 'date'],
-            'age' => ['nullable', 'integer', 'min:0', 'max:99'],
             'address' => ['nullable', 'string', 'max:255'],
             'postal_code' => ['nullable', 'string', 'max:255'],
             'city' => ['nullable', 'string', 'max:255'],
@@ -94,7 +100,6 @@ class MemberController extends Controller
             'phone_mother' => ['sometimes', 'nullable', 'string', 'max:255'],
             'phone_father' => ['sometimes', 'nullable', 'string', 'max:255'],
             'bijzonderheden' => ['sometimes', 'nullable', 'string', 'max:65535'],
-            'age' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:99'],
         ]);
 
         if (array_key_exists('last_name', $data)) {
@@ -116,7 +121,6 @@ class MemberController extends Controller
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['nullable', 'string', 'max:255'],
             'birthday' => ['nullable', 'date'],
-            'age' => ['nullable', 'integer', 'min:0', 'max:99'],
             'address' => ['nullable', 'string', 'max:255'],
             'postal_code' => ['nullable', 'string', 'max:255'],
             'city' => ['nullable', 'string', 'max:255'],
