@@ -220,37 +220,38 @@ function setUpcomingAttendancePresent(present) {
                     </span>
                     <div class="min-w-0 flex-1">
                         <p class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Komende opkomst</p>
-                        <p v-if="nextUpcomingAttendance" class="mt-1 text-sm font-semibold text-app-ink dark:text-app-ink-dark">
-                            {{ nextUpcomingAttendance.event_theme || 'Opkomst' }}
-                        </p>
-                        <p v-if="nextUpcomingAttendance" class="text-xs text-app-muted dark:text-app-muted-dark">
-                            {{ formatIsoToNl(nextUpcomingAttendance.event_date) }}
-                        </p>
+                        <div v-if="nextUpcomingAttendance" class="mt-1 flex items-center justify-between gap-2">
+                            <div class="min-w-0">
+                                <p class="truncate text-sm font-semibold text-app-ink dark:text-app-ink-dark">
+                                    {{ nextUpcomingAttendance.event_theme || 'Opkomst' }}
+                                </p>
+                                <p class="text-xs text-app-muted dark:text-app-muted-dark">
+                                    {{ formatIsoToNl(nextUpcomingAttendance.event_date) }}
+                                </p>
+                            </div>
+                            <label class="inline-flex items-center gap-2 text-sm">
+                                <button
+                                    type="button"
+                                    role="switch"
+                                    :aria-checked="!nextUpcomingAttendance.is_absent"
+                                    class="relative h-6 w-11 rounded-full transition"
+                                    :class="!nextUpcomingAttendance.is_absent ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'"
+                                    :disabled="attendanceSaving"
+                                    @click="setUpcomingAttendancePresent(nextUpcomingAttendance.is_absent)"
+                                >
+                                    <span
+                                        class="absolute top-0.5 h-5 w-5 rounded-full bg-white transition"
+                                        :class="!nextUpcomingAttendance.is_absent ? 'left-5' : 'left-0.5'"
+                                    />
+                                </button>
+                                <span class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
+                                    {{ !nextUpcomingAttendance.is_absent ? 'Aanwezig' : 'Afwezig' }}
+                                </span>
+                            </label>
+                        </div>
                         <p v-else class="mt-1 text-sm text-app-muted dark:text-app-muted-dark">
                             Geen komende opkomst.
                         </p>
-                        <label
-                            v-if="nextUpcomingAttendance"
-                            class="mt-2 inline-flex items-center gap-2 text-sm"
-                        >
-                            <button
-                                type="button"
-                                role="switch"
-                                :aria-checked="!nextUpcomingAttendance.is_absent"
-                                class="relative h-6 w-11 rounded-full transition"
-                                :class="!nextUpcomingAttendance.is_absent ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'"
-                                :disabled="attendanceSaving"
-                                @click="setUpcomingAttendancePresent(nextUpcomingAttendance.is_absent)"
-                            >
-                                <span
-                                    class="absolute top-0.5 h-5 w-5 rounded-full bg-white transition"
-                                    :class="!nextUpcomingAttendance.is_absent ? 'left-5' : 'left-0.5'"
-                                />
-                            </button>
-                            <span class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
-                                {{ !nextUpcomingAttendance.is_absent ? 'Aanwezig' : 'Afwezig' }}
-                            </span>
-                        </label>
                     </div>
                 </div>
             </section>
