@@ -1,8 +1,8 @@
 <script setup>
 import { computed, ref } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link, useForm, router } from '@inertiajs/vue3';
-import { ChevronRightIcon, MagnifyingGlassIcon, PencilSquareIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import { Head, Link, useForm, router, usePage } from '@inertiajs/vue3';
+import { ChevronRightIcon, DocumentCheckIcon, MagnifyingGlassIcon, PencilSquareIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     leaders: {
@@ -10,10 +10,14 @@ const props = defineProps({
         default: () => [],
     },
 });
+const page = usePage();
+const isBestuurSection = computed(() => (page.props.auth?.active_section ?? '') === 'bestuur');
 
 const showAddForm = ref(false);
 
 const form = useForm({
+    installed: false,
+    gedoopt: false,
     first_name: '',
     last_name: '',
     address: '',
@@ -58,6 +62,8 @@ function leaderMatchesSearch(l, rawQuery) {
         l.bijzonderheden,
         bdayRaw,
         bdaySearch,
+        l.installed ? 'ja geïnstalleerd' : 'nee niet geïnstalleerd',
+        l.gedoopt ? 'ja gedoopt' : 'nee niet gedoopt',
     ]);
 }
 
@@ -87,6 +93,10 @@ function leaderFullAddress(l) {
 
 function leaderHasBijzonderheden(l) {
     return l?.bijzonderheden != null && String(l.bijzonderheden).trim() !== '';
+}
+
+function yesNo(value) {
+    return value ? 'Ja' : 'Nee';
 }
 
 function normalizeLeaderPayload(data) {
@@ -274,10 +284,11 @@ function leaderAge(value) {
                     <div>
                         <button
                             type="submit"
-                            class="rounded bg-brand-blue px-5 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark disabled:opacity-50"
+                            class="inline-flex items-center gap-2 rounded bg-brand-blue px-5 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark disabled:opacity-50"
                             :disabled="form.processing"
                         >
-                            Opslaan
+                            <DocumentCheckIcon class="h-5 w-5" />
+                            <span>Opslaan</span>
                         </button>
                     </div>
                 </div>
@@ -338,6 +349,8 @@ function leaderAge(value) {
                                 {{ leaderFullAddress(leader) }}
                             </div>
                             <div class="mt-2 border-t border-brand-blue/25 pt-2 text-sm dark:border-brand-blue/35">
+                                <p><span class="font-medium">Geïnstalleerd:</span> {{ yesNo(leader.installed) }}</p>
+                                <p v-if="!isBestuurSection"><span class="font-medium">Gedoopt:</span> {{ yesNo(leader.gedoopt) }}</p>
                                 <p><span class="font-medium">Bijzonderheden:</span> {{ leader.bijzonderheden || '–' }}</p>
                                 <p><span class="font-medium">Geboortedatum:</span> {{ formatBirthday(leader.birthday) }}</p>
                                 <p><span class="font-medium">Leeftijd:</span> {{ leaderAge(leader.birthday) }}</p>
@@ -359,6 +372,8 @@ function leaderAge(value) {
                         <thead class="border-b border-brand-blue/35 bg-app-sidebar dark:bg-app-canvas-dark/80">
                             <tr class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Volledige naam</th>
+                                <th scope="col" class="whitespace-nowrap px-3 py-2.5">Geïnstalleerd</th>
+                                <th v-if="!isBestuurSection" scope="col" class="whitespace-nowrap px-3 py-2.5">Gedoopt</th>
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Volledig adres</th>
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Bijzonderheden</th>
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Geboortedatum</th>
@@ -380,6 +395,8 @@ function leaderAge(value) {
                                 <td class="max-w-[12rem] px-3 py-2.5 align-top">
                                     {{ leaderListName(leader) }}
                                 </td>
+                                <td class="whitespace-nowrap px-3 py-2.5 align-top">{{ yesNo(leader.installed) }}</td>
+                                <td v-if="!isBestuurSection" class="whitespace-nowrap px-3 py-2.5 align-top">{{ yesNo(leader.gedoopt) }}</td>
                                 <td class="max-w-[14rem] px-3 py-2.5 align-top">
                                     {{ leaderFullAddress(leader) }}
                                 </td>

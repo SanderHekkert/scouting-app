@@ -3,7 +3,7 @@ import { computed, ref } from 'vue';
 import SpeltakSubnav from '@/Components/SpeltakSubnav.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, useForm, usePage, router } from '@inertiajs/vue3';
-import { ChevronRightIcon, MagnifyingGlassIcon, PencilSquareIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import { ChevronRightIcon, DocumentCheckIcon, MagnifyingGlassIcon, PencilSquareIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     members: Array,
@@ -31,6 +31,7 @@ const sectionSingularMap = {
 };
 const speltakLabel = computed(() => sectionLabelMap[page.props.auth?.active_section] || 'Dolfijnen');
 const speltakSingular = computed(() => sectionSingularMap[page.props.auth?.active_section] || 'Dolfijn');
+const isBestuurSection = computed(() => (page.props.auth?.active_section ?? '') === 'bestuur');
 
 const showAddForm = ref(false);
 const rowHighlightMemberId = ref(null);
@@ -45,7 +46,6 @@ const form = useForm({
     phone_mother: '',
     phone_father: '',
     bijzonderheden: '',
-    active: true,
 });
 
 const memberSearchQuery = ref('');
@@ -86,8 +86,6 @@ function memberMatchesSearch(m, rawQuery) {
         bdayRaw,
         bdaySearch,
         m.installed ? 'ja geïnstalleerd' : 'nee niet geïnstalleerd',
-        m.active === true ? 'actief' : '',
-        m.active === false ? 'inactief' : '',
     ]);
 }
 
@@ -202,33 +200,8 @@ function memberDisplayName(m) {
     return `${fn}${ln ? ` ${ln}` : ''}`.trim() || '–';
 }
 
-const installedSavingId = ref(null);
-
-function setMemberInstalled(member, value) {
-    if (!member?.id || Boolean(member.installed) === value) {
-        return;
-    }
-    installedSavingId.value = member.id;
-    router.patch(
-        route('members.update-installed', member.id),
-        { installed: value },
-        {
-            preserveScroll: true,
-            onFinish: () => {
-                installedSavingId.value = null;
-            },
-        },
-    );
-}
-
-function installedToggleClass(member, isJa) {
-    const on = isJa ? Boolean(member.installed) : !member.installed;
-    if (on) {
-        return isJa
-            ? 'bg-emerald-700 text-white ring-2 ring-emerald-400/80'
-            : 'bg-rose-900/80 text-rose-100 ring-2 ring-rose-500/70';
-    }
-    return 'border border-brand-blue/40 bg-app-panel text-app-ink hover:bg-brand-blue/10 dark:border-brand-blue/45 dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/20';
+function yesNo(value) {
+    return value ? 'Ja' : 'Nee';
 }
 
 function editMember(member) {
@@ -357,10 +330,11 @@ function editMember(member) {
                     <div>
                         <button
                             type="submit"
-                            class="rounded bg-brand-blue px-5 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark disabled:opacity-50"
+                            class="inline-flex items-center gap-2 rounded bg-brand-blue px-5 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark disabled:opacity-50"
                             :disabled="form.processing"
                         >
-                            Opslaan
+                            <DocumentCheckIcon class="h-5 w-5" />
+                            <span>Opslaan</span>
                         </button>
                     </div>
                 </div>
@@ -437,24 +411,11 @@ function editMember(member) {
                             </Link>
                             <div class="mt-3 flex flex-wrap items-center gap-2 border-t border-brand-blue/25 pt-3 dark:border-brand-blue/35" @click.stop>
                                 <span class="text-xs font-semibold text-app-muted dark:text-app-muted-dark">Geïnstalleerd</span>
-                                <button
-                                    type="button"
-                                    class="rounded px-3 py-1 text-xs font-semibold transition disabled:opacity-50"
-                                    :class="installedToggleClass(member, true)"
-                                    :disabled="installedSavingId === member.id"
-                                    @click="setMemberInstalled(member, true)"
-                                >
-                                    Ja
-                                </button>
-                                <button
-                                    type="button"
-                                    class="rounded px-3 py-1 text-xs font-semibold transition disabled:opacity-50"
-                                    :class="installedToggleClass(member, false)"
-                                    :disabled="installedSavingId === member.id"
-                                    @click="setMemberInstalled(member, false)"
-                                >
-                                    Nee
-                                </button>
+                                <span class="rounded bg-brand-blue/10 px-2 py-0.5 text-xs font-semibold text-app-ink dark:text-app-ink-dark">{{ yesNo(member.installed) }}</span>
+                            </div>
+                            <div v-if="!isBestuurSection" class="mt-2 flex flex-wrap items-center gap-2" @click.stop>
+                                <span class="text-xs font-semibold text-app-muted dark:text-app-muted-dark">Gedoopt</span>
+                                <span class="rounded bg-brand-blue/10 px-2 py-0.5 text-xs font-semibold text-app-ink dark:text-app-ink-dark">{{ yesNo(member.gedoopt) }}</span>
                             </div>
                         </div>
                     </div>
@@ -463,6 +424,7 @@ function editMember(member) {
                         <thead class="border-b border-brand-blue/35 bg-app-sidebar dark:bg-app-canvas-dark/80">
                             <tr class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Geïnstalleerd</th>
+                                <th v-if="!isBestuurSection" scope="col" class="whitespace-nowrap px-3 py-2.5">Gedoopt</th>
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Voornaam</th>
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Achternaam</th>
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Verjaardag</th>
@@ -484,26 +446,10 @@ function editMember(member) {
                                 :class="{ '!bg-brand-blue/15 dark:!bg-app-canvas-dark/90': rowHighlightMemberId === member.id }"
                             >
                                 <td class="whitespace-nowrap px-3 py-2.5 align-top text-app-ink dark:text-app-ink-dark">
-                                    <div class="flex flex-wrap gap-1.5">
-                                        <button
-                                            type="button"
-                                            class="rounded px-2.5 py-1 text-xs font-semibold transition disabled:opacity-50"
-                                            :class="installedToggleClass(member, true)"
-                                            :disabled="installedSavingId === member.id"
-                                            @click="setMemberInstalled(member, true)"
-                                        >
-                                            Ja
-                                        </button>
-                                        <button
-                                            type="button"
-                                            class="rounded px-2.5 py-1 text-xs font-semibold transition disabled:opacity-50"
-                                            :class="installedToggleClass(member, false)"
-                                            :disabled="installedSavingId === member.id"
-                                            @click="setMemberInstalled(member, false)"
-                                        >
-                                            Nee
-                                        </button>
-                                    </div>
+                                    {{ yesNo(member.installed) }}
+                                </td>
+                                <td v-if="!isBestuurSection" class="whitespace-nowrap px-3 py-2.5 align-top text-app-ink dark:text-app-ink-dark">
+                                    {{ yesNo(member.gedoopt) }}
                                 </td>
                                 <td class="max-w-[10rem] px-3 py-2.5 align-top">{{ member.first_name || '–' }}</td>
                                 <td class="max-w-[10rem] px-3 py-2.5 align-top">{{ member.last_name || '–' }}</td>

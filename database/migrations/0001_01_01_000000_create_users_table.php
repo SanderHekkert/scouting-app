@@ -21,6 +21,8 @@ return new class extends Migration
             $table->string('postal_code')->nullable();
             $table->string('city')->nullable();
             $table->date('birthday')->nullable();
+            $table->boolean('installed')->default(false);
+            $table->boolean('gedoopt')->default(false);
             $table->string('phone_number')->nullable();
             $table->text('bijzonderheden')->nullable();
             $table->string('email')->unique();

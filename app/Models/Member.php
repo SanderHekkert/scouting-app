@@ -36,6 +36,7 @@ class Member extends Model
     protected $fillable = [
         'section',
         'installed',
+        'gedoopt',
         'first_name',
         'last_name',
         'birthday',
@@ -47,7 +48,6 @@ class Member extends Model
         'phone_mother',
         'phone_father',
         'bijzonderheden',
-        'active',
         'tipper_topper_opkomst',
         'tipper_topper_opkomst_order',
     ];
@@ -56,7 +56,7 @@ class Member extends Model
     {
         return [
             'installed' => 'boolean',
-            'active' => 'boolean',
+            'gedoopt' => 'boolean',
             'tipper_topper_opkomst' => 'boolean',
         ];
     }

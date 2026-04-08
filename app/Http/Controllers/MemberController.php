@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Member;
 use App\Models\UserSectionRole;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class MemberController extends Controller
@@ -62,6 +63,7 @@ class MemberController extends Controller
     {
         $data = $request->validate([
             'installed' => ['nullable', 'boolean'],
+            'gedoopt' => ['nullable', 'boolean'],
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['nullable', 'string', 'max:255'],
             'birthday' => ['nullable', 'date'],
@@ -72,11 +74,10 @@ class MemberController extends Controller
             'phone_mother' => ['nullable', 'string', 'max:255'],
             'phone_father' => ['nullable', 'string', 'max:255'],
             'bijzonderheden' => ['nullable', 'string', 'max:65535'],
-            'active' => ['nullable', 'boolean'],
         ]);
 
         $data['installed'] = $request->boolean('installed');
-        $data['active'] = $request->boolean('active', true);
+        $data['gedoopt'] = $request->boolean('gedoopt');
         $data['last_name'] = trim((string) ($data['last_name'] ?? ''));
 
         Member::create($data);
@@ -118,6 +119,7 @@ class MemberController extends Controller
     {
         $data = $request->validate([
             'installed' => ['nullable', 'boolean'],
+            'gedoopt' => ['nullable', 'boolean'],
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['nullable', 'string', 'max:255'],
             'birthday' => ['nullable', 'date'],
@@ -128,11 +130,10 @@ class MemberController extends Controller
             'phone_mother' => ['nullable', 'string', 'max:255'],
             'phone_father' => ['nullable', 'string', 'max:255'],
             'bijzonderheden' => ['nullable', 'string', 'max:65535'],
-            'active' => ['nullable', 'boolean'],
         ]);
 
         $data['installed'] = $request->boolean('installed');
-        $data['active'] = $request->boolean('active', true);
+        $data['gedoopt'] = $request->boolean('gedoopt');
         $data['last_name'] = trim((string) ($data['last_name'] ?? ''));
 
         $member->update($data);
@@ -147,6 +148,17 @@ class MemberController extends Controller
         ]);
 
         $member->update(['installed' => $validated['installed']]);
+
+        return back();
+    }
+
+    public function updateGedoopt(Request $request, Member $member)
+    {
+        $validated = $request->validate([
+            'gedoopt' => ['required', 'boolean'],
+        ]);
+
+        $member->update(['gedoopt' => $validated['gedoopt']]);
 
         return back();
     }
@@ -182,6 +194,22 @@ class MemberController extends Controller
         return back();
     }
 
+    public function transfer(Request $request, Member $member)
+    {
+        $currentSection = (string) $member->section;
+        $allowedTargets = $this->allowedTransferTargets($currentSection);
+
+        $data = $request->validate([
+            'target_section' => ['required', 'string', Rule::in($allowedTargets)],
+        ]);
+
+        $member->update([
+            'section' => $data['target_section'],
+        ]);
+
+        return to_route('members.index');
+    }
+
     /**
      * Remove the specified resource from storage.
      */
@@ -200,5 +228,19 @@ class MemberController extends Controller
     private function activeSection(): string
     {
         return session('active_section', UserSectionRole::SECTION_DOLFIJNEN);
+    }
+
+    /**
+     * Doorstroom-volgorde voor "overvliegen".
+     */
+    private function allowedTransferTargets(string $section): array
+    {
+        return match ($section) {
+            UserSectionRole::SECTION_BEVERS => [UserSectionRole::SECTION_DOLFIJNEN],
+            UserSectionRole::SECTION_DOLFIJNEN => [UserSectionRole::SECTION_ZEEVERKENNERS],
+            UserSectionRole::SECTION_ZEEVERKENNERS => [UserSectionRole::SECTION_WILDE_VAART],
+            UserSectionRole::SECTION_WILDE_VAART => [UserSectionRole::SECTION_LOODSEN],
+            default => [],
+        };
     }
 }

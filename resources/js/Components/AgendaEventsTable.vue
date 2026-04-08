@@ -8,7 +8,7 @@ const props = defineProps({
     },
     emptyMessage: {
         type: String,
-        default: 'Geen agenda-items.',
+        default: 'Geen Agenda items.',
     },
     isFieldSaving: {
         type: Function,
@@ -42,6 +42,10 @@ const props = defineProps({
     typeLabel: {
         type: String,
         default: 'Type opkomst',
+    },
+    isBestuur: {
+        type: Boolean,
+        default: false,
     },
 });
 
@@ -95,25 +99,57 @@ function taskLabelById(id) {
                         props.highlightEventId != null && Number(event.id) === props.highlightEventId,
                 }"
             >
-                <div class="text-sm font-semibold">{{ event.theme || '-' }}</div>
+                <div class="text-sm font-semibold">{{ props.isBestuur ? (event.theme || '-') : (event.theme || '-') }}</div>
                 <div class="mt-2 grid gap-2 text-sm">
+                    <div v-if="props.isBestuur">
+                        <p class="text-xs text-app-muted dark:text-app-muted-dark">Naam activiteit</p>
+                        <p>{{ event.theme || '-' }}</p>
+                    </div>
                     <div>
                         <p class="text-xs text-app-muted dark:text-app-muted-dark">Datum</p>
                         <p>{{ event.event_date ? String(event.event_date).slice(0, 10) : '-' }}</p>
                     </div>
-                    <div>
+                    <div v-if="!props.isBestuur">
                         <p class="text-xs text-app-muted dark:text-app-muted-dark">{{ props.typeLabel }}</p>
                         <p>{{ event.event_type || '-' }}</p>
                     </div>
                     <div>
-                        <p class="text-xs text-app-muted dark:text-app-muted-dark">Wat ga je doen?</p>
-                        <p>{{ event.activity || '-' }}</p>
+                        <p class="text-xs text-app-muted dark:text-app-muted-dark">{{ props.isBestuur ? 'Naam activiteit' : 'Wat ga je doen?' }}</p>
+                        <p>{{ props.isBestuur ? (event.theme || '-') : (event.activity || '-') }}</p>
                     </div>
-                    <div>
+                    <div v-if="!props.isBestuur">
                         <p class="text-xs text-app-muted dark:text-app-muted-dark">Programma door</p>
                         <p>{{ event.program_by || '-' }}</p>
                     </div>
-                    <div>
+                    <div v-if="props.isBestuur">
+                        <p class="text-xs text-app-muted dark:text-app-muted-dark">Locatie</p>
+                        <p>{{ event.location || '-' }}</p>
+                    </div>
+                    <div v-if="props.isBestuur">
+                        <p class="text-xs text-app-muted dark:text-app-muted-dark">Tijdstip</p>
+                        <p>{{ event.time_slot || '-' }}</p>
+                    </div>
+                    <div v-if="props.isBestuur">
+                        <p class="text-xs text-app-muted dark:text-app-muted-dark">Genodigden</p>
+                        <p class="whitespace-pre-wrap">{{ event.invitees || '-' }}</p>
+                    </div>
+                    <div v-if="props.isBestuur">
+                        <p class="text-xs text-app-muted dark:text-app-muted-dark">URL</p>
+                        <a v-if="event.link_url" :href="event.link_url" target="_blank" rel="noopener" class="text-brand-blue underline break-all">{{ event.link_url }}</a>
+                        <p v-else>-</p>
+                    </div>
+                    <div v-if="props.isBestuur">
+                        <p class="text-xs text-app-muted dark:text-app-muted-dark">Bijlagen</p>
+                        <a
+                            v-if="event.has_attachment"
+                            :href="route('events.attachment.download', event.id)"
+                            class="text-brand-blue underline break-all"
+                        >
+                            {{ event.attachment_name || 'Download bijlage' }}
+                        </a>
+                        <p v-else>-</p>
+                    </div>
+                    <div v-if="!props.isBestuur">
                         <p class="text-xs text-app-muted dark:text-app-muted-dark">Afwezig</p>
                         <div class="mt-1 flex flex-wrap gap-1.5">
                             <span
@@ -133,7 +169,7 @@ function taskLabelById(id) {
                             {{ isCurrentUserAbsent(event) ? 'Meld aanwezig' : 'Meld afwezig' }}
                         </button>
                     </div>
-                    <div>
+                    <div v-if="!props.isBestuur">
                         <p class="text-xs text-app-muted dark:text-app-muted-dark">Taken</p>
                         <div class="mt-1 flex flex-wrap gap-1.5">
                             <span
@@ -165,12 +201,18 @@ function taskLabelById(id) {
             <thead class="border-b border-brand-blue/35 bg-app-sidebar dark:bg-app-canvas-dark/80">
                 <tr class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
                     <th scope="col" class="min-w-[7rem] px-3 py-2.5">Thema</th>
+                    <th v-if="props.isBestuur" scope="col" class="min-w-[10rem] px-3 py-2.5">Naam activiteit</th>
                     <th scope="col" class="whitespace-nowrap px-3 py-2.5">Datum</th>
-                    <th scope="col" class="min-w-[8rem] px-3 py-2.5">{{ props.typeLabel }}</th>
-                    <th scope="col" class="min-w-[10rem] px-3 py-2.5">Wat ga je doen?</th>
-                    <th scope="col" class="min-w-[7rem] px-3 py-2.5">Programma door</th>
-                    <th scope="col" class="min-w-[12rem] px-3 py-2.5">Afwezig</th>
-                    <th scope="col" class="min-w-[11rem] px-3 py-2.5">Taken</th>
+                    <th v-if="!props.isBestuur" scope="col" class="min-w-[8rem] px-3 py-2.5">{{ props.typeLabel }}</th>
+                    <th scope="col" class="min-w-[10rem] px-3 py-2.5">{{ props.isBestuur ? 'Naam activiteit' : 'Wat ga je doen?' }}</th>
+                    <th v-if="!props.isBestuur" scope="col" class="min-w-[7rem] px-3 py-2.5">Programma door</th>
+                    <th v-if="props.isBestuur" scope="col" class="min-w-[8rem] px-3 py-2.5">Locatie</th>
+                    <th v-if="props.isBestuur" scope="col" class="min-w-[8rem] px-3 py-2.5">Tijdstip</th>
+                    <th v-if="props.isBestuur" scope="col" class="min-w-[10rem] px-3 py-2.5">Genodigden</th>
+                    <th v-if="props.isBestuur" scope="col" class="min-w-[10rem] px-3 py-2.5">URL</th>
+                    <th v-if="props.isBestuur" scope="col" class="min-w-[10rem] px-3 py-2.5">Bijlagen</th>
+                    <th v-if="!props.isBestuur" scope="col" class="min-w-[12rem] px-3 py-2.5">Afwezig</th>
+                    <th v-if="!props.isBestuur" scope="col" class="min-w-[11rem] px-3 py-2.5">Taken</th>
                     <th scope="col" class="min-w-[11rem] px-3 py-2.5">Bijzonderheden</th>
                     <th scope="col" class="min-w-[9rem] whitespace-nowrap px-3 py-2.5 text-end sm:text-start">Acties</th>
                 </tr>
@@ -187,11 +229,29 @@ function taskLabelById(id) {
                     }"
                 >
                     <td class="px-3 py-2.5 align-top">{{ event.theme || '-' }}</td>
+                    <td v-if="props.isBestuur" class="px-3 py-2.5 align-top">{{ event.theme || '-' }}</td>
                     <td class="whitespace-nowrap px-3 py-2.5 align-top tabular-nums">{{ event.event_date ? String(event.event_date).slice(0, 10) : '-' }}</td>
-                    <td class="px-3 py-2.5 align-top">{{ event.event_type || '-' }}</td>
-                    <td class="px-3 py-2.5 align-top">{{ event.activity || '-' }}</td>
-                    <td class="px-3 py-2.5 align-top">{{ event.program_by || '-' }}</td>
-                    <td class="max-w-[18rem] px-3 py-2.5 align-top">
+                    <td v-if="!props.isBestuur" class="px-3 py-2.5 align-top">{{ event.event_type || '-' }}</td>
+                    <td class="px-3 py-2.5 align-top">{{ props.isBestuur ? (event.theme || '-') : (event.activity || '-') }}</td>
+                    <td v-if="!props.isBestuur" class="px-3 py-2.5 align-top">{{ event.program_by || '-' }}</td>
+                    <td v-if="props.isBestuur" class="px-3 py-2.5 align-top">{{ event.location || '-' }}</td>
+                    <td v-if="props.isBestuur" class="px-3 py-2.5 align-top">{{ event.time_slot || '-' }}</td>
+                    <td v-if="props.isBestuur" class="max-w-[14rem] px-3 py-2.5 align-top whitespace-pre-wrap">{{ event.invitees || '-' }}</td>
+                    <td v-if="props.isBestuur" class="max-w-[14rem] px-3 py-2.5 align-top break-all">
+                        <a v-if="event.link_url" :href="event.link_url" target="_blank" rel="noopener" class="text-brand-blue underline">{{ event.link_url }}</a>
+                        <span v-else>-</span>
+                    </td>
+                    <td v-if="props.isBestuur" class="max-w-[14rem] px-3 py-2.5 align-top break-all">
+                        <a
+                            v-if="event.has_attachment"
+                            :href="route('events.attachment.download', event.id)"
+                            class="text-brand-blue underline"
+                        >
+                            {{ event.attachment_name || 'Download bijlage' }}
+                        </a>
+                        <span v-else>-</span>
+                    </td>
+                    <td v-if="!props.isBestuur" class="max-w-[18rem] px-3 py-2.5 align-top">
                         <div class="flex flex-wrap gap-1.5">
                             <span
                                 v-for="name in splitAbsentNames(event.absent)"
@@ -210,7 +270,7 @@ function taskLabelById(id) {
                             {{ isCurrentUserAbsent(event) ? 'Meld aanwezig' : 'Meld afwezig' }}
                         </button>
                     </td>
-                    <td class="max-w-[16rem] px-3 py-2.5 align-top">
+                    <td v-if="!props.isBestuur" class="max-w-[16rem] px-3 py-2.5 align-top">
                         <div class="flex flex-wrap gap-1.5">
                             <span
                                 v-for="taskId in taskIdsForEvent(event)"

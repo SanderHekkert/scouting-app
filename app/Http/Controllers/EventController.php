@@ -9,9 +9,12 @@ use App\Models\UserSectionRole;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class EventController extends Controller
 {
@@ -53,7 +56,13 @@ class EventController extends Controller
             ->all();
 
         return Inertia::render('Events/Index', [
-            'events' => $active,
+            'events' => $active->map(function (Event $event): array {
+                return [
+                    ...$event->toArray(),
+                    'attachment_name' => $this->attachmentName($event->attachments),
+                    'has_attachment' => $this->attachmentName($event->attachments) !== null,
+                ];
+            })->values(),
             'leaders' => $this->leaderNamesForActiveSection(),
             'taskItems' => $taskItems,
             'allSections' => UserSectionRole::ALL_SECTIONS,
@@ -117,6 +126,12 @@ class EventController extends Controller
                 'event_type' => (string) ($event->event_type ?? ''),
                 'activity' => (string) ($event->activity ?? ''),
                 'program_by' => (string) ($event->program_by ?? ''),
+                'location' => (string) ($event->location ?? ''),
+                'time_slot' => (string) ($event->time_slot ?? ''),
+                'invitees' => (string) ($event->invitees ?? ''),
+                'link_url' => (string) ($event->link_url ?? ''),
+                'attachments' => (string) ($event->attachments ?? ''),
+                'attachment_name' => $this->attachmentName($event->attachments),
                 'absent' => (string) ($event->absent ?? ''),
                 'present_names' => collect($event->present_names ?? [])->map(fn ($v): string => trim((string) $v))->filter()->values()->all(),
                 'notes' => (string) ($event->notes ?? ''),
@@ -134,12 +149,19 @@ class EventController extends Controller
      */
     public function store(Request $request)
     {
+        $section = $this->activeSection();
         $data = $request->validate([
             'theme' => ['nullable', 'string', 'max:255'],
             'event_date' => ['required', 'date'],
             'event_type' => ['nullable', 'string', 'max:255'],
             'activity' => ['nullable', 'string', 'max:255'],
             'program_by' => ['nullable', 'string', 'max:255'],
+            'location' => ['nullable', 'string', 'max:255'],
+            'time_slot' => ['nullable', 'string', 'max:255'],
+            'invitees' => ['nullable', 'string'],
+            'link_url' => ['nullable', 'url', 'max:2048'],
+            'attachments' => ['nullable', 'string'],
+            'attachment_file' => ['nullable', 'file', 'max:10240'],
             'absent' => ['nullable', 'string'],
             'notes' => ['nullable', 'string'],
             'task_item_ids' => ['nullable', 'array'],
@@ -152,6 +174,16 @@ class EventController extends Controller
         }
         $data['task_item_ids'] = $this->normalizeTaskItemIds($data['task_item_ids'] ?? null);
         $data['shared_sections'] = $this->normalizeSharedSections($data['shared_sections'] ?? null);
+        if ($request->hasFile('attachment_file')) {
+            $data['attachments'] = $this->encodeAttachmentMeta($request->file('attachment_file'));
+        }
+        if ($this->isBestuurSection($section)) {
+            $data['event_type'] = '';
+            $data['activity'] = '';
+            $data['program_by'] = '';
+            $data['shared_sections'] = [];
+            $data['absent'] = '';
+        }
 
         Event::create($data);
 
@@ -163,12 +195,19 @@ class EventController extends Controller
      */
     public function update(Request $request, Event $event)
     {
+        $section = $this->activeSection();
         $data = $request->validate([
             'theme' => ['nullable', 'string', 'max:255'],
             'event_date' => ['required', 'date'],
             'event_type' => ['nullable', 'string', 'max:255'],
             'activity' => ['nullable', 'string', 'max:255'],
             'program_by' => ['nullable', 'string', 'max:255'],
+            'location' => ['nullable', 'string', 'max:255'],
+            'time_slot' => ['nullable', 'string', 'max:255'],
+            'invitees' => ['nullable', 'string'],
+            'link_url' => ['nullable', 'url', 'max:2048'],
+            'attachments' => ['nullable', 'string'],
+            'attachment_file' => ['nullable', 'file', 'max:10240'],
             'absent' => ['nullable', 'string'],
             'notes' => ['nullable', 'string'],
             'task_item_ids' => ['nullable', 'array'],
@@ -181,6 +220,17 @@ class EventController extends Controller
         }
         $data['task_item_ids'] = $this->normalizeTaskItemIds($data['task_item_ids'] ?? null);
         $data['shared_sections'] = $this->normalizeSharedSections($data['shared_sections'] ?? null);
+        if ($request->hasFile('attachment_file')) {
+            $this->deleteAttachmentFile($event->attachments);
+            $data['attachments'] = $this->encodeAttachmentMeta($request->file('attachment_file'));
+        }
+        if ($this->isBestuurSection($section)) {
+            $data['event_type'] = '';
+            $data['activity'] = '';
+            $data['program_by'] = '';
+            $data['shared_sections'] = [];
+            $data['absent'] = '';
+        }
 
         $event->update($data);
 
@@ -206,12 +256,18 @@ class EventController extends Controller
      */
     public function quickUpdate(Request $request, Event $event)
     {
+        $section = $this->activeSection();
         $data = $request->validate([
             'theme' => ['sometimes', 'nullable', 'string', 'max:255'],
             'event_date' => ['sometimes', 'date'],
             'event_type' => ['sometimes', 'nullable', 'string', 'max:255'],
             'activity' => ['sometimes', 'nullable', 'string', 'max:255'],
             'program_by' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'location' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'time_slot' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'invitees' => ['sometimes', 'nullable', 'string'],
+            'link_url' => ['sometimes', 'nullable', 'url', 'max:2048'],
+            'attachments' => ['sometimes', 'nullable', 'string'],
             'absent' => ['sometimes', 'nullable', 'string'],
             'notes' => ['sometimes', 'nullable', 'string'],
             'task_item_ids' => ['sometimes', 'nullable', 'array'],
@@ -229,6 +285,23 @@ class EventController extends Controller
         if (array_key_exists('shared_sections', $data)) {
             $data['shared_sections'] = $this->normalizeSharedSections($data['shared_sections']);
         }
+        if ($this->isBestuurSection($section)) {
+            if (array_key_exists('event_type', $data)) {
+                $data['event_type'] = '';
+            }
+            if (array_key_exists('activity', $data)) {
+                $data['activity'] = '';
+            }
+            if (array_key_exists('program_by', $data)) {
+                $data['program_by'] = '';
+            }
+            if (array_key_exists('shared_sections', $data)) {
+                $data['shared_sections'] = [];
+            }
+            if (array_key_exists('absent', $data)) {
+                $data['absent'] = '';
+            }
+        }
         $event->update($data);
 
         return back();
@@ -239,9 +312,22 @@ class EventController extends Controller
      */
     public function destroy(Event $event)
     {
+        $this->deleteAttachmentFile($event->attachments);
         $event->delete();
 
         return back();
+    }
+
+    public function downloadAttachment(Event $event): BinaryFileResponse
+    {
+        $meta = $this->attachmentMeta($event->attachments);
+        abort_unless($meta !== null, 404);
+        abort_unless(Storage::disk('local')->exists($meta['path']), 404);
+
+        return response()->download(
+            Storage::disk('local')->path($meta['path']),
+            $meta['name']
+        );
     }
 
     /**
@@ -411,5 +497,62 @@ class EventController extends Controller
             UserSectionRole::SECTION_ZEEVERKENNERS,
             UserSectionRole::SECTION_WILDE_VAART,
         ], true);
+    }
+
+    private function isBestuurSection(string $section): bool
+    {
+        return $section === UserSectionRole::SECTION_BESTUUR;
+    }
+
+    private function encodeAttachmentMeta(?UploadedFile $file): ?string
+    {
+        if (! $file) {
+            return null;
+        }
+
+        $ext = strtolower($file->getClientOriginalExtension() ?: $file->guessExtension() ?: 'bin');
+        $path = $file->storeAs(
+            'event-attachments/'.now()->format('Y/m'),
+            Str::uuid().'.'.$ext,
+            'local'
+        );
+
+        return json_encode([
+            'path' => $path,
+            'name' => (string) ($file->getClientOriginalName() ?: basename($path)),
+        ], JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * @return array{path:string,name:string}|null
+     */
+    private function attachmentMeta(?string $raw): ?array
+    {
+        $decoded = json_decode((string) $raw, true);
+        if (! is_array($decoded)) {
+            return null;
+        }
+        $path = trim((string) ($decoded['path'] ?? ''));
+        if ($path === '') {
+            return null;
+        }
+
+        return [
+            'path' => $path,
+            'name' => trim((string) ($decoded['name'] ?? '')) ?: basename($path),
+        ];
+    }
+
+    private function attachmentName(?string $raw): ?string
+    {
+        return $this->attachmentMeta($raw)['name'] ?? null;
+    }
+
+    private function deleteAttachmentFile(?string $raw): void
+    {
+        $meta = $this->attachmentMeta($raw);
+        if ($meta && Storage::disk('local')->exists($meta['path'])) {
+            Storage::disk('local')->delete($meta['path']);
+        }
     }
 }

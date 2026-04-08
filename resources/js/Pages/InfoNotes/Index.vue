@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
-import { ArrowTopRightOnSquareIcon, PencilSquareIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import { ArrowTopRightOnSquareIcon, DocumentCheckIcon, PencilSquareIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({ notes: Array });
 
@@ -122,10 +122,11 @@ function editNote(note) {
                     <div>
                         <button
                             type="submit"
-                            class="rounded bg-brand-blue px-5 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark disabled:opacity-50"
+                            class="inline-flex items-center gap-2 rounded bg-brand-blue px-5 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark disabled:opacity-50"
                             :disabled="form.processing"
                         >
-                            Opslaan
+                            <DocumentCheckIcon class="h-5 w-5" />
+                            <span>Opslaan</span>
                         </button>
                     </div>
                 </div>

@@ -1,13 +1,13 @@
 <script setup>
-import EditableTextCell from '@/Components/EditableTextCell.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { ChevronLeftIcon, TrashIcon } from '@heroicons/vue/24/outline';
-import { ref } from 'vue';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import { ArrowLeftCircleIcon, DocumentCheckIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import { computed } from 'vue';
 
 const props = defineProps({
     member: { type: Object, required: true },
 });
+
 const page = usePage();
 const sectionLabelMap = {
     dolfijnen: 'Dolfijnen',
@@ -17,244 +17,144 @@ const sectionLabelMap = {
     wilde_vaart: 'Wilde Vaart',
     bestuur: 'Bestuur',
 };
-const speltakLabel = ref(sectionLabelMap[page.props.auth?.active_section] || 'Dolfijnen');
+const speltakLabel = computed(() => sectionLabelMap[page.props.auth?.active_section] || 'Dolfijnen');
+const isBestuurSection = computed(() => (page.props.auth?.active_section ?? '') === 'bestuur');
+const transferMap = {
+    bevers: ['dolfijnen'],
+    dolfijnen: ['zeeverkenners'],
+    zeeverkenners: ['wilde_vaart'],
+    wilde_vaart: ['loodsen'],
+};
+const transferOptions = computed(() => {
+    const current = String(props.member.section || page.props.auth?.active_section || '').trim();
+    return (transferMap[current] || []).map((section) => ({
+        value: section,
+        label: sectionLabelMap[section] || section,
+    }));
+});
 
-const installedSaving = ref(false);
+const form = useForm({
+    installed: Boolean(props.member.installed),
+    gedoopt: Boolean(props.member.gedoopt),
+    first_name: props.member.first_name || '',
+    last_name: props.member.last_name || '',
+    birthday: props.member.birthday ? String(props.member.birthday).slice(0, 10) : '',
+    address: props.member.address || '',
+    postal_code: props.member.postal_code || '',
+    city: props.member.city || '',
+    email_parents: props.member.email_parents || '',
+    phone_mother: props.member.phone_mother || '',
+    phone_father: props.member.phone_father || '',
+    bijzonderheden: props.member.bijzonderheden || '',
+});
+const transferForm = useForm({
+    target_section: transferOptions.value[0]?.value || '',
+});
 
-function formatBirthday(value) {
-    if (value == null || value === '') return '–';
-    const s = String(value).slice(0, 10);
-    const parts = s.split('-');
-    if (parts.length !== 3) return s;
-    const [y, m, d] = parts;
-    return `${d}-${m}-${y}`;
+function submit() {
+    form.patch(route('members.update', props.member.id), {
+        preserveScroll: true,
+    });
 }
 
-function dashIfEmpty(value) {
-    if (value == null || String(value).trim() === '') return '–';
-    return value;
-}
+function submitTransfer() {
+    if (!transferForm.target_section) return;
+    if (!confirm(`Weet je zeker dat je dit lid wilt overvliegen naar ${sectionLabelMap[transferForm.target_section] || transferForm.target_section}?`)) return;
 
-function memberDisplayName(m) {
-    const fn = m?.first_name ?? '';
-    const ln = m?.last_name ?? '';
-    return `${fn}${ln ? ` ${ln}` : ''}`.trim() || '–';
-}
-
-function yesNo(value) {
-    return value ? 'Ja' : 'Nee';
-}
-
-function installedDetailToggleClass(isJa) {
-    const on = isJa ? Boolean(props.member.installed) : !props.member.installed;
-    if (on) {
-        return isJa
-            ? 'bg-emerald-700 text-white ring-2 ring-emerald-400/80'
-            : 'bg-rose-900/80 text-rose-100 ring-2 ring-rose-500/70';
-    }
-    return 'border border-brand-blue/40 bg-app-panel text-app-ink hover:bg-brand-blue/10 dark:border-brand-blue/45 dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/20';
-}
-
-function setInstalled(value) {
-    if (Boolean(props.member.installed) === value) {
-        return;
-    }
-    installedSaving.value = true;
-    router.patch(
-        route('members.update-installed', props.member.id),
-        { installed: value },
-        {
-            preserveScroll: true,
-            onFinish: () => {
-                installedSaving.value = false;
-            },
-        },
-    );
+    transferForm.patch(route('members.transfer', props.member.id), {
+        preserveScroll: true,
+    });
 }
 
 function deleteMember() {
     if (!confirm('Dit contact verwijderen?')) return;
     router.delete(route('members.destroy', props.member.id));
 }
-
-const detailFieldSaving = ref(null);
-
-function normalizeMemberQuickPayload(field, raw) {
-    if (field === 'age') {
-        const s = String(raw ?? '').trim();
-        if (s === '') {
-            return { age: null };
-        }
-        const n = Number.parseInt(s, 10);
-        return { age: Number.isNaN(n) ? null : n };
-    }
-    if (field === 'birthday') {
-        const s = String(raw ?? '').trim();
-        return { birthday: s === '' ? null : s };
-    }
-    return { [field]: raw ?? '' };
-}
-
-function patchShowField(field, raw) {
-    const payload = normalizeMemberQuickPayload(field, raw);
-    const k = Object.keys(payload)[0];
-    detailFieldSaving.value = k;
-    router.patch(route('members.quick-update', props.member.id), payload, {
-        preserveScroll: true,
-        onFinish: () => {
-            detailFieldSaving.value = null;
-        },
-    });
-}
-
-function isShowSaving(field) {
-    return detailFieldSaving.value === field;
-}
 </script>
 
 <template>
-    <Head :title="memberDisplayName(member)" />
+    <Head :title="`${form.first_name} ${form.last_name}`.trim() || 'Lid bewerken'" />
     <AuthenticatedLayout>
         <template #header>
-            <div class="flex flex-wrap items-center gap-3">
-                <Link
-                    :href="route('members.index')"
-                    class="inline-flex items-center gap-1 text-sm font-medium text-brand-red hover:text-brand-red-dark dark:text-brand-blue-light dark:hover:text-app-ink-dark"
-                >
-                    <ChevronLeftIcon class="h-5 w-5" />
-                    Terug naar {{ speltakLabel }}
+            <div class="flex items-center justify-between gap-3">
+                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Lid bewerken · {{ speltakLabel }}</h2>
+                <Link :href="route('members.index')" class="inline-flex items-center justify-center rounded border border-app-border p-2 text-app-ink hover:bg-brand-blue/10 dark:border-app-border-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/15" title="Terug">
+                    <ArrowLeftCircleIcon class="h-5 w-5" />
                 </Link>
             </div>
         </template>
 
-        <div class="mx-auto max-w-lg space-y-4 text-app-ink dark:text-app-ink-dark">
-            <div class="surface-brand-top rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5">
-                <h2 class="border-b border-brand-blue/35 pb-3 text-xl font-semibold text-app-ink dark:text-app-ink-dark">
-                    {{ memberDisplayName(member) }}
-                </h2>
+        <form class="surface-brand-top space-y-4 rounded-xl border border-app-border bg-app-panel p-5 text-app-ink shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark dark:text-app-ink-dark" @submit.prevent="submit">
+            <div class="grid gap-4 sm:grid-cols-[11rem_1fr] sm:items-start">
+                <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Geinstalleerd</label>
+                <select v-model="form.installed" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark">
+                    <option :value="true">Ja</option>
+                    <option :value="false">Nee</option>
+                </select>
 
-                <dl class="mt-4 space-y-4">
-                    <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Geïnstalleerd</dt>
-                        <dd class="mt-1">
-                            <div
-                                class="flex flex-wrap gap-2"
-                                :class="{ 'pointer-events-none opacity-60': installedSaving }"
-                            >
-                                <button
-                                    type="button"
-                                    class="rounded px-3 py-1.5 text-xs font-semibold transition disabled:opacity-50"
-                                    :class="installedDetailToggleClass(true)"
-                                    :disabled="installedSaving"
-                                    @click="setInstalled(true)"
-                                >
-                                    Ja
-                                </button>
-                                <button
-                                    type="button"
-                                    class="rounded px-3 py-1.5 text-xs font-semibold transition disabled:opacity-50"
-                                    :class="installedDetailToggleClass(false)"
-                                    :disabled="installedSaving"
-                                    @click="setInstalled(false)"
-                                >
-                                    Nee
-                                </button>
-                            </div>
-                        </dd>
-                    </div>
-                    <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Actief</dt>
-                        <dd class="mt-1 text-sm text-app-ink dark:text-app-ink-dark">{{ yesNo(member.active) }}</dd>
-                    </div>
-                    <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Bijzonderheden</dt>
-                        <dd class="mt-1 text-sm text-app-ink dark:text-app-ink-dark">
-                            <EditableTextCell
-                                :text="member.bijzonderheden || ''"
-                                multiline
-                                :saving="isShowSaving('bijzonderheden')"
-                                @save="(v) => patchShowField('bijzonderheden', v)"
-                            />
-                        </dd>
-                    </div>
-                    <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Voornaam</dt>
-                        <dd class="mt-1 text-sm text-app-ink dark:text-app-ink-dark">
-                            <EditableTextCell
-                                :text="member.first_name || ''"
-                                :multiline="false"
-                                :saving="isShowSaving('first_name')"
-                                @save="(v) => patchShowField('first_name', v)"
-                            />
-                        </dd>
-                    </div>
-                    <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Achternaam</dt>
-                        <dd class="mt-1 text-sm text-app-ink dark:text-app-ink-dark">
-                            <EditableTextCell
-                                :text="member.last_name || ''"
-                                :multiline="false"
-                                :saving="isShowSaving('last_name')"
-                                @save="(v) => patchShowField('last_name', v)"
-                            />
-                        </dd>
-                    </div>
-                    <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Verjaardag</dt>
-                        <dd class="mt-1 text-sm text-app-ink dark:text-app-ink-dark">{{ formatBirthday(member.birthday) }}</dd>
-                    </div>
-                    <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Leeftijd</dt>
-                        <dd class="mt-1 text-sm text-app-ink dark:text-app-ink-dark">
-                            <EditableTextCell
-                                :text="member.age != null ? String(member.age) : ''"
-                                :multiline="false"
-                                :saving="isShowSaving('age')"
-                                @save="(v) => patchShowField('age', v)"
-                            />
-                        </dd>
-                    </div>
-                    <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Adres</dt>
-                        <dd class="mt-1 text-sm text-app-ink dark:text-app-ink-dark">
-                            <EditableTextCell
-                                :text="member.address || ''"
-                                multiline
-                                :saving="isShowSaving('address')"
-                                @save="(v) => patchShowField('address', v)"
-                            />
-                        </dd>
-                    </div>
-                    <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Telefoon moeder</dt>
-                        <dd class="mt-1 text-sm text-app-ink dark:text-app-ink-dark">
-                            <EditableTextCell
-                                :text="member.phone_mother || ''"
-                                :multiline="false"
-                                :saving="isShowSaving('phone_mother')"
-                                @save="(v) => patchShowField('phone_mother', v)"
-                            />
-                        </dd>
-                    </div>
-                    <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Telefoon vader</dt>
-                        <dd class="mt-1 text-sm text-app-ink dark:text-app-ink-dark">
-                            <EditableTextCell
-                                :text="member.phone_father || ''"
-                                :multiline="false"
-                                :saving="isShowSaving('phone_father')"
-                                @save="(v) => patchShowField('phone_father', v)"
-                            />
-                        </dd>
-                    </div>
-                </dl>
+                <template v-if="!isBestuurSection">
+                    <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Gedoopt</label>
+                    <select v-model="form.gedoopt" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark">
+                        <option :value="true">Ja</option>
+                        <option :value="false">Nee</option>
+                    </select>
+                </template>
 
-                <div class="mt-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Voornaam</label>
+                <input v-model="form.first_name" type="text" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
+
+                <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Achternaam</label>
+                <input v-model="form.last_name" type="text" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
+
+                <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Geboortedatum</label>
+                <input v-model="form.birthday" type="date" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
+
+                <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Adres</label>
+                <input v-model="form.address" type="text" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
+
+                <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Postcode</label>
+                <input v-model="form.postal_code" type="text" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
+
+                <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Plaats</label>
+                <input v-model="form.city" type="text" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
+
+                <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">E-mail ouders</label>
+                <input v-model="form.email_parents" type="email" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
+
+                <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Telefoon moeder</label>
+                <input v-model="form.phone_mother" type="text" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
+
+                <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Telefoon vader</label>
+                <input v-model="form.phone_father" type="text" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
+
+                <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Bijzonderheden</label>
+                <textarea v-model="form.bijzonderheden" rows="4" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
+
+                <template v-if="transferOptions.length > 0">
+                    <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Overvliegen naar</label>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <select v-model="transferForm.target_section" class="min-w-[14rem] rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark">
+                            <option v-for="option in transferOptions" :key="`transfer-${option.value}`" :value="option.value">
+                                {{ option.label }}
+                            </option>
+                        </select>
+                        <button type="button" class="inline-flex items-center gap-2 rounded border border-brand-blue/45 px-3 py-2 text-sm font-medium text-app-ink hover:bg-brand-blue/10 dark:text-app-ink-dark dark:hover:bg-brand-blue/15 disabled:opacity-50" :disabled="transferForm.processing || !transferForm.target_section" @click="submitTransfer">
+                            Overvliegen
+                        </button>
+                    </div>
+                </template>
+
+                <span class="hidden sm:block" aria-hidden="true" />
+                <div class="flex items-center gap-2">
+                    <button type="submit" class="inline-flex items-center gap-2 rounded bg-brand-blue px-4 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark disabled:opacity-50" :disabled="form.processing" title="Opslaan">
+                        <DocumentCheckIcon class="h-5 w-5" />
+                        <span>Opslaan</span>
+                    </button>
                     <button type="button" class="btn-action-delete btn-action-delete--lg" title="Verwijderen" @click="deleteMember">
                         <TrashIcon class="h-5 w-5" />
                     </button>
                 </div>
             </div>
-        </div>
+        </form>
     </AuthenticatedLayout>
 </template>

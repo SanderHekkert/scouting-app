@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('event_type')->nullable();
             $table->string('activity')->nullable();
             $table->string('program_by')->nullable();
+            $table->text('attachments')->nullable();
             $table->text('absent')->nullable();
             $table->text('notes')->nullable();
             $table->json('task_item_ids')->nullable();

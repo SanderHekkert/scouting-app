@@ -44,7 +44,6 @@ class PodController extends Controller
         return Inertia::render('Pods/Index', [
             'pods' => $pods,
             'unassignedMembers' => Member::query()
-                ->where('active', true)
                 ->whereDoesntHave('podMemberships')
                 ->orderBy('first_name')
                 ->orderBy('last_name')

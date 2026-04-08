@@ -4,7 +4,7 @@ import AgendaEventsTable from '@/Components/AgendaEventsTable.vue';
 import { computed, nextTick, ref, watch } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, useForm, usePage, router } from '@inertiajs/vue3';
-import { PlusIcon } from '@heroicons/vue/24/outline';
+import { DocumentCheckIcon, PlusIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     events: Array,
@@ -42,6 +42,8 @@ const isBestuur = computed(() => activeSection.value === 'bestuur');
 const singularLabel = computed(() => (isBestuur.value ? 'agenda-item' : 'opkomst'));
 const pluralLabel = computed(() => (isBestuur.value ? 'agenda-items' : 'opkomsten'));
 const typeLabel = computed(() => (isBestuur.value ? 'Type' : 'Type opkomst'));
+const addButtonLabel = computed(() => (isBestuur.value ? 'Nieuwe activiteit toevoegen' : `${singularLabel.value} toevoegen`));
+const addFormTitle = computed(() => (isBestuur.value ? 'Nieuwe activiteit' : 'Nieuw agenda-item'));
 
 /** Query ?event=123: focus op die rij na navigatie vanaf dashboard */
 const highlightEventId = computed(() => {
@@ -72,6 +74,12 @@ const form = useForm({
     event_type: '',
     activity: '',
     program_by: '',
+    location: '',
+    time_slot: '',
+    invitees: '',
+    link_url: '',
+    attachments: '',
+    attachment_file: null,
     absent: '',
     notes: '',
     shared_sections: [],
@@ -98,12 +106,17 @@ function toggleAddForm() {
 
 function submitAdd() {
     form.post(route('events.store'), {
+        forceFormData: true,
         preserveScroll: true,
         onSuccess: () => {
             form.reset();
             showAddForm.value = false;
         },
     });
+}
+
+function onAttachmentChange(event) {
+    form.attachment_file = event?.target?.files?.[0] || null;
 }
 
 function deleteEvent(event) {
@@ -143,7 +156,7 @@ function setOwnAttendance(event, present) {
                         @click="toggleAddForm"
                     >
                         <PlusIcon class="h-5 w-5" />
-                        {{ singularLabel }} toevoegen
+                        {{ addButtonLabel }}
                     </button>
                 </div>
             </div>
@@ -155,12 +168,13 @@ function setOwnAttendance(event, present) {
                 class="surface-brand-top space-y-4 rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5"
                 @submit.prevent="submitAdd"
             >
-                <h3 class="text-base font-semibold text-app-ink dark:text-app-ink-dark">Nieuw agenda-item</h3>
+                <h3 class="text-base font-semibold text-app-ink dark:text-app-ink-dark">{{ addFormTitle }}</h3>
                 <div class="grid gap-4 sm:grid-cols-[8rem_1fr] sm:items-start">
-                    <label for="add-event-theme" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
+                    <label v-if="!isBestuur" for="add-event-theme" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Thema
                     </label>
                     <input
+                        v-if="!isBestuur"
                         id="add-event-theme"
                         v-model="form.theme"
                         type="text"
@@ -178,10 +192,11 @@ function setOwnAttendance(event, present) {
                         class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                     />
 
-                    <label for="add-event-type" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
+                    <label v-if="!isBestuur" for="add-event-type" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Type opkomst
                     </label>
                     <input
+                        v-if="!isBestuur"
                         id="add-event-type"
                         v-model="form.event_type"
                         type="text"
@@ -190,9 +205,18 @@ function setOwnAttendance(event, present) {
                     />
 
                     <label for="add-event-activity" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Wat ga je doen?
+                        {{ isBestuur ? 'Naam activiteit' : 'Wat ga je doen?' }}
                     </label>
                     <input
+                        v-if="isBestuur"
+                        id="add-event-activity"
+                        v-model="form.theme"
+                        type="text"
+                        placeholder="Naam activiteit"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
+                    />
+                    <input
+                        v-else
                         id="add-event-activity"
                         v-model="form.activity"
                         type="text"
@@ -200,10 +224,67 @@ function setOwnAttendance(event, present) {
                         class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
                     />
 
-                    <label for="add-event-program-by" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
+                    <template v-if="isBestuur">
+                        <label for="add-event-location" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
+                            Locatie
+                        </label>
+                        <input
+                            id="add-event-location"
+                            v-model="form.location"
+                            type="text"
+                            placeholder="Locatie"
+                            class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
+                        />
+
+                        <label for="add-event-time-slot" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
+                            Tijdstip
+                        </label>
+                        <input
+                            id="add-event-time-slot"
+                            v-model="form.time_slot"
+                            type="text"
+                            placeholder="Bijv. 19:30 - 21:00"
+                            class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
+                        />
+
+                        <label for="add-event-invitees" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
+                            Genodigden
+                        </label>
+                        <textarea
+                            id="add-event-invitees"
+                            v-model="form.invitees"
+                            rows="2"
+                            placeholder="Wie zijn uitgenodigd?"
+                            class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
+                        />
+
+                        <label for="add-event-url" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
+                            URL
+                        </label>
+                        <input
+                            id="add-event-url"
+                            v-model="form.link_url"
+                            type="url"
+                            placeholder="https://..."
+                            class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
+                        />
+
+                        <label for="add-event-attachments" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
+                            Bijlagen
+                        </label>
+                        <input
+                            id="add-event-attachments"
+                            type="file"
+                            @change="onAttachmentChange"
+                            class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
+                        />
+                    </template>
+
+                    <label v-if="!isBestuur" for="add-event-program-by" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Programma door
                     </label>
                     <input
+                        v-if="!isBestuur"
                         id="add-event-program-by"
                         v-model="form.program_by"
                         type="text"
@@ -211,10 +292,11 @@ function setOwnAttendance(event, present) {
                         class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
                     />
 
-                    <label for="add-event-absent" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
+                    <label v-if="!isBestuur" for="add-event-absent" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Afwezig
                     </label>
                     <input
+                        v-if="!isBestuur"
                         id="add-event-absent"
                         v-model="form.absent"
                         type="text"
@@ -233,10 +315,10 @@ function setOwnAttendance(event, present) {
                         class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
                     />
 
-                    <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
+                    <label v-if="!isBestuur" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Gezamenlijk met
                     </label>
-                    <div class="flex flex-wrap gap-2">
+                    <div v-if="!isBestuur" class="flex flex-wrap gap-2">
                         <label
                             v-for="section in shareableSections"
                             :key="`add-share-${section}`"
@@ -256,10 +338,11 @@ function setOwnAttendance(event, present) {
                     <div>
                         <button
                             type="submit"
-                            class="rounded bg-brand-blue px-5 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark disabled:opacity-50"
+                            class="inline-flex items-center gap-2 rounded bg-brand-blue px-5 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark disabled:opacity-50"
                             :disabled="form.processing"
                         >
-                            Opslaan
+                            <DocumentCheckIcon class="h-5 w-5" />
+                            <span>Opslaan</span>
                         </button>
                     </div>
                 </div>
@@ -288,6 +371,7 @@ function setOwnAttendance(event, present) {
                     :events="props.events"
                     :leaders="props.leaders"
                     :task-items="props.taskItems"
+                    :is-bestuur="isBestuur"
                     :highlight-event-id="highlightEventId"
                     :is-field-saving="() => false"
                     :can-edit-agenda="canManageAgenda"

@@ -74,6 +74,8 @@ class LeaderController extends Controller
             'postal_code' => ['sometimes', 'nullable', 'string', 'max:255'],
             'city' => ['sometimes', 'nullable', 'string', 'max:255'],
             'birthday' => ['sometimes', 'nullable', 'date'],
+            'installed' => ['sometimes', 'boolean'],
+            'gedoopt' => ['sometimes', 'boolean'],
             'phone_number' => ['sometimes', 'nullable', 'string', 'max:255'],
             'email' => ['sometimes', 'nullable', 'string', 'max:255', 'email'],
             'bijzonderheden' => ['sometimes', 'nullable', 'string', 'max:65535'],
@@ -97,6 +99,8 @@ class LeaderController extends Controller
             'postal_code' => ['nullable', 'string', 'max:255'],
             'city' => ['nullable', 'string', 'max:255'],
             'birthday' => ['nullable', 'date'],
+            'installed' => ['nullable', 'boolean'],
+            'gedoopt' => ['nullable', 'boolean'],
             'phone_number' => ['nullable', 'string', 'max:255'],
             'email' => ['nullable', 'string', 'max:255', 'email'],
             'bijzonderheden' => ['nullable', 'string', 'max:65535'],
@@ -105,6 +109,8 @@ class LeaderController extends Controller
         if (empty($data['birthday'])) {
             $data['birthday'] = null;
         }
+        $data['installed'] = $request->boolean('installed');
+        $data['gedoopt'] = $request->boolean('gedoopt');
 
         $data['name'] = trim(($data['first_name'] ?? '').' '.($data['last_name'] ?? ''));
         $data['password'] = bcrypt('password');
@@ -122,6 +128,8 @@ class LeaderController extends Controller
             'postal_code' => ['nullable', 'string', 'max:255'],
             'city' => ['nullable', 'string', 'max:255'],
             'birthday' => ['nullable', 'date'],
+            'installed' => ['nullable', 'boolean'],
+            'gedoopt' => ['nullable', 'boolean'],
             'phone_number' => ['nullable', 'string', 'max:255'],
             'email' => ['nullable', 'string', 'max:255', 'email'],
             'bijzonderheden' => ['nullable', 'string', 'max:65535'],
@@ -130,6 +138,8 @@ class LeaderController extends Controller
         if (empty($data['birthday'])) {
             $data['birthday'] = null;
         }
+        $data['installed'] = $request->boolean('installed');
+        $data['gedoopt'] = $request->boolean('gedoopt');
 
         $data['name'] = trim(($data['first_name'] ?? '').' '.($data['last_name'] ?? ''));
         $leader->update($data);
@@ -142,5 +152,25 @@ class LeaderController extends Controller
         $leader->delete();
 
         return to_route('leaders.index');
+    }
+
+    public function updateInstalled(Request $request, User $leader)
+    {
+        $validated = $request->validate([
+            'installed' => ['required', 'boolean'],
+        ]);
+        $leader->update(['installed' => $validated['installed']]);
+
+        return back();
+    }
+
+    public function updateGedoopt(Request $request, User $leader)
+    {
+        $validated = $request->validate([
+            'gedoopt' => ['required', 'boolean'],
+        ]);
+        $leader->update(['gedoopt' => $validated['gedoopt']]);
+
+        return back();
     }
 }

@@ -33,8 +33,8 @@ const sectionLabelMap = {
 };
 const speltakLabel = computed(() => sectionLabelMap[page.props.auth?.active_section] || 'Dolfijnen');
 const isBestuur = computed(() => (page.props.auth?.active_section ?? '') === 'bestuur');
-const singularAgendaLabel = computed(() => (isBestuur.value ? 'agenda-item' : 'opkomst'));
-const pluralAgendaLabel = computed(() => (isBestuur.value ? 'agenda-items' : 'opkomsten'));
+const singularAgendaLabel = computed(() => (isBestuur.value ? 'Agendaitem' : 'opkomst'));
+const pluralAgendaLabel = computed(() => (isBestuur.value ? 'Agendaitems' : 'opkomsten'));
 
 const maxAbsenceCount = computed(() =>
     Math.max(0, ...(props.leaderAbsenceChart || []).map((r) => Number(r?.absence_count) || 0)),

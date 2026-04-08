@@ -172,7 +172,6 @@ class HealthFormController extends Controller
             'phone_father' => $this->sanitizePhoneValue($data['phone_father'] ?? null),
             'email_parents' => $this->sanitizeEmailValue($data['email_parents'] ?? null),
             'bijzonderheden' => $this->sanitizeExtractedValue($data['bijzonderheden'] ?? null),
-            'active' => true,
             'installed' => false,
         ]);
 

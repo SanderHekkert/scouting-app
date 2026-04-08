@@ -13,6 +13,7 @@ const props = defineProps({
 
 const page = usePage();
 const activeSection = computed(() => page.props.auth?.active_section ?? 'dolfijnen');
+const isBestuur = computed(() => activeSection.value === 'bestuur');
 const sectionLabels = {
     bevers: 'Bevers',
     dolfijnen: 'Dolfijnen',
@@ -35,6 +36,12 @@ const form = useForm({
     event_type: props.event.event_type || '',
     activity: props.event.activity || '',
     program_by: props.event.program_by || '',
+    location: props.event.location || '',
+    time_slot: props.event.time_slot || '',
+    invitees: props.event.invitees || '',
+    link_url: props.event.link_url || '',
+    attachments: props.event.attachments || '',
+    attachment_file: null,
     absent: props.event.absent || '',
     notes: props.event.notes || '',
     task_item_ids: Array.isArray(props.event.task_item_ids) ? [...props.event.task_item_ids] : [],
@@ -42,9 +49,14 @@ const form = useForm({
 });
 
 function submit() {
-    form.patch(route('events.update', props.event.id), {
+    form.transform((data) => ({ ...data, _method: 'patch' })).post(route('events.update', props.event.id), {
+        forceFormData: true,
         preserveScroll: true,
     });
+}
+
+function onAttachmentChange(event) {
+    form.attachment_file = event?.target?.files?.[0] || null;
 }
 
 function splitNames(value) {
@@ -124,26 +136,53 @@ function removeTask(taskId) {
 
         <form class="surface-brand-top space-y-4 rounded-xl border border-app-border bg-app-panel p-5 text-app-ink shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark dark:text-app-ink-dark" @submit.prevent="submit">
             <div class="grid gap-4 sm:grid-cols-[9rem_1fr] sm:items-start">
-                <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Thema</label>
-                <input v-model="form.theme" type="text" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
+                <label v-if="!isBestuur" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Thema</label>
+                <input v-if="!isBestuur" v-model="form.theme" type="text" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
 
                 <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Datum</label>
                 <input v-model="form.event_date" type="date" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
 
-                <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Type opkomst</label>
-                <input v-model="form.event_type" type="text" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
+                <label v-if="!isBestuur" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Type opkomst</label>
+                <input v-if="!isBestuur" v-model="form.event_type" type="text" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
 
-                <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Wat ga je doen?</label>
-                <input v-model="form.activity" type="text" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
+                <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">{{ isBestuur ? 'Naam activiteit' : 'Wat ga je doen?' }}</label>
+                <input v-if="isBestuur" v-model="form.theme" type="text" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
+                <input v-else v-model="form.activity" type="text" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
 
-                <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Programma door</label>
-                <select v-model="form.program_by" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark">
+                <template v-if="isBestuur">
+                    <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Locatie</label>
+                    <input v-model="form.location" type="text" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
+
+                    <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Tijdstip</label>
+                    <input v-model="form.time_slot" type="text" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
+
+                    <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Genodigden</label>
+                    <textarea v-model="form.invitees" rows="2" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
+
+                    <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">URL</label>
+                    <input v-model="form.link_url" type="url" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
+
+                    <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Bijlagen</label>
+                    <div class="space-y-2">
+                        <a
+                            v-if="props.event.attachment_name"
+                            :href="route('events.attachment.download', props.event.id)"
+                            class="inline-flex text-sm text-brand-blue underline"
+                        >
+                            {{ props.event.attachment_name }}
+                        </a>
+                        <input type="file" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @change="onAttachmentChange" />
+                    </div>
+                </template>
+
+                <label v-if="!isBestuur" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Programma door</label>
+                <select v-if="!isBestuur" v-model="form.program_by" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark">
                     <option value="">Geen gekozen</option>
                     <option v-for="leader in leaders" :key="`leader-${leader}`" :value="leader">{{ leader }}</option>
                 </select>
 
-                <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Afwezig</label>
-                <div>
+                <label v-if="!isBestuur" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Afwezig</label>
+                <div v-if="!isBestuur">
                     <div class="flex flex-wrap gap-1.5">
                         <span
                             v-for="name in splitNames(form.absent)"
@@ -186,8 +225,8 @@ function removeTask(taskId) {
                     </select>
                 </div>
 
-                <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Gezamenlijk met</label>
-                <div class="flex flex-wrap gap-2">
+                <label v-if="!isBestuur" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Gezamenlijk met</label>
+                <div v-if="!isBestuur" class="flex flex-wrap gap-2">
                     <label
                         v-for="section in shareableSections"
                         :key="`share-${section}`"

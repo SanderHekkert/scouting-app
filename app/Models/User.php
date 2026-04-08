@@ -21,6 +21,8 @@ use Illuminate\Notifications\Notifiable;
     'postal_code',
     'city',
     'birthday',
+    'installed',
+    'gedoopt',
     'phone_number',
     'bijzonderheden',
 ])]
@@ -95,6 +97,8 @@ class User extends Authenticatable implements MustVerifyEmail
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'birthday' => 'date',
+            'installed' => 'boolean',
+            'gedoopt' => 'boolean',
         ];
     }
 }
