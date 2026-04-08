@@ -69,7 +69,7 @@ function roleEntries(user) {
         >
             <div class="mb-3 border-b border-brand-blue/35 pb-2">
                 <h3 class="text-lg font-semibold text-app-ink dark:text-app-ink-dark">Nieuwe gebruikers</h3>
-                <p class="mt-1 text-xs text-app-muted dark:text-app-muted-dark">Aangemaakt in de afgelopen 14 dagen</p>
+                <p class="mt-1 text-xs text-app-muted dark:text-app-muted-dark">Gebruikers zonder huidige rol</p>
             </div>
 
             <div class="space-y-3 md:hidden">

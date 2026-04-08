@@ -26,7 +26,6 @@ class ProfileController extends Controller
             'push' => [
                 'vapidPublicKey' => (string) config('services.webpush.vapid_public_key'),
                 'isSubscribed' => $user->pushSubscriptions()->exists(),
-                'canSend' => $user->isGlobalAdmin() || $user->isGlobalBoardMember(),
             ],
         ]);
     }

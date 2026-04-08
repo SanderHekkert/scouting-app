@@ -1,8 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link, router } from '@inertiajs/vue3';
-import { reactive } from 'vue';
-import { PencilSquareIcon, XMarkIcon } from '@heroicons/vue/24/outline';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { ArrowLeftCircleIcon, DocumentCheckIcon, TrashIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     user: { type: Object, required: true },
@@ -29,167 +28,104 @@ const roleLabel = {
     lid: 'Lid',
 };
 
-const state = reactive({
+const form = useForm({
     name: props.user.name || '',
     email: props.user.email || '',
     first_name: props.user.first_name || '',
     last_name: props.user.last_name || '',
     roles: Array.isArray(props.user.roles) ? props.user.roles.map((r) => ({ section: r.section, role: r.role })) : [],
-    editing: false,
     selectedSection: 'bevers',
     selectedRole: 'leiding',
-    saving: false,
 });
-
-const autosaveTimers = new Map();
 
 function rolesForSection(section) {
     return section === '*' ? props.globalRoles : props.localRoles;
 }
 
-function scheduleSave() {
-    const key = `user:${props.user.id}`;
-    clearTimeout(autosaveTimers.get(key));
-    autosaveTimers.set(
-        key,
-        setTimeout(() => {
-            saveNow();
-            autosaveTimers.delete(key);
-        }, 350),
-    );
-}
-
-function saveNow() {
-    state.saving = true;
+function submit() {
     router.patch(route('admin.users.update', props.user.id), {
-        name: state.name,
-        email: state.email,
-        first_name: state.first_name || null,
-        last_name: state.last_name || null,
-        roles: state.roles.map((r) => ({ section: r.section, role: r.role })),
+        name: form.name,
+        email: form.email,
+        first_name: form.first_name || null,
+        last_name: form.last_name || null,
+        roles: form.roles.map((r) => ({ section: r.section, role: r.role })),
     }, {
         preserveScroll: true,
-        onFinish: () => {
-            state.saving = false;
-        },
     });
 }
 
-function toggleEdit() {
-    state.editing = !state.editing;
-}
-
 function addRole() {
-    const section = state.selectedSection;
-    const role = state.selectedRole;
+    const section = form.selectedSection;
+    const role = form.selectedRole;
     if (!section || !role) return;
-    const exists = state.roles.some((r) => r.section === section);
+    const exists = form.roles.some((r) => r.section === section);
     if (exists) {
-        state.roles = state.roles.map((r) => (r.section === section ? { section, role } : r));
+        form.roles = form.roles.map((r) => (r.section === section ? { section, role } : r));
     } else {
-        state.roles.push({ section, role });
+        form.roles.push({ section, role });
     }
-    scheduleSave();
 }
 
 function removeRole(index) {
-    state.roles.splice(index, 1);
-    scheduleSave();
+    form.roles.splice(index, 1);
 }
 
-function onEditFocusOut(domEvent) {
-    if (!state.editing) return;
-    const next = domEvent?.relatedTarget;
-    const container = domEvent?.currentTarget;
-    if (next && container && typeof container.contains === 'function' && container.contains(next)) {
-        return;
-    }
-    saveNow();
-    state.editing = false;
+function deleteUser() {
+    if (!confirm('Deze gebruiker verwijderen?')) return;
+    router.delete(route('admin.users.destroy', props.user.id));
 }
 </script>
 
 <template>
-    <Head :title="`Gebruiker - ${state.name}`" />
+    <Head :title="`Gebruiker - ${form.name}`" />
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center justify-between gap-3">
-                <h2 class="text-xl font-semibold text-black">Gebruiker</h2>
-                <div class="flex items-center gap-2">
-                    <Link :href="route('admin.users.index')" class="rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-black">
-                        Terug
-                    </Link>
-                    <button type="button" class="rounded border border-slate-300 bg-white px-2 py-1.5 text-sm text-black" @click="toggleEdit" title="Aanpassen">
-                        <PencilSquareIcon class="h-4 w-4" />
-                    </button>
-                </div>
+                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Gebruiker bewerken</h2>
+                <Link :href="route('admin.users.index')" class="inline-flex items-center justify-center rounded border border-app-border p-2 text-app-ink hover:bg-brand-blue/10 dark:border-app-border-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/15" title="Terug">
+                    <ArrowLeftCircleIcon class="h-5 w-5" />
+                </Link>
             </div>
         </template>
 
-        <div class="rounded-xl border border-slate-300 bg-white p-4 text-black shadow-sm">
-            <div class="grid gap-4 md:grid-cols-2" @focusout.capture="onEditFocusOut($event)">
-                <div>
-                    <p class="text-xs uppercase tracking-wide text-slate-600">Naam</p>
-                    <template v-if="state.editing">
-                        <input v-model="state.name" type="text" class="mt-1 w-full rounded border border-slate-300 bg-white px-2 py-1.5 text-black" @input="scheduleSave" />
-                    </template>
-                    <template v-else>
-                        <p class="mt-1 text-black">{{ state.name }}</p>
-                    </template>
-                </div>
-                <div>
-                    <p class="text-xs uppercase tracking-wide text-slate-600">E-mail</p>
-                    <template v-if="state.editing">
-                        <input v-model="state.email" type="email" class="mt-1 w-full rounded border border-slate-300 bg-white px-2 py-1.5 text-black" @input="scheduleSave" />
-                    </template>
-                    <template v-else>
-                        <p class="mt-1 text-black">{{ state.email }}</p>
-                    </template>
-                </div>
-                <div>
-                    <p class="text-xs uppercase tracking-wide text-slate-600">Voornaam</p>
-                    <template v-if="state.editing">
-                        <input v-model="state.first_name" type="text" class="mt-1 w-full rounded border border-slate-300 bg-white px-2 py-1.5 text-black" @input="scheduleSave" />
-                    </template>
-                    <template v-else>
-                        <p class="mt-1 text-black">{{ state.first_name || '-' }}</p>
-                    </template>
-                </div>
-                <div>
-                    <p class="text-xs uppercase tracking-wide text-slate-600">Achternaam</p>
-                    <template v-if="state.editing">
-                        <input v-model="state.last_name" type="text" class="mt-1 w-full rounded border border-slate-300 bg-white px-2 py-1.5 text-black" @input="scheduleSave" />
-                    </template>
-                    <template v-else>
-                        <p class="mt-1 text-black">{{ state.last_name || '-' }}</p>
-                    </template>
-                </div>
-            </div>
+        <form class="surface-brand-top space-y-4 rounded-xl border border-app-border bg-app-panel p-5 text-app-ink shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark dark:text-app-ink-dark" @submit.prevent="submit">
+            <div class="grid gap-4 sm:grid-cols-[11rem_1fr] sm:items-start">
+                <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Naam</label>
+                <input v-model="form.name" type="text" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" />
 
-            <div class="mt-5 border-t border-slate-300 pt-4">
-                <p class="text-sm font-semibold text-black">Rollen</p>
-                <div class="mt-2 flex flex-wrap gap-2">
+                <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">E-mail</label>
+                <input v-model="form.email" type="email" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" />
+
+                <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Voornaam</label>
+                <input v-model="form.first_name" type="text" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" />
+
+                <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Achternaam</label>
+                <input v-model="form.last_name" type="text" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" />
+
+                <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Rollen</label>
+                <div>
+                    <div class="flex flex-wrap gap-2">
                     <span
-                        v-for="(entry, idx) in state.roles"
+                        v-for="(entry, idx) in form.roles"
                         :key="`role-chip-${entry.section}-${idx}`"
-                        class="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs text-black"
+                        class="inline-flex items-center gap-1 rounded-full bg-brand-blue/15 px-2 py-0.5 text-xs text-black"
                     >
                         {{ sectionLabel[entry.section] || entry.section }}: {{ roleLabel[entry.role] || entry.role }}
-                        <button v-if="state.editing" type="button" class="rounded p-0.5 text-black hover:bg-blue-200" @click="removeRole(idx)">
+                        <button type="button" class="rounded p-0.5 text-black hover:bg-brand-blue/25" @click="removeRole(idx)">
                             <XMarkIcon class="h-3.5 w-3.5" />
                         </button>
                     </span>
-                    <span v-if="!state.roles.length" class="text-sm text-slate-600">Geen rollen</span>
+                    <span v-if="!form.roles.length" class="text-sm text-app-muted dark:text-app-muted-dark">Geen rollen</span>
                 </div>
 
-                <div v-if="state.editing" class="mt-3 flex flex-wrap items-center gap-2">
-                    <select v-model="state.selectedSection" class="rounded border border-slate-300 bg-white px-2 py-1.5 text-sm text-black">
+                <div class="mt-3 flex flex-wrap items-center gap-2">
+                    <select v-model="form.selectedSection" class="rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black">
                         <option v-for="section in props.sections" :key="`add-s-${section}`" :value="section">
                             {{ sectionLabel[section] || section }}
                         </option>
                     </select>
-                    <select v-model="state.selectedRole" class="rounded border border-slate-300 bg-white px-2 py-1.5 text-sm text-black">
-                        <option v-for="role in rolesForSection(state.selectedSection)" :key="`add-r-${role}`" :value="role">
+                    <select v-model="form.selectedRole" class="rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black">
+                        <option v-for="role in rolesForSection(form.selectedSection)" :key="`add-r-${role}`" :value="role">
                             {{ roleLabel[role] || role }}
                         </option>
                     </select>
@@ -197,9 +133,19 @@ function onEditFocusOut(domEvent) {
                         Rol toevoegen
                     </button>
                 </div>
-            </div>
+                </div>
 
-            <p v-if="state.saving" class="mt-3 text-xs text-slate-600">Opslaan...</p>
-        </div>
+                <span class="hidden sm:block" aria-hidden="true" />
+                <div class="flex items-center gap-2">
+                    <button type="submit" class="inline-flex items-center gap-2 rounded bg-brand-blue px-4 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark disabled:opacity-50" :disabled="form.processing" title="Opslaan">
+                        <DocumentCheckIcon class="h-5 w-5" />
+                        <span>Opslaan</span>
+                    </button>
+                    <button type="button" class="btn-action-delete btn-action-delete--lg" title="Verwijderen" @click="deleteUser">
+                        <TrashIcon class="h-5 w-5" />
+                    </button>
+                </div>
+            </div>
+        </form>
     </AuthenticatedLayout>
 </template>

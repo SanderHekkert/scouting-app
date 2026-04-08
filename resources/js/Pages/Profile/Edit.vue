@@ -3,7 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import DeleteUserForm from './Partials/DeleteUserForm.vue';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm.vue';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
 const props = defineProps({
@@ -15,7 +15,7 @@ const props = defineProps({
     },
     push: {
         type: Object,
-        default: () => ({ vapidPublicKey: '', isSubscribed: false, canSend: false }),
+        default: () => ({ vapidPublicKey: '', isSubscribed: false }),
     },
 });
 
@@ -24,11 +24,6 @@ const pushBusy = ref(false);
 const pushError = ref('');
 const pushMessage = ref('');
 
-const pushSendForm = useForm({
-    title: 'Nieuwe melding',
-    body: '',
-    url: '/dashboard',
-});
 
 function csrfToken() {
     return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
@@ -127,14 +122,6 @@ async function disablePush() {
     }
 }
 
-function sendPush() {
-    pushSendForm.post(route('admin.push-notifications.store'), {
-        preserveScroll: true,
-        onSuccess: () => {
-            pushSendForm.reset('body');
-        },
-    });
-}
 </script>
 
 <template>
@@ -205,26 +192,6 @@ function sendPush() {
 
                         <p v-if="pushMessage" class="mt-3 text-sm text-emerald-700 dark:text-emerald-300">{{ pushMessage }}</p>
                         <p v-if="pushError" class="mt-2 text-sm text-red-700 dark:text-red-300">{{ pushError }}</p>
-                    </div>
-                </div>
-
-                <div
-                    v-if="push?.canSend"
-                    class="surface-brand-top-lg border border-app-border bg-app-panel p-4 shadow sm:rounded-lg sm:p-8 dark:border-app-border-dark dark:bg-app-panel-dark"
-                >
-                    <div class="w-full">
-                        <h3 class="text-lg font-medium text-app-ink dark:text-app-ink-dark">Pushmelding sturen</h3>
-                        <p class="mt-1 text-sm text-app-muted dark:text-app-muted-dark">
-                            Verstuur een melding naar alle apparaten met actieve push.
-                        </p>
-                        <form class="mt-4 grid gap-3" @submit.prevent="sendPush">
-                            <input v-model="pushSendForm.title" type="text" class="rounded border border-app-border px-3 py-2 dark:border-app-border-dark dark:bg-app-canvas-dark" placeholder="Titel" />
-                            <input v-model="pushSendForm.body" type="text" class="rounded border border-app-border px-3 py-2 dark:border-app-border-dark dark:bg-app-canvas-dark" placeholder="Bericht" />
-                            <input v-model="pushSendForm.url" type="text" class="rounded border border-app-border px-3 py-2 dark:border-app-border-dark dark:bg-app-canvas-dark" placeholder="/dashboard" />
-                            <button type="submit" class="w-fit rounded bg-brand-blue px-4 py-2 text-sm font-semibold text-white hover:bg-brand-blue-dark" :disabled="pushSendForm.processing">
-                                Verstuur push
-                            </button>
-                        </form>
                     </div>
                 </div>
 

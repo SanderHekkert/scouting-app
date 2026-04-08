@@ -6,9 +6,16 @@ use App\Models\PushSubscription;
 use App\Services\WebPushService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class AdminPushNotificationController extends Controller
 {
+    public function index(): Response
+    {
+        return Inertia::render('Admin/PushNotifications');
+    }
+
     public function store(Request $request, WebPushService $webPushService): RedirectResponse
     {
         $data = $request->validate([

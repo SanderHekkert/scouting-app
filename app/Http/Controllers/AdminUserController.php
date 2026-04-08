@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\UserSectionRole;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -33,21 +32,20 @@ class AdminUserController extends Controller
             })
             ->values();
 
-        $cutoff = Carbon::now()->subDays(14);
         $newUsers = $allUsers
-            ->filter(function (array $user) use ($cutoff): bool {
-                $createdAt = isset($user['created_at']) ? Carbon::parse($user['created_at']) : null;
+            ->filter(function (array $user): bool {
+                $roles = $user['section_roles'] ?? [];
 
-                return $createdAt !== null && $createdAt->greaterThanOrEqualTo($cutoff);
+                return is_array($roles) && count($roles) === 0;
             })
             ->values()
             ->all();
 
         $existingUsers = $allUsers
-            ->reject(function (array $user) use ($cutoff): bool {
-                $createdAt = isset($user['created_at']) ? Carbon::parse($user['created_at']) : null;
+            ->reject(function (array $user): bool {
+                $roles = $user['section_roles'] ?? [];
 
-                return $createdAt !== null && $createdAt->greaterThanOrEqualTo($cutoff);
+                return is_array($roles) && count($roles) === 0;
             })
             ->values()
             ->all();
