@@ -16,8 +16,8 @@ function tabClass(active) {
     ];
 }
 
-const isAgendaTab = () => route().current('events.index');
-const isArchivedTab = () => route().current('events.archived');
+const isAgendaTab = () => route().current('opkomsten.index');
+const isArchivedTab = () => route().current('opkomsten.archived');
 const isJaarThemaTab = () => route().current('jaar-thema');
 </script>
 
@@ -29,17 +29,17 @@ const isJaarThemaTab = () => route().current('jaar-thema');
     >
         <Link
             role="tab"
-            :href="route('events.index')"
+            :href="route('opkomsten.index')"
             preserve-scroll
             :aria-selected="isAgendaTab()"
             class="shrink-0 touch-manipulation whitespace-nowrap"
             :class="tabClass(isAgendaTab())"
         >
-            Agenda
+            Opkomsten
         </Link>
         <Link
             role="tab"
-            :href="route('events.archived')"
+            :href="route('opkomsten.archived')"
             preserve-scroll
             :aria-selected="isArchivedTab()"
             class="shrink-0 touch-manipulation whitespace-nowrap"

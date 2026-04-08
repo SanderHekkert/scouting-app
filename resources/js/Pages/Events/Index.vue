@@ -105,7 +105,7 @@ function toggleAddForm() {
 }
 
 function submitAdd() {
-    form.post(route('events.store'), {
+    form.post(route('opkomsten.store'), {
         forceFormData: true,
         preserveScroll: true,
         onSuccess: () => {
@@ -122,20 +122,20 @@ function onAttachmentChange(event) {
 function deleteEvent(event) {
     if (!event?.id) return;
     if (!confirm('Dit agenda-item verwijderen?')) return;
-    router.delete(route('events.destroy', event.id), {
+    router.delete(route('opkomsten.destroy', event.id), {
         preserveScroll: true,
     });
 }
 
 function editEvent(event) {
     if (!event?.id) return;
-    router.get(route('events.show', event.id));
+    router.get(route('opkomsten.show', event.id));
 }
 
 function setOwnAttendance(event, present) {
     if (!event?.id) return;
     router.patch(
-        route('events.attendance.update', event.id),
+        route('opkomsten.attendance.update', event.id),
         { present },
         { preserveScroll: true },
     );
@@ -144,11 +144,11 @@ function setOwnAttendance(event, present) {
 </script>
 
 <template>
-    <Head title="Agenda" />
+    <Head title="Opkomsten" />
     <AuthenticatedLayout>
         <template #header>
             <div class="flex w-full flex-wrap items-center justify-between gap-3">
-                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Agenda</h2>
+                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Opkomsten</h2>
                 <div v-if="canManageAgenda" class="flex flex-wrap items-center justify-end gap-2 sm:ms-auto">
                     <button
                         type="button"

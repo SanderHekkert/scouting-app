@@ -26,6 +26,7 @@ class EventController extends Controller
     {
         $today = Carbon::today();
         $section = $this->activeSection();
+        $this->ensureOpkomstenSection($section);
 
         $active = Event::withoutGlobalScope('section')
             ->where(function (Builder $query) use ($section): void {
@@ -77,6 +78,7 @@ class EventController extends Controller
     {
         $today = Carbon::today();
         $section = $this->activeSection();
+        $this->ensureOpkomstenSection($section);
 
         $archived = Event::withoutGlobalScope('section')
             ->where(function (Builder $query) use ($section): void {
@@ -102,6 +104,7 @@ class EventController extends Controller
     public function show(Event $event)
     {
         $section = $this->activeSection();
+        $this->ensureOpkomstenSection($section);
         $taskItems = TaskItem::withoutGlobalScope('section')
             ->where(function (Builder $query) use ($section): void {
                 $query->where('section', $section);
@@ -151,6 +154,7 @@ class EventController extends Controller
     public function store(Request $request)
     {
         $section = $this->activeSection();
+        $this->ensureOpkomstenSection($section);
         $data = $request->validate([
             'theme' => ['nullable', 'string', 'max:255'],
             'event_date' => ['required', 'date'],
@@ -177,17 +181,9 @@ class EventController extends Controller
         if ($request->hasFile('attachment_file')) {
             $data['attachments'] = $this->encodeAttachmentMeta($request->file('attachment_file'));
         }
-        if ($this->isBestuurSection($section)) {
-            $data['event_type'] = '';
-            $data['activity'] = '';
-            $data['program_by'] = '';
-            $data['shared_sections'] = [];
-            $data['absent'] = '';
-        }
-
         Event::create($data);
 
-        return to_route('events.index');
+        return to_route('opkomsten.index');
     }
 
     /**
@@ -196,6 +192,7 @@ class EventController extends Controller
     public function update(Request $request, Event $event)
     {
         $section = $this->activeSection();
+        $this->ensureOpkomstenSection($section);
         $data = $request->validate([
             'theme' => ['nullable', 'string', 'max:255'],
             'event_date' => ['required', 'date'],
@@ -223,17 +220,9 @@ class EventController extends Controller
             $this->deleteAttachmentFile($event->attachments);
             $data['attachments'] = $this->encodeAttachmentMeta($request->file('attachment_file'));
         }
-        if ($this->isBestuurSection($section)) {
-            $data['event_type'] = '';
-            $data['activity'] = '';
-            $data['program_by'] = '';
-            $data['shared_sections'] = [];
-            $data['absent'] = '';
-        }
-
         $event->update($data);
 
-        return to_route('events.index');
+        return to_route('opkomsten.index');
     }
 
     /**
@@ -256,6 +245,7 @@ class EventController extends Controller
     public function quickUpdate(Request $request, Event $event)
     {
         $section = $this->activeSection();
+        $this->ensureOpkomstenSection($section);
         $data = $request->validate([
             'theme' => ['sometimes', 'nullable', 'string', 'max:255'],
             'event_date' => ['sometimes', 'date'],
@@ -282,23 +272,6 @@ class EventController extends Controller
         }
         if (array_key_exists('shared_sections', $data)) {
             $data['shared_sections'] = $this->normalizeSharedSections($data['shared_sections']);
-        }
-        if ($this->isBestuurSection($section)) {
-            if (array_key_exists('event_type', $data)) {
-                $data['event_type'] = '';
-            }
-            if (array_key_exists('activity', $data)) {
-                $data['activity'] = '';
-            }
-            if (array_key_exists('program_by', $data)) {
-                $data['program_by'] = '';
-            }
-            if (array_key_exists('shared_sections', $data)) {
-                $data['shared_sections'] = [];
-            }
-            if (array_key_exists('absent', $data)) {
-                $data['absent'] = '';
-            }
         }
         $event->update($data);
 
@@ -500,6 +473,11 @@ class EventController extends Controller
     private function isBestuurSection(string $section): bool
     {
         return $section === UserSectionRole::SECTION_BESTUUR;
+    }
+
+    private function ensureOpkomstenSection(string $section): void
+    {
+        abort_if($this->isBestuurSection($section), 403);
     }
 
     private function encodeAttachmentMeta(?UploadedFile $file): ?string

@@ -157,7 +157,7 @@ function safeExternalUrl(url) {
                         <p class="text-xs text-app-muted dark:text-app-muted-dark">Bijlagen</p>
                         <a
                             v-if="event.has_attachment"
-                            :href="route('events.attachment.download', event.id)"
+                            :href="route('opkomsten.attachment.download', event.id)"
                             class="text-brand-blue underline break-all"
                         >
                             {{ event.attachment_name || 'Download bijlage' }}
@@ -259,7 +259,7 @@ function safeExternalUrl(url) {
                     <td v-if="props.isBestuur" class="max-w-[14rem] px-3 py-2.5 align-top break-all">
                         <a
                             v-if="event.has_attachment"
-                            :href="route('events.attachment.download', event.id)"
+                            :href="route('opkomsten.attachment.download', event.id)"
                             class="text-brand-blue underline"
                         >
                             {{ event.attachment_name || 'Download bijlage' }}

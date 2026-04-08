@@ -49,7 +49,7 @@ const form = useForm({
 });
 
 function submit() {
-    form.transform((data) => ({ ...data, _method: 'patch' })).post(route('events.update', props.event.id), {
+    form.transform((data) => ({ ...data, _method: 'patch' })).post(route('opkomsten.update', props.event.id), {
         forceFormData: true,
         preserveScroll: true,
     });
@@ -128,7 +128,7 @@ function removeTask(taskId) {
         <template #header>
             <div class="flex items-center justify-between gap-3">
                 <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Opkomst bewerken</h2>
-                <Link :href="route('events.index')" class="inline-flex items-center justify-center rounded border border-app-border p-2 text-app-ink hover:bg-brand-blue/10 dark:border-app-border-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/15" title="Terug">
+                <Link :href="route('opkomsten.index')" class="inline-flex items-center justify-center rounded border border-app-border p-2 text-app-ink hover:bg-brand-blue/10 dark:border-app-border-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/15" title="Terug">
                     <ArrowLeftCircleIcon class="h-5 w-5" />
                 </Link>
             </div>
@@ -166,7 +166,7 @@ function removeTask(taskId) {
                     <div class="space-y-2">
                         <a
                             v-if="props.event.attachment_name"
-                            :href="route('events.attachment.download', props.event.id)"
+                            :href="route('opkomsten.attachment.download', props.event.id)"
                             class="inline-flex text-sm text-brand-blue underline"
                         >
                             {{ props.event.attachment_name }}

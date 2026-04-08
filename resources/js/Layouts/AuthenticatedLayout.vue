@@ -111,7 +111,8 @@ const userInitials = computed(() => {
 
 const mainNavItems = computed(() => ([
     { label: 'Dashboard', route: 'dashboard', module: 'dashboard', icon: HomeIcon },
-    { label: 'Agenda', route: 'events.index', matchRoutes: ['events.*', 'jaar-thema'], module: 'events', icon: CalendarDaysIcon },
+    { label: 'Agenda', route: 'agenda.index', matchRoutes: ['agenda.*'], module: 'events', icon: CalendarDaysIcon },
+    { label: 'Opkomsten', route: 'opkomsten.index', matchRoutes: ['opkomsten.*', 'jaar-thema'], module: 'events', icon: CalendarDaysIcon },
 ]).filter((item) => canView(item.module)));
 
 /** Eén sidebar-link; subpagina’s bereik je via SpeltakSubnav op de pagina zelf. */

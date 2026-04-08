@@ -19,7 +19,7 @@ const pluralLabel = computed(() => (isBestuur.value ? 'agenda-items' : 'opkomste
 function deleteEvent(event) {
     if (!event?.id) return;
     if (!confirm('Dit agenda-item verwijderen?')) return;
-    router.delete(route('events.destroy', event.id), {
+    router.delete(route('opkomsten.destroy', event.id), {
         preserveScroll: true,
     });
 }
@@ -29,7 +29,7 @@ const eventFieldSaving = ref(null);
 function patchEventField(event, field, raw) {
     eventFieldSaving.value = `${event.id}:${field}`;
     router.patch(
-        route('events.quick-update', event.id),
+        route('opkomsten.quick-update', event.id),
         { [field]: raw ?? '' },
         {
             preserveScroll: true,
@@ -49,7 +49,7 @@ function isEventFieldSaving(event, field) {
     <Head :title="`Gearchiveerde ${pluralLabel}`" />
     <AuthenticatedLayout>
         <template #header>
-            <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Agenda</h2>
+            <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Opkomsten</h2>
         </template>
         <div class="space-y-4 text-app-ink dark:text-app-ink-dark">
             <div class="surface-brand-top rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-4">

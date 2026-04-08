@@ -17,7 +17,7 @@ class YearThemeController extends Controller
             app()->bound('currentSection') &&
             in_array(app('currentSection'), [UserSectionRole::SECTION_ZEEVERKENNERS, UserSectionRole::SECTION_LOODSEN, UserSectionRole::SECTION_WILDE_VAART, UserSectionRole::SECTION_BESTUUR], true)
         ) {
-            return to_route('events.index');
+            return to_route('opkomsten.index');
         }
 
         return null;

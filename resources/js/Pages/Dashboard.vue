@@ -35,6 +35,9 @@ const speltakLabel = computed(() => sectionLabelMap[page.props.auth?.active_sect
 const isBestuur = computed(() => (page.props.auth?.active_section ?? '') === 'bestuur');
 const singularAgendaLabel = computed(() => (isBestuur.value ? 'Agendaitem' : 'opkomst'));
 const pluralAgendaLabel = computed(() => (isBestuur.value ? 'Agendaitems' : 'opkomsten'));
+const mainAgendaRoute = computed(() => (isBestuur.value ? 'agenda.index' : 'opkomsten.index'));
+const eventDetailRoute = computed(() => (isBestuur.value ? 'agenda.index' : 'opkomsten.index'));
+const updateThemeRoute = computed(() => (isBestuur.value ? null : 'opkomsten.update-theme'));
 
 const maxAbsenceCount = computed(() =>
     Math.max(0, ...(props.leaderAbsenceChart || []).map((r) => Number(r?.absence_count) || 0)),
@@ -81,9 +84,10 @@ function formatIsoToNl(iso) {
 const savingEventId = ref(null);
 
 function saveEventTheme(ev, newTheme) {
+    if (!updateThemeRoute.value) return;
     savingEventId.value = ev.id;
     router.patch(
-        route('events.update-theme', ev.id),
+        route(updateThemeRoute.value, ev.id),
         { theme: newTheme },
         {
             preserveScroll: true,
@@ -95,7 +99,7 @@ function saveEventTheme(ev, newTheme) {
 }
 
 function agendaUrlForEvent(ev) {
-    return route('events.index', { event: ev.id });
+    return route(eventDetailRoute.value, { event: ev.id });
 }
 
 const attendanceSaving = ref(false);
@@ -181,7 +185,7 @@ function setUpcomingAttendancePresent(present) {
                             </li>
                         </ul>
                         <Link
-                            :href="route('events.index')"
+                            :href="route(mainAgendaRoute)"
                             class="mt-3 inline-flex text-xs font-semibold text-brand-blue underline decoration-brand-blue/50 underline-offset-4 hover:text-brand-blue-dark dark:text-brand-blue-light dark:hover:text-app-ink-dark"
                         >
                             Naar agenda
@@ -193,7 +197,7 @@ function setUpcomingAttendancePresent(present) {
             <section v-else class="surface-brand-top rounded-xl border border-app-border bg-app-panel/90 px-4 py-3 text-sm text-app-muted dark:border-brand-blue/30 dark:bg-app-panel-dark/90 dark:text-app-muted-dark">
                 <span class="font-medium text-app-ink dark:text-app-ink-dark">Geen opkomst vandaag</span>
                 <span class="mx-2 text-app-muted dark:text-app-muted-dark">·</span>
-                <Link :href="route('events.index')" class="font-medium text-brand-blue hover:text-brand-blue-dark dark:text-brand-blue-light dark:hover:text-app-ink-dark">Bekijk agenda</Link>
+                <Link :href="route(mainAgendaRoute)" class="font-medium text-brand-blue hover:text-brand-blue-dark dark:text-brand-blue-light dark:hover:text-app-ink-dark">Bekijk agenda</Link>
             </section>
 
             <section class="grid gap-3 sm:grid-cols-3">
@@ -350,7 +354,7 @@ function setUpcomingAttendancePresent(present) {
                     </ul>
                     <p v-else class="mt-6 text-center text-sm text-app-muted dark:text-app-muted-dark">
                         Geen geplande {{ pluralAgendaLabel }}.
-                        <Link :href="route('events.index')" class="font-medium text-brand-blue hover:text-brand-blue-dark dark:text-brand-blue-light dark:hover:text-app-ink-dark"> Agenda </Link>
+                        <Link :href="route(mainAgendaRoute)" class="font-medium text-brand-blue hover:text-brand-blue-dark dark:text-brand-blue-light dark:hover:text-app-ink-dark"> Agenda </Link>
                     </p>
                 </section>
 
@@ -405,7 +409,7 @@ function setUpcomingAttendancePresent(present) {
                         <h3 class="text-base font-semibold text-brand-blue-dark dark:text-app-ink-dark">Afwezigheid leiding</h3>
                     </div>
                     <Link
-                        :href="route('events.index')"
+                        :href="route(mainAgendaRoute)"
                         class="text-xs font-semibold text-brand-blue hover:text-brand-blue-dark dark:text-brand-blue-light dark:hover:text-app-ink-dark"
                     >
                         Agenda
