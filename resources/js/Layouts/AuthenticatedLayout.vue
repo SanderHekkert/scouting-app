@@ -127,7 +127,9 @@ const dolfijnenNavItem = {
     module: 'members',
     icon: UserGroupIcon,
 };
-const showSpeltakNav = computed(() => canView(dolfijnenNavItem.module));
+const showSpeltakNav = computed(
+    () => canView(dolfijnenNavItem.module) && activeSection.value !== 'bestuur',
+);
 
 const tailNavItems = computed(() => ([
     { label: 'Leiding', route: 'leaders.index', matchRoutes: ['leaders.*'], module: 'leaders', icon: UsersIcon },

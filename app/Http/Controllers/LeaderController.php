@@ -9,9 +9,8 @@ use Inertia\Inertia;
 
 class LeaderController extends Controller
 {
-    public function index(Request $request)
+    public function index()
     {
-        $editId = $request->integer('edit');
         $activeSection = app()->bound('currentSection') ? app('currentSection') : UserSectionRole::SECTION_DOLFIJNEN;
 
         return Inertia::render('Leaders/Index', [
@@ -49,7 +48,6 @@ class LeaderController extends Controller
                     ]);
                 })
                 ->values(),
-            'open_edit_leader_id' => $editId > 0 ? $editId : null,
         ]);
     }
 

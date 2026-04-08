@@ -1,24 +1,17 @@
 <script setup>
-import { computed, nextTick, onMounted, ref } from 'vue';
-import EditableTextCell from '@/Components/EditableTextCell.vue';
+import { computed, ref } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
-import { ChevronRightIcon, MagnifyingGlassIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import { ChevronRightIcon, MagnifyingGlassIcon, PencilSquareIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     leaders: {
         type: Array,
         default: () => [],
     },
-    open_edit_leader_id: {
-        type: Number,
-        default: null,
-    },
 });
 
 const showAddForm = ref(false);
-const rowHighlightLeaderId = ref(null);
-const leaderInlineOpen = ref({ key: '', nonce: 0 });
 
 const form = useForm({
     first_name: '',
@@ -75,31 +68,10 @@ const filteredLeaders = computed(() =>
 function toggleAddForm() {
     showAddForm.value = !showAddForm.value;
     if (showAddForm.value) {
-        rowHighlightLeaderId.value = null;
         form.reset();
         form.clearErrors();
     }
 }
-
-function requestLeaderInlineEdit(leader, field = 'first_name') {
-    if (!leader) return;
-    showAddForm.value = false;
-    rowHighlightLeaderId.value = leader.id;
-    leaderInlineOpen.value = {
-        key: `${leader.id}:${field}`,
-        nonce: leaderInlineOpen.value.nonce + 1,
-    };
-    nextTick(() => {
-        document.getElementById(`leader-row-${leader.id}`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-    });
-}
-
-onMounted(() => {
-    const id = props.open_edit_leader_id;
-    if (!id) return;
-    const l = props.leaders?.find((x) => x.id === id);
-    if (l) requestLeaderInlineEdit(l, 'first_name');
-});
 
 function leaderListName(l) {
     return [l.first_name, l.last_name].filter(Boolean).join(' ').trim() || '–';
@@ -129,9 +101,6 @@ function submitAdd() {
 function deleteLeader(leader) {
     if (!leader?.id) return;
     if (!confirm('Deze leiding verwijderen?')) return;
-    if (rowHighlightLeaderId.value === leader.id) {
-        rowHighlightLeaderId.value = null;
-    }
     router.delete(route('leaders.destroy', leader.id), {
         preserveScroll: true,
     });
@@ -151,31 +120,6 @@ function formatBirthday(value) {
     return `${d}-${m}-${y}`;
 }
 
-const leaderFieldSaving = ref(null);
-
-function normalizeLeaderQuickPayload(field, raw) {
-    if (field === 'birthday') {
-        const s = String(raw ?? '').trim();
-        return { birthday: s === '' ? null : s };
-    }
-    return { [field]: raw ?? '' };
-}
-
-function patchLeaderField(leader, field, raw) {
-    const payload = normalizeLeaderQuickPayload(field, raw);
-    const k = Object.keys(payload)[0];
-    leaderFieldSaving.value = `${leader.id}:${k}`;
-    router.patch(route('leaders.quick-update', leader.id), payload, {
-        preserveScroll: true,
-        onFinish: () => {
-            leaderFieldSaving.value = null;
-        },
-    });
-}
-
-function isLeaderFieldSaving(leader, field) {
-    return leaderFieldSaving.value === `${leader.id}:${field}`;
-}
 </script>
 
 <template>
@@ -370,19 +314,16 @@ function isLeaderFieldSaving(leader, field) {
                             <div class="mt-1 text-xs text-app-muted dark:text-app-muted-dark">
                                 Rol: {{ leader.section_role_label || '–' }}
                             </div>
-                            <div
-                                class="mt-2 border-t border-brand-blue/25 pt-2 text-sm dark:border-brand-blue/35"
-                                @click.stop
-                            >
-                                <EditableTextCell
-                                    :text="leader.bijzonderheden || ''"
-                                    multiline
-                                    :cell-key="`${leader.id}:bijzonderheden`"
-                                    :open-request-key="leaderInlineOpen.key"
-                                    :open-request-nonce="leaderInlineOpen.nonce"
-                                    :saving="isLeaderFieldSaving(leader, 'bijzonderheden')"
-                                    @save="(v) => patchLeaderField(leader, 'bijzonderheden', v)"
-                                />
+                            <div class="mt-2 border-t border-brand-blue/25 pt-2 text-sm dark:border-brand-blue/35">
+                                {{ leader.bijzonderheden || '–' }}
+                            </div>
+                            <div class="mt-3 flex items-center gap-2">
+                                <button type="button" class="btn-action-edit" title="Bewerken" @click.stop="goToLeaderDetail(leader)">
+                                    <PencilSquareIcon class="h-4 w-4 shrink-0" />
+                                </button>
+                                <button type="button" class="btn-action-delete" title="Verwijderen" @click.stop="deleteLeader(leader)">
+                                    <TrashIcon class="h-4 w-4 shrink-0" />
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -404,9 +345,7 @@ function isLeaderFieldSaving(leader, field) {
                                 v-for="leader in filteredLeaders"
                                 :id="`leader-row-${leader.id}`"
                                 :key="leader.id"
-                                class="cursor-pointer bg-brand-blue/5 transition-colors hover:bg-brand-blue/12 dark:bg-app-panel-dark/50 dark:hover:bg-brand-blue/15"
-                                :class="{ '!bg-brand-blue/15 dark:!bg-app-canvas-dark/90': rowHighlightLeaderId === leader.id }"
-                                @click="goToLeaderDetail(leader)"
+                                class="bg-brand-blue/5 transition-colors hover:bg-brand-blue/12 dark:bg-app-panel-dark/50 dark:hover:bg-brand-blue/15"
                             >
                                 <td class="max-w-[10rem] px-3 py-2.5 align-top">
                                     {{ leader.first_name || '–' }}
@@ -421,6 +360,9 @@ function isLeaderFieldSaving(leader, field) {
                                     {{ leader.phone_number || '–' }}
                                 </td>
                                 <td class="px-3 py-2.5 align-top">
+                                    <button type="button" class="btn-action-edit me-2" title="Bewerken" @click="goToLeaderDetail(leader)">
+                                        <PencilSquareIcon class="h-4 w-4 shrink-0" />
+                                    </button>
                                     <button type="button" class="btn-action-delete" title="Verwijderen" @click="deleteLeader(leader)">
                                         <TrashIcon class="h-4 w-4 shrink-0" />
                                     </button>

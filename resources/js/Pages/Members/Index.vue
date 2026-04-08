@@ -1,10 +1,9 @@
 <script setup>
-import { computed, nextTick, onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 import SpeltakSubnav from '@/Components/SpeltakSubnav.vue';
-import EditableTextCell from '@/Components/EditableTextCell.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, useForm, usePage, router } from '@inertiajs/vue3';
-import { ChevronRightIcon, MagnifyingGlassIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import { ChevronRightIcon, MagnifyingGlassIcon, PencilSquareIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     members: Array,
@@ -35,7 +34,6 @@ const speltakSingular = computed(() => sectionSingularMap[page.props.auth?.activ
 
 const showAddForm = ref(false);
 const rowHighlightMemberId = ref(null);
-const memberInlineOpen = ref({ key: '', nonce: 0 });
 
 const form = useForm({
     installed: false,
@@ -158,27 +156,6 @@ function toggleAddForm() {
     }
 }
 
-/** Opent direct de juiste tabelcel (dubbelklik-gedrag via EditableTextCell). */
-function requestMemberInlineEdit(member, field = 'first_name') {
-    if (!member) return;
-    showAddForm.value = false;
-    rowHighlightMemberId.value = member.id;
-    memberInlineOpen.value = {
-        key: `${member.id}:${field}`,
-        nonce: memberInlineOpen.value.nonce + 1,
-    };
-    nextTick(() => {
-        document.getElementById(`member-row-${member.id}`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-    });
-}
-
-onMounted(() => {
-    const id = props.open_edit_member_id;
-    if (!id) return;
-    const m = props.members?.find((x) => x.id === id);
-    if (m) requestMemberInlineEdit(m, 'first_name');
-});
-
 function normalizeMemberFields(data) {
     return {
         ...data,
@@ -254,38 +231,9 @@ function installedToggleClass(member, isJa) {
     return 'border border-brand-blue/40 bg-app-panel text-app-ink hover:bg-brand-blue/10 dark:border-brand-blue/45 dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/20';
 }
 
-const memberFieldSaving = ref(null);
-
-function normalizeMemberQuickPayload(field, raw) {
-    if (field === 'age') {
-        const s = String(raw ?? '').trim();
-        if (s === '') {
-            return { age: null };
-        }
-        const n = Number.parseInt(s, 10);
-        return { age: Number.isNaN(n) ? null : n };
-    }
-    if (field === 'birthday') {
-        const s = String(raw ?? '').trim();
-        return { birthday: s === '' ? null : s };
-    }
-    return { [field]: raw ?? '' };
-}
-
-function patchMemberField(member, field, raw) {
-    const payload = normalizeMemberQuickPayload(field, raw);
-    const k = Object.keys(payload)[0];
-    memberFieldSaving.value = `${member.id}:${k}`;
-    router.patch(route('members.quick-update', member.id), payload, {
-        preserveScroll: true,
-        onFinish: () => {
-            memberFieldSaving.value = null;
-        },
-    });
-}
-
-function isMemberFieldSaving(member, field) {
-    return memberFieldSaving.value === `${member.id}:${field}`;
+function editMember(member) {
+    if (!member?.id) return;
+    router.get(route('members.show', member.id));
 }
 </script>
 
@@ -433,10 +381,7 @@ function isMemberFieldSaving(member, field) {
                         </h3>
                         <p
                             v-if="membersTab === 'dolfijnen'"
-                            class="mt-0.5 text-xs text-app-muted dark:text-app-muted-dark"
-                        >
-                            Gesorteerd van oud naar jong (leeftijd).
-                        </p>
+                            class="mt-0.5 text-xs text-app-muted dark:text-app-muted-dark"></p>
                     </div>
                     <div class="flex w-full max-w-sm items-center gap-2 self-end sm:ms-auto">
                         <MagnifyingGlassIcon
@@ -560,85 +505,21 @@ function isMemberFieldSaving(member, field) {
                                         </button>
                                     </div>
                                 </td>
-                                <td class="max-w-[10rem] px-3 py-2.5 align-top">
-                                    <EditableTextCell
-                                        :text="member.first_name || ''"
-                                        :multiline="false"
-                                        :cell-key="`${member.id}:first_name`"
-                                        :open-request-key="memberInlineOpen.key"
-                                        :open-request-nonce="memberInlineOpen.nonce"
-                                        :saving="isMemberFieldSaving(member, 'first_name')"
-                                        @save="(v) => patchMemberField(member, 'first_name', v)"
-                                    />
-                                </td>
-                                <td class="max-w-[10rem] px-3 py-2.5 align-top">
-                                    <EditableTextCell
-                                        :text="member.last_name || ''"
-                                        :multiline="false"
-                                        :cell-key="`${member.id}:last_name`"
-                                        :open-request-key="memberInlineOpen.key"
-                                        :open-request-nonce="memberInlineOpen.nonce"
-                                        :saving="isMemberFieldSaving(member, 'last_name')"
-                                        @save="(v) => patchMemberField(member, 'last_name', v)"
-                                    />
+                                <td class="max-w-[10rem] px-3 py-2.5 align-top">{{ member.first_name || '–' }}</td>
+                                <td class="max-w-[10rem] px-3 py-2.5 align-top">{{ member.last_name || '–' }}</td>
+                                <td class="whitespace-nowrap px-3 py-2.5 align-top tabular-nums text-app-ink dark:text-app-ink-dark">
+                                    {{ member.birthday ? formatBirthday(member.birthday) : '–' }}
                                 </td>
                                 <td class="whitespace-nowrap px-3 py-2.5 align-top tabular-nums text-app-ink dark:text-app-ink-dark">
-                                    <EditableTextCell
-                                        :text="member.birthday ? String(member.birthday).slice(0, 10) : ''"
-                                        input-kind="date"
-                                        :multiline="false"
-                                        :cell-key="`${member.id}:birthday`"
-                                        :open-request-key="memberInlineOpen.key"
-                                        :open-request-nonce="memberInlineOpen.nonce"
-                                        :saving="isMemberFieldSaving(member, 'birthday')"
-                                        @save="(v) => patchMemberField(member, 'birthday', v)"
-                                    />
+                                    {{ member.age ?? '–' }}
                                 </td>
-                                <td class="whitespace-nowrap px-3 py-2.5 align-top tabular-nums text-app-ink dark:text-app-ink-dark">
-                                    <EditableTextCell
-                                        :text="member.age != null ? String(member.age) : ''"
-                                        :multiline="false"
-                                        :cell-key="`${member.id}:age`"
-                                        :open-request-key="memberInlineOpen.key"
-                                        :open-request-nonce="memberInlineOpen.nonce"
-                                        :saving="isMemberFieldSaving(member, 'age')"
-                                        @save="(v) => patchMemberField(member, 'age', v)"
-                                    />
-                                </td>
+                                <td class="px-3 py-2.5 align-top">{{ member.address || '–' }}</td>
+                                <td class="px-3 py-2.5 align-top tabular-nums text-app-ink dark:text-app-ink-dark">{{ member.phone_mother || '–' }}</td>
+                                <td class="px-3 py-2.5 align-top tabular-nums text-app-ink dark:text-app-ink-dark">{{ member.phone_father || '–' }}</td>
                                 <td class="px-3 py-2.5 align-top">
-                                    <EditableTextCell
-                                        :text="member.address || ''"
-                                        multiline
-                                        :cell-key="`${member.id}:address`"
-                                        :open-request-key="memberInlineOpen.key"
-                                        :open-request-nonce="memberInlineOpen.nonce"
-                                        :saving="isMemberFieldSaving(member, 'address')"
-                                        @save="(v) => patchMemberField(member, 'address', v)"
-                                    />
-                                </td>
-                                <td class="px-3 py-2.5 align-top tabular-nums text-app-ink dark:text-app-ink-dark">
-                                    <EditableTextCell
-                                        :text="member.phone_mother || ''"
-                                        :multiline="false"
-                                        :cell-key="`${member.id}:phone_mother`"
-                                        :open-request-key="memberInlineOpen.key"
-                                        :open-request-nonce="memberInlineOpen.nonce"
-                                        :saving="isMemberFieldSaving(member, 'phone_mother')"
-                                        @save="(v) => patchMemberField(member, 'phone_mother', v)"
-                                    />
-                                </td>
-                                <td class="px-3 py-2.5 align-top tabular-nums text-app-ink dark:text-app-ink-dark">
-                                    <EditableTextCell
-                                        :text="member.phone_father || ''"
-                                        :multiline="false"
-                                        :cell-key="`${member.id}:phone_father`"
-                                        :open-request-key="memberInlineOpen.key"
-                                        :open-request-nonce="memberInlineOpen.nonce"
-                                        :saving="isMemberFieldSaving(member, 'phone_father')"
-                                        @save="(v) => patchMemberField(member, 'phone_father', v)"
-                                    />
-                                </td>
-                                <td class="px-3 py-2.5 align-top">
+                                    <button type="button" class="btn-action-edit me-2" title="Bewerken" @click="editMember(member)">
+                                        <PencilSquareIcon class="h-4 w-4 shrink-0" />
+                                    </button>
                                     <button type="button" class="btn-action-delete" title="Verwijderen" @click="deleteMember(member)">
                                         <TrashIcon class="h-4 w-4 shrink-0" />
                                     </button>
@@ -657,16 +538,8 @@ function isMemberFieldSaving(member, field) {
                             class="surface-brand-top rounded-xl border border-brand-blue/30 bg-app-panel p-4 shadow-sm dark:bg-app-panel-dark/95"
                         >
                             <p class="font-medium text-app-ink dark:text-app-ink-dark">{{ memberDisplayName(member) }}</p>
-                            <div class="mt-2 text-sm leading-snug" @click.stop>
-                                <EditableTextCell
-                                    :text="member.bijzonderheden || ''"
-                                    multiline
-                                    :cell-key="`${member.id}:bijzonderheden`"
-                                    :open-request-key="memberInlineOpen.key"
-                                    :open-request-nonce="memberInlineOpen.nonce"
-                                    :saving="isMemberFieldSaving(member, 'bijzonderheden')"
-                                    @save="(v) => patchMemberField(member, 'bijzonderheden', v)"
-                                />
+                            <div class="mt-2 text-sm leading-snug">
+                                {{ member.bijzonderheden || '–' }}
                             </div>
                         </div>
                     </div>
@@ -690,15 +563,7 @@ function isMemberFieldSaving(member, field) {
                                         {{ memberDisplayName(member) }}
                                     </td>
                                     <td class="px-3 py-2.5 align-top break-words leading-snug text-app-ink dark:text-app-ink-dark">
-                                        <EditableTextCell
-                                            :text="member.bijzonderheden || ''"
-                                            multiline
-                                            :cell-key="`${member.id}:bijzonderheden`"
-                                            :open-request-key="memberInlineOpen.key"
-                                            :open-request-nonce="memberInlineOpen.nonce"
-                                            :saving="isMemberFieldSaving(member, 'bijzonderheden')"
-                                            @save="(v) => patchMemberField(member, 'bijzonderheden', v)"
-                                        />
+                                        {{ member.bijzonderheden || '–' }}
                                     </td>
                                 </tr>
                             </tbody>

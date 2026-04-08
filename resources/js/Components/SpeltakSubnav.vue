@@ -15,8 +15,11 @@ const speltakLabel = computed(() => sectionLabelMap[page.props.auth?.active_sect
 const showTipperTopper = computed(
     () => !['bevers', 'zeeverkenners', 'loodsen', 'wilde_vaart', 'bestuur'].includes(page.props.auth?.active_section),
 );
+const showBijzonderheden = computed(
+    () => !['bestuur'].includes(page.props.auth?.active_section),
+);
 const showPods = computed(
-    () => !['bevers'].includes(page.props.auth?.active_section),
+    () => !['bevers', 'wilde_vaart', 'loodsen', 'bestuur'].includes(page.props.auth?.active_section),
 );
 const podsLabel = computed(
     () => ['zeeverkenners', 'loodsen'].includes(page.props.auth?.active_section) ? 'Bakindeling' : 'Vinindeling',
@@ -49,6 +52,7 @@ function tabClass(active) {
             {{ speltakLabel }}
         </Link>
         <Link
+            v-if="showBijzonderheden"
             role="tab"
             :href="route('members.bijzonderheden')"
             preserve-scroll

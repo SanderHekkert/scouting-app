@@ -2,8 +2,8 @@
 import AgendaSubnav from '@/Components/AgendaSubnav.vue';
 import AgendaEventsTable from '@/Components/AgendaEventsTable.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, router } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { Head, router, usePage } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
 
 const props = defineProps({
     archivedEvents: Array,
@@ -12,6 +12,9 @@ const props = defineProps({
         default: () => [],
     },
 });
+const page = usePage();
+const isBestuur = computed(() => (page.props.auth?.active_section ?? '') === 'bestuur');
+const pluralLabel = computed(() => (isBestuur.value ? 'agenda-items' : 'opkomsten'));
 
 function deleteEvent(event) {
     if (!event?.id) return;
@@ -43,7 +46,7 @@ function isEventFieldSaving(event, field) {
 </script>
 
 <template>
-    <Head title="Gearchiveerde opkomsten" />
+    <Head :title="`Gearchiveerde ${pluralLabel}`" />
     <AuthenticatedLayout>
         <template #header>
             <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Agenda</h2>
@@ -55,7 +58,7 @@ function isEventFieldSaving(event, field) {
                 <div class="mb-3 flex w-full flex-col gap-3 border-b border-brand-blue/35 pb-2 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                         <h3 class="text-lg font-semibold text-app-ink dark:text-app-ink-dark">
-                            Gearchiveerde opkomsten
+                            Gearchiveerde {{ pluralLabel }}
                             <span
                                 class="ms-2 inline-flex align-middle rounded-full bg-slate-200/90 px-2 py-0.5 text-xs font-medium tabular-nums text-app-muted dark:bg-brand-blue/25 dark:text-app-muted-dark"
                             >
@@ -69,7 +72,7 @@ function isEventFieldSaving(event, field) {
                     :events="props.archivedEvents"
                     :leaders="props.leaders"
                     :is-field-saving="isEventFieldSaving"
-                    empty-message="Nog geen gearchiveerde opkomsten."
+                    :empty-message="`Nog geen gearchiveerde ${pluralLabel}.`"
                     @patch-field="(ev, field, val) => patchEventField(ev, field, val)"
                     @delete="deleteEvent"
                 />

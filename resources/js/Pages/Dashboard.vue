@@ -32,6 +32,9 @@ const sectionLabelMap = {
     bestuur: 'Bestuur',
 };
 const speltakLabel = computed(() => sectionLabelMap[page.props.auth?.active_section] || 'Dolfijnen');
+const isBestuur = computed(() => (page.props.auth?.active_section ?? '') === 'bestuur');
+const singularAgendaLabel = computed(() => (isBestuur.value ? 'agenda-item' : 'opkomst'));
+const pluralAgendaLabel = computed(() => (isBestuur.value ? 'agenda-items' : 'opkomsten'));
 
 const maxAbsenceCount = computed(() =>
     Math.max(0, ...(props.leaderAbsenceChart || []).map((r) => Number(r?.absence_count) || 0)),
@@ -142,8 +145,8 @@ function setUpcomingAttendancePresent(present) {
                         <h3 class="mt-1 text-lg font-bold text-app-ink dark:text-app-ink-dark">
                             {{
                                 todayEvents.length === 1
-                                    ? 'Vandaag is er opkomst'
-                                    : `Vandaag zijn er ${todayEvents.length} opkomsten`
+                                    ? `Vandaag is er ${singularAgendaLabel}`
+                                    : `Vandaag zijn er ${todayEvents.length} ${pluralAgendaLabel}`
                             }}
                         </h3>
                         <ul class="mt-3 space-y-2">
@@ -300,7 +303,7 @@ function setUpcomingAttendancePresent(present) {
                     <div class="flex items-center justify-between gap-3 border-b border-brand-blue/35 pb-3">
                         <div class="flex items-center gap-2">
                             <CalendarDaysIcon class="h-5 w-5 text-brand-blue dark:text-brand-blue-light" />
-                            <h3 class="text-base font-semibold text-brand-blue-dark dark:text-app-ink-dark">Komende opkomsten</h3>
+                            <h3 class="text-base font-semibold text-brand-blue-dark dark:text-app-ink-dark">Komende {{ pluralAgendaLabel }}</h3>
                         </div>
                     </div>
                     <ul
@@ -346,7 +349,7 @@ function setUpcomingAttendancePresent(present) {
                         </li>
                     </ul>
                     <p v-else class="mt-6 text-center text-sm text-app-muted dark:text-app-muted-dark">
-                        Geen geplande opkomsten.
+                        Geen geplande {{ pluralAgendaLabel }}.
                         <Link :href="route('events.index')" class="font-medium text-brand-blue hover:text-brand-blue-dark dark:text-brand-blue-light dark:hover:text-app-ink-dark"> Agenda </Link>
                     </p>
                 </section>

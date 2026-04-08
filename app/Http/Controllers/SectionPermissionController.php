@@ -21,11 +21,13 @@ class SectionPermissionController extends Controller
             : ($manageableSections[0] ?? UserSectionRole::SECTION_DOLFIJNEN);
 
         $editableRoles = $this->editableRolesForSection($section);
-        $this->ensureRowsForSection($section, $editableRoles);
+        $allowedModules = $this->allowedModulesForSection($section);
+        $this->ensureRowsForSection($section, $editableRoles, $allowedModules);
 
         $rows = SectionPermission::query()
             ->where('section', $section)
             ->whereIn('role', $editableRoles)
+            ->whereIn('module', $allowedModules)
             ->orderBy('role')
             ->orderBy('module')
             ->get()
@@ -47,7 +49,7 @@ class SectionPermissionController extends Controller
             'isAdmin' => $isAdmin,
             'rows' => $rows,
             'roles' => $editableRoles,
-            'modules' => SectionPermission::ALL_MODULES,
+            'modules' => $allowedModules,
         ]);
     }
 
@@ -128,7 +130,7 @@ class SectionPermissionController extends Controller
     /**
      * @param  list<string>  $roles
      */
-    private function ensureRowsForSection(string $section, array $roles): void
+    private function ensureRowsForSection(string $section, array $roles, array $modules): void
     {
         $defaults = [
             UserSectionRole::ROLE_TEAMLEIDER => [
@@ -170,16 +172,63 @@ class SectionPermissionController extends Controller
                 'can_update' => false,
                 'can_delete' => false,
             ];
-            foreach (SectionPermission::ALL_MODULES as $module) {
+            foreach ($modules as $module) {
+                $moduleActions = $this->actionsForModule($module, $actions);
                 SectionPermission::query()->firstOrCreate(
                     [
                         'section' => $section,
                         'role' => $role,
                         'module' => $module,
                     ],
-                    $actions,
+                    $moduleActions,
                 );
             }
         }
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function allowedModulesForSection(string $section): array
+    {
+        $base = [
+            SectionPermission::MODULE_DASHBOARD,
+            SectionPermission::MODULE_EVENTS,
+            SectionPermission::MODULE_MEMBERS,
+            SectionPermission::MODULE_LEADERS,
+            SectionPermission::MODULE_INFO_NOTES,
+            SectionPermission::MODULE_TASK_ITEMS,
+            SectionPermission::MODULE_PROFILE,
+        ];
+
+        if (in_array($section, [UserSectionRole::SECTION_DOLFIJNEN, UserSectionRole::SECTION_ZEEVERKENNERS, UserSectionRole::SECTION_BESTUUR], true)) {
+            $base[] = SectionPermission::MODULE_PODS;
+        }
+        if (in_array($section, [UserSectionRole::SECTION_DOLFIJNEN, UserSectionRole::SECTION_BESTUUR], true)) {
+            $base[] = SectionPermission::MODULE_TIPPER_TOPPER;
+        }
+        if (in_array($section, [UserSectionRole::SECTION_BEVERS, UserSectionRole::SECTION_DOLFIJNEN, UserSectionRole::SECTION_BESTUUR], true)) {
+            $base[] = SectionPermission::MODULE_YEAR_THEME;
+        }
+
+        return array_values(array_unique($base));
+    }
+
+    /**
+     * @param  array{can_view:bool,can_create:bool,can_update:bool,can_delete:bool}  $actions
+     * @return array{can_view:bool,can_create:bool,can_update:bool,can_delete:bool}
+     */
+    private function actionsForModule(string $module, array $actions): array
+    {
+        if ($module === SectionPermission::MODULE_PODS) {
+            return [
+                'can_view' => false,
+                'can_create' => false,
+                'can_update' => false,
+                'can_delete' => false,
+            ];
+        }
+
+        return $actions;
     }
 }

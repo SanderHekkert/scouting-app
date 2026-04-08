@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Member;
+use App\Models\UserSectionRole;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -18,6 +19,10 @@ class MemberController extends Controller
 
     public function indexBijzonderheden(Request $request)
     {
+        if ($this->activeSection() === UserSectionRole::SECTION_BESTUUR) {
+            return to_route('members.index');
+        }
+
         return $this->renderMembersIndex($request);
     }
 
@@ -177,5 +182,10 @@ class MemberController extends Controller
         }
 
         return to_route('members.index');
+    }
+
+    private function activeSection(): string
+    {
+        return session('active_section', UserSectionRole::SECTION_DOLFIJNEN);
     }
 }

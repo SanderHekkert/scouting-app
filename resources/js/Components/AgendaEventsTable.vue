@@ -39,6 +39,10 @@ const props = defineProps({
         type: String,
         default: '',
     },
+    typeLabel: {
+        type: String,
+        default: 'Type opkomst',
+    },
 });
 
 const emit = defineEmits(['delete', 'edit', 'set-own-attendance']);
@@ -98,7 +102,7 @@ function taskLabelById(id) {
                         <p>{{ event.event_date ? String(event.event_date).slice(0, 10) : '-' }}</p>
                     </div>
                     <div>
-                        <p class="text-xs text-app-muted dark:text-app-muted-dark">Type opkomst</p>
+                        <p class="text-xs text-app-muted dark:text-app-muted-dark">{{ props.typeLabel }}</p>
                         <p>{{ event.event_type || '-' }}</p>
                     </div>
                     <div>
@@ -162,7 +166,7 @@ function taskLabelById(id) {
                 <tr class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
                     <th scope="col" class="min-w-[7rem] px-3 py-2.5">Thema</th>
                     <th scope="col" class="whitespace-nowrap px-3 py-2.5">Datum</th>
-                    <th scope="col" class="min-w-[8rem] px-3 py-2.5">Type opkomst</th>
+                    <th scope="col" class="min-w-[8rem] px-3 py-2.5">{{ props.typeLabel }}</th>
                     <th scope="col" class="min-w-[10rem] px-3 py-2.5">Wat ga je doen?</th>
                     <th scope="col" class="min-w-[7rem] px-3 py-2.5">Programma door</th>
                     <th scope="col" class="min-w-[12rem] px-3 py-2.5">Afwezig</th>

@@ -8,9 +8,15 @@ use App\Models\UserInvitation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use Inertia\Inertia;
 
 class AdminUserInvitationController extends Controller
 {
+    public function create()
+    {
+        return Inertia::render('Admin/UsersInvite');
+    }
+
     public function store(Request $request)
     {
         $data = $request->validate([

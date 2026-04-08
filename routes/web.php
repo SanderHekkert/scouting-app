@@ -33,6 +33,7 @@ Route::middleware(['auth', 'section.role:admin'])->group(function () {
 
 Route::middleware(['auth', 'verified', 'has.role', 'section.role:admin,bestuurslid'])->group(function () {
     Route::get('/admin/gebruikers', [AdminUserController::class, 'index'])->name('admin.users.index');
+    Route::get('/admin/gebruikers/uitnodigen', [AdminUserInvitationController::class, 'create'])->name('admin.users.invite.create');
     Route::get('/admin/gebruikers/{user}', [AdminUserController::class, 'show'])->name('admin.users.show');
     Route::patch('/admin/gebruikers/{user}', [AdminUserController::class, 'update'])->name('admin.users.update');
     Route::delete('/admin/gebruikers/{user}', [AdminUserController::class, 'destroy'])->name('admin.users.destroy');

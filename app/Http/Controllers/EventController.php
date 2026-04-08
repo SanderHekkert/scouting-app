@@ -111,6 +111,7 @@ class EventController extends Controller
         return Inertia::render('Events/Show', [
             'event' => [
                 'id' => (int) $event->id,
+                'section' => (string) ($event->section ?? ''),
                 'theme' => (string) ($event->theme ?? ''),
                 'event_date' => (string) ($event->event_date ?? ''),
                 'event_type' => (string) ($event->event_type ?? ''),
@@ -146,6 +147,9 @@ class EventController extends Controller
             'shared_sections' => ['nullable', 'array'],
             'shared_sections.*' => ['string', Rule::in(UserSectionRole::ALL_SECTIONS)],
         ]);
+        if (($data['theme'] ?? null) === null) {
+            $data['theme'] = '';
+        }
         $data['task_item_ids'] = $this->normalizeTaskItemIds($data['task_item_ids'] ?? null);
         $data['shared_sections'] = $this->normalizeSharedSections($data['shared_sections'] ?? null);
 
@@ -172,6 +176,9 @@ class EventController extends Controller
             'shared_sections' => ['nullable', 'array'],
             'shared_sections.*' => ['string', Rule::in(UserSectionRole::ALL_SECTIONS)],
         ]);
+        if (($data['theme'] ?? null) === null) {
+            $data['theme'] = '';
+        }
         $data['task_item_ids'] = $this->normalizeTaskItemIds($data['task_item_ids'] ?? null);
         $data['shared_sections'] = $this->normalizeSharedSections($data['shared_sections'] ?? null);
 

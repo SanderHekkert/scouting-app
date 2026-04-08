@@ -38,6 +38,10 @@ const currentUserName = computed(() => {
     const full = `${first} ${last}`.trim();
     return full || String(page.props.auth?.user?.name ?? '').trim();
 });
+const isBestuur = computed(() => activeSection.value === 'bestuur');
+const singularLabel = computed(() => (isBestuur.value ? 'agenda-item' : 'opkomst'));
+const pluralLabel = computed(() => (isBestuur.value ? 'agenda-items' : 'opkomsten'));
+const typeLabel = computed(() => (isBestuur.value ? 'Type' : 'Type opkomst'));
 
 /** Query ?event=123: focus op die rij na navigatie vanaf dashboard */
 const highlightEventId = computed(() => {
@@ -139,7 +143,7 @@ function setOwnAttendance(event, present) {
                         @click="toggleAddForm"
                     >
                         <PlusIcon class="h-5 w-5" />
-                        Agenda-item toevoegen
+                        {{ singularLabel }} toevoegen
                     </button>
                 </div>
             </div>
@@ -270,7 +274,7 @@ function setOwnAttendance(event, present) {
                 <div class="mb-3 flex w-full flex-col gap-3 border-b border-brand-blue/35 pb-2 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                         <h3 class="text-lg font-semibold text-app-ink dark:text-app-ink-dark">
-                            Actuele opkomsten
+                            Actuele {{ pluralLabel }}
                             <span
                                 class="ms-2 inline-flex align-middle rounded-full bg-slate-200/90 px-2 py-0.5 text-xs font-medium tabular-nums text-app-muted dark:bg-brand-blue/25 dark:text-app-muted-dark"
                             >
@@ -289,7 +293,8 @@ function setOwnAttendance(event, present) {
                     :can-edit-agenda="canManageAgenda"
                     :can-mark-own-presence="canMarkOwnPresence"
                     :current-user-name="currentUserName"
-                    empty-message="Nog geen actuele opkomsten."
+                    :type-label="typeLabel"
+                    :empty-message="`Nog geen actuele ${pluralLabel}.`"
                     @delete="deleteEvent"
                     @edit="editEvent"
                     @set-own-attendance="(ev, present) => setOwnAttendance(ev, present)"

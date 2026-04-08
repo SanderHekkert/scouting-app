@@ -17,10 +17,12 @@ class PodController extends Controller
      */
     public function index()
     {
-        if (
-            app()->bound('currentSection') &&
-            app('currentSection') === UserSectionRole::SECTION_BEVERS
-        ) {
+        if (in_array($this->activeSection(), [
+            UserSectionRole::SECTION_BEVERS,
+            UserSectionRole::SECTION_WILDE_VAART,
+            UserSectionRole::SECTION_LOODSEN,
+            UserSectionRole::SECTION_BESTUUR,
+        ], true)) {
             return to_route('members.index');
         }
 

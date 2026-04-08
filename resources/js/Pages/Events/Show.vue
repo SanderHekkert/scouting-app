@@ -2,7 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
-import { XMarkIcon } from '@heroicons/vue/24/outline';
+import { ArrowLeftCircleIcon, DocumentCheckIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     event: { type: Object, required: true },
@@ -21,7 +21,13 @@ const sectionLabels = {
     loodsen: 'Loodsen',
     bestuur: 'Bestuur',
 };
-const shareableSections = computed(() => (props.allSections || []).filter((s) => s !== activeSection.value && !['bestuur', 'loodsen'].includes(s)));
+const shareableSections = computed(() =>
+    (props.allSections || []).filter(
+        (s) => s !== activeSection.value
+            && s !== String(props.event?.section || '').trim()
+            && !['bestuur', 'loodsen'].includes(s),
+    ),
+);
 
 const form = useForm({
     theme: props.event.theme || '',
@@ -110,8 +116,8 @@ function removeTask(taskId) {
         <template #header>
             <div class="flex items-center justify-between gap-3">
                 <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Opkomst bewerken</h2>
-                <Link :href="route('events.index')" class="rounded border border-app-border px-3 py-1.5 text-sm dark:border-app-border-dark">
-                    Terug
+                <Link :href="route('events.index')" class="inline-flex items-center justify-center rounded border border-app-border p-2 text-app-ink hover:bg-brand-blue/10 dark:border-app-border-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/15" title="Terug">
+                    <ArrowLeftCircleIcon class="h-5 w-5" />
                 </Link>
             </div>
         </template>
@@ -197,8 +203,9 @@ function removeTask(taskId) {
 
                 <span class="hidden sm:block" aria-hidden="true" />
                 <div>
-                    <button type="submit" class="rounded bg-brand-blue px-5 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark" :disabled="form.processing">
-                        Opslaan
+                    <button type="submit" class="inline-flex items-center gap-2 rounded bg-brand-blue px-4 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark disabled:opacity-50" :disabled="form.processing" title="Opslaan">
+                        <DocumentCheckIcon class="h-5 w-5" />
+                        <span>Opslaan</span>
                     </button>
                 </div>
             </div>
