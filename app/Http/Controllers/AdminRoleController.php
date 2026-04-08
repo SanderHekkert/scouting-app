@@ -20,10 +20,8 @@ class AdminRoleController extends Controller
                 $roles = $user->sectionRoles()->get(['section', 'role']);
 
                 $sectionRole = [];
-                $sectionEnabled = [];
                 foreach (UserSectionRole::ALL_SECTIONS as $section) {
                     $match = $roles->firstWhere('section', $section);
-                    $sectionEnabled[$section] = $match !== null;
                     $sectionRole[$section] = $match?->role ?? UserSectionRole::ROLE_LEIDING;
                 }
 
@@ -35,10 +33,9 @@ class AdminRoleController extends Controller
                     'email' => $user->email,
                     'first_name' => $user->first_name,
                     'last_name' => $user->last_name,
-                    'section_enabled' => $sectionEnabled,
                     'section_roles' => $sectionRole,
                     'selected_section' => collect(UserSectionRole::ALL_SECTIONS)
-                        ->first(fn (string $section) => $sectionEnabled[$section] ?? false)
+                        ->first(fn (string $section) => $roles->contains(fn (UserSectionRole $r) => $r->section === $section))
                         ?? UserSectionRole::SECTION_DOLFIJNEN,
                     'is_admin' => $isAdmin,
                 ];
