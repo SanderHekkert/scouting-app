@@ -212,7 +212,7 @@ onUnmounted(() => {
     <AppShellBackground>
         <div class="relative min-h-screen">
             <aside
-                class="fixed inset-y-0 start-0 z-30 hidden h-screen w-64 flex-row border-e border-slate-200 bg-white shadow-xl lg:w-72 xl:flex dark:border-slate-200 dark:bg-white"
+                class="fixed inset-y-0 start-0 z-30 hidden h-screen flex-row border-e border-slate-200 bg-white shadow-xl xl:flex xl:w-72 dark:border-slate-200 dark:bg-white"
             >
                 <div class="flex h-full min-h-0 min-w-0 flex-1 flex-col p-5">
                     <div class="shrink-0">
@@ -326,7 +326,7 @@ onUnmounted(() => {
 
             <!-- Mobiel: vaste topbalk + overlay-menu (safe areas, grote tikdoelen) -->
             <div
-                class="md:hidden fixed inset-x-0 top-0 z-50 border-b border-slate-200/90 bg-white/95 pt-[env(safe-area-inset-top,0px)] shadow-[0_4px_24px_-4px_rgba(0,0,0,0.12)] backdrop-blur-md dark:border-slate-700 dark:bg-slate-950/95 dark:shadow-black/30"
+                class="xl:hidden fixed inset-x-0 top-0 z-50 border-b border-slate-200/90 bg-white/95 pt-[env(safe-area-inset-top,0px)] shadow-[0_4px_24px_-4px_rgba(0,0,0,0.12)] backdrop-blur-md dark:border-slate-700 dark:bg-slate-950/95 dark:shadow-black/30"
             >
                 <div class="flex h-14 min-h-[3.5rem] items-center gap-2 px-3 sm:px-4">
                     <Link
@@ -356,7 +356,7 @@ onUnmounted(() => {
 
             <div
                 v-show="mobileMenuOpen"
-                class="md:hidden fixed inset-0 z-[44] bg-slate-950/45 backdrop-blur-[2px] dark:bg-black/55"
+                class="xl:hidden fixed inset-0 z-[44] bg-slate-950/45 backdrop-blur-[2px] dark:bg-black/55"
                 aria-hidden="true"
                 @click="closeMobileMenu"
             />
@@ -364,7 +364,7 @@ onUnmounted(() => {
             <nav
                 v-show="mobileMenuOpen"
                 id="app-mobile-nav"
-                class="md:hidden fixed left-0 right-0 z-[45] max-h-[min(78dvh,32rem)] overflow-y-auto overscroll-contain rounded-b-2xl border-b border-slate-200 bg-white shadow-2xl [-webkit-overflow-scrolling:touch] dark:border-slate-700 dark:bg-slate-950"
+                class="xl:hidden fixed left-0 right-0 z-[45] max-h-[min(78dvh,32rem)] overflow-y-auto overscroll-contain rounded-b-2xl border-b border-slate-200 bg-white shadow-2xl [-webkit-overflow-scrolling:touch] dark:border-slate-700 dark:bg-slate-950"
                 :style="{
                     top: 'calc(env(safe-area-inset-top, 0px) + 3.5rem)',
                 }"
@@ -447,7 +447,7 @@ onUnmounted(() => {
             </nav>
 
             <main
-                class="min-h-screen min-w-0 px-3 pb-[max(1rem,env(safe-area-inset-bottom,0px))] pt-[calc(env(safe-area-inset-top,0px)+3.5rem+0.75rem)] lg:ms-64 lg:px-5 lg:pb-6 lg:pt-6 xl:ms-72 xl:px-6"
+                class="min-h-screen min-w-0 px-3 pb-[max(1rem,env(safe-area-inset-bottom,0px))] pt-[calc(env(safe-area-inset-top,0px)+3.5rem+0.75rem)] xl:ms-72 xl:px-6 xl:pb-6 xl:pt-6"
             >
                 <header
                     v-if="$slots.header"

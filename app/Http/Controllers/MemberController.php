@@ -49,8 +49,27 @@ class MemberController extends Controller
         ]);
     }
 
-    public function show(Member $member)
+    public function show(int $member)
     {
+        $member = Member::query()
+            ->withoutGlobalScope('section')
+            ->findOrFail($member);
+
+        $user = request()->user();
+        abort_unless(
+            $user
+            && (
+                $user->isGlobalAdmin()
+                || $user->isGlobalBoardMember()
+                || $user->hasRoleInSection((string) $member->section)
+            ),
+            403
+        );
+
+        if (session('active_section') !== (string) $member->section) {
+            session()->put('active_section', (string) $member->section);
+        }
+
         return Inertia::render('Members/Show', [
             'member' => $member,
         ]);
@@ -196,11 +215,8 @@ class MemberController extends Controller
 
     public function transfer(Request $request, Member $member)
     {
-        $currentSection = (string) $member->section;
-        $allowedTargets = $this->allowedTransferTargets($currentSection);
-
         $data = $request->validate([
-            'target_section' => ['required', 'string', Rule::in($allowedTargets)],
+            'target_section' => ['required', 'string', Rule::in(UserSectionRole::ALL_SECTIONS)],
         ]);
 
         $member->update([
@@ -228,19 +244,5 @@ class MemberController extends Controller
     private function activeSection(): string
     {
         return session('active_section', UserSectionRole::SECTION_DOLFIJNEN);
-    }
-
-    /**
-     * Doorstroom-volgorde voor "overvliegen".
-     */
-    private function allowedTransferTargets(string $section): array
-    {
-        return match ($section) {
-            UserSectionRole::SECTION_BEVERS => [UserSectionRole::SECTION_DOLFIJNEN],
-            UserSectionRole::SECTION_DOLFIJNEN => [UserSectionRole::SECTION_ZEEVERKENNERS],
-            UserSectionRole::SECTION_ZEEVERKENNERS => [UserSectionRole::SECTION_WILDE_VAART],
-            UserSectionRole::SECTION_WILDE_VAART => [UserSectionRole::SECTION_LOODSEN],
-            default => [],
-        };
     }
 }

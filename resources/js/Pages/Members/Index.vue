@@ -419,7 +419,7 @@ function editMember(member) {
                             </div>
                         </div>
                     </div>
-                    <div class="surface-brand-top-lg hidden overflow-x-auto rounded-lg border border-brand-blue/25 md:block">
+                    <div class="hidden overflow-x-auto rounded-lg border border-brand-blue/25 md:block">
                         <table class="w-full min-w-[50rem] border-collapse text-left text-sm text-app-ink lg:min-w-[58rem] dark:text-app-ink-dark">
                         <thead class="border-b border-brand-blue/35 bg-app-sidebar dark:bg-app-canvas-dark/80">
                             <tr class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
@@ -489,7 +489,7 @@ function editMember(member) {
                             </div>
                         </div>
                     </div>
-                    <div class="surface-brand-top-lg hidden overflow-x-auto rounded-lg border border-brand-blue/25 md:block">
+                    <div class="hidden overflow-x-auto rounded-lg border border-brand-blue/25 md:block">
                         <table class="w-full min-w-[24rem] border-collapse text-left text-sm text-app-ink dark:text-app-ink-dark">
                             <thead class="border-b border-brand-blue/35 bg-app-sidebar dark:bg-app-canvas-dark/80">
                                 <tr class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">

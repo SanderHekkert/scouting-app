@@ -14,7 +14,7 @@ class AdminPushNotificationController extends Controller
         $data = $request->validate([
             'title' => ['required', 'string', 'max:120'],
             'body' => ['required', 'string', 'max:280'],
-            'url' => ['nullable', 'string', 'max:255'],
+            'url' => ['nullable', 'url', 'max:2048'],
         ]);
 
         $subscriptions = PushSubscription::query()->get();

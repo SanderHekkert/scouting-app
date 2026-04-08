@@ -46,13 +46,23 @@ const alignmentClasses = computed(() => {
 });
 
 const open = ref(false);
+
+function toggleOpen() {
+    open.value = !open.value;
+}
 </script>
 
 <template>
     <div class="relative">
-        <div @click="open = !open">
+        <button
+            type="button"
+            class="w-full text-left"
+            :aria-expanded="open"
+            aria-haspopup="menu"
+            @click="toggleOpen"
+        >
             <slot name="trigger" />
-        </div>
+        </button>
 
         <!-- Full Screen Dropdown Overlay -->
         <div

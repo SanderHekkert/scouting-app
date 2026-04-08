@@ -26,7 +26,7 @@ Route::get('/', function () {
     return to_route('dashboard');
 });
 
-Route::middleware(['auth', 'section.role:admin'])->group(function () {
+Route::middleware(['auth', 'verified', 'has.role', 'section.role:admin'])->group(function () {
     Route::get('/admin/rollen', [AdminRoleController::class, 'index'])->name('admin.roles.index');
     Route::patch('/admin/rollen/{user}', [AdminRoleController::class, 'update'])->name('admin.roles.update');
     Route::patch('/admin/rollen/{user}/basis', [AdminRoleController::class, 'updateBasics'])->name('admin.roles.update-basics');

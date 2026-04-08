@@ -50,7 +50,7 @@ function saveRow(id, value) {
                     </div>
                 </div>
 
-                <div class="surface-brand-top-lg overflow-x-auto rounded-lg border border-brand-blue/25">
+                <div class="overflow-x-auto rounded-lg border border-brand-blue/25">
                     <table class="w-full min-w-[22rem] border-collapse text-left text-sm sm:min-w-[26rem]">
                         <thead class="border-b border-brand-blue/35 bg-app-sidebar dark:bg-app-canvas-dark/80">
                             <tr class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">

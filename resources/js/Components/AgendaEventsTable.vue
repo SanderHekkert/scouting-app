@@ -81,6 +81,21 @@ function taskLabelById(id) {
     return props.taskItems.find((task) => Number(task.id) === Number(id))?.title || `Taak #${id}`;
 }
 
+function safeExternalUrl(url) {
+    const raw = String(url || '').trim();
+    if (!raw) return null;
+    try {
+        const parsed = new URL(raw, window.location.origin);
+        const protocol = parsed.protocol.toLowerCase();
+        if (protocol !== 'http:' && protocol !== 'https:') {
+            return null;
+        }
+        return parsed.href;
+    } catch {
+        return null;
+    }
+}
+
 </script>
 
 <template>
@@ -135,7 +150,7 @@ function taskLabelById(id) {
                     </div>
                     <div v-if="props.isBestuur">
                         <p class="text-xs text-app-muted dark:text-app-muted-dark">URL</p>
-                        <a v-if="event.link_url" :href="event.link_url" target="_blank" rel="noopener" class="text-brand-blue underline break-all">{{ event.link_url }}</a>
+                        <a v-if="safeExternalUrl(event.link_url)" :href="safeExternalUrl(event.link_url)" target="_blank" rel="noopener noreferrer" class="text-brand-blue underline break-all">{{ event.link_url }}</a>
                         <p v-else>-</p>
                     </div>
                     <div v-if="props.isBestuur">
@@ -196,7 +211,7 @@ function taskLabelById(id) {
                 </div>
             </div>
         </div>
-        <div class="surface-brand-top-lg -mx-1 hidden overflow-x-auto rounded-lg border border-brand-blue/25 sm:mx-0 md:block">
+        <div class="-mx-1 hidden overflow-x-auto rounded-lg border border-brand-blue/25 sm:mx-0 md:block">
         <table class="w-full min-w-[48rem] border-collapse text-left text-sm text-app-ink lg:min-w-[64rem] dark:text-app-ink-dark">
             <thead class="border-b border-brand-blue/35 bg-app-sidebar dark:bg-app-canvas-dark/80">
                 <tr class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
@@ -238,7 +253,7 @@ function taskLabelById(id) {
                     <td v-if="props.isBestuur" class="px-3 py-2.5 align-top">{{ event.time_slot || '-' }}</td>
                     <td v-if="props.isBestuur" class="max-w-[14rem] px-3 py-2.5 align-top whitespace-pre-wrap">{{ event.invitees || '-' }}</td>
                     <td v-if="props.isBestuur" class="max-w-[14rem] px-3 py-2.5 align-top break-all">
-                        <a v-if="event.link_url" :href="event.link_url" target="_blank" rel="noopener" class="text-brand-blue underline">{{ event.link_url }}</a>
+                        <a v-if="safeExternalUrl(event.link_url)" :href="safeExternalUrl(event.link_url)" target="_blank" rel="noopener noreferrer" class="text-brand-blue underline">{{ event.link_url }}</a>
                         <span v-else>-</span>
                     </td>
                     <td v-if="props.isBestuur" class="max-w-[14rem] px-3 py-2.5 align-top break-all">

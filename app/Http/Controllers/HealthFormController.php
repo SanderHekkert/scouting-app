@@ -11,6 +11,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\File;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -90,7 +91,7 @@ class HealthFormController extends Controller
         $this->ensureCanManage($request);
 
         $data = $request->validate([
-            'file' => ['required', 'file', 'max:10240', 'mimetypes:application/pdf,image/jpeg,image/png'],
+            'file' => ['required', File::types(['pdf', 'jpg', 'jpeg', 'png'])->max(10 * 1024)],
         ]);
 
         $file = $data['file'];
@@ -240,7 +241,11 @@ class HealthFormController extends Controller
 
     public function destroy(Request $request, HealthForm $health_form)
     {
-        $this->ensureCanManage($request);
+        [, $activeSection] = $this->ensureCanManage($request);
+        abort_unless(
+            $activeSection === UserSectionRole::SECTION_BESTUUR || $health_form->section === $activeSection,
+            403
+        );
 
         if (Storage::disk('local')->exists($health_form->storage_path)) {
             Storage::disk('local')->delete($health_form->storage_path);

@@ -19,15 +19,9 @@ const sectionLabelMap = {
 };
 const speltakLabel = computed(() => sectionLabelMap[page.props.auth?.active_section] || 'Dolfijnen');
 const isBestuurSection = computed(() => (page.props.auth?.active_section ?? '') === 'bestuur');
-const transferMap = {
-    bevers: ['dolfijnen'],
-    dolfijnen: ['zeeverkenners'],
-    zeeverkenners: ['wilde_vaart'],
-    wilde_vaart: ['loodsen'],
-};
+const allSections = ['bevers', 'dolfijnen', 'zeeverkenners', 'wilde_vaart', 'loodsen', 'bestuur'];
 const transferOptions = computed(() => {
-    const current = String(props.member.section || page.props.auth?.active_section || '').trim();
-    return (transferMap[current] || []).map((section) => ({
+    return allSections.map((section) => ({
         value: section,
         label: sectionLabelMap[section] || section,
     }));
@@ -77,7 +71,7 @@ function deleteMember() {
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center justify-between gap-3">
-                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Lid bewerken · {{ speltakLabel }}</h2>
+                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Lid bewerken - {{ speltakLabel }}</h2>
                 <Link :href="route('members.index')" class="inline-flex items-center justify-center rounded border border-app-border p-2 text-app-ink hover:bg-brand-blue/10 dark:border-app-border-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/15" title="Terug">
                     <ArrowLeftCircleIcon class="h-5 w-5" />
                 </Link>

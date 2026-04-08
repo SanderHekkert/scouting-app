@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\UserSectionRole;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class LeaderController extends Controller
@@ -113,7 +114,7 @@ class LeaderController extends Controller
         $data['gedoopt'] = $request->boolean('gedoopt');
 
         $data['name'] = trim(($data['first_name'] ?? '').' '.($data['last_name'] ?? ''));
-        $data['password'] = bcrypt('password');
+        $data['password'] = Str::password(24);
         User::create($data);
 
         return to_route('leaders.index');

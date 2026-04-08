@@ -51,6 +51,21 @@ function linkDisplayText(url) {
     }
 }
 
+function safeExternalUrl(url) {
+    const raw = String(url || '').trim();
+    if (!raw) return null;
+    try {
+        const parsed = new URL(raw, window.location.origin);
+        const protocol = parsed.protocol.toLowerCase();
+        if (protocol !== 'http:' && protocol !== 'https:') {
+            return null;
+        }
+        return parsed.href;
+    } catch {
+        return null;
+    }
+}
+
 function editNote(note) {
     if (!note?.id) return;
     router.get(route('info-notes.show', note.id));
@@ -156,8 +171,8 @@ function editNote(note) {
                                     <p class="truncate">{{ note.link || '—' }}</p>
                                 </div>
                                 <a
-                                    v-if="note.link"
-                                    :href="note.link"
+                                    v-if="safeExternalUrl(note.link)"
+                                    :href="safeExternalUrl(note.link)"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     class="mt-0.5 shrink-0 rounded p-0.5 text-brand-blue-light hover:bg-brand-blue/15 dark:text-brand-blue-light"
@@ -212,8 +227,8 @@ function editNote(note) {
                                         <span class="truncate">{{ note.link || '—' }}</span>
                                     </div>
                                     <a
-                                        v-if="note.link"
-                                        :href="note.link"
+                                        v-if="safeExternalUrl(note.link)"
+                                        :href="safeExternalUrl(note.link)"
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         class="mt-0.5 shrink-0 rounded p-0.5 text-brand-blue-light hover:bg-brand-blue/15 dark:text-brand-blue-light"

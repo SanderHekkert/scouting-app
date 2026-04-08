@@ -13,6 +13,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\File;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -160,8 +161,7 @@ class EventController extends Controller
             'time_slot' => ['nullable', 'string', 'max:255'],
             'invitees' => ['nullable', 'string'],
             'link_url' => ['nullable', 'url', 'max:2048'],
-            'attachments' => ['nullable', 'string'],
-            'attachment_file' => ['nullable', 'file', 'max:10240'],
+            'attachment_file' => ['nullable', File::types(['pdf', 'jpg', 'jpeg', 'png'])->max(10 * 1024)],
             'absent' => ['nullable', 'string'],
             'notes' => ['nullable', 'string'],
             'task_item_ids' => ['nullable', 'array'],
@@ -206,8 +206,7 @@ class EventController extends Controller
             'time_slot' => ['nullable', 'string', 'max:255'],
             'invitees' => ['nullable', 'string'],
             'link_url' => ['nullable', 'url', 'max:2048'],
-            'attachments' => ['nullable', 'string'],
-            'attachment_file' => ['nullable', 'file', 'max:10240'],
+            'attachment_file' => ['nullable', File::types(['pdf', 'jpg', 'jpeg', 'png'])->max(10 * 1024)],
             'absent' => ['nullable', 'string'],
             'notes' => ['nullable', 'string'],
             'task_item_ids' => ['nullable', 'array'],
@@ -267,7 +266,6 @@ class EventController extends Controller
             'time_slot' => ['sometimes', 'nullable', 'string', 'max:255'],
             'invitees' => ['sometimes', 'nullable', 'string'],
             'link_url' => ['sometimes', 'nullable', 'url', 'max:2048'],
-            'attachments' => ['sometimes', 'nullable', 'string'],
             'absent' => ['sometimes', 'nullable', 'string'],
             'notes' => ['sometimes', 'nullable', 'string'],
             'task_item_ids' => ['sometimes', 'nullable', 'array'],
@@ -533,7 +531,7 @@ class EventController extends Controller
             return null;
         }
         $path = trim((string) ($decoded['path'] ?? ''));
-        if ($path === '') {
+        if ($path === '' || ! str_starts_with($path, 'event-attachments/')) {
             return null;
         }
 

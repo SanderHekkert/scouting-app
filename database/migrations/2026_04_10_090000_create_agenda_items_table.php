@@ -6,37 +6,25 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        Schema::create('events', function (Blueprint $table) {
+        Schema::create('agenda_items', function (Blueprint $table) {
             $table->id();
-            $table->string('theme');
+            $table->string('theme')->default('');
             $table->date('event_date');
-            $table->string('event_type')->nullable();
-            $table->string('activity')->nullable();
-            $table->string('program_by')->nullable();
             $table->string('location')->nullable();
             $table->string('time_slot')->nullable();
             $table->text('invitees')->nullable();
             $table->string('link_url', 2048)->nullable();
             $table->text('attachments')->nullable();
-            $table->text('absent')->nullable();
             $table->text('notes')->nullable();
-            $table->json('task_item_ids')->nullable();
-            $table->json('shared_sections')->nullable();
             $table->string('section', 40)->default('dolfijnen')->index();
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('events');
+        Schema::dropIfExists('agenda_items');
     }
 };

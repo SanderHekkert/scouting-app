@@ -7,6 +7,7 @@ use App\Models\Pod;
 use App\Models\PodMembership;
 use App\Models\UserSectionRole;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
@@ -91,10 +92,14 @@ class PodController extends Controller
 
     public function addMember(Request $request, Pod $pod)
     {
+        $activeSection = $this->activeSection();
         $useZeeverkennersBakRoles = $this->activeSection() === UserSectionRole::SECTION_ZEEVERKENNERS;
 
         $data = $request->validate([
-            'member_id' => ['required', 'exists:members,id'],
+            'member_id' => [
+                'required',
+                Rule::exists('members', 'id')->where(fn ($query) => $query->where('section', $activeSection)),
+            ],
             'role' => ['required', 'string', 'in:Topper,Tipper,Vinlid'],
         ]);
 
@@ -161,8 +166,12 @@ class PodController extends Controller
 
     public function moveMember(Request $request, PodMembership $podMembership)
     {
+        $activeSection = $this->activeSection();
         $data = $request->validate([
-            'pod_id' => ['required', 'exists:pods,id'],
+            'pod_id' => [
+                'required',
+                Rule::exists('pods', 'id')->where(fn ($query) => $query->where('section', $activeSection)),
+            ],
             'role' => ['required', 'string', 'in:Topper,Tipper,Vinlid'],
         ]);
 
