@@ -33,6 +33,8 @@ class AdminRoleController extends Controller
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
+                    'first_name' => $user->first_name,
+                    'last_name' => $user->last_name,
                     'section_enabled' => $sectionEnabled,
                     'section_roles' => $sectionRole,
                     'selected_section' => collect(UserSectionRole::ALL_SECTIONS)
@@ -47,6 +49,7 @@ class AdminRoleController extends Controller
             'users' => $users,
             'sections' => UserSectionRole::ALL_SECTIONS,
             'roles' => [
+                UserSectionRole::ROLE_BESTUURSLID,
                 UserSectionRole::ROLE_TEAMLEIDER,
                 UserSectionRole::ROLE_LEIDING,
                 UserSectionRole::ROLE_OUDERCONTACT,
@@ -59,7 +62,12 @@ class AdminRoleController extends Controller
         $data = $request->validate([
             'is_admin' => ['required', 'boolean'],
             'selected_section' => ['required', 'string', Rule::in(UserSectionRole::ALL_SECTIONS)],
-            'selected_role' => ['required', 'string', 'in:teamleider,leiding,ouder_contact'],
+            'selected_role' => ['required', 'string', Rule::in([
+                UserSectionRole::ROLE_BESTUURSLID,
+                UserSectionRole::ROLE_TEAMLEIDER,
+                UserSectionRole::ROLE_LEIDING,
+                UserSectionRole::ROLE_OUDERCONTACT,
+            ])],
         ]);
 
         DB::transaction(function () use ($user, $data): void {
@@ -85,6 +93,20 @@ class AdminRoleController extends Controller
                 ]);
             }
         });
+
+        return back();
+    }
+
+    public function updateBasics(Request $request, User $user)
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+            'first_name' => ['nullable', 'string', 'max:255'],
+            'last_name' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $user->update($data);
 
         return back();
     }

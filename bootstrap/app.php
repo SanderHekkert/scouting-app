@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureSectionPermission;
 use App\Http\Middleware\EnsureSectionRole;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\SetCurrentSection;
@@ -23,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'section.role' => EnsureSectionRole::class,
+            'section.permission' => EnsureSectionPermission::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

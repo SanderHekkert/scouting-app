@@ -19,6 +19,8 @@ class UserSectionRole extends Model
 
     public const ROLE_ADMIN = 'admin';
 
+    public const ROLE_BESTUURSLID = 'bestuurslid';
+
     public const ROLE_TEAMLEIDER = 'teamleider';
 
     public const ROLE_LEIDING = 'leiding';
@@ -34,6 +36,7 @@ class UserSectionRole extends Model
 
     public const ALL_ROLES = [
         self::ROLE_ADMIN,
+        self::ROLE_BESTUURSLID,
         self::ROLE_TEAMLEIDER,
         self::ROLE_LEIDING,
         self::ROLE_OUDERCONTACT,

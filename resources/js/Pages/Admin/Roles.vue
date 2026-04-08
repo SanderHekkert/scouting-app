@@ -2,6 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
 import { computed, reactive } from 'vue';
+import { PencilSquareIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     users: { type: Array, default: () => [] },
@@ -14,6 +15,7 @@ const labels = {
     zeeverkenners: 'Zeeverkenners',
     bevers: 'Bevers',
     wilde_vaart: 'Wilde Vaart',
+    bestuurslid: 'Bestuurslid',
     teamleider: 'Teamleider',
     leiding: 'Leiding',
     ouder_contact: 'Oudercontact',
@@ -35,7 +37,13 @@ const stateByUser = reactive(
                 is_admin: !!u.is_admin,
                 section_roles: { ...(u.section_roles || {}) },
                 selected_section: u.selected_section || 'dolfijnen',
+                name: u.name || '',
+                email: u.email || '',
+                first_name: u.first_name || '',
+                last_name: u.last_name || '',
+                editing_basics: false,
                 saving: false,
+                saving_basics: false,
             },
         ]),
     ),
@@ -60,6 +68,34 @@ function saveUser(userId) {
         },
     );
 }
+
+function toggleBasicsEdit(userId) {
+    const state = stateByUser[userId];
+    if (!state) return;
+    state.editing_basics = !state.editing_basics;
+}
+
+function saveBasics(userId) {
+    const state = stateByUser[userId];
+    if (!state) return;
+    state.saving_basics = true;
+    router.patch(
+        route('admin.roles.update-basics', userId),
+        {
+            name: state.name || '',
+            email: state.email || '',
+            first_name: state.first_name || '',
+            last_name: state.last_name || '',
+        },
+        {
+            preserveScroll: true,
+            onFinish: () => {
+                state.saving_basics = false;
+                state.editing_basics = false;
+            },
+        },
+    );
+}
 </script>
 
 <template>
@@ -70,9 +106,6 @@ function saveUser(userId) {
         </template>
 
         <div class="surface-brand-top rounded-xl border border-app-border bg-app-panel p-4 shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark">
-            <p class="mb-4 text-sm text-app-muted dark:text-app-muted-dark">
-                Beheer per gebruiker de rol per speltak. `Admin` heeft overal toegang.
-            </p>
 
             <div class="space-y-2 md:space-y-0">
                 <div class="md:hidden space-y-2">
@@ -83,6 +116,14 @@ function saveUser(userId) {
                     >
                         <div class="font-medium">{{ user.name }}</div>
                         <div class="text-xs text-app-muted dark:text-app-muted-dark">{{ user.email }}</div>
+                        <div v-if="stateByUser[user.id].editing_basics" class="mt-2 grid gap-2">
+                            <input v-model="stateByUser[user.id].name" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" placeholder="Naam" />
+                            <input v-model="stateByUser[user.id].email" type="email" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" placeholder="E-mail" />
+                            <div class="grid grid-cols-2 gap-2">
+                                <input v-model="stateByUser[user.id].first_name" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" placeholder="Voornaam" />
+                                <input v-model="stateByUser[user.id].last_name" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" placeholder="Achternaam" />
+                            </div>
+                        </div>
 
                         <p class="mt-2 text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Speltak</p>
                         <select
@@ -112,6 +153,22 @@ function saveUser(userId) {
                         <div class="mt-3 border-t border-brand-blue/25 pt-3 dark:border-brand-blue/35">
                             <button
                                 type="button"
+                                class="me-2 rounded border border-app-border px-2 py-1.5 text-xs font-semibold text-app-ink hover:bg-brand-blue/10 dark:border-app-border-dark dark:text-app-ink-dark"
+                                @click="toggleBasicsEdit(user.id)"
+                            >
+                                <PencilSquareIcon class="h-4 w-4" />
+                            </button>
+                            <button
+                                v-if="stateByUser[user.id].editing_basics"
+                                type="button"
+                                class="me-2 rounded bg-brand-blue px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-blue-dark disabled:opacity-50"
+                                :disabled="stateByUser[user.id].saving_basics"
+                                @click="saveBasics(user.id)"
+                            >
+                                Opslaan basis
+                            </button>
+                            <button
+                                type="button"
                                 class="rounded bg-brand-blue px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-blue-dark disabled:opacity-50"
                                 :disabled="stateByUser[user.id].saving"
                                 @click="saveUser(user.id)"
@@ -135,8 +192,18 @@ function saveUser(userId) {
                     <tbody class="divide-y divide-brand-blue/25">
                         <tr v-for="user in users" :key="user.id" class="bg-brand-blue/5">
                             <td class="px-3 py-2 align-top">
-                                <div class="font-medium text-app-ink dark:text-app-ink-dark">{{ user.name }}</div>
-                                <div class="text-xs text-app-muted dark:text-app-muted-dark">{{ user.email }}</div>
+                                <div v-if="!stateByUser[user.id].editing_basics">
+                                    <div class="font-medium text-app-ink dark:text-app-ink-dark">{{ user.name }}</div>
+                                    <div class="text-xs text-app-muted dark:text-app-muted-dark">{{ user.email }}</div>
+                                </div>
+                                <div v-else class="grid gap-2">
+                                    <input v-model="stateByUser[user.id].name" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" placeholder="Naam" />
+                                    <input v-model="stateByUser[user.id].email" type="email" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" placeholder="E-mail" />
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <input v-model="stateByUser[user.id].first_name" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" placeholder="Voornaam" />
+                                        <input v-model="stateByUser[user.id].last_name" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" placeholder="Achternaam" />
+                                    </div>
+                                </div>
                             </td>
                             <td class="px-3 py-2 align-top">
                                 <select
@@ -165,6 +232,23 @@ function saveUser(userId) {
                                 </label>
                             </td>
                             <td class="px-3 py-2 align-top">
+                                <button
+                                    type="button"
+                                    class="me-2 rounded border border-app-border px-2 py-1.5 text-xs font-semibold text-app-ink hover:bg-brand-blue/10 dark:border-app-border-dark dark:text-app-ink-dark"
+                                    @click="toggleBasicsEdit(user.id)"
+                                    title="Basisgegevens bewerken"
+                                >
+                                    <PencilSquareIcon class="h-4 w-4" />
+                                </button>
+                                <button
+                                    v-if="stateByUser[user.id].editing_basics"
+                                    type="button"
+                                    class="me-2 rounded bg-brand-blue px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-blue-dark disabled:opacity-50"
+                                    :disabled="stateByUser[user.id].saving_basics"
+                                    @click="saveBasics(user.id)"
+                                >
+                                    Opslaan basis
+                                </button>
                                 <button
                                     type="button"
                                     class="rounded bg-brand-blue px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-blue-dark disabled:opacity-50"

@@ -122,7 +122,6 @@ class EventController extends Controller
         if (array_key_exists('theme', $data) && $data['theme'] === null) {
             $data['theme'] = '';
         }
-
         $event->update($data);
 
         return back();

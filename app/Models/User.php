@@ -3,7 +3,6 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -38,11 +37,7 @@ class User extends Authenticatable
 
     public function hasRoleInSection(string $section, array $roles = []): bool
     {
-        $isAdmin = $this->sectionRoles()
-            ->where('section', UserSectionRole::SECTION_ALL)
-            ->where('role', UserSectionRole::ROLE_ADMIN)
-            ->exists();
-        if ($isAdmin) {
+        if ($this->isGlobalAdmin() || $this->isGlobalBoardMember()) {
             return true;
         }
 
@@ -52,6 +47,36 @@ class User extends Authenticatable
         }
 
         return $query->exists();
+    }
+
+    public function isGlobalAdmin(): bool
+    {
+        return $this->sectionRoles()
+            ->where('section', UserSectionRole::SECTION_ALL)
+            ->where('role', UserSectionRole::ROLE_ADMIN)
+            ->exists();
+    }
+
+    public function roleInSection(string $section): ?string
+    {
+        if ($this->isGlobalAdmin()) {
+            return UserSectionRole::ROLE_ADMIN;
+        }
+        if ($this->isGlobalBoardMember()) {
+            return UserSectionRole::ROLE_BESTUURSLID;
+        }
+
+        return $this->sectionRoles()
+            ->where('section', $section)
+            ->value('role');
+    }
+
+    public function isGlobalBoardMember(): bool
+    {
+        return $this->sectionRoles()
+            ->where('section', UserSectionRole::SECTION_ALL)
+            ->where('role', UserSectionRole::ROLE_BESTUURSLID)
+            ->exists();
     }
 
     /**

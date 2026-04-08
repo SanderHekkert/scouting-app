@@ -76,6 +76,22 @@ function firstNameOnly(name) {
     if (!s) return '';
     return s.split(/\s+/)[0] || s;
 }
+
+function availableLeaders(event) {
+    const selectedNames = splitAbsentNames(event?.absent);
+    const selectedFull = new Set(
+        selectedNames.map((name) => String(name || '').trim().toLowerCase()).filter(Boolean),
+    );
+    const selectedFirst = new Set(
+        selectedNames.map((name) => firstNameOnly(name).toLowerCase()).filter(Boolean),
+    );
+
+    return (props.leaders || []).filter((leader) => {
+        const full = String(leader || '').trim().toLowerCase();
+        const first = firstNameOnly(leader).toLowerCase();
+        return !selectedFull.has(full) && !selectedFirst.has(first);
+    });
+}
 </script>
 
 <template>
@@ -168,7 +184,7 @@ function firstNameOnly(name) {
                             @change="onAbsentSelectChange(event, $event)"
                         >
                             <option value="">Naam toevoegen…</option>
-                            <option v-for="leader in props.leaders" :key="`mob-absent-${event.id}-${leader}`" :value="leader">
+                            <option v-for="leader in availableLeaders(event)" :key="`mob-absent-${event.id}-${leader}`" :value="leader">
                                 {{ firstNameOnly(leader) }}
                             </option>
                         </select>
@@ -285,7 +301,7 @@ function firstNameOnly(name) {
                             @change="onAbsentSelectChange(event, $event)"
                         >
                             <option value="">Naam toevoegen…</option>
-                            <option v-for="leader in props.leaders" :key="`desk-absent-${event.id}-${leader}`" :value="leader">
+                            <option v-for="leader in availableLeaders(event)" :key="`desk-absent-${event.id}-${leader}`" :value="leader">
                                 {{ firstNameOnly(leader) }}
                             </option>
                         </select>

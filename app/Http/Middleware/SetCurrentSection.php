@@ -21,12 +21,12 @@ class SetCurrentSection
         }
 
         $requested = $request->session()->get('active_section', $default);
-        $hasGlobalAdmin = $user->sectionRoles()
+        $hasGlobalAccess = $user->sectionRoles()
             ->where('section', UserSectionRole::SECTION_ALL)
-            ->where('role', UserSectionRole::ROLE_ADMIN)
+            ->whereIn('role', [UserSectionRole::ROLE_ADMIN, UserSectionRole::ROLE_BESTUURSLID])
             ->exists();
 
-        $allowedSections = $hasGlobalAdmin
+        $allowedSections = $hasGlobalAccess
             ? UserSectionRole::ALL_SECTIONS
             : $user->sectionRoles()
                 ->pluck('section')

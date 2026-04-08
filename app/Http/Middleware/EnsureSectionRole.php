@@ -17,15 +17,6 @@ class EnsureSectionRole
             abort(403, 'Je hebt geen toegang tot deze speltak of actie.');
         }
 
-        // Oudercontact is standaard alleen-lezen.
-        if (
-            $user->hasRoleInSection($section, ['ouder_contact']) &&
-            ! $user->hasRoleInSection($section, ['teamleider', 'leiding']) &&
-            ! in_array($request->method(), ['GET', 'HEAD'], true)
-        ) {
-            abort(403, 'Alleen teamleider of leiding mag wijzigingen doen.');
-        }
-
         return $next($request);
     }
 }

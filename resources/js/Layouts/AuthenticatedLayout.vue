@@ -33,8 +33,9 @@ const sectionButtonClass = {
 };
 
 const activeSection = computed(() => page.props.auth?.active_section || 'dolfijnen');
+const permissionMap = computed(() => page.props.auth?.permissions || {});
 const availableSections = computed(() => {
-    if (isAdmin.value) {
+    if (isAdmin.value || isBoardMember.value) {
         return allSections;
     }
     const roles = page.props.auth?.section_roles || [];
@@ -44,6 +45,16 @@ const availableSections = computed(() => {
 const isAdmin = computed(() =>
     (page.props.auth?.section_roles || []).some((r) => r.section === '*' && r.role === 'admin'),
 );
+const isBoardMember = computed(() =>
+    (page.props.auth?.section_roles || []).some((r) => r.section === '*' && r.role === 'bestuurslid'),
+);
+
+function canView(module) {
+    if (!module) return true;
+    const row = permissionMap.value?.[module];
+    if (!row) return false;
+    return !!row.view;
+}
 
 function switchSection(section) {
     if (!section || section === activeSection.value) return;
@@ -76,10 +87,10 @@ const userInitials = computed(() => {
     return '?';
 });
 
-const mainNavItems = [
-    { label: 'Dashboard', route: 'dashboard' },
-    { label: 'Agenda', route: 'events.index', matchRoutes: ['events.*', 'jaar-thema'] },
-];
+const mainNavItems = computed(() => ([
+    { label: 'Dashboard', route: 'dashboard', module: 'dashboard' },
+    { label: 'Agenda', route: 'events.index', matchRoutes: ['events.*', 'jaar-thema'], module: 'events' },
+]).filter((item) => canView(item.module)));
 
 /** Eén sidebar-link; subpagina’s bereik je via SpeltakSubnav op de pagina zelf. */
 const dolfijnenNavItem = {
@@ -92,14 +103,19 @@ const dolfijnenNavItem = {
         'tipper-topper-opkomst.*',
         'pods.*',
     ],
+    module: 'members',
 };
+const showSpeltakNav = computed(() => canView(dolfijnenNavItem.module));
 
-const tailNavItems = computed(() => [
-    { label: 'Leiding', route: 'leaders.index', matchRoutes: ['leaders.*'] },
-    { label: 'Belangrijke info', route: 'info-notes.index', matchRoutes: ['info-notes.*'] },
-    { label: 'Taakverdeling', route: 'task-items.index', matchRoutes: ['task-items.*', 'task-categories.*'] },
+const tailNavItems = computed(() => ([
+    { label: 'Leiding', route: 'leaders.index', matchRoutes: ['leaders.*'], module: 'leaders' },
+    { label: 'Belangrijke info', route: 'info-notes.index', matchRoutes: ['info-notes.*'], module: 'info_notes' },
+    { label: 'Taakverdeling', route: 'task-items.index', matchRoutes: ['task-items.*', 'task-categories.*'], module: 'task_items' },
     ...(isAdmin.value ? [{ label: 'Rollenbeheer', route: 'admin.roles.index', matchRoutes: ['admin.roles.*'] }] : []),
-]);
+    ...((isAdmin.value || (page.props.auth?.section_roles || []).some((r) => r.section !== '*' && r.role === 'teamleider'))
+        ? [{ label: 'Rechtenbeheer', route: 'permissions.index', matchRoutes: ['permissions.*'] }]
+        : []),
+]).filter((item) => !item.module || canView(item.module)));
 
 const mobileMenuOpen = ref(false);
 
@@ -111,10 +127,10 @@ function navItemIsActive(item) {
 }
 
 const activeMobileLabel = computed(() => {
-    if (navItemIsActive(dolfijnenNavItem)) {
+    if (showSpeltakNav.value && navItemIsActive(dolfijnenNavItem)) {
         return dolfijnenNavItem.label;
     }
-    const inMain = mainNavItems.find((item) => navItemIsActive(item));
+    const inMain = mainNavItems.value.find((item) => navItemIsActive(item));
     if (inMain) {
         return inMain.label;
     }
@@ -210,6 +226,7 @@ onUnmounted(() => {
                         </Link>
 
                         <Link
+                            v-if="showSpeltakNav"
                             :href="route(dolfijnenNavItem.route)"
                             class="block shrink-0 rounded-lg px-3 py-2 text-sm font-medium transition"
                             :class="
@@ -326,6 +343,7 @@ onUnmounted(() => {
                         {{ item.label }}
                     </Link>
                     <Link
+                        v-if="showSpeltakNav"
                         :href="route(dolfijnenNavItem.route)"
                         class="flex min-h-12 items-center rounded-xl px-4 text-base font-medium transition touch-manipulation active:scale-[0.99]"
                         :class="
