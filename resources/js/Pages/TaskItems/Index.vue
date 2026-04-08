@@ -764,7 +764,7 @@ function onCategoryDrop(category, event) {
                             </div>
                         </div>
                         <div class="hidden overflow-x-auto rounded-lg border border-brand-blue/25 lg:block">
-                        <table class="w-full min-w-[64rem] text-sm text-app-ink dark:text-app-ink-dark">
+                        <table class="w-full min-w-[64rem] border-collapse text-sm text-app-ink dark:text-app-ink-dark">
                         <colgroup>
                             <col class="w-[6%]" />
                             <col class="w-[24%]" />
@@ -774,30 +774,30 @@ function onCategoryDrop(category, event) {
                             <col class="w-[14%]" />
                             <col class="w-[10%]" />
                         </colgroup>
-                        <thead>
-                            <tr class="text-left text-app-muted dark:text-app-muted-dark">
-                                <th class="pb-2"></th>
-                                <th class="pb-2">Taak</th>
-                                <th class="pb-2">Wie</th>
-                                <th class="pb-2">Uitleg</th>
-                                <th class="pb-2">Deadlines</th>
-                                <th class="pb-2">Opkomsten</th>
-                                <th class="pb-2 text-right sm:text-left">Acties</th>
+                        <thead class="border-b border-brand-blue/35 bg-app-sidebar dark:bg-app-canvas-dark/80">
+                            <tr class="text-left text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
+                                <th class="px-3 py-2.5"></th>
+                                <th class="px-3 py-2.5">Taak</th>
+                                <th class="px-3 py-2.5">Wie</th>
+                                <th class="px-3 py-2.5">Uitleg</th>
+                                <th class="px-3 py-2.5">Deadlines</th>
+                                <th class="px-3 py-2.5">Opkomsten</th>
+                                <th class="px-3 py-2.5 text-right sm:text-left">Acties</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody class="divide-y divide-brand-blue/25">
                             <tr
                                 v-for="task in section.tasks"
                                 :key="task.id"
-                                class="border-t border-brand-blue/35"
+                                class="bg-brand-blue/5 transition-colors hover:bg-brand-blue/12 dark:bg-app-panel-dark/50 dark:hover:bg-brand-blue/15"
                                 draggable="true"
                                 @dragstart="onTaskDragStart(task)"
                                 @dragend="onTaskDragEnd"
                             >
-                                <td class="py-2 pr-2 align-middle text-app-muted dark:text-app-muted-dark">
+                                <td class="px-3 py-2.5 align-middle text-app-muted dark:text-app-muted-dark">
                                     <Bars3Icon class="h-5 w-5 cursor-grab" />
                                 </td>
-                                <td class="py-2 pr-3 align-middle">
+                                <td class="px-3 py-2.5 align-middle">
                                     <input
                                         v-if="isTaskEditing(task)"
                                         type="text"
@@ -808,7 +808,7 @@ function onCategoryDrop(category, event) {
                                     />
                                     <span v-else>{{ task.title || '—' }}</span>
                                 </td>
-                                <td class="py-2 pr-2 align-middle">
+                                <td class="px-3 py-2.5 align-middle">
                                     <label class="sr-only" :for="`task-owner-${task.id}`">Wie</label>
                                     <div class="flex flex-wrap gap-1.5">
                                         <span
@@ -844,7 +844,7 @@ function onCategoryDrop(category, event) {
                                         </option>
                                     </select>
                                 </td>
-                                <td class="align-middle">
+                                <td class="px-3 py-2.5 align-middle">
                                     <textarea
                                         v-if="isTaskEditing(task)"
                                         rows="3"
@@ -855,7 +855,7 @@ function onCategoryDrop(category, event) {
                                     />
                                     <span v-else class="whitespace-pre-wrap">{{ task.description || '—' }}</span>
                                 </td>
-                                <td class="py-2 align-middle">
+                                <td class="px-3 py-2.5 align-middle">
                                     <label class="sr-only" :for="`task-deadline-${task.id}`">Deadlines</label>
                                     <div class="flex flex-wrap gap-1.5">
                                         <span
@@ -878,7 +878,7 @@ function onCategoryDrop(category, event) {
                                         @change="addTaskDeadline(task, $event.target.value); $event.target.value = ''"
                                     />
                                 </td>
-                                <td class="py-2 align-middle">
+                                <td class="px-3 py-2.5 align-middle">
                                     <div class="flex flex-wrap gap-1.5">
                                         <span
                                             v-for="eventId in eventIdsForTask(task)"
@@ -934,7 +934,7 @@ function onCategoryDrop(category, event) {
                                         </option>
                                     </select>
                                 </td>
-                                <td class="py-2 align-middle">
+                                <td class="px-3 py-2.5 align-middle">
                                     <button
                                         type="button"
                                         class="mr-2 rounded border border-app-border px-2 py-1.5 text-sm text-app-ink hover:bg-brand-blue/10 dark:border-app-border-dark dark:text-app-ink-dark"

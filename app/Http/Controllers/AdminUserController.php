@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\UserSectionRole;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -12,7 +13,7 @@ class AdminUserController extends Controller
 {
     public function index()
     {
-        $users = User::query()
+        $allUsers = User::query()
             ->with('sectionRoles:id,user_id,section,role')
             ->orderBy('name')
             ->get()
@@ -27,13 +28,33 @@ class AdminUserController extends Controller
                     'name' => $user->name,
                     'email' => $user->email,
                     'section_roles' => $roles,
+                    'created_at' => optional($user->created_at)->toIso8601String(),
                 ];
+            })
+            ->values();
+
+        $cutoff = Carbon::now()->subDays(14);
+        $newUsers = $allUsers
+            ->filter(function (array $user) use ($cutoff): bool {
+                $createdAt = isset($user['created_at']) ? Carbon::parse($user['created_at']) : null;
+
+                return $createdAt !== null && $createdAt->greaterThanOrEqualTo($cutoff);
+            })
+            ->values()
+            ->all();
+
+        $existingUsers = $allUsers
+            ->reject(function (array $user) use ($cutoff): bool {
+                $createdAt = isset($user['created_at']) ? Carbon::parse($user['created_at']) : null;
+
+                return $createdAt !== null && $createdAt->greaterThanOrEqualTo($cutoff);
             })
             ->values()
             ->all();
 
         return Inertia::render('Admin/Users', [
-            'users' => $users,
+            'users' => $existingUsers,
+            'newUsers' => $newUsers,
         ]);
     }
 

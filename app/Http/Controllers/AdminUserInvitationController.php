@@ -42,7 +42,7 @@ class AdminUserInvitationController extends Controller
             'invited_by_user_id' => (int) $request->user()->id,
             'email' => $email,
             'token' => Str::random(64),
-            'expires_at' => now()->addDays(7),
+            'expires_at' => now()->addHours(24),
             'accepted_at' => null,
         ]);
         $invitation->save();

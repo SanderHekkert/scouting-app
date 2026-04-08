@@ -194,34 +194,34 @@ function editNote(note) {
                         </div>
                     </div>
                     <div class="hidden overflow-x-auto rounded-lg border border-brand-blue/25 md:block">
-                    <table class="w-full min-w-[42rem] table-auto text-sm text-app-ink dark:text-app-ink-dark">
+                    <table class="w-full min-w-[42rem] border-collapse table-auto text-sm text-app-ink dark:text-app-ink-dark">
                     <colgroup>
                         <col class="w-[18%]" />
                         <col class="w-[38%]" />
                         <col class="w-[24%]" />
                         <col class="w-[20%]" />
                     </colgroup>
-                    <thead>
-                        <tr class="text-left text-app-muted dark:text-app-muted-dark">
-                            <th class="pb-2">Categorie</th>
-                            <th class="pb-2">Inhoud</th>
-                            <th class="pb-2">Linkje</th>
-                            <th class="pb-2 text-right sm:text-left">Acties</th>
+                    <thead class="border-b border-brand-blue/35 bg-app-sidebar dark:bg-app-canvas-dark/80">
+                        <tr class="text-left text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
+                            <th class="px-3 py-2.5">Categorie</th>
+                            <th class="px-3 py-2.5">Inhoud</th>
+                            <th class="px-3 py-2.5">Linkje</th>
+                            <th class="px-3 py-2.5 text-right sm:text-left">Acties</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody class="divide-y divide-brand-blue/25">
                         <tr
                             v-for="note in props.notes"
                             :key="note.id"
-                            class="border-t border-brand-blue/35"
+                            class="bg-brand-blue/5 transition-colors hover:bg-brand-blue/12 dark:bg-app-panel-dark/50 dark:hover:bg-brand-blue/15"
                         >
-                            <td class="py-2 pr-3 align-top">
+                            <td class="px-3 py-2.5 align-top">
                                 <div class="text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">{{ note.category || '—' }}</div>
                             </td>
-                            <td class="align-top">
+                            <td class="px-3 py-2.5 align-top">
                                 <span class="whitespace-pre-wrap">{{ note.content || '—' }}</span>
                             </td>
-                            <td class="py-2 align-top">
+                            <td class="px-3 py-2.5 align-top">
                                 <div class="flex items-start gap-1.5">
                                     <div class="min-w-0 flex-1">
                                         <span class="truncate">{{ note.link || '—' }}</span>
@@ -240,7 +240,7 @@ function editNote(note) {
                                     </a>
                                 </div>
                             </td>
-                            <td class="py-2 align-top">
+                            <td class="px-3 py-2.5 align-top">
                                 <button type="button" class="btn-action-edit me-2" title="Bewerken" @click="editNote(note)">
                                     <PencilSquareIcon class="h-4 w-4" />
                                 </button>

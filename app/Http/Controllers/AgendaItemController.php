@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\AgendaItem;
+use App\Models\Event;
+use App\Models\UserSectionRole;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -18,6 +21,7 @@ class AgendaItemController extends Controller
     public function index()
     {
         $today = Carbon::today();
+        $section = $this->activeSection();
 
         $items = AgendaItem::query()
             ->whereDate('event_date', '>=', $today)
@@ -25,12 +29,37 @@ class AgendaItemController extends Controller
             ->orderBy('theme')
             ->get();
 
+        $opkomsten = collect();
+        if ($section !== UserSectionRole::SECTION_BESTUUR) {
+            $opkomsten = Event::withoutGlobalScope('section')
+                ->where(function (Builder $query) use ($section): void {
+                    $query->where('section', $section);
+                    if ($this->supportsSharedEventsForSection($section)) {
+                        $query->orWhereJsonContains('shared_sections', $section);
+                    }
+                })
+                ->whereDate('event_date', '>=', $today)
+                ->orderBy('event_date')
+                ->orderBy('theme')
+                ->get();
+        }
+
         return Inertia::render('Agenda/Index', [
             'items' => $items->map(fn (AgendaItem $item): array => [
                 ...$item->toArray(),
                 'attachment_name' => $this->attachmentName($item->attachments),
                 'has_attachment' => $this->attachmentName($item->attachments) !== null,
                 'google_calendar_url' => $this->googleCalendarUrl($item),
+            ])->values(),
+            'opkomsten' => $opkomsten->map(fn (Event $event): array => [
+                'id' => (int) $event->id,
+                'theme' => (string) ($event->theme ?? ''),
+                'event_date' => (string) ($event->event_date ?? ''),
+                'event_type' => (string) ($event->event_type ?? ''),
+                'activity' => (string) ($event->activity ?? ''),
+                'section' => (string) ($event->section ?? ''),
+                'is_shared' => in_array($section, collect($event->shared_sections ?? [])->map(fn ($s) => (string) $s)->all(), true),
+                'shared_sections' => collect($event->shared_sections ?? [])->map(fn ($s) => (string) $s)->values()->all(),
             ])->values(),
         ]);
     }
@@ -239,5 +268,20 @@ class AgendaItemController extends Controller
             ['\\\\', '\;', '\,', '\n', '\n', '\n'],
             $value
         );
+    }
+
+    private function activeSection(): string
+    {
+        return session('active_section', UserSectionRole::SECTION_DOLFIJNEN);
+    }
+
+    private function supportsSharedEventsForSection(string $section): bool
+    {
+        return in_array($section, [
+            UserSectionRole::SECTION_BEVERS,
+            UserSectionRole::SECTION_DOLFIJNEN,
+            UserSectionRole::SECTION_ZEEVERKENNERS,
+            UserSectionRole::SECTION_WILDE_VAART,
+        ], true);
     }
 }
