@@ -6,6 +6,7 @@ use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AdminUserInvitationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\HealthFormController;
 use App\Http\Controllers\InfoNoteController;
 use App\Http\Controllers\LeaderController;
 use App\Http\Controllers\MemberController;
@@ -41,7 +42,7 @@ Route::middleware(['auth', 'verified', 'has.role', 'section.role:admin,bestuursl
     Route::post('/admin/push-notifications', [AdminPushNotificationController::class, 'store'])->name('admin.push-notifications.store');
 });
 
-Route::middleware(['auth', 'verified', 'has.role', 'section.role:teamleider'])->group(function () {
+Route::middleware(['auth', 'verified', 'has.role', 'section.role:admin'])->group(function () {
     Route::get('/admin/rechten', [SectionPermissionController::class, 'index'])->name('permissions.index');
     Route::patch('/admin/rechten/{sectionPermission}', [SectionPermissionController::class, 'update'])->name('permissions.update');
 });
@@ -58,7 +59,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-Route::middleware(['auth', 'verified', 'has.role', 'section.role:teamleider,leiding,ouder_contact,bestuurslid,lid'])->group(function () {
+Route::middleware(['auth', 'verified', 'has.role', 'section.role:admin,bestuurslid'])->group(function () {
     Route::post('/push/subscriptions', [PushSubscriptionController::class, 'store'])->name('push.subscriptions.store');
     Route::delete('/push/subscriptions', [PushSubscriptionController::class, 'destroy'])->name('push.subscriptions.destroy');
     Route::post('/active-section', function (Request $request) {
@@ -100,11 +101,19 @@ Route::middleware(['auth', 'verified', 'has.role', 'section.role:teamleider,leid
     Route::patch('/pod-memberships/{podMembership}', [PodController::class, 'moveMember'])->middleware('section.permission:pods')->name('pods.members.move');
     Route::delete('/pod-memberships/{podMembership}', [PodController::class, 'removeMember'])->middleware('section.permission:pods')->name('pods.members.destroy');
     Route::patch('/info-notes/{info_note}/fields', [InfoNoteController::class, 'quickUpdate'])->middleware('section.permission:info_notes')->name('info-notes.quick-update');
+    Route::get('/info-notes/{info_note}', [InfoNoteController::class, 'show'])->middleware('section.permission:info_notes')->name('info-notes.show');
     Route::resource('info-notes', InfoNoteController::class)->middleware('section.permission:info_notes')->except(['create', 'show', 'edit']);
     Route::patch('/task-items/{taskItem}/fields', [TaskItemController::class, 'quickUpdate'])->middleware('section.permission:task_items')->name('task-items.quick-update');
     Route::patch('/task-items/{taskItem}/linked-events', [TaskItemController::class, 'updateLinkedEvents'])->middleware('section.permission:task_items')->name('task-items.linked-events.update');
     Route::resource('task-items', TaskItemController::class)->middleware('section.permission:task_items')->except(['create', 'show', 'edit']);
     Route::post('/task-categories', [TaskItemController::class, 'storeCategory'])->middleware('section.permission:task_items')->name('task-categories.store');
+    Route::get('/admin/gezondheidsformulieren', [HealthFormController::class, 'index'])->name('admin.health-forms.index');
+    Route::get('/admin/gezondheidsformulieren/nieuw', [HealthFormController::class, 'create'])->name('admin.health-forms.create');
+    Route::post('/admin/gezondheidsformulieren', [HealthFormController::class, 'store'])->name('admin.health-forms.store');
+    Route::post('/admin/gezondheidsformulieren/bevestigen', [HealthFormController::class, 'confirm'])->name('admin.health-forms.confirm');
+    Route::get('/admin/gezondheidsformulieren/{health_form}', [HealthFormController::class, 'show'])->name('admin.health-forms.show');
+    Route::get('/admin/gezondheidsformulieren/{health_form}/download', [HealthFormController::class, 'download'])->name('admin.health-forms.download');
+    Route::delete('/admin/gezondheidsformulieren/{health_form}', [HealthFormController::class, 'destroy'])->name('admin.health-forms.destroy');
 
 });
 

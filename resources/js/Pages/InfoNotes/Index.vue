@@ -1,9 +1,8 @@
 <script setup>
 import { ref } from 'vue';
-import EditableTextCell from '@/Components/EditableTextCell.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
-import { ArrowTopRightOnSquareIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import { ArrowTopRightOnSquareIcon, PencilSquareIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({ notes: Array });
 
@@ -15,7 +14,6 @@ const form = useForm({
     link: '',
 });
 
-const noteFieldSaving = ref(null);
 
 function toggleAddForm() {
     showAddForm.value = !showAddForm.value;
@@ -53,29 +51,9 @@ function linkDisplayText(url) {
     }
 }
 
-function isNoteFieldSaving(note, field) {
-    return noteFieldSaving.value === `${note.id}:${field}`;
-}
-
-function patchNoteField(note, field, raw) {
+function editNote(note) {
     if (!note?.id) return;
-    let payload = {};
-    if (field === 'category') {
-        payload = { category: raw ?? '' };
-    } else if (field === 'content') {
-        payload = { content: raw ?? '' };
-    } else if (field === 'link') {
-        payload = { link: raw ?? '' };
-    } else {
-        return;
-    }
-    noteFieldSaving.value = `${note.id}:${field}`;
-    router.patch(route('info-notes.quick-update', note.id), payload, {
-        preserveScroll: true,
-        onFinish: () => {
-            noteFieldSaving.value = null;
-        },
-    });
+    router.get(route('info-notes.show', note.id));
 }
 </script>
 
@@ -168,28 +146,13 @@ function patchNoteField(note, field, raw) {
                             class="surface-brand-top rounded-xl border border-brand-blue/30 bg-app-panel px-4 py-3 text-app-ink shadow-sm dark:bg-app-panel-dark/95 dark:text-app-ink-dark"
                         >
                             <p class="text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Categorie</p>
-                            <EditableTextCell
-                                :text="note.category ?? ''"
-                                :multiline="false"
-                                :saving="isNoteFieldSaving(note, 'category')"
-                                @save="(v) => patchNoteField(note, 'category', v)"
-                            />
+                            <p>{{ note.category || '—' }}</p>
                             <p class="mt-2 text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Inhoud</p>
-                            <EditableTextCell
-                                :text="note.content ?? ''"
-                                multiline
-                                :saving="isNoteFieldSaving(note, 'content')"
-                                @save="(v) => patchNoteField(note, 'content', v)"
-                            />
+                            <p class="whitespace-pre-wrap">{{ note.content || '—' }}</p>
                             <p class="mt-2 text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Linkje</p>
                             <div class="flex items-start gap-1.5">
                                 <div class="min-w-0 flex-1">
-                                    <EditableTextCell
-                                        :text="note.link ?? ''"
-                                        :multiline="false"
-                                        :saving="isNoteFieldSaving(note, 'link')"
-                                        @save="(v) => patchNoteField(note, 'link', v)"
-                                    />
+                                    <p class="truncate">{{ note.link || '—' }}</p>
                                 </div>
                                 <a
                                     v-if="note.link"
@@ -204,7 +167,10 @@ function patchNoteField(note, field, raw) {
                                     <span class="sr-only">Link openen</span>
                                 </a>
                             </div>
-                            <div class="mt-3 border-t border-brand-blue/25 pt-3 dark:border-brand-blue/35">
+                            <div class="mt-3 flex items-center gap-2 border-t border-brand-blue/25 pt-3 dark:border-brand-blue/35">
+                                <button type="button" class="btn-action-edit" title="Bewerken" @click="editNote(note)">
+                                    <PencilSquareIcon class="h-4 w-4" />
+                                </button>
                                 <button type="button" class="btn-action-delete" title="Verwijderen" @click="deleteNote(note)">
                                     <TrashIcon class="h-4 w-4" />
                                 </button>
@@ -233,32 +199,15 @@ function patchNoteField(note, field, raw) {
                             class="border-t border-brand-blue/35"
                         >
                             <td class="py-2 pr-3 align-top">
-                                <div class="text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
-                                    <EditableTextCell
-                                        :text="note.category ?? ''"
-                                        :multiline="false"
-                                        :saving="isNoteFieldSaving(note, 'category')"
-                                        @save="(v) => patchNoteField(note, 'category', v)"
-                                    />
-                                </div>
+                                <div class="text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">{{ note.category || '—' }}</div>
                             </td>
                             <td class="align-top">
-                                <EditableTextCell
-                                    :text="note.content ?? ''"
-                                    multiline
-                                    :saving="isNoteFieldSaving(note, 'content')"
-                                    @save="(v) => patchNoteField(note, 'content', v)"
-                                />
+                                <span class="whitespace-pre-wrap">{{ note.content || '—' }}</span>
                             </td>
                             <td class="py-2 align-top">
                                 <div class="flex items-start gap-1.5">
                                     <div class="min-w-0 flex-1">
-                                        <EditableTextCell
-                                            :text="note.link ?? ''"
-                                            :multiline="false"
-                                            :saving="isNoteFieldSaving(note, 'link')"
-                                            @save="(v) => patchNoteField(note, 'link', v)"
-                                        />
+                                        <span class="truncate">{{ note.link || '—' }}</span>
                                     </div>
                                     <a
                                         v-if="note.link"
@@ -275,6 +224,9 @@ function patchNoteField(note, field, raw) {
                                 </div>
                             </td>
                             <td class="py-2 align-top">
+                                <button type="button" class="btn-action-edit me-2" title="Bewerken" @click="editNote(note)">
+                                    <PencilSquareIcon class="h-4 w-4" />
+                                </button>
                                 <button type="button" class="btn-action-delete" title="Verwijderen" @click="deleteNote(note)">
                                     <TrashIcon class="h-4 w-4" />
                                 </button>

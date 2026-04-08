@@ -1,7 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import { PencilSquareIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     users: { type: Array, default: () => [] },
@@ -86,6 +86,9 @@ function roleEntries(user) {
                         </span>
                     </div>
                     <div class="mt-3 flex items-center gap-2">
+                        <button type="button" class="btn-action-edit" title="Bewerken" @click.stop="openUser(user)">
+                            <PencilSquareIcon class="h-4 w-4 shrink-0" />
+                        </button>
                         <button type="button" class="btn-action-delete" @click.stop="deleteUser(user)">
                             <TrashIcon class="h-4 w-4 shrink-0" />
                         </button>
@@ -128,6 +131,9 @@ function roleEntries(user) {
                                 </div>
                             </td>
                             <td class="px-3 py-2.5">
+                                <button type="button" class="btn-action-edit me-2" title="Bewerken" @click.stop="openUser(user)">
+                                    <PencilSquareIcon class="h-4 w-4 shrink-0" />
+                                </button>
                                 <button type="button" class="btn-action-delete" @click.stop="deleteUser(user)">
                                     <TrashIcon class="h-4 w-4 shrink-0" />
                                 </button>

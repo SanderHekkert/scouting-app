@@ -19,6 +19,9 @@ return new class extends Migration
             $table->date('birthday')->nullable();
             $table->unsignedTinyInteger('age')->nullable();
             $table->string('address')->nullable();
+            $table->string('postal_code')->nullable();
+            $table->string('city')->nullable();
+            $table->string('email_parents')->nullable();
             $table->string('phone_mother')->nullable();
             $table->string('phone_father')->nullable();
             $table->text('bijzonderheden')->nullable();

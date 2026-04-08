@@ -77,6 +77,14 @@ function leaderListName(l) {
     return [l.first_name, l.last_name].filter(Boolean).join(' ').trim() || '–';
 }
 
+function leaderFullAddress(l) {
+    const parts = [l.address, l.postal_code, l.city]
+        .map((v) => (v == null ? '' : String(v).trim()))
+        .filter(Boolean);
+
+    return parts.join(', ') || '–';
+}
+
 function leaderHasBijzonderheden(l) {
     return l?.bijzonderheden != null && String(l.bijzonderheden).trim() !== '';
 }
@@ -312,10 +320,13 @@ function formatBirthday(value) {
                                 <ChevronRightIcon class="mt-0.5 h-5 w-5 shrink-0 text-app-muted dark:text-app-muted-dark" aria-hidden="true" />
                             </Link>
                             <div class="mt-1 text-xs text-app-muted dark:text-app-muted-dark">
-                                Rol: {{ leader.section_role_label || '–' }}
+                                {{ leaderFullAddress(leader) }}
                             </div>
                             <div class="mt-2 border-t border-brand-blue/25 pt-2 text-sm dark:border-brand-blue/35">
-                                {{ leader.bijzonderheden || '–' }}
+                                <p><span class="font-medium">Bijzonderheden:</span> {{ leader.bijzonderheden || '–' }}</p>
+                                <p><span class="font-medium">Geboortedatum:</span> {{ formatBirthday(leader.birthday) }}</p>
+                                <p><span class="font-medium">Telefoon:</span> {{ leader.phone_number || '–' }}</p>
+                                <p><span class="font-medium">E-mail:</span> {{ leader.email || '–' }}</p>
                             </div>
                             <div class="mt-3 flex items-center gap-2">
                                 <button type="button" class="btn-action-edit" title="Bewerken" @click.stop="goToLeaderDetail(leader)">
@@ -328,13 +339,15 @@ function formatBirthday(value) {
                         </div>
                     </div>
                     <div class="surface-brand-top-lg hidden overflow-x-auto rounded-lg border border-brand-blue/25 md:block">
-                        <table class="w-full min-w-[42rem] border-collapse text-left text-sm text-app-ink dark:text-app-ink-dark">
+                        <table class="w-full min-w-[74rem] border-collapse text-left text-sm text-app-ink dark:text-app-ink-dark">
                         <thead class="border-b border-brand-blue/35 bg-app-sidebar dark:bg-app-canvas-dark/80">
                             <tr class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
-                                <th scope="col" class="whitespace-nowrap px-3 py-2.5">Voornaam</th>
-                                <th scope="col" class="whitespace-nowrap px-3 py-2.5">Achternaam</th>
-                                <th scope="col" class="whitespace-nowrap px-3 py-2.5">Rol</th>
-                                <th scope="col" class="whitespace-nowrap px-3 py-2.5">Telefoon</th>
+                                <th scope="col" class="whitespace-nowrap px-3 py-2.5">Volledige naam</th>
+                                <th scope="col" class="whitespace-nowrap px-3 py-2.5">Volledig adres</th>
+                                <th scope="col" class="whitespace-nowrap px-3 py-2.5">Bijzonderheden</th>
+                                <th scope="col" class="whitespace-nowrap px-3 py-2.5">Geboortedatum</th>
+                                <th scope="col" class="whitespace-nowrap px-3 py-2.5">Telefoonnummer</th>
+                                <th scope="col" class="whitespace-nowrap px-3 py-2.5">E-mail</th>
                                 <th scope="col" class="min-w-[11rem] whitespace-nowrap px-3 py-2.5 text-end sm:text-start">
                                     Acties
                                 </th>
@@ -347,17 +360,23 @@ function formatBirthday(value) {
                                 :key="leader.id"
                                 class="bg-brand-blue/5 transition-colors hover:bg-brand-blue/12 dark:bg-app-panel-dark/50 dark:hover:bg-brand-blue/15"
                             >
-                                <td class="max-w-[10rem] px-3 py-2.5 align-top">
-                                    {{ leader.first_name || '–' }}
+                                <td class="max-w-[12rem] px-3 py-2.5 align-top">
+                                    {{ leaderListName(leader) }}
                                 </td>
-                                <td class="max-w-[10rem] px-3 py-2.5 align-top">
-                                    {{ leader.last_name || '–' }}
+                                <td class="max-w-[14rem] px-3 py-2.5 align-top">
+                                    {{ leaderFullAddress(leader) }}
                                 </td>
-                                <td class="whitespace-nowrap px-3 py-2.5 align-top">
-                                    {{ leader.section_role_label || '–' }}
+                                <td class="max-w-[14rem] px-3 py-2.5 align-top">
+                                    <span class="line-clamp-2">{{ leader.bijzonderheden || '–' }}</span>
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-2.5 align-top tabular-nums">
+                                    {{ formatBirthday(leader.birthday) }}
                                 </td>
                                 <td class="whitespace-nowrap px-3 py-2.5 align-top tabular-nums text-app-ink dark:text-app-ink-dark">
                                     {{ leader.phone_number || '–' }}
+                                </td>
+                                <td class="max-w-[16rem] break-all px-3 py-2.5 align-top">
+                                    {{ leader.email || '–' }}
                                 </td>
                                 <td class="px-3 py-2.5 align-top">
                                     <button type="button" class="btn-action-edit me-2" title="Bewerken" @click="goToLeaderDetail(leader)">

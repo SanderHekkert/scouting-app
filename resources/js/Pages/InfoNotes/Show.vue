@@ -1,0 +1,56 @@
+<script setup>
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import { Head, Link, useForm } from '@inertiajs/vue3';
+import { ArrowLeftCircleIcon, DocumentCheckIcon } from '@heroicons/vue/24/outline';
+
+const props = defineProps({
+    note: { type: Object, required: true },
+});
+
+const form = useForm({
+    category: props.note.category || '',
+    content: props.note.content || '',
+    link: props.note.link || '',
+});
+
+function submit() {
+    form.patch(route('info-notes.update', props.note.id), {
+        preserveScroll: true,
+    });
+}
+</script>
+
+<template>
+    <Head title="Belangrijke info bewerken" />
+    <AuthenticatedLayout>
+        <template #header>
+            <div class="flex items-center justify-between gap-3">
+                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Belangrijke info bewerken</h2>
+                <Link :href="route('info-notes.index')" class="inline-flex items-center justify-center rounded border border-app-border p-2 text-app-ink hover:bg-brand-blue/10 dark:border-app-border-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/15" title="Terug">
+                    <ArrowLeftCircleIcon class="h-5 w-5" />
+                </Link>
+            </div>
+        </template>
+
+        <form class="surface-brand-top space-y-4 rounded-xl border border-app-border bg-app-panel p-5 text-app-ink shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark dark:text-app-ink-dark" @submit.prevent="submit">
+            <div class="grid gap-4 sm:grid-cols-[9rem_1fr] sm:items-start">
+                <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Categorie</label>
+                <input v-model="form.category" type="text" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
+
+                <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Inhoud</label>
+                <textarea v-model="form.content" rows="6" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
+
+                <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Linkje</label>
+                <input v-model="form.link" type="text" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
+
+                <span class="hidden sm:block" aria-hidden="true" />
+                <div>
+                    <button type="submit" class="inline-flex items-center gap-2 rounded bg-brand-blue px-4 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark disabled:opacity-50" :disabled="form.processing" title="Opslaan">
+                        <DocumentCheckIcon class="h-5 w-5" />
+                        <span>Opslaan</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </AuthenticatedLayout>
+</template>

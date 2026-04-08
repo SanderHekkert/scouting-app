@@ -7,6 +7,7 @@ import {
     Bars3Icon,
     CalendarDaysIcon,
     ClipboardDocumentListIcon,
+    DocumentTextIcon,
     HomeIcon,
     IdentificationIcon,
     InformationCircleIcon,
@@ -137,6 +138,9 @@ const tailNavItems = computed(() => ([
     { label: 'Taakverdeling', route: 'task-items.index', matchRoutes: ['task-items.*', 'task-categories.*'], module: 'task_items', icon: ClipboardDocumentListIcon },
     ...((isAdmin.value || isBoardMember.value)
         ? [{ label: 'Gebruikers', route: 'admin.users.index', matchRoutes: ['admin.users.*'], icon: IdentificationIcon }]
+        : []),
+    ...((canView('members') && (isAdmin.value || isBoardMember.value || ['teamleider', 'leiding', 'ouder_contact'].includes(page.props.auth?.section_roles?.find((r) => r.section === activeSection.value)?.role)))
+        ? [{ label: 'Gezondheidsformulieren', route: 'admin.health-forms.index', matchRoutes: ['admin.health-forms.*'], icon: DocumentTextIcon }]
         : []),
     ...((isAdmin.value || (page.props.auth?.section_roles || []).some((r) => r.section !== '*' && r.role === 'teamleider'))
         ? [{ label: 'Rechtenbeheer', route: 'permissions.index', matchRoutes: ['permissions.*'], icon: ShieldCheckIcon }]

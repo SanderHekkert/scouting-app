@@ -33,6 +33,18 @@ class InfoNoteController extends Controller
         ]);
     }
 
+    public function show(InfoNote $info_note)
+    {
+        return Inertia::render('InfoNotes/Show', [
+            'note' => [
+                'id' => (int) $info_note->id,
+                'category' => (string) ($info_note->category ?? ''),
+                'content' => (string) ($info_note->content ?? ''),
+                'link' => (string) ($info_note->link ?? ''),
+            ],
+        ]);
+    }
+
     /**
      * Store a newly created resource in storage.
      */
