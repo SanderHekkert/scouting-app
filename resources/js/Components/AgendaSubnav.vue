@@ -9,7 +9,7 @@ const showJaarThema = computed(
 
 function tabClass(active) {
     return [
-        'rounded-t-lg px-3 py-2 text-sm font-semibold transition sm:px-4',
+        'inline-flex min-h-10 items-center rounded-t-lg px-3 py-2 text-sm font-semibold transition sm:px-4',
         active
             ? 'bg-brand-blue/15 text-brand-blue-dark dark:text-app-ink-dark'
             : 'text-app-muted hover:bg-brand-blue/10 hover:text-app-ink dark:text-app-muted-dark dark:hover:text-app-ink-dark',
@@ -23,7 +23,7 @@ const isJaarThemaTab = () => route().current('jaar-thema');
 
 <template>
     <div
-        class="mb-3 flex gap-1 overflow-x-auto overflow-y-hidden border-b border-brand-blue/35 pb-px [-webkit-overflow-scrolling:touch] sm:flex-wrap"
+        class="mb-3 flex gap-1 overflow-x-auto overflow-y-hidden border-b border-brand-blue/35 pb-px pe-1 [-webkit-overflow-scrolling:touch] sm:flex-wrap"
         role="tablist"
         aria-label="Agenda onderdelen"
     >

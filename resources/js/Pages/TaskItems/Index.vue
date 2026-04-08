@@ -763,7 +763,8 @@ function onCategoryDrop(category, event) {
                                 </div>
                             </div>
                         </div>
-                        <table class="hidden w-full table-fixed text-sm text-app-ink dark:text-app-ink-dark md:table">
+                        <div class="hidden overflow-x-auto rounded-lg border border-brand-blue/25 lg:block">
+                        <table class="w-full min-w-[64rem] text-sm text-app-ink dark:text-app-ink-dark">
                         <colgroup>
                             <col class="w-[6%]" />
                             <col class="w-[24%]" />
@@ -953,7 +954,8 @@ function onCategoryDrop(category, event) {
                                 </td>
                             </tr>
                         </tbody>
-                    </table>
+                        </table>
+                        </div>
                     </div>
                 </div>
             </div>

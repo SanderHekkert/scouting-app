@@ -28,6 +28,10 @@ onUnmounted(() => document.removeEventListener('keydown', closeOnEscape));
 const widthClass = computed(() => {
     return {
         48: 'w-48',
+        56: 'w-56',
+        64: 'w-64',
+        72: 'w-72',
+        full: 'w-[min(92vw,24rem)]',
     }[props.width.toString()];
 });
 
@@ -67,8 +71,8 @@ const open = ref(false);
         >
             <div
                 v-show="open"
-                class="absolute z-50 mt-2 rounded-md shadow-lg"
-                :class="[widthClass, alignmentClasses]"
+                class="absolute z-50 mt-2 max-w-[92vw] rounded-md shadow-lg"
+                :class="[widthClass || 'w-[min(92vw,24rem)]', alignmentClasses]"
                 style="display: none"
                 @click="open = false"
             >

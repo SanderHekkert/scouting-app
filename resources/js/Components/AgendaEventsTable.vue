@@ -197,24 +197,24 @@ function taskLabelById(id) {
             </div>
         </div>
         <div class="surface-brand-top-lg -mx-1 hidden overflow-x-auto rounded-lg border border-brand-blue/25 sm:mx-0 md:block">
-        <table class="w-full min-w-[56rem] border-collapse text-left text-sm text-app-ink sm:min-w-[72rem] dark:text-app-ink-dark">
+        <table class="w-full min-w-[48rem] border-collapse text-left text-sm text-app-ink lg:min-w-[64rem] dark:text-app-ink-dark">
             <thead class="border-b border-brand-blue/35 bg-app-sidebar dark:bg-app-canvas-dark/80">
                 <tr class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
-                    <th scope="col" class="min-w-[7rem] px-3 py-2.5">Thema</th>
-                    <th v-if="props.isBestuur" scope="col" class="min-w-[10rem] px-3 py-2.5">Naam activiteit</th>
-                    <th scope="col" class="whitespace-nowrap px-3 py-2.5">Datum</th>
+                    <th scope="col" class="min-w-[6rem] px-3 py-2.5">Thema</th>
+                    <th v-if="props.isBestuur" scope="col" class="min-w-[8rem] px-3 py-2.5">Naam activiteit</th>
+                    <th scope="col" class="px-3 py-2.5">Datum</th>
                     <th v-if="!props.isBestuur" scope="col" class="min-w-[8rem] px-3 py-2.5">{{ props.typeLabel }}</th>
-                    <th scope="col" class="min-w-[10rem] px-3 py-2.5">{{ props.isBestuur ? 'Naam activiteit' : 'Wat ga je doen?' }}</th>
+                    <th scope="col" class="min-w-[8rem] px-3 py-2.5">{{ props.isBestuur ? 'Naam activiteit' : 'Wat ga je doen?' }}</th>
                     <th v-if="!props.isBestuur" scope="col" class="min-w-[7rem] px-3 py-2.5">Programma door</th>
                     <th v-if="props.isBestuur" scope="col" class="min-w-[8rem] px-3 py-2.5">Locatie</th>
                     <th v-if="props.isBestuur" scope="col" class="min-w-[8rem] px-3 py-2.5">Tijdstip</th>
-                    <th v-if="props.isBestuur" scope="col" class="min-w-[10rem] px-3 py-2.5">Genodigden</th>
-                    <th v-if="props.isBestuur" scope="col" class="min-w-[10rem] px-3 py-2.5">URL</th>
-                    <th v-if="props.isBestuur" scope="col" class="min-w-[10rem] px-3 py-2.5">Bijlagen</th>
-                    <th v-if="!props.isBestuur" scope="col" class="min-w-[12rem] px-3 py-2.5">Afwezig</th>
-                    <th v-if="!props.isBestuur" scope="col" class="min-w-[11rem] px-3 py-2.5">Taken</th>
-                    <th scope="col" class="min-w-[11rem] px-3 py-2.5">Bijzonderheden</th>
-                    <th scope="col" class="min-w-[9rem] whitespace-nowrap px-3 py-2.5 text-end sm:text-start">Acties</th>
+                    <th v-if="props.isBestuur" scope="col" class="min-w-[8rem] px-3 py-2.5">Genodigden</th>
+                    <th v-if="props.isBestuur" scope="col" class="min-w-[8rem] px-3 py-2.5">URL</th>
+                    <th v-if="props.isBestuur" scope="col" class="min-w-[8rem] px-3 py-2.5">Bijlagen</th>
+                    <th v-if="!props.isBestuur" scope="col" class="min-w-[9rem] px-3 py-2.5">Afwezig</th>
+                    <th v-if="!props.isBestuur" scope="col" class="min-w-[8rem] px-3 py-2.5">Taken</th>
+                    <th scope="col" class="min-w-[8rem] px-3 py-2.5">Bijzonderheden</th>
+                    <th scope="col" class="min-w-[7rem] px-3 py-2.5 text-end sm:text-start">Acties</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-brand-blue/25">

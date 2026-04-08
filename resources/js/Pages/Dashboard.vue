@@ -427,7 +427,7 @@ function setUpcomingAttendancePresent(present) {
                         class="flex items-center gap-2 sm:gap-3"
                     >
                         <span
-                            class="w-[6.5rem] shrink-0 truncate text-xs font-medium text-app-ink sm:w-44 sm:text-sm dark:text-app-ink-dark"
+                            class="w-[clamp(5.5rem,28vw,11rem)] shrink-0 truncate text-xs font-medium text-app-ink sm:text-sm dark:text-app-ink-dark"
                             :title="absenceChartRowTitle(row)"
                         >{{ row.name }}</span>
                         <div

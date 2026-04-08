@@ -212,7 +212,7 @@ onUnmounted(() => {
     <AppShellBackground>
         <div class="relative min-h-screen">
             <aside
-                class="fixed inset-y-0 start-0 z-30 hidden h-screen w-72 flex-row border-e border-slate-200 bg-white shadow-xl md:flex dark:border-slate-200 dark:bg-white"
+                class="fixed inset-y-0 start-0 z-30 hidden h-screen w-64 flex-row border-e border-slate-200 bg-white shadow-xl lg:w-72 xl:flex dark:border-slate-200 dark:bg-white"
             >
                 <div class="flex h-full min-h-0 min-w-0 flex-1 flex-col p-5">
                     <div class="shrink-0">
@@ -447,7 +447,7 @@ onUnmounted(() => {
             </nav>
 
             <main
-                class="min-h-screen min-w-0 px-3 pb-[max(1rem,env(safe-area-inset-bottom,0px))] pt-[calc(env(safe-area-inset-top,0px)+3.5rem+0.75rem)] md:ms-72 md:px-6 md:pb-6 md:pt-6"
+                class="min-h-screen min-w-0 px-3 pb-[max(1rem,env(safe-area-inset-bottom,0px))] pt-[calc(env(safe-area-inset-top,0px)+3.5rem+0.75rem)] lg:ms-64 lg:px-5 lg:pb-6 lg:pt-6 xl:ms-72 xl:px-6"
             >
                 <header
                     v-if="$slots.header"

@@ -368,7 +368,7 @@ function leaderAge(value) {
                         </div>
                     </div>
                     <div class="surface-brand-top-lg hidden overflow-x-auto rounded-lg border border-brand-blue/25 md:block">
-                        <table class="w-full min-w-[74rem] border-collapse text-left text-sm text-app-ink dark:text-app-ink-dark">
+                        <table class="w-full min-w-[56rem] border-collapse text-left text-sm text-app-ink lg:min-w-[68rem] dark:text-app-ink-dark">
                         <thead class="border-b border-brand-blue/35 bg-app-sidebar dark:bg-app-canvas-dark/80">
                             <tr class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Volledige naam</th>

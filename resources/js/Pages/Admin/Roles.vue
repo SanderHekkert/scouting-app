@@ -124,12 +124,13 @@ function scheduleRoleSave(userId) {
                     </div>
                 </div>
                 <div class="-mx-1 hidden overflow-x-auto sm:mx-0 md:block">
-                <table class="w-full min-w-[56rem] border-collapse text-left text-sm">
+                <table class="w-full min-w-[44rem] border-collapse text-left text-sm lg:min-w-[52rem]">
                     <thead class="border-b border-brand-blue/35 text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
                         <tr>
                             <th class="px-3 py-2">Gebruiker</th>
                             <th class="px-3 py-2">Speltak</th>
                             <th class="px-3 py-2">Rol</th>
+                            <th class="px-3 py-2">Status</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-brand-blue/25">

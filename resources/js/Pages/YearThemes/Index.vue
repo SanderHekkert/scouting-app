@@ -51,11 +51,11 @@ function saveRow(id, value) {
                 </div>
 
                 <div class="surface-brand-top-lg overflow-x-auto rounded-lg border border-brand-blue/25">
-                    <table class="w-full min-w-[28rem] border-collapse text-left text-sm">
+                    <table class="w-full min-w-[22rem] border-collapse text-left text-sm sm:min-w-[26rem]">
                         <thead class="border-b border-brand-blue/35 bg-app-sidebar dark:bg-app-canvas-dark/80">
                             <tr class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
-                                <th scope="col" class="min-w-[12rem] px-3 py-2.5">Thema's</th>
-                                <th scope="col" class="min-w-[14rem] px-3 py-2.5">Gekozen Thema's</th>
+                                <th scope="col" class="min-w-[8rem] px-3 py-2.5">Thema's</th>
+                                <th scope="col" class="min-w-[10rem] px-3 py-2.5">Gekozen Thema's</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-brand-blue/25">

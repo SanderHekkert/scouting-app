@@ -178,7 +178,8 @@ function editNote(note) {
                             </div>
                         </div>
                     </div>
-                    <table class="hidden w-full table-fixed text-sm text-app-ink dark:text-app-ink-dark md:table">
+                    <div class="hidden overflow-x-auto rounded-lg border border-brand-blue/25 md:block">
+                    <table class="w-full min-w-[42rem] table-auto text-sm text-app-ink dark:text-app-ink-dark">
                     <colgroup>
                         <col class="w-[18%]" />
                         <col class="w-[38%]" />
@@ -235,6 +236,7 @@ function editNote(note) {
                         </tr>
                     </tbody>
                 </table>
+                    </div>
                 </div>
             </div>
         </div>

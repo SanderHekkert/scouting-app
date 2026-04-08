@@ -97,7 +97,7 @@ function roleEntries(user) {
             </div>
 
             <div class="-mx-1 hidden overflow-x-auto rounded-lg border border-brand-blue/25 md:block sm:mx-0">
-                <table class="w-full min-w-[78rem] border-collapse text-left text-sm text-app-ink dark:text-app-ink-dark">
+                <table class="w-full min-w-[52rem] border-collapse text-left text-sm text-app-ink lg:min-w-[64rem] dark:text-app-ink-dark">
                     <thead class="border-b border-brand-blue/35 bg-app-sidebar dark:bg-app-canvas-dark/80">
                         <tr class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
                             <th class="px-3 py-2.5">Naam</th>

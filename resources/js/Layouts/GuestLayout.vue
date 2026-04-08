@@ -8,7 +8,7 @@ import { Link } from '@inertiajs/vue3';
 <template>
     <AppShellBackground>
         <div
-            class="flex min-h-screen flex-col items-center justify-center overflow-hidden px-4 py-10 pt-6 sm:px-6 sm:pt-0"
+            class="flex min-h-screen flex-col items-center justify-center px-4 py-10 pt-6 sm:px-6 sm:pt-0"
         >
             <div class="mb-6 w-full max-w-md">
                 <div class="flex justify-center">
