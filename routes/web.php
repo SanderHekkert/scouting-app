@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminRoleController;
+use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\InfoNoteController;
@@ -27,12 +28,25 @@ Route::middleware(['auth', 'section.role:admin'])->group(function () {
     Route::patch('/admin/rollen/{user}/basis', [AdminRoleController::class, 'updateBasics'])->name('admin.roles.update-basics');
 });
 
-Route::middleware(['auth', 'section.role:teamleider'])->group(function () {
+Route::middleware(['auth', 'has.role', 'section.role:admin,bestuurslid'])->group(function () {
+    Route::get('/admin/gebruikers', [AdminUserController::class, 'index'])->name('admin.users.index');
+    Route::get('/admin/gebruikers/{user}', [AdminUserController::class, 'show'])->name('admin.users.show');
+    Route::patch('/admin/gebruikers/{user}', [AdminUserController::class, 'update'])->name('admin.users.update');
+    Route::delete('/admin/gebruikers/{user}', [AdminUserController::class, 'destroy'])->name('admin.users.destroy');
+});
+
+Route::middleware(['auth', 'has.role', 'section.role:teamleider'])->group(function () {
     Route::get('/admin/rechten', [SectionPermissionController::class, 'index'])->name('permissions.index');
     Route::patch('/admin/rechten/{sectionPermission}', [SectionPermissionController::class, 'update'])->name('permissions.update');
 });
 
-Route::middleware(['auth', 'section.role:teamleider,leiding,ouder_contact,bestuurslid,lid'])->group(function () {
+Route::middleware(['auth'])->group(function () {
+    Route::get('/geen-toegang', function () {
+        return inertia('Auth/NoAccess');
+    })->name('no-access');
+});
+
+Route::middleware(['auth', 'has.role', 'section.role:teamleider,leiding,ouder_contact,bestuurslid,lid'])->group(function () {
     Route::post('/active-section', function (Request $request) {
         $data = $request->validate([
             'section' => ['required', 'string', Rule::in(UserSectionRole::ALL_SECTIONS)],

@@ -1,7 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 const props = defineProps({
     manageableSections: { type: Array, default: () => [] },
@@ -18,10 +18,14 @@ const sectionLabels = {
     loodsen: 'Loodsen',
     bestuur: 'Bestuur',
 };
+const sectionOrder = ['bevers', 'dolfijnen', 'zeeverkenners', 'wilde_vaart', 'loodsen', 'bestuur'];
 
 const roleLabels = {
     leiding: 'Leiding',
     ouder_contact: 'Oudercontact',
+    teamleider: 'Teamleider',
+    lid: 'Lid',
+    bestuurslid: 'Bestuurslid',
 };
 
 const moduleLabels = {
@@ -37,27 +41,63 @@ const moduleLabels = {
     profile: 'Profiel',
 };
 
+const localRows = ref([]);
+watch(
+    () => props.rows,
+    (rows) => {
+        localRows.value = (rows || []).map((row) => ({ ...row }));
+    },
+    { immediate: true },
+);
+
 const groupedRows = computed(() => {
     const groups = {};
-    for (const row of props.rows || []) {
+    for (const row of localRows.value || []) {
         if (!groups[row.role]) groups[row.role] = [];
         groups[row.role].push(row);
     }
     return groups;
 });
 
-function onSectionChange(event) {
-    const section = event?.target?.value;
-    if (!section) return;
+const orderedManageableSections = computed(() => {
+    const input = Array.isArray(props.manageableSections) ? props.manageableSections : [];
+    const allowed = new Set(input);
+    const sortedKnown = sectionOrder.filter((section) => allowed.has(section));
+    const rest = input.filter((section) => !sectionOrder.includes(section));
+    return [...sortedKnown, ...rest];
+});
+
+function setSection(section) {
+    if (!section || section === props.selectedSection) return;
     router.get(route('permissions.index'), { section }, { preserveState: true, preserveScroll: true });
 }
 
 function updatePermission(row, field, value) {
+    row[field] = !!value;
+
     router.patch(
         route('permissions.update', row.id),
-        { [field]: !!value, can_view: row.can_view, can_create: row.can_create, can_update: row.can_update, can_delete: row.can_delete },
-        { preserveScroll: true },
+        {
+            can_view: !!row.can_view,
+            can_create: !!row.can_create,
+            can_update: !!row.can_update,
+            can_delete: !!row.can_delete,
+        },
+        {
+            preserveScroll: true,
+            onError: () => {
+                // Bij fout terug naar server-state.
+                localRows.value = (props.rows || []).map((r) => ({ ...r }));
+            },
+        },
     );
+}
+
+function roleLabelFor(role) {
+    if (role === 'leiding' && ['wilde_vaart', 'loodsen'].includes(props.selectedSection)) {
+        return 'Leidinglid';
+    }
+    return roleLabels[role] || role;
 }
 </script>
 
@@ -70,18 +110,21 @@ function updatePermission(row, field, value) {
 
         <div class="space-y-4">
             <div class="surface-brand-top rounded-xl border border-app-border bg-app-panel p-4 shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark">
-                <div class="flex flex-wrap items-center gap-3">
-                    <label class="text-sm font-semibold text-app-muted dark:text-app-muted-dark">Speltak</label>
-                    <select
-                        class="rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                        :value="selectedSection"
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="me-1 text-sm font-semibold text-app-muted dark:text-app-muted-dark">Speltak</span>
+                    <button
+                        v-for="section in orderedManageableSections"
+                        :key="`perm-s-btn-${section}`"
+                        type="button"
+                        class="rounded-md border px-3 py-1.5 text-sm font-medium transition"
+                        :class="section === selectedSection
+                            ? 'border-brand-blue bg-brand-blue/15 text-brand-blue-dark dark:border-brand-blue/60 dark:bg-brand-blue/25 dark:text-brand-blue-light'
+                            : 'border-app-border bg-white text-app-ink hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/15'"
                         :disabled="!isAdmin"
-                        @change="onSectionChange"
+                        @click="setSection(section)"
                     >
-                        <option v-for="section in manageableSections" :key="`perm-s-${section}`" :value="section">
-                            {{ sectionLabels[section] || section }}
-                        </option>
-                    </select>
+                        {{ sectionLabels[section] || section }}
+                    </button>
                 </div>
             </div>
 
@@ -91,7 +134,7 @@ function updatePermission(row, field, value) {
                     :key="`perm-role-${role}`"
                     class="surface-brand-top rounded-xl border border-app-border bg-app-panel p-4 shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark"
                 >
-                    <h3 class="mb-3 text-base font-semibold text-app-ink dark:text-app-ink-dark">{{ roleLabels[role] || role }}</h3>
+                    <h3 class="mb-3 text-base font-semibold text-app-ink dark:text-app-ink-dark">{{ roleLabelFor(role) }}</h3>
                     <table class="w-full text-sm">
                         <thead class="text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
                             <tr>

@@ -17,5 +17,10 @@ class Event extends Model
         'program_by',
         'absent',
         'notes',
+        'task_item_ids',
+    ];
+
+    protected $casts = [
+        'task_item_ids' => 'array',
     ];
 }

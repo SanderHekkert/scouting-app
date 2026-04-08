@@ -121,7 +121,9 @@ const tailNavItems = computed(() => ([
     { label: 'Leiding', route: 'leaders.index', matchRoutes: ['leaders.*'], module: 'leaders' },
     { label: 'Belangrijke info', route: 'info-notes.index', matchRoutes: ['info-notes.*'], module: 'info_notes' },
     { label: 'Taakverdeling', route: 'task-items.index', matchRoutes: ['task-items.*', 'task-categories.*'], module: 'task_items' },
-    ...(isAdmin.value ? [{ label: 'Rollenbeheer', route: 'admin.roles.index', matchRoutes: ['admin.roles.*'] }] : []),
+    ...((isAdmin.value || isBoardMember.value)
+        ? [{ label: 'Gebruikers', route: 'admin.users.index', matchRoutes: ['admin.users.*'] }]
+        : []),
     ...((isAdmin.value || (page.props.auth?.section_roles || []).some((r) => r.section !== '*' && r.role === 'teamleider'))
         ? [{ label: 'Rechtenbeheer', route: 'permissions.index', matchRoutes: ['permissions.*'] }]
         : []),

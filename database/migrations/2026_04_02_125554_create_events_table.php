@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('program_by')->nullable();
             $table->text('absent')->nullable();
             $table->text('notes')->nullable();
+            $table->json('task_item_ids')->nullable();
             $table->string('section', 40)->default('dolfijnen')->index();
             $table->timestamps();
         });

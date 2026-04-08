@@ -12,6 +12,10 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
+    taskItems: {
+        type: Array,
+        default: () => [],
+    },
 });
 
 const page = usePage();
@@ -258,6 +262,7 @@ function isEventFieldSaving(event, field) {
                 <AgendaEventsTable
                     :events="props.events"
                     :leaders="props.leaders"
+                    :task-items="props.taskItems"
                     :highlight-event-id="highlightEventId"
                     :is-field-saving="isEventFieldSaving"
                     :can-edit-agenda="canManageAgenda"

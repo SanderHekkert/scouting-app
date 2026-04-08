@@ -2,7 +2,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
 import { computed, reactive } from 'vue';
-import { PencilSquareIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     users: { type: Array, default: () => [] },
@@ -37,16 +36,9 @@ const stateByUser = reactive(
         (props.users || []).map((u) => [
             u.id,
             {
-                is_admin: !!u.is_admin,
                 section_roles: { ...(u.section_roles || {}) },
                 selected_section: u.selected_section || 'dolfijnen',
-                name: u.name || '',
-                email: u.email || '',
-                first_name: u.first_name || '',
-                last_name: u.last_name || '',
-                editing_basics: false,
                 saving: false,
-                saving_basics: false,
             },
         ]),
     ),
@@ -60,7 +52,6 @@ function saveUser(userId) {
     router.patch(
         route('admin.roles.update', userId),
         {
-            is_admin: !!state.is_admin,
             selected_section: state.selected_section,
             selected_role: state.section_roles[state.selected_section] || 'leiding',
         },
@@ -85,45 +76,6 @@ function scheduleRoleSave(userId) {
     );
 }
 
-function toggleBasicsEdit(userId) {
-    const state = stateByUser[userId];
-    if (!state) return;
-    state.editing_basics = !state.editing_basics;
-}
-
-function saveBasics(userId) {
-    const state = stateByUser[userId];
-    if (!state) return;
-    state.saving_basics = true;
-    router.patch(
-        route('admin.roles.update-basics', userId),
-        {
-            name: state.name || '',
-            email: state.email || '',
-            first_name: state.first_name || '',
-            last_name: state.last_name || '',
-        },
-        {
-            preserveScroll: true,
-            onFinish: () => {
-                state.saving_basics = false;
-                state.editing_basics = false;
-            },
-        },
-    );
-}
-
-function scheduleBasicsSave(userId) {
-    const key = `basics:${userId}`;
-    clearTimeout(autosaveTimers.get(key));
-    autosaveTimers.set(
-        key,
-        setTimeout(() => {
-            saveBasics(userId);
-            autosaveTimers.delete(key);
-        }, 300),
-    );
-}
 </script>
 
 <template>
@@ -144,15 +96,6 @@ function scheduleBasicsSave(userId) {
                     >
                         <div class="font-medium">{{ user.name }}</div>
                         <div class="text-xs text-app-muted dark:text-app-muted-dark">{{ user.email }}</div>
-                        <div v-if="stateByUser[user.id].editing_basics" class="mt-2 grid gap-2">
-                            <input v-model="stateByUser[user.id].name" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" placeholder="Naam" @change="scheduleBasicsSave(user.id)" />
-                            <input v-model="stateByUser[user.id].email" type="email" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" placeholder="E-mail" @change="scheduleBasicsSave(user.id)" />
-                            <div class="grid grid-cols-2 gap-2">
-                                <input v-model="stateByUser[user.id].first_name" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" placeholder="Voornaam" @change="scheduleBasicsSave(user.id)" />
-                                <input v-model="stateByUser[user.id].last_name" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" placeholder="Achternaam" @change="scheduleBasicsSave(user.id)" />
-                            </div>
-                        </div>
-
                         <p class="mt-2 text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Speltak</p>
                         <select
                             v-model="stateByUser[user.id].selected_section"
@@ -175,16 +118,8 @@ function scheduleBasicsSave(userId) {
                             </option>
                         </select>
 
-                        <label class="mt-3 inline-flex items-center gap-2">
-                            <input v-model="stateByUser[user.id].is_admin" type="checkbox" class="rounded border-app-border" @change="scheduleRoleSave(user.id)" />
-                            <span class="text-sm text-app-ink dark:text-app-ink-dark">Admin</span>
-                        </label>
-
                         <div class="mt-3 border-t border-brand-blue/25 pt-3 dark:border-brand-blue/35">
-                            <button type="button" class="me-2 rounded border border-app-border px-2 py-1.5 text-xs font-semibold text-app-ink hover:bg-brand-blue/10 dark:border-app-border-dark dark:text-app-ink-dark" @click="toggleBasicsEdit(user.id)">
-                                <PencilSquareIcon class="h-4 w-4" />
-                            </button>
-                            <span v-if="stateByUser[user.id].saving || stateByUser[user.id].saving_basics" class="text-xs text-app-muted dark:text-app-muted-dark">Opslaan...</span>
+                            <span v-if="stateByUser[user.id].saving" class="text-xs text-app-muted dark:text-app-muted-dark">Opslaan...</span>
                         </div>
                     </div>
                 </div>
@@ -195,25 +130,13 @@ function scheduleBasicsSave(userId) {
                             <th class="px-3 py-2">Gebruiker</th>
                             <th class="px-3 py-2">Speltak</th>
                             <th class="px-3 py-2">Rol</th>
-                            <th class="px-3 py-2">Admin</th>
-                            <th class="px-3 py-2">Actie</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-brand-blue/25">
                         <tr v-for="user in users" :key="user.id" class="bg-brand-blue/5">
                             <td class="px-3 py-2 align-top">
-                                <div v-if="!stateByUser[user.id].editing_basics">
-                                    <div class="font-medium text-app-ink dark:text-app-ink-dark">{{ user.name }}</div>
-                                    <div class="text-xs text-app-muted dark:text-app-muted-dark">{{ user.email }}</div>
-                                </div>
-                                <div v-else class="grid gap-2">
-                                    <input v-model="stateByUser[user.id].name" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" placeholder="Naam" @change="scheduleBasicsSave(user.id)" />
-                                    <input v-model="stateByUser[user.id].email" type="email" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" placeholder="E-mail" @change="scheduleBasicsSave(user.id)" />
-                                    <div class="grid grid-cols-2 gap-2">
-                                        <input v-model="stateByUser[user.id].first_name" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" placeholder="Voornaam" @change="scheduleBasicsSave(user.id)" />
-                                        <input v-model="stateByUser[user.id].last_name" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" placeholder="Achternaam" @change="scheduleBasicsSave(user.id)" />
-                                    </div>
-                                </div>
+                                <div class="font-medium text-app-ink dark:text-app-ink-dark">{{ user.name }}</div>
+                                <div class="text-xs text-app-muted dark:text-app-muted-dark">{{ user.email }}</div>
                             </td>
                             <td class="px-3 py-2 align-top">
                                 <select
@@ -238,21 +161,7 @@ function scheduleBasicsSave(userId) {
                                 </select>
                             </td>
                             <td class="px-3 py-2 align-top">
-                                <label class="inline-flex items-center gap-2">
-                                    <input v-model="stateByUser[user.id].is_admin" type="checkbox" class="rounded border-app-border" @change="scheduleRoleSave(user.id)" />
-                                    <span class="text-sm text-app-ink dark:text-app-ink-dark">Admin</span>
-                                </label>
-                            </td>
-                            <td class="px-3 py-2 align-top">
-                                <button
-                                    type="button"
-                                    class="me-2 rounded border border-app-border px-2 py-1.5 text-xs font-semibold text-app-ink hover:bg-brand-blue/10 dark:border-app-border-dark dark:text-app-ink-dark"
-                                    @click="toggleBasicsEdit(user.id)"
-                                    title="Basisgegevens bewerken"
-                                >
-                                    <PencilSquareIcon class="h-4 w-4" />
-                                </button>
-                                <span v-if="stateByUser[user.id].saving || stateByUser[user.id].saving_basics" class="text-xs text-app-muted dark:text-app-muted-dark">Opslaan...</span>
+                                <span v-if="stateByUser[user.id].saving" class="text-xs text-app-muted dark:text-app-muted-dark">Opslaan...</span>
                             </td>
                         </tr>
                     </tbody>

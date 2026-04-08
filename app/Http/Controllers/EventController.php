@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
+use App\Models\TaskItem;
 use App\Models\User;
 use App\Models\UserSectionRole;
 use Carbon\Carbon;
@@ -19,6 +20,7 @@ class EventController extends Controller
     public function index()
     {
         $today = Carbon::today();
+        $section = $this->activeSection();
 
         $active = Event::query()
             ->whereDate('event_date', '>=', $today)
@@ -26,9 +28,21 @@ class EventController extends Controller
             ->orderBy('theme')
             ->get();
 
+        $taskItems = TaskItem::query()
+            ->where('section', $section)
+            ->orderBy('title')
+            ->get(['id', 'title'])
+            ->map(fn (TaskItem $task): array => [
+                'id' => $task->id,
+                'title' => (string) $task->title,
+            ])
+            ->values()
+            ->all();
+
         return Inertia::render('Events/Index', [
             'events' => $active,
             'leaders' => $this->leaderNamesForActiveSection(),
+            'taskItems' => $taskItems,
         ]);
     }
 
@@ -64,7 +78,10 @@ class EventController extends Controller
             'program_by' => ['nullable', 'string', 'max:255'],
             'absent' => ['nullable', 'string'],
             'notes' => ['nullable', 'string'],
+            'task_item_ids' => ['nullable', 'array'],
+            'task_item_ids.*' => ['integer'],
         ]);
+        $data['task_item_ids'] = $this->normalizeTaskItemIds($data['task_item_ids'] ?? null);
 
         Event::create($data);
 
@@ -84,7 +101,10 @@ class EventController extends Controller
             'program_by' => ['nullable', 'string', 'max:255'],
             'absent' => ['nullable', 'string'],
             'notes' => ['nullable', 'string'],
+            'task_item_ids' => ['nullable', 'array'],
+            'task_item_ids.*' => ['integer'],
         ]);
+        $data['task_item_ids'] = $this->normalizeTaskItemIds($data['task_item_ids'] ?? null);
 
         $event->update($data);
 
@@ -118,10 +138,15 @@ class EventController extends Controller
             'program_by' => ['sometimes', 'nullable', 'string', 'max:255'],
             'absent' => ['sometimes', 'nullable', 'string'],
             'notes' => ['sometimes', 'nullable', 'string'],
+            'task_item_ids' => ['sometimes', 'nullable', 'array'],
+            'task_item_ids.*' => ['integer'],
         ]);
 
         if (array_key_exists('theme', $data) && $data['theme'] === null) {
             $data['theme'] = '';
+        }
+        if (array_key_exists('task_item_ids', $data)) {
+            $data['task_item_ids'] = $this->normalizeTaskItemIds($data['task_item_ids']);
         }
         $event->update($data);
 
@@ -229,5 +254,33 @@ class EventController extends Controller
             ->unique()
             ->values()
             ->all();
+    }
+
+    /**
+     * @param  array<int, mixed>|null  $raw
+     * @return list<int>
+     */
+    private function normalizeTaskItemIds(?array $raw): array
+    {
+        $section = $this->activeSection();
+        $ids = collect($raw ?? [])
+            ->map(fn ($v): int => (int) $v)
+            ->filter(fn (int $id): bool => $id > 0)
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($ids === []) {
+            return [];
+        }
+
+        $allowed = TaskItem::query()
+            ->where('section', $section)
+            ->whereIn('id', $ids)
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+
+        return array_values($allowed);
     }
 }

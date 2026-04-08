@@ -20,9 +20,12 @@ class SectionPermissionController extends Controller
             ? (in_array($requestedSection, $manageableSections, true) ? $requestedSection : ($manageableSections[0] ?? UserSectionRole::SECTION_DOLFIJNEN))
             : ($manageableSections[0] ?? UserSectionRole::SECTION_DOLFIJNEN);
 
+        $editableRoles = $this->editableRolesForSection($section);
+        $this->ensureRowsForSection($section, $editableRoles);
+
         $rows = SectionPermission::query()
             ->where('section', $section)
-            ->whereIn('role', [UserSectionRole::ROLE_LEIDING, UserSectionRole::ROLE_OUDERCONTACT])
+            ->whereIn('role', $editableRoles)
             ->orderBy('role')
             ->orderBy('module')
             ->get()
@@ -43,7 +46,7 @@ class SectionPermissionController extends Controller
             'selectedSection' => $section,
             'isAdmin' => $isAdmin,
             'rows' => $rows,
-            'roles' => [UserSectionRole::ROLE_LEIDING, UserSectionRole::ROLE_OUDERCONTACT],
+            'roles' => $editableRoles,
             'modules' => SectionPermission::ALL_MODULES,
         ]);
     }
@@ -96,5 +99,87 @@ class SectionPermissionController extends Controller
         }
 
         return [$user, $manageableSections, false];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function editableRolesForSection(string $section): array
+    {
+        if ($section === UserSectionRole::SECTION_BESTUUR) {
+            return [UserSectionRole::ROLE_BESTUURSLID];
+        }
+
+        if (in_array($section, [UserSectionRole::SECTION_WILDE_VAART, UserSectionRole::SECTION_LOODSEN], true)) {
+            return [
+                UserSectionRole::ROLE_LID,
+                UserSectionRole::ROLE_LEIDING,
+                UserSectionRole::ROLE_TEAMLEIDER,
+            ];
+        }
+
+        return [
+            UserSectionRole::ROLE_LEIDING,
+            UserSectionRole::ROLE_OUDERCONTACT,
+            UserSectionRole::ROLE_TEAMLEIDER,
+        ];
+    }
+
+    /**
+     * @param  list<string>  $roles
+     */
+    private function ensureRowsForSection(string $section, array $roles): void
+    {
+        $defaults = [
+            UserSectionRole::ROLE_TEAMLEIDER => [
+                'can_view' => true,
+                'can_create' => true,
+                'can_update' => true,
+                'can_delete' => true,
+            ],
+            UserSectionRole::ROLE_LEIDING => [
+                'can_view' => true,
+                'can_create' => true,
+                'can_update' => true,
+                'can_delete' => true,
+            ],
+            UserSectionRole::ROLE_OUDERCONTACT => [
+                'can_view' => true,
+                'can_create' => false,
+                'can_update' => false,
+                'can_delete' => false,
+            ],
+            UserSectionRole::ROLE_LID => [
+                'can_view' => true,
+                'can_create' => false,
+                'can_update' => false,
+                'can_delete' => false,
+            ],
+            UserSectionRole::ROLE_BESTUURSLID => [
+                'can_view' => true,
+                'can_create' => false,
+                'can_update' => false,
+                'can_delete' => false,
+            ],
+        ];
+
+        foreach ($roles as $role) {
+            $actions = $defaults[$role] ?? [
+                'can_view' => true,
+                'can_create' => false,
+                'can_update' => false,
+                'can_delete' => false,
+            ];
+            foreach (SectionPermission::ALL_MODULES as $module) {
+                SectionPermission::query()->firstOrCreate(
+                    [
+                        'section' => $section,
+                        'role' => $role,
+                        'module' => $module,
+                    ],
+                    $actions,
+                );
+            }
+        }
     }
 }

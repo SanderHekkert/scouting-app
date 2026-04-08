@@ -24,6 +24,10 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
+    taskItems: {
+        type: Array,
+        default: () => [],
+    },
     canEditAgenda: {
         type: Boolean,
         default: true,
@@ -109,6 +113,37 @@ function isCurrentUserAbsent(event) {
     const self = String(props.currentUserName || '').trim().toLowerCase();
     if (!self) return false;
     return splitAbsentNames(event?.absent).some((name) => String(name).trim().toLowerCase() === self);
+}
+
+function taskIdsForEvent(event) {
+    return Array.isArray(event?.task_item_ids) ? event.task_item_ids.map((id) => Number(id)).filter((id) => Number.isFinite(id)) : [];
+}
+
+function taskLabelById(id) {
+    return props.taskItems.find((task) => Number(task.id) === Number(id))?.title || `Taak #${id}`;
+}
+
+function availableTasks(event) {
+    const selected = new Set(taskIdsForEvent(event));
+    return (props.taskItems || []).filter((task) => !selected.has(Number(task.id)));
+}
+
+function addTaskToEvent(event, taskId) {
+    const id = Number(taskId);
+    if (!Number.isFinite(id) || id <= 0) return;
+    const next = [...new Set([...taskIdsForEvent(event), id])];
+    patchField(event, 'task_item_ids', next);
+}
+
+function removeTaskFromEvent(event, taskId) {
+    const next = taskIdsForEvent(event).filter((id) => Number(id) !== Number(taskId));
+    patchField(event, 'task_item_ids', next);
+}
+
+function onTaskSelectChange(event, domEvent) {
+    const id = domEvent?.target?.value;
+    addTaskToEvent(event, id);
+    if (domEvent?.target) domEvent.target.value = '';
 }
 </script>
 
@@ -222,6 +257,36 @@ function isCurrentUserAbsent(event) {
                         </button>
                     </div>
                     <div>
+                        <p class="text-xs text-app-muted dark:text-app-muted-dark">Taken</p>
+                        <div class="mt-1 flex flex-wrap gap-1.5">
+                            <span
+                                v-for="taskId in taskIdsForEvent(event)"
+                                :key="`mob-task-chip-${event.id}-${taskId}`"
+                                class="inline-flex items-center gap-1 rounded-full bg-brand-blue/15 px-2 py-0.5 text-xs"
+                            >
+                                {{ taskLabelById(taskId) }}
+                                <button
+                                    v-if="props.canEditAgenda"
+                                    type="button"
+                                    class="rounded p-0.5 hover:bg-brand-blue/25"
+                                    @click="removeTaskFromEvent(event, taskId)"
+                                >
+                                    <XMarkIcon class="h-3.5 w-3.5" />
+                                </button>
+                            </span>
+                        </div>
+                        <select
+                            v-if="props.canEditAgenda"
+                            class="mt-2 w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
+                            @change="onTaskSelectChange(event, $event)"
+                        >
+                            <option value="">Taak toevoegen…</option>
+                            <option v-for="task in availableTasks(event)" :key="`mob-task-${event.id}-${task.id}`" :value="task.id">
+                                {{ task.title }}
+                            </option>
+                        </select>
+                    </div>
+                    <div>
                         <p class="text-xs text-app-muted dark:text-app-muted-dark">Bijzonderheden</p>
                         <EditableTextCell
                             :text="event.notes || ''"
@@ -249,6 +314,7 @@ function isCurrentUserAbsent(event) {
                     <th scope="col" class="min-w-[10rem] px-3 py-2.5">Wat ga je doen?</th>
                     <th scope="col" class="min-w-[7rem] px-3 py-2.5">Programma door</th>
                     <th scope="col" class="min-w-[12rem] px-3 py-2.5">Afwezig</th>
+                    <th scope="col" class="min-w-[11rem] px-3 py-2.5">Taken</th>
                     <th scope="col" class="min-w-[11rem] px-3 py-2.5">Bijzonderheden</th>
                     <th scope="col" class="min-w-[9rem] whitespace-nowrap px-3 py-2.5 text-end sm:text-start">Acties</th>
                 </tr>
@@ -351,6 +417,35 @@ function isCurrentUserAbsent(event) {
                         >
                             {{ isCurrentUserAbsent(event) ? 'Meld aanwezig' : 'Meld afwezig' }}
                         </button>
+                    </td>
+                    <td class="max-w-[16rem] px-3 py-2.5 align-top">
+                        <div class="flex flex-wrap gap-1.5">
+                            <span
+                                v-for="taskId in taskIdsForEvent(event)"
+                                :key="`desk-task-chip-${event.id}-${taskId}`"
+                                class="inline-flex items-center gap-1 rounded-full bg-brand-blue/15 px-2 py-0.5 text-xs"
+                            >
+                                {{ taskLabelById(taskId) }}
+                                <button
+                                    v-if="props.canEditAgenda"
+                                    type="button"
+                                    class="rounded p-0.5 hover:bg-brand-blue/25"
+                                    @click="removeTaskFromEvent(event, taskId)"
+                                >
+                                    <XMarkIcon class="h-3.5 w-3.5" />
+                                </button>
+                            </span>
+                        </div>
+                        <select
+                            v-if="props.canEditAgenda"
+                            class="mt-2 w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
+                            @change="onTaskSelectChange(event, $event)"
+                        >
+                            <option value="">Taak toevoegen…</option>
+                            <option v-for="task in availableTasks(event)" :key="`desk-task-${event.id}-${task.id}`" :value="task.id">
+                                {{ task.title }}
+                            </option>
+                        </select>
                     </td>
                     <td class="max-w-[16rem] px-3 py-2.5 align-top">
                         <EditableTextCell
