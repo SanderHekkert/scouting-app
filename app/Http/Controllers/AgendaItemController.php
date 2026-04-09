@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AgendaItem;
 use App\Models\Event;
+use App\Models\TaskItem;
 use App\Models\User;
 use App\Models\UserSectionRole;
 use Carbon\Carbon;
@@ -66,9 +67,17 @@ class AgendaItemController extends Controller
         $today = Carbon::today();
         $user = request()->user();
         abort_unless($user instanceof User, 403);
+        $activeSection = (string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN);
+        $canBrowseAllAgendas = $user->isGlobalAdmin() || $user->isGlobalBoardMember();
+        $requestedSection = (string) request()->query('section', $activeSection);
+        $selectedSection = in_array($requestedSection, UserSectionRole::ALL_SECTIONS, true) ? $requestedSection : $activeSection;
+        $requestedUserId = (int) request()->query('user_id', (int) $user->id);
+        $selectedUserId = $requestedUserId > 0 ? $requestedUserId : (int) $user->id;
         $sections = $this->userSections($user);
         $itemsQuery = AgendaItem::query();
-        if (! $user->isGlobalAdmin() && ! $user->isGlobalBoardMember()) {
+        if ($canBrowseAllAgendas) {
+            $itemsQuery->where('owner_user_id', $selectedUserId);
+        } else {
             $itemsQuery->where(function (Builder $query) use ($user, $sections): void {
                 $query->where('owner_user_id', $user->id);
                 $query->orWhere('audience_scope', 'all');
@@ -93,8 +102,16 @@ class AgendaItemController extends Controller
             ->orderBy('theme')
             ->get();
 
-        $opkomsten = Event::withoutGlobalScope('section')
-            ->where(function (Builder $query) use ($sections): void {
+        $opkomstenQuery = Event::withoutGlobalScope('section');
+        if ($canBrowseAllAgendas) {
+            $opkomstenQuery->where(function (Builder $query) use ($selectedSection): void {
+                $query->where('section', $selectedSection);
+                if ($this->supportsSharedEventsForSection($selectedSection)) {
+                    $query->orWhereJsonContains('shared_sections', $selectedSection);
+                }
+            });
+        } else {
+            $opkomstenQuery->where(function (Builder $query) use ($sections): void {
                 foreach ($sections as $index => $section) {
                     if ($index === 0) {
                         $query->where('section', $section);
@@ -105,11 +122,48 @@ class AgendaItemController extends Controller
                         $query->orWhereJsonContains('shared_sections', $section);
                     }
                 }
-            })
+            });
+        }
+        $opkomsten = $opkomstenQuery
             ->whereDate('event_date', '>=', $today)
             ->orderBy('event_date')
             ->orderBy('theme')
             ->get();
+
+        $tasksQuery = TaskItem::withoutGlobalScope('section');
+        if ($canBrowseAllAgendas) {
+            $tasksQuery->where(function (Builder $query) use ($selectedSection): void {
+                $query->where('section', $selectedSection)
+                    ->orWhereJsonContains('shared_sections', $selectedSection);
+            });
+        } else {
+            $tasksQuery->where(function (Builder $query) use ($sections): void {
+                foreach ($sections as $index => $section) {
+                    if ($index === 0) {
+                        $query->where('section', $section);
+                    } else {
+                        $query->orWhere('section', $section);
+                    }
+                    $query->orWhereJsonContains('shared_sections', $section);
+                }
+            });
+        }
+        $tasks = $tasksQuery
+            ->get(['id', 'title', 'deadlines']);
+
+        $filterUsers = User::query()
+            ->when($canBrowseAllAgendas, function ($q) use ($selectedSection) {
+                $q->whereHas('sectionRoles', function (Builder $query) use ($selectedSection): void {
+                    $query->where('section', $selectedSection);
+                });
+            })
+            ->orderBy('first_name')
+            ->orderBy('last_name')
+            ->get(['id', 'first_name', 'last_name', 'name'])
+            ->map(fn (User $u): array => [
+                'id' => (int) $u->id,
+                'name' => trim((string) ($u->first_name ?? '').' '.(string) ($u->last_name ?? '')) ?: (string) $u->name,
+            ])->values();
 
         return Inertia::render('Agenda/Index', [
             'items' => $items->map(fn (AgendaItem $item): array => [
@@ -127,7 +181,20 @@ class AgendaItemController extends Controller
                 'section' => (string) ($event->section ?? ''),
                 'is_shared' => count(array_intersect($sections, collect($event->shared_sections ?? [])->map(fn ($s) => (string) $s)->all())) > 0,
                 'shared_sections' => collect($event->shared_sections ?? [])->map(fn ($s) => (string) $s)->values()->all(),
+                'task_item_ids' => collect($event->task_item_ids ?? [])->map(fn ($v): int => (int) $v)->filter(fn (int $v): bool => $v > 0)->values()->all(),
             ])->values(),
+            'tasks' => $tasks->map(function (TaskItem $task): array {
+                return [
+                    'id' => (int) $task->id,
+                    'title' => (string) ($task->title ?? ''),
+                    'deadlines' => collect($task->deadlines ?? [])
+                        ->map(fn ($d): string => trim((string) $d))
+                        ->filter(fn (string $d): bool => $d !== '')
+                        ->unique()
+                        ->values()
+                        ->all(),
+                ];
+            })->values(),
             'availableUsers' => User::query()
                 ->orderBy('first_name')
                 ->orderBy('last_name')
@@ -137,6 +204,11 @@ class AgendaItemController extends Controller
                     'name' => trim((string) ($u->first_name ?? '').' '.(string) ($u->last_name ?? '')) ?: (string) $u->name,
                     'email' => (string) $u->email,
                 ])->values(),
+            'canBrowseAllAgendas' => $canBrowseAllAgendas,
+            'sectionOptions' => UserSectionRole::ALL_SECTIONS,
+            'selectedSectionFilter' => $selectedSection,
+            'selectedUserFilter' => $selectedUserId,
+            'filterUsers' => $filterUsers,
         ]);
     }
 

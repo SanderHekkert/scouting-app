@@ -18,10 +18,6 @@ class SectionPermissionGate
             return true;
         }
         if ($user->isGlobalBoardMember()) {
-            if ($section === UserSectionRole::SECTION_BESTUUR) {
-                return true;
-            }
-
             return $action === 'view';
         }
 

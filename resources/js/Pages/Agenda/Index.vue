@@ -7,7 +7,13 @@ import { computed, ref } from 'vue';
 const props = defineProps({
     items: { type: Array, default: () => [] },
     opkomsten: { type: Array, default: () => [] },
+    tasks: { type: Array, default: () => [] },
     availableUsers: { type: Array, default: () => [] },
+    canBrowseAllAgendas: { type: Boolean, default: false },
+    sectionOptions: { type: Array, default: () => [] },
+    selectedSectionFilter: { type: String, default: '' },
+    selectedUserFilter: { type: Number, default: 0 },
+    filterUsers: { type: Array, default: () => [] },
 });
 const page = usePage();
 const activeSection = computed(() => String(page.props.activeSection || ''));
@@ -19,6 +25,8 @@ const selectedDateKey = ref('');
 const agendaSearch = ref('');
 const showSearchPanel = ref(false);
 const viewMode = ref('month');
+const sectionFilter = ref(String(props.selectedSectionFilter || activeSection.value || ''));
+const userFilter = ref(Number(props.selectedUserFilter || 0));
 const nowTick = ref(Date.now());
 const dayColumnHeight = 24 * 56;
 const pixelsPerMinute = dayColumnHeight / (24 * 60);
@@ -44,6 +52,27 @@ function toggleSearchPanel() {
     if (!showSearchPanel.value) {
         agendaSearch.value = '';
     }
+}
+
+const sectionLabels = {
+    bevers: 'Bevers',
+    dolfijnen: 'Dolfijnen',
+    zeeverkenners: 'Zeeverkenners',
+    wilde_vaart: 'Wilde Vaart',
+    loodsen: 'Loodsen',
+    bestuur: 'Bestuur',
+};
+
+function applyAgendaScopeFilters() {
+    if (!props.canBrowseAllAgendas) return;
+    router.get(
+        route('agenda.index'),
+        {
+            section: sectionFilter.value,
+            user_id: userFilter.value,
+        },
+        { preserveScroll: true },
+    );
 }
 
 function createAgendaItemForDay(dayKey) {
@@ -138,7 +167,53 @@ const normalizedEntries = computed(() => {
         };
     }).filter(Boolean);
 
-    return [...agendaItems, ...opkomstenItems];
+    const taskById = new Map((props.tasks || []).map((task) => [Number(task.id), task]));
+    const taskDeadlineItems = (props.tasks || []).flatMap((task) =>
+        (task.deadlines || []).map((deadline) => ({
+            sourceType: 'task',
+            sourceId: Number(task.id),
+            title: task.title || `Taak #${task.id}`,
+            tag: 'Taak deadline',
+            href: route('task-items.index'),
+            startAt: combineDateAndMinutes(String(deadline), 10 * 60),
+            endAt: combineDateAndMinutes(String(deadline), 11 * 60),
+            allDay: true,
+            date: String(deadline),
+            endDate: String(deadline),
+            section: '',
+            canScheduleUpdate: false,
+        })),
+    );
+    const taskLinkedToOpkomstItems = (props.opkomsten || []).flatMap((ev) =>
+        (ev.task_item_ids || []).map((taskId) => {
+            const task = taskById.get(Number(taskId));
+            if (!task || !ev.event_date) return null;
+            return {
+                sourceType: 'task',
+                sourceId: Number(taskId),
+                title: task.title || `Taak #${taskId}`,
+                tag: 'Taak opkomst',
+                href: route('task-items.index'),
+                startAt: combineDateAndMinutes(String(ev.event_date), 10 * 60),
+                endAt: combineDateAndMinutes(String(ev.event_date), 11 * 60),
+                allDay: true,
+                date: String(ev.event_date),
+                endDate: String(ev.event_date),
+                section: String(ev.section || ''),
+                canScheduleUpdate: false,
+            };
+        }).filter(Boolean),
+    );
+    const dedupedTaskItems = Array.from(
+        new Map(
+            [...taskDeadlineItems, ...taskLinkedToOpkomstItems].map((entry) => [
+                `${entry.sourceType}-${entry.sourceId}-${entry.date}-${entry.tag}`,
+                entry,
+            ]),
+        ).values(),
+    );
+
+    return [...agendaItems, ...opkomstenItems, ...dedupedTaskItems];
 });
 
 const searchResults = computed(() => {
@@ -503,6 +578,26 @@ function opkomstColorClass(section) {
             <div class="flex w-full flex-wrap items-center justify-between gap-3">
                 <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Agenda</h2>
                 <div class="flex flex-1 flex-wrap items-center justify-end gap-2">
+                    <template v-if="props.canBrowseAllAgendas">
+                        <select
+                            v-model="sectionFilter"
+                            class="rounded-full border border-app-border bg-app-panel px-3.5 py-1.5 text-sm font-semibold text-app-ink shadow-sm transition hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/20"
+                            @change="applyAgendaScopeFilters"
+                        >
+                            <option v-for="section in props.sectionOptions" :key="`section-filter-${section}`" :value="section">
+                                {{ sectionLabels[section] || section }}
+                            </option>
+                        </select>
+                        <select
+                            v-model="userFilter"
+                            class="rounded-full border border-app-border bg-app-panel px-3.5 py-1.5 text-sm font-semibold text-app-ink shadow-sm transition hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/20"
+                            @change="applyAgendaScopeFilters"
+                        >
+                            <option v-for="u in props.filterUsers" :key="`user-filter-${u.id}`" :value="u.id">
+                                {{ u.name }}
+                            </option>
+                        </select>
+                    </template>
                     <button type="button" class="rounded-full border border-app-border bg-app-panel px-3.5 py-1.5 text-sm font-semibold text-app-ink shadow-sm transition hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/20" @click="goToToday">Vandaag</button>
                     <div class="inline-flex items-center rounded-full border border-app-border bg-app-panel p-1 shadow-sm dark:border-app-border-dark dark:bg-app-panel-dark">
                         <button type="button" class="rounded-full px-3.5 py-1.5 text-sm font-semibold transition" :class="viewMode === 'day' ? 'bg-brand-blue text-white shadow-sm' : 'text-app-ink hover:bg-brand-blue/10 dark:text-app-ink-dark dark:hover:bg-brand-blue/20'" @click="viewMode = 'day'">Dag</button>
@@ -556,7 +651,7 @@ function opkomstColorClass(section) {
                     <div class="mt-3">
                         <table class="w-full text-sm text-app-ink dark:text-app-ink-dark">
                             <tbody class="divide-y divide-brand-blue/20">
-                                <tr v-for="entry in searchResults" :key="`search-${entry.kind}-${entry.id}`">
+                                <tr v-for="entry in searchResults" :key="`search-${entry.sourceType}-${entry.sourceId}`">
                                     <td class="py-2 pe-2 whitespace-nowrap text-xs text-app-muted dark:text-app-muted-dark">{{ entry.date || '-' }}</td>
                                     <td class="py-2">
                                         <Link :href="entry.href" class="hover:underline">
@@ -608,7 +703,9 @@ function opkomstColorClass(section) {
                                 class="block rounded-lg px-2 py-1 text-[11px] leading-tight"
                                 :class="entry.sourceType === 'agenda'
                                     ? 'bg-slate-100 text-slate-800 hover:bg-slate-200 dark:bg-slate-700/70 dark:text-slate-100'
-                                    : opkomstColorClass(entry.section)"
+                                    : entry.sourceType === 'task'
+                                        ? 'bg-amber-100 text-amber-900 hover:bg-amber-200 dark:bg-amber-500/30 dark:text-amber-100'
+                                        : opkomstColorClass(entry.section)"
                                 :draggable="entry.canScheduleUpdate"
                                 @dragstart="dragStart(entry, $event)"
                             >
@@ -650,7 +747,9 @@ function opkomstColorClass(section) {
                                         class="block rounded-lg px-2 py-1 text-[11px] leading-tight"
                                         :class="entry.sourceType === 'agenda'
                                             ? 'bg-slate-100 text-slate-800 hover:bg-slate-200 dark:bg-slate-700/70 dark:text-slate-100'
-                                            : opkomstColorClass(entry.section)"
+                                            : entry.sourceType === 'task'
+                                                ? 'bg-amber-100 text-amber-900 hover:bg-amber-200 dark:bg-amber-500/30 dark:text-amber-100'
+                                                : opkomstColorClass(entry.section)"
                                     >
                                         <span class="font-semibold">{{ entry.tag }}</span>
                                         <span class="ms-1">{{ entry.title }}</span>
@@ -675,7 +774,9 @@ function opkomstColorClass(section) {
                                     class="absolute left-1 right-1 rounded-lg border px-2 py-1 text-[11px] shadow-sm"
                                     :class="entry.sourceType === 'agenda'
                                         ? 'border-slate-200 bg-slate-100 text-slate-800'
-                                        : 'border-transparent ' + opkomstColorClass(entry.section)"
+                                        : entry.sourceType === 'task'
+                                            ? 'border-amber-200 bg-amber-100 text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/30 dark:text-amber-100'
+                                            : 'border-transparent ' + opkomstColorClass(entry.section)"
                                     :style="{
                                         top: `${minuteOffset(entry, day.key).top}px`,
                                         height: `${minuteOffset(entry, day.key).height}px`,
@@ -713,7 +814,7 @@ function opkomstColorClass(section) {
                             :key="`day-all-day-${entry.sourceType}-${entry.sourceId}`"
                             :href="entry.href"
                             class="block rounded-lg border border-brand-blue/20 bg-white px-3 py-2 text-sm text-app-ink hover:bg-brand-blue/10 dark:border-brand-blue/30 dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/15"
-                            :class="entry.sourceType === 'agenda' ? '' : opkomstColorClass(entry.section)"
+                            :class="entry.sourceType === 'agenda' ? '' : (entry.sourceType === 'task' ? 'border-amber-200 bg-amber-100 text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/30 dark:text-amber-100' : opkomstColorClass(entry.section))"
                         >
                             <span class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">{{ entry.tag }}</span>
                             <p class="mt-0.5 font-medium">{{ entry.title }}</p>
@@ -743,7 +844,9 @@ function opkomstColorClass(section) {
                                 class="absolute left-2 right-2 rounded-lg border px-2 py-1 text-xs shadow-sm"
                                 :class="entry.sourceType === 'agenda'
                                     ? 'border-slate-200 bg-slate-100 text-slate-800'
-                                    : 'border-transparent ' + opkomstColorClass(entry.section)"
+                                    : entry.sourceType === 'task'
+                                        ? 'border-amber-200 bg-amber-100 text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/30 dark:text-amber-100'
+                                        : 'border-transparent ' + opkomstColorClass(entry.section)"
                                 :style="{
                                     top: `${minuteOffset(entry, selectedDateKey).top}px`,
                                     height: `${minuteOffset(entry, selectedDateKey).height}px`,

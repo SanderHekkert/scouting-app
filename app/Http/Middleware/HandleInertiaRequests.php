@@ -54,15 +54,6 @@ class HandleInertiaRequests extends Middleware
                         'delete' => true,
                     ];
                 }
-            } elseif ($isBoard && $activeSection === UserSectionRole::SECTION_BESTUUR) {
-                foreach (SectionPermission::ALL_MODULES as $module) {
-                    $permissions[$module] = [
-                        'view' => true,
-                        'create' => true,
-                        'update' => true,
-                        'delete' => true,
-                    ];
-                }
             } elseif ($isBoard) {
                 foreach (SectionPermission::ALL_MODULES as $module) {
                     $permissions[$module] = [
