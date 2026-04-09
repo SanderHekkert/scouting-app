@@ -39,8 +39,8 @@ const sectionButtonClass = {
         inactive: 'bg-yellow-300/25 text-yellow-900 hover:bg-yellow-300/40',
     },
     loodsen: {
-        active: 'bg-amber-500/30 text-amber-900',
-        inactive: 'bg-amber-300/25 text-amber-900 hover:bg-amber-300/40',
+        active: 'bg-purple-600/25 text-purple-800',
+        inactive: 'bg-purple-500/15 text-purple-800 hover:bg-purple-500/25',
     },
     bevers: {
         active: 'bg-red-600/20 text-red-700',
@@ -54,6 +54,14 @@ const sectionButtonClass = {
         active: 'bg-slate-600/20 text-slate-700',
         inactive: 'bg-slate-500/10 text-slate-700 hover:bg-slate-500/20',
     },
+};
+const sectionNavActiveClass = {
+    dolfijnen: 'bg-emerald-600/15 text-emerald-800 ring-1 ring-emerald-600/25',
+    zeeverkenners: 'bg-yellow-400/25 text-yellow-900 ring-1 ring-yellow-500/35',
+    loodsen: 'bg-purple-600/15 text-purple-800 ring-1 ring-purple-600/25',
+    bevers: 'bg-red-600/15 text-red-700 ring-1 ring-red-600/25',
+    wilde_vaart: 'bg-blue-600/15 text-blue-700 ring-1 ring-blue-600/25',
+    bestuur: 'bg-slate-600/15 text-slate-700 ring-1 ring-slate-600/25',
 };
 
 const activeSection = computed(() => page.props.auth?.active_section || 'dolfijnen');
@@ -175,6 +183,10 @@ function navItemIsActive(item) {
     return route().current(item.route);
 }
 
+function activeNavClass() {
+    return sectionNavActiveClass[activeSection.value] || 'bg-brand-red/10 text-brand-red ring-1 ring-brand-red/25';
+}
+
 const activeMobileLabel = computed(() => {
     if (showSpeltakNav.value && navItemIsActive(dolfijnenNavItem)) {
         return dolfijnenNavItem.label;
@@ -267,7 +279,7 @@ onUnmounted(() => {
                             class="block shrink-0 rounded-lg px-3 py-2 text-sm font-medium transition"
                             :class="
                                 navItemIsActive(item)
-                                    ? 'bg-brand-red/10 text-brand-red'
+                                    ? activeNavClass()
                                     : 'text-slate-800 hover:bg-brand-blue/10'
                             "
                         >
@@ -283,7 +295,7 @@ onUnmounted(() => {
                             class="block shrink-0 rounded-lg px-3 py-2 text-sm font-medium transition"
                             :class="
                                 navItemIsActive(dolfijnenNavItem)
-                                    ? 'bg-brand-red/10 text-brand-red'
+                                    ? activeNavClass()
                                     : 'text-slate-800 hover:bg-brand-blue/10'
                             "
                         >
@@ -300,7 +312,7 @@ onUnmounted(() => {
                             class="block shrink-0 rounded-lg px-3 py-2 text-sm font-medium transition"
                             :class="
                                 navItemIsActive(item)
-                                    ? 'bg-brand-red/10 text-brand-red'
+                                    ? activeNavClass()
                                     : 'text-slate-800 hover:bg-brand-blue/10'
                             "
                         >
@@ -393,7 +405,7 @@ onUnmounted(() => {
                         class="flex min-h-12 items-center rounded-xl px-4 text-base font-medium transition touch-manipulation active:scale-[0.99]"
                         :class="
                             navItemIsActive(item)
-                                ? 'bg-brand-red/12 text-brand-red ring-1 ring-brand-red/25'
+                                ? activeNavClass()
                                 : 'text-slate-800 hover:bg-brand-blue/10 active:bg-brand-blue/15 dark:text-slate-100 dark:hover:bg-brand-blue/15'
                         "
                         @click="closeMobileMenu"
@@ -407,7 +419,7 @@ onUnmounted(() => {
                         class="flex min-h-12 items-center rounded-xl px-4 text-base font-medium transition touch-manipulation active:scale-[0.99]"
                         :class="
                             navItemIsActive(dolfijnenNavItem)
-                                ? 'bg-brand-red/12 text-brand-red ring-1 ring-brand-red/25'
+                                ? activeNavClass()
                                 : 'text-slate-800 hover:bg-brand-blue/10 active:bg-brand-blue/15 dark:text-slate-100 dark:hover:bg-brand-blue/15'
                         "
                         @click="closeMobileMenu"
@@ -422,7 +434,7 @@ onUnmounted(() => {
                         class="flex min-h-12 items-center rounded-xl px-4 text-base font-medium transition touch-manipulation active:scale-[0.99]"
                         :class="
                             navItemIsActive(item)
-                                ? 'bg-brand-red/12 text-brand-red ring-1 ring-brand-red/25'
+                                ? activeNavClass()
                                 : 'text-slate-800 hover:bg-brand-blue/10 active:bg-brand-blue/15 dark:text-slate-100 dark:hover:bg-brand-blue/15'
                         "
                         @click="closeMobileMenu"
@@ -434,7 +446,7 @@ onUnmounted(() => {
                     <Link
                         :href="route('profile.edit')"
                         class="flex min-h-12 items-center rounded-xl px-4 text-base font-medium transition touch-manipulation active:scale-[0.99]"
-                        :class="route().current('profile.edit') ? 'bg-brand-red/12 text-brand-red ring-1 ring-brand-red/25' : 'text-slate-800 hover:bg-brand-blue/10 dark:text-slate-100'"
+                        :class="route().current('profile.edit') ? activeNavClass() : 'text-slate-800 hover:bg-brand-blue/10 dark:text-slate-100'"
                         @click="closeMobileMenu"
                     >
                         Profiel

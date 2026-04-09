@@ -14,6 +14,11 @@ class SectionPermissionGate
             return false;
         }
 
+        // Profiel is altijd toegestaan voor elk ingelogd account.
+        if ($module === SectionPermission::MODULE_PROFILE) {
+            return true;
+        }
+
         if ($user->isGlobalAdmin()) {
             return true;
         }

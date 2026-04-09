@@ -198,7 +198,6 @@ class SectionPermissionController extends Controller
             SectionPermission::MODULE_LEADERS,
             SectionPermission::MODULE_INFO_NOTES,
             SectionPermission::MODULE_TASK_ITEMS,
-            SectionPermission::MODULE_PROFILE,
         ];
 
         if (in_array($section, [UserSectionRole::SECTION_DOLFIJNEN, UserSectionRole::SECTION_ZEEVERKENNERS, UserSectionRole::SECTION_BESTUUR], true)) {

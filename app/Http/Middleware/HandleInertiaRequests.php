@@ -104,6 +104,14 @@ class HandleInertiaRequests extends Middleware
                     ];
                 }
             }
+
+            // Profiel is altijd volledig beschikbaar voor elk account.
+            $permissions[SectionPermission::MODULE_PROFILE] = [
+                'view' => true,
+                'create' => true,
+                'update' => true,
+                'delete' => true,
+            ];
         }
 
         return [

@@ -111,6 +111,42 @@ function toggleCategoryForm() {
     }
 }
 
+function toggleCreateShortcut() {
+    if (!canCreateTasks.value) return;
+    if (hideCategories.value) {
+        toggleAddForm();
+        return;
+    }
+
+    if (showAddForm.value) {
+        showAddForm.value = false;
+        showCategoryForm.value = true;
+        categoryForm.reset();
+        return;
+    }
+
+    if (showCategoryForm.value) {
+        showCategoryForm.value = false;
+        showAddForm.value = true;
+        form.reset();
+        form.category = defaultCategory();
+        addDeadlineInput.value = '';
+        return;
+    }
+
+    showAddForm.value = true;
+    form.reset();
+    form.category = defaultCategory();
+    addDeadlineInput.value = '';
+}
+
+const createButtonLabel = computed(() => {
+    if (hideCategories.value) return 'Taak toevoegen';
+    if (showAddForm.value) return 'Sectie toevoegen';
+    if (showCategoryForm.value) return 'Taak toevoegen';
+    return 'Taak toevoegen';
+});
+
 function submitAdd() {
     if (!canCreateTasks.value) return;
     form.post(route('task-items.store'), {
@@ -373,19 +409,9 @@ function onCategoryDrop(category, event) {
                         v-if="canCreateTasks"
                         type="button"
                         class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand-blue text-white shadow-sm transition hover:bg-brand-blue-dark"
-                        title="Taak toevoegen"
-                        aria-label="Taak toevoegen"
-                        @click="toggleAddForm"
-                    >
-                        <PlusIcon class="h-5 w-5" />
-                    </button>
-                    <button
-                        type="button"
-                        class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand-blue text-white shadow-sm transition hover:bg-brand-blue-dark"
-                        v-if="!hideCategories && canCreateTasks"
-                        title="Sectie toevoegen"
-                        aria-label="Sectie toevoegen"
-                        @click="toggleCategoryForm"
+                        :title="createButtonLabel"
+                        :aria-label="createButtonLabel"
+                        @click="toggleCreateShortcut"
                     >
                         <PlusIcon class="h-5 w-5" />
                     </button>

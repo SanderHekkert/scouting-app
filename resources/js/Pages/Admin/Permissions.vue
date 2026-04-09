@@ -113,6 +113,29 @@ function roleLabelFor(role) {
     }
     return roleLabels[role] || role;
 }
+
+function setRolePermission(role, field, value) {
+    const rows = groupedRows.value?.[role] || [];
+    for (const row of rows) {
+        if (!!row[field] === !!value) continue;
+        updatePermission(row, field, value);
+    }
+}
+
+function permissionState(role, field) {
+    const rows = groupedRows.value?.[role] || [];
+    if (!rows.length) return 'none';
+    const enabled = rows.filter((row) => !!row[field]).length;
+    if (enabled === 0) return 'none';
+    if (enabled === rows.length) return 'all';
+    return 'partial';
+}
+
+function permissionCountLabel(role, field) {
+    const rows = groupedRows.value?.[role] || [];
+    const enabled = rows.filter((row) => !!row[field]).length;
+    return `${enabled}/${rows.length || 0}`;
+}
 </script>
 
 <template>
@@ -148,7 +171,81 @@ function roleLabelFor(role) {
                     :key="`perm-role-${role}`"
                     class="surface-brand-top rounded-xl border border-app-border bg-app-panel p-4 shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark"
                 >
-                    <h3 class="mb-3 text-base font-semibold text-app-ink dark:text-app-ink-dark">{{ roleLabelFor(role) }}</h3>
+                    <h3 class="mb-2 text-base font-semibold text-app-ink dark:text-app-ink-dark">{{ roleLabelFor(role) }}</h3>
+                    <div class="mb-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                        <div class="rounded-lg border border-app-border bg-white p-2 dark:border-app-border-dark dark:bg-app-canvas-dark">
+                            <div class="mb-2 flex items-center justify-between text-xs">
+                                <span class="font-semibold text-black">Bekijken</span>
+                                <span class="rounded-full px-2 py-0.5 font-semibold"
+                                    :class="permissionState(role, 'can_view') === 'all'
+                                        ? 'bg-emerald-100 text-emerald-800'
+                                        : permissionState(role, 'can_view') === 'none'
+                                            ? 'bg-slate-200 text-slate-700'
+                                            : 'bg-amber-100 text-amber-800'"
+                                >
+                                    {{ permissionCountLabel(role, 'can_view') }}
+                                </span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-1">
+                                <button type="button" class="rounded-md bg-brand-blue px-2 py-1 text-xs font-semibold text-white hover:bg-brand-blue-dark" @click="setRolePermission(role, 'can_view', true)">Alles aan</button>
+                                <button type="button" class="rounded-md bg-slate-200 px-2 py-1 text-xs font-semibold text-slate-800 hover:bg-slate-300" @click="setRolePermission(role, 'can_view', false)">Alles uit</button>
+                            </div>
+                        </div>
+                        <div class="rounded-lg border border-app-border bg-white p-2 dark:border-app-border-dark dark:bg-app-canvas-dark">
+                            <div class="mb-2 flex items-center justify-between text-xs">
+                                <span class="font-semibold text-black">Toevoegen</span>
+                                <span class="rounded-full px-2 py-0.5 font-semibold"
+                                    :class="permissionState(role, 'can_create') === 'all'
+                                        ? 'bg-emerald-100 text-emerald-800'
+                                        : permissionState(role, 'can_create') === 'none'
+                                            ? 'bg-slate-200 text-slate-700'
+                                            : 'bg-amber-100 text-amber-800'"
+                                >
+                                    {{ permissionCountLabel(role, 'can_create') }}
+                                </span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-1">
+                                <button type="button" class="rounded-md bg-brand-blue px-2 py-1 text-xs font-semibold text-white hover:bg-brand-blue-dark" @click="setRolePermission(role, 'can_create', true)">Alles aan</button>
+                                <button type="button" class="rounded-md bg-slate-200 px-2 py-1 text-xs font-semibold text-slate-800 hover:bg-slate-300" @click="setRolePermission(role, 'can_create', false)">Alles uit</button>
+                            </div>
+                        </div>
+                        <div class="rounded-lg border border-app-border bg-white p-2 dark:border-app-border-dark dark:bg-app-canvas-dark">
+                            <div class="mb-2 flex items-center justify-between text-xs">
+                                <span class="font-semibold text-black">Bewerken</span>
+                                <span class="rounded-full px-2 py-0.5 font-semibold"
+                                    :class="permissionState(role, 'can_update') === 'all'
+                                        ? 'bg-emerald-100 text-emerald-800'
+                                        : permissionState(role, 'can_update') === 'none'
+                                            ? 'bg-slate-200 text-slate-700'
+                                            : 'bg-amber-100 text-amber-800'"
+                                >
+                                    {{ permissionCountLabel(role, 'can_update') }}
+                                </span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-1">
+                                <button type="button" class="rounded-md bg-brand-blue px-2 py-1 text-xs font-semibold text-white hover:bg-brand-blue-dark" @click="setRolePermission(role, 'can_update', true)">Alles aan</button>
+                                <button type="button" class="rounded-md bg-slate-200 px-2 py-1 text-xs font-semibold text-slate-800 hover:bg-slate-300" @click="setRolePermission(role, 'can_update', false)">Alles uit</button>
+                            </div>
+                        </div>
+                        <div class="rounded-lg border border-app-border bg-white p-2 dark:border-app-border-dark dark:bg-app-canvas-dark">
+                            <div class="mb-2 flex items-center justify-between text-xs">
+                                <span class="font-semibold text-black">Verwijderen</span>
+                                <span class="rounded-full px-2 py-0.5 font-semibold"
+                                    :class="permissionState(role, 'can_delete') === 'all'
+                                        ? 'bg-emerald-100 text-emerald-800'
+                                        : permissionState(role, 'can_delete') === 'none'
+                                            ? 'bg-slate-200 text-slate-700'
+                                            : 'bg-amber-100 text-amber-800'"
+                                >
+                                    {{ permissionCountLabel(role, 'can_delete') }}
+                                </span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-1">
+                                <button type="button" class="rounded-md bg-brand-blue px-2 py-1 text-xs font-semibold text-white hover:bg-brand-blue-dark" @click="setRolePermission(role, 'can_delete', true)">Alles aan</button>
+                                <button type="button" class="rounded-md bg-slate-200 px-2 py-1 text-xs font-semibold text-slate-800 hover:bg-slate-300" @click="setRolePermission(role, 'can_delete', false)">Alles uit</button>
+                            </div>
+                        </div>
+                    </div>
                     <div class="space-y-2 md:hidden">
                         <div
                             v-for="row in groupedRows[role]"
