@@ -30,7 +30,7 @@ const roleLabels = {
 
 const moduleLabels = {
     dashboard: 'Dashboard',
-    events: 'Agenda',
+    events: 'Opkomsten',
     members: 'Leden',
     leaders: 'Leiding',
     pods: 'Vin/Bakindeling',

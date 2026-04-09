@@ -764,16 +764,18 @@ function onCategoryDrop(category, event) {
                                     <button
                                         v-if="canUpdateTasks"
                                         type="button"
-                                        class="mr-2 rounded border border-app-border px-2 py-1.5 text-sm text-app-ink hover:bg-brand-blue/10 dark:border-app-border-dark dark:text-app-ink-dark"
+                                        class="btn-action-edit mr-2"
                                         @click="toggleTaskEdit(task)"
+                                        title="Bewerken"
                                     >
                                         <PencilSquareIcon class="h-4 w-4" />
                                     </button>
                                     <button
                                         v-if="canDeleteTasks"
                                         type="button"
-                                        class="btn-action-delete h-[34px] px-2 py-1.5 text-sm"
+                                        class="btn-action-delete"
                                         @click="deleteTask(task)"
+                                        title="Verwijderen"
                                     >
                                         <TrashIcon class="h-4 w-4" />
                                     </button>
@@ -955,7 +957,7 @@ function onCategoryDrop(category, event) {
                                     <button
                                         v-if="canUpdateTasks"
                                         type="button"
-                                        class="mr-2 rounded border border-app-border px-2 py-1.5 text-sm text-app-ink hover:bg-brand-blue/10 dark:border-app-border-dark dark:text-app-ink-dark"
+                                        class="btn-action-edit mr-2"
                                         @click="toggleTaskEdit(task)"
                                         title="Bewerken"
                                     >
@@ -964,7 +966,7 @@ function onCategoryDrop(category, event) {
                                     <button
                                         v-if="canDeleteTasks"
                                         type="button"
-                                        class="btn-action-delete h-[34px] px-2 py-1.5 text-sm"
+                                        class="btn-action-delete"
                                         @click="deleteTask(task)"
                                         title="Verwijderen"
                                     >

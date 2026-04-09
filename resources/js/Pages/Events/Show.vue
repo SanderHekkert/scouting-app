@@ -2,7 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
-import { ArrowLeftCircleIcon, DocumentCheckIcon, XMarkIcon } from '@heroicons/vue/24/outline';
+import { ArrowUturnLeftIcon, DocumentCheckIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     event: { type: Object, required: true },
@@ -14,6 +14,7 @@ const props = defineProps({
 const page = usePage();
 const activeSection = computed(() => page.props.auth?.active_section ?? 'dolfijnen');
 const isBestuur = computed(() => activeSection.value === 'bestuur');
+const isCreateMode = computed(() => !props.event?.id);
 const sectionLabels = {
     bevers: 'Bevers',
     dolfijnen: 'Dolfijnen',
@@ -49,6 +50,14 @@ const form = useForm({
 });
 
 function submit() {
+    if (isCreateMode.value) {
+        form.post(route('opkomsten.store'), {
+            forceFormData: true,
+            preserveScroll: true,
+        });
+        return;
+    }
+
     form.transform((data) => ({ ...data, _method: 'patch' })).post(route('opkomsten.update', props.event.id), {
         forceFormData: true,
         preserveScroll: true,
@@ -123,13 +132,13 @@ function removeTask(taskId) {
 </script>
 
 <template>
-    <Head title="Opkomst bewerken" />
+    <Head :title="isCreateMode ? 'Opkomst toevoegen' : 'Opkomst bewerken'" />
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center justify-between gap-3">
-                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Opkomst bewerken</h2>
-                <Link :href="route('opkomsten.index')" class="inline-flex items-center justify-center rounded border border-app-border p-2 text-app-ink hover:bg-brand-blue/10 dark:border-app-border-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/15" title="Terug">
-                    <ArrowLeftCircleIcon class="h-5 w-5" />
+                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">{{ isCreateMode ? 'Opkomst toevoegen' : 'Opkomst bewerken' }}</h2>
+                <Link :href="route('opkomsten.index')" class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-app-border text-app-ink hover:bg-brand-blue/10 dark:border-app-border-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/15" title="Terug" aria-label="Terug">
+                    <ArrowUturnLeftIcon class="h-5 w-5" />
                 </Link>
             </div>
         </template>

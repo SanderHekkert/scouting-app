@@ -101,6 +101,56 @@ class EventController extends Controller
     /**
      * Show a single event edit page.
      */
+    public function create()
+    {
+        $section = $this->activeSection();
+        $this->ensureOpkomstenSection($section);
+        $taskItems = TaskItem::withoutGlobalScope('section')
+            ->where(function (Builder $query) use ($section): void {
+                $query->where('section', $section);
+                if ($this->supportsSharedEventsForSection($section)) {
+                    $query->orWhereJsonContains('shared_sections', $section);
+                }
+            })
+            ->orderBy('title')
+            ->get(['id', 'title'])
+            ->map(fn (TaskItem $task): array => [
+                'id' => (int) $task->id,
+                'title' => (string) $task->title,
+            ])
+            ->values()
+            ->all();
+
+        return Inertia::render('Events/Show', [
+            'event' => [
+                'id' => null,
+                'section' => $section,
+                'theme' => '',
+                'event_date' => '',
+                'event_type' => '',
+                'activity' => '',
+                'program_by' => '',
+                'location' => '',
+                'time_slot' => '',
+                'invitees' => '',
+                'link_url' => '',
+                'attachments' => '',
+                'attachment_name' => null,
+                'absent' => '',
+                'present_names' => [],
+                'notes' => '',
+                'task_item_ids' => [],
+                'shared_sections' => [],
+            ],
+            'leaders' => $this->leaderNamesForActiveSection(),
+            'taskItems' => $taskItems,
+            'allSections' => UserSectionRole::ALL_SECTIONS,
+        ]);
+    }
+
+    /**
+     * Show a single event edit page.
+     */
     public function show(Event $event)
     {
         $section = $this->activeSection();
@@ -181,9 +231,9 @@ class EventController extends Controller
         if ($request->hasFile('attachment_file')) {
             $data['attachments'] = $this->encodeAttachmentMeta($request->file('attachment_file'));
         }
-        Event::create($data);
+        $event = Event::create($data);
 
-        return to_route('opkomsten.index');
+        return to_route('opkomsten.show', $event);
     }
 
     /**

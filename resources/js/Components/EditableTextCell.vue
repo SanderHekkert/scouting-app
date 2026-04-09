@@ -140,7 +140,7 @@ onUnmounted(() => {
         <button
             v-if="!editing && !disabled"
             type="button"
-            class="mt-1 inline-flex items-center rounded-md border border-brand-blue/30 bg-brand-blue/10 p-1 text-brand-blue-dark md:hidden"
+            class="btn-action-edit mt-1 md:hidden"
             title="Bewerken"
             @click.stop.prevent="startEdit"
         >

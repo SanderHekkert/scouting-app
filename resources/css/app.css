@@ -34,22 +34,22 @@
         @apply pointer-events-none absolute left-0 right-0 top-0 z-[2] h-1 rounded-t-lg bg-gradient-to-r from-brand-red via-brand-yellow to-brand-blue;
     }
 
-    /** Bewerken: merkblauwe vlak, zwarte tekst en icoon (currentColor). */
+    /** Bewerken: ronde actieknop met gecentreerd icoon. */
     .btn-action-edit {
-        @apply inline-flex items-center justify-center gap-1 rounded border border-brand-blue/50 bg-brand-blue/25 px-2.5 py-1.5 text-xs font-medium text-black shadow-sm transition hover:bg-brand-blue/35 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue dark:border-sky-400/55 dark:bg-sky-400/75 dark:text-black dark:hover:bg-sky-400;
+        @apply inline-flex h-8 w-8 items-center justify-center rounded-full border border-brand-blue/50 bg-brand-blue/25 text-black shadow-sm transition hover:bg-brand-blue/35 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue dark:border-sky-400/55 dark:bg-sky-400/75 dark:text-black dark:hover:bg-sky-400;
     }
 
     .btn-action-edit--lg {
-        @apply gap-2 rounded-lg px-4 py-2.5 text-sm;
+        @apply h-10 w-10 rounded-full text-sm;
     }
 
-    /** Verwijderen: rood vlak, zwarte tekst en icoon. */
+    /** Verwijderen: ronde actieknop met gecentreerd icoon. */
     .btn-action-delete {
-        @apply inline-flex items-center justify-center gap-1 rounded border border-red-600/40 bg-red-200 px-2.5 py-1.5 text-xs font-medium text-black shadow-sm transition hover:bg-red-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 dark:border-red-500/50 dark:bg-red-400 dark:text-black dark:hover:bg-red-500;
+        @apply inline-flex h-8 w-8 items-center justify-center rounded-full border border-red-600/40 bg-red-200 text-black shadow-sm transition hover:bg-red-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 dark:border-red-500/50 dark:bg-red-400 dark:text-black dark:hover:bg-red-500;
     }
 
     .btn-action-delete--lg {
-        @apply gap-2 rounded-lg px-4 py-2.5 text-sm;
+        @apply h-10 w-10 rounded-full text-sm;
     }
 }
 
