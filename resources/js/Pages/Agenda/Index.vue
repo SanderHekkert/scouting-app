@@ -127,7 +127,7 @@ const normalizedEntries = computed(() => {
             sourceId: Number(ev.id),
             title: ev.theme || ev.activity || 'Opkomst',
             tag: ev.is_shared ? 'Gezamenlijk' : 'Opkomst',
-            href: route('opkomsten.show', ev.id),
+            href: route('agenda.opkomsten.show', ev.id),
             startAt: combineDateAndMinutes(dateKey, 9 * 60),
             endAt: combineDateAndMinutes(dateKey, 12 * 60),
             allDay: true,
@@ -503,12 +503,12 @@ function opkomstColorClass(section) {
             <div class="flex w-full flex-wrap items-center justify-between gap-3">
                 <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Agenda</h2>
                 <div class="flex flex-1 flex-wrap items-center justify-end gap-2">
-                    <button type="button" class="rounded-lg border border-app-border bg-app-panel px-2.5 py-1 text-xs font-semibold text-app-ink hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:text-app-ink-dark" @click="goToToday">Vandaag</button>
-                    <div class="inline-flex rounded-lg border border-app-border bg-app-panel p-1 dark:border-app-border-dark dark:bg-app-panel-dark">
-                        <button type="button" class="rounded-md px-3 py-1.5 text-sm font-medium" :class="viewMode === 'day' ? 'bg-brand-blue text-white' : 'text-app-ink hover:bg-brand-blue/10 dark:text-app-ink-dark dark:hover:bg-brand-blue/20'" @click="viewMode = 'day'">Dag</button>
-                        <button type="button" class="rounded-md px-3 py-1.5 text-sm font-medium" :class="viewMode === 'week' ? 'bg-brand-blue text-white' : 'text-app-ink hover:bg-brand-blue/10 dark:text-app-ink-dark dark:hover:bg-brand-blue/20'" @click="viewMode = 'week'">Week</button>
-                        <button type="button" class="rounded-md px-3 py-1.5 text-sm font-medium" :class="viewMode === 'month' ? 'bg-brand-blue text-white' : 'text-app-ink hover:bg-brand-blue/10 dark:text-app-ink-dark dark:hover:bg-brand-blue/20'" @click="viewMode = 'month'">Maand</button>
-                        <button type="button" class="rounded-md px-3 py-1.5 text-sm font-medium" :class="viewMode === 'year' ? 'bg-brand-blue text-white' : 'text-app-ink hover:bg-brand-blue/10 dark:text-app-ink-dark dark:hover:bg-brand-blue/20'" @click="viewMode = 'year'">Jaar</button>
+                    <button type="button" class="rounded-full border border-app-border bg-app-panel px-3.5 py-1.5 text-sm font-semibold text-app-ink shadow-sm transition hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/20" @click="goToToday">Vandaag</button>
+                    <div class="inline-flex items-center rounded-full border border-app-border bg-app-panel p-1 shadow-sm dark:border-app-border-dark dark:bg-app-panel-dark">
+                        <button type="button" class="rounded-full px-3.5 py-1.5 text-sm font-semibold transition" :class="viewMode === 'day' ? 'bg-brand-blue text-white shadow-sm' : 'text-app-ink hover:bg-brand-blue/10 dark:text-app-ink-dark dark:hover:bg-brand-blue/20'" @click="viewMode = 'day'">Dag</button>
+                        <button type="button" class="rounded-full px-3.5 py-1.5 text-sm font-semibold transition" :class="viewMode === 'week' ? 'bg-brand-blue text-white shadow-sm' : 'text-app-ink hover:bg-brand-blue/10 dark:text-app-ink-dark dark:hover:bg-brand-blue/20'" @click="viewMode = 'week'">Week</button>
+                        <button type="button" class="rounded-full px-3.5 py-1.5 text-sm font-semibold transition" :class="viewMode === 'month' ? 'bg-brand-blue text-white shadow-sm' : 'text-app-ink hover:bg-brand-blue/10 dark:text-app-ink-dark dark:hover:bg-brand-blue/20'" @click="viewMode = 'month'">Maand</button>
+                        <button type="button" class="rounded-full px-3.5 py-1.5 text-sm font-semibold transition" :class="viewMode === 'year' ? 'bg-brand-blue text-white shadow-sm' : 'text-app-ink hover:bg-brand-blue/10 dark:text-app-ink-dark dark:hover:bg-brand-blue/20'" @click="viewMode = 'year'">Jaar</button>
                     </div>
                     <button
                         type="button"

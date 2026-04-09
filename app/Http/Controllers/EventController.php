@@ -131,7 +131,7 @@ class EventController extends Controller
                 'activity' => '',
                 'program_by' => '',
                 'location' => '',
-                'time_slot' => '',
+                'time_slot' => $this->defaultTimeSlotForSection($section),
                 'invitees' => '',
                 'link_url' => '',
                 'attachments' => '',
@@ -226,6 +226,9 @@ class EventController extends Controller
         if (($data['theme'] ?? null) === null) {
             $data['theme'] = '';
         }
+        if (trim((string) ($data['time_slot'] ?? '')) === '') {
+            $data['time_slot'] = $this->defaultTimeSlotForSection($section);
+        }
         $data['task_item_ids'] = $this->normalizeTaskItemIds($data['task_item_ids'] ?? null);
         $data['shared_sections'] = $this->normalizeSharedSections($data['shared_sections'] ?? null);
         if ($request->hasFile('attachment_file')) {
@@ -263,6 +266,9 @@ class EventController extends Controller
         ]);
         if (($data['theme'] ?? null) === null) {
             $data['theme'] = '';
+        }
+        if (trim((string) ($data['time_slot'] ?? '')) === '') {
+            $data['time_slot'] = $this->defaultTimeSlotForSection($section);
         }
         $data['task_item_ids'] = $this->normalizeTaskItemIds($data['task_item_ids'] ?? null);
         $data['shared_sections'] = $this->normalizeSharedSections($data['shared_sections'] ?? null);
@@ -572,6 +578,18 @@ class EventController extends Controller
     private function attachmentName(?string $raw): ?string
     {
         return $this->attachmentMeta($raw)['name'] ?? null;
+    }
+
+    private function defaultTimeSlotForSection(string $section): string
+    {
+        if (in_array($section, [UserSectionRole::SECTION_DOLFIJNEN, UserSectionRole::SECTION_BEVERS], true)) {
+            return '10:30 - 12:30';
+        }
+        if ($section === UserSectionRole::SECTION_ZEEVERKENNERS) {
+            return '13:00 - 17:00';
+        }
+
+        return '';
     }
 
     private function deleteAttachmentFile(?string $raw): void

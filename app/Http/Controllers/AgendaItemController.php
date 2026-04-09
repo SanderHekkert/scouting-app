@@ -216,6 +216,29 @@ class AgendaItemController extends Controller
         ]);
     }
 
+    public function showOpkomst(Event $event)
+    {
+        $this->authorizeOpkomst($event);
+
+        return Inertia::render('Agenda/OpkomstShow', [
+            'item' => [
+                'id' => (int) $event->id,
+                'theme' => (string) ($event->theme ?? ''),
+                'event_date' => (string) ($event->event_date ?? ''),
+                'event_type' => (string) ($event->event_type ?? ''),
+                'activity' => (string) ($event->activity ?? ''),
+                'program_by' => (string) ($event->program_by ?? ''),
+                'location' => (string) ($event->location ?? ''),
+                'time_slot' => (string) ($event->time_slot ?? ''),
+                'invitees' => (string) ($event->invitees ?? ''),
+                'link_url' => (string) ($event->link_url ?? ''),
+                'notes' => (string) ($event->notes ?? ''),
+                'section' => (string) ($event->section ?? ''),
+                'is_shared' => ! empty($event->shared_sections ?? []),
+            ],
+        ]);
+    }
+
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -581,6 +604,28 @@ class AgendaItemController extends Controller
 
         $sections = $this->userSections($user);
         if ($agendaItem->owner_user_id === null && in_array((string) ($agendaItem->section ?? ''), $sections, true)) {
+            return;
+        }
+
+        abort(403);
+    }
+
+    private function authorizeOpkomst(Event $event): void
+    {
+        $user = request()->user();
+        abort_unless($user instanceof User, 403);
+
+        $sections = $this->userSections($user);
+        $eventSection = (string) ($event->section ?? '');
+        if (in_array($eventSection, $sections, true)) {
+            return;
+        }
+
+        $sharedSections = collect($event->shared_sections ?? [])
+            ->map(fn ($s): string => (string) $s)
+            ->all();
+
+        if (count(array_intersect($sections, $sharedSections)) > 0) {
             return;
         }
 
