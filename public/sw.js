@@ -9,8 +9,8 @@ self.addEventListener('push', (event) => {
     const title = payload.title || 'Nieuwe melding';
     const options = {
         body: payload.body || '',
-        icon: '/images/apple-touch-icon.png',
-        badge: '/images/favicon-32x32.png',
+        icon: '/favicon.ico',
+        badge: '/favicon.ico',
         data: {
             url: payload.url || '/dashboard',
         },

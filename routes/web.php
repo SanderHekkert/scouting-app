@@ -91,11 +91,6 @@ Route::middleware(['auth', 'verified', 'has.role', 'section.role:admin,bestuursl
     Route::get('/opkomsten/{event}', [EventController::class, 'show'])->middleware('section.permission:events')->name('opkomsten.show');
     Route::resource('opkomsten', EventController::class)->middleware('section.permission:events')->parameters(['opkomsten' => 'event'])->except(['create', 'show', 'edit']);
 
-    Route::get('/agenda/archived', [AgendaItemController::class, 'archived'])->middleware('section.permission:events')->name('agenda.archived');
-    Route::get('/agenda/{agendaItem}/attachment', [AgendaItemController::class, 'downloadAttachment'])->middleware('section.permission:events')->name('agenda.attachment.download');
-    Route::get('/agenda/{agendaItem}/ics', [AgendaItemController::class, 'ics'])->middleware('section.permission:events')->name('agenda.ics');
-    Route::get('/agenda/{agendaItem}', [AgendaItemController::class, 'show'])->middleware('section.permission:events')->name('agenda.show');
-    Route::resource('agenda', AgendaItemController::class)->middleware('section.permission:events')->parameters(['agenda' => 'agendaItem'])->except(['create', 'show', 'edit']);
     Route::patch('/members/{member}/installed', [MemberController::class, 'updateInstalled'])->middleware('section.permission:members')->name('members.update-installed');
     Route::patch('/members/{member}/gedoopt', [MemberController::class, 'updateGedoopt'])->middleware('section.permission:members')->name('members.update-gedoopt');
     Route::patch('/members/{member}/fields', [MemberController::class, 'quickUpdate'])->middleware('section.permission:members')->name('members.quick-update');
@@ -123,6 +118,12 @@ Route::middleware(['auth', 'verified', 'has.role', 'section.role:admin,bestuursl
 });
 
 Route::middleware(['auth', 'verified', 'has.role'])->group(function () {
+    Route::get('/agenda/archived', [AgendaItemController::class, 'archived'])->middleware('section.permission:events')->name('agenda.archived');
+    Route::get('/agenda/{agendaItem}/attachment', [AgendaItemController::class, 'downloadAttachment'])->middleware('section.permission:events')->name('agenda.attachment.download');
+    Route::get('/agenda/{agendaItem}/ics', [AgendaItemController::class, 'ics'])->middleware('section.permission:events')->name('agenda.ics');
+    Route::get('/agenda/{agendaItem}', [AgendaItemController::class, 'show'])->middleware('section.permission:events')->name('agenda.show');
+    Route::resource('agenda', AgendaItemController::class)->middleware('section.permission:events')->parameters(['agenda' => 'agendaItem'])->except(['create', 'show', 'edit']);
+
     Route::get('/admin/gezondheidsformulieren', [HealthFormController::class, 'index'])->name('admin.health-forms.index');
     Route::get('/admin/gezondheidsformulieren/nieuw', [HealthFormController::class, 'create'])->name('admin.health-forms.create');
     Route::post('/admin/gezondheidsformulieren', [HealthFormController::class, 'store'])->name('admin.health-forms.store');

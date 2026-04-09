@@ -63,7 +63,16 @@ class HandleInertiaRequests extends Middleware
                         'delete' => false,
                     ];
                 }
-            } elseif ($role && in_array($role, [UserSectionRole::ROLE_LEIDING, UserSectionRole::ROLE_OUDERCONTACT], true)) {
+            } elseif ($role) {
+                foreach (SectionPermission::ALL_MODULES as $module) {
+                    $permissions[$module] = [
+                        'view' => false,
+                        'create' => false,
+                        'update' => false,
+                        'delete' => false,
+                    ];
+                }
+
                 $rows = SectionPermission::query()
                     ->where('section', $activeSection)
                     ->where('role', $role)
@@ -76,10 +85,10 @@ class HandleInertiaRequests extends Middleware
                         'delete' => (bool) $row->can_delete,
                     ];
                 }
-            } elseif ($role === UserSectionRole::ROLE_LID) {
-                foreach (SectionPermission::ALL_MODULES as $module) {
-                    $permissions[$module] = [
-                        'view' => $module === SectionPermission::MODULE_EVENTS,
+
+                if ($role === UserSectionRole::ROLE_LID && $rows->isEmpty()) {
+                    $permissions[SectionPermission::MODULE_EVENTS] = [
+                        'view' => true,
                         'create' => false,
                         'update' => false,
                         'delete' => false,

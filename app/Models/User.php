@@ -24,6 +24,7 @@ use Illuminate\Notifications\Notifiable;
     'installed',
     'gedoopt',
     'phone_number',
+    'emergency_contact',
     'bijzonderheden',
 ])]
 #[Hidden(['password', 'remember_token'])]

@@ -32,17 +32,21 @@ const sectionSingularMap = {
 const speltakLabel = computed(() => sectionLabelMap[page.props.auth?.active_section] || 'Dolfijnen');
 const speltakSingular = computed(() => sectionSingularMap[page.props.auth?.active_section] || 'Dolfijn');
 const isBestuurSection = computed(() => (page.props.auth?.active_section ?? '') === 'bestuur');
+const isBeversSection = computed(() => (page.props.auth?.active_section ?? '') === 'bevers');
 
 const showAddForm = ref(false);
 const rowHighlightMemberId = ref(null);
 
 const form = useForm({
     installed: false,
+    gedoopt: false,
     first_name: '',
     last_name: '',
     birthday: '',
-    age: '',
     address: '',
+    postal_code: '',
+    city: '',
+    email_parents: '',
     phone_mother: '',
     phone_father: '',
     bijzonderheden: '',
@@ -158,7 +162,6 @@ function normalizeMemberFields(data) {
     return {
         ...data,
         birthday: data.birthday || null,
-        age: data.age === '' || data.age == null ? null : Number(data.age),
     };
 }
 
@@ -236,6 +239,32 @@ function editMember(member) {
             >
                 <h3 class="text-base font-semibold text-app-ink dark:text-app-ink-dark">Nieuw contact</h3>
                 <div class="grid gap-4 sm:grid-cols-[10rem_1fr] sm:items-start">
+                    <label for="add-member-installed" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
+                        Geïnstalleerd
+                    </label>
+                    <select
+                        id="add-member-installed"
+                        v-model="form.installed"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
+                    >
+                        <option :value="true">Ja</option>
+                        <option :value="false">Nee</option>
+                    </select>
+
+                    <template v-if="!isBestuurSection && !isBeversSection">
+                        <label for="add-member-gedoopt" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
+                            Gedoopt
+                        </label>
+                        <select
+                            id="add-member-gedoopt"
+                            v-model="form.gedoopt"
+                            class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
+                        >
+                            <option :value="true">Ja</option>
+                            <option :value="false">Nee</option>
+                        </select>
+                    </template>
+
                     <label for="add-member-first-name" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Voornaam
                     </label>
@@ -269,19 +298,6 @@ function editMember(member) {
                         class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                     />
 
-                    <label for="add-member-age" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Leeftijd
-                    </label>
-                    <input
-                        id="add-member-age"
-                        v-model="form.age"
-                        type="number"
-                        min="0"
-                        max="99"
-                        placeholder="Optioneel"
-                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
-                    />
-
                     <label for="add-member-phone-mother" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Telefoon moeder
                     </label>
@@ -312,6 +328,39 @@ function editMember(member) {
                         v-model="form.address"
                         type="text"
                         autocomplete="street-address"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
+                    />
+
+                    <label for="add-member-postal-code" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
+                        Postcode
+                    </label>
+                    <input
+                        id="add-member-postal-code"
+                        v-model="form.postal_code"
+                        type="text"
+                        autocomplete="postal-code"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
+                    />
+
+                    <label for="add-member-city" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
+                        Plaats
+                    </label>
+                    <input
+                        id="add-member-city"
+                        v-model="form.city"
+                        type="text"
+                        autocomplete="address-level2"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
+                    />
+
+                    <label for="add-member-email-parents" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
+                        E-mail ouders
+                    </label>
+                    <input
+                        id="add-member-email-parents"
+                        v-model="form.email_parents"
+                        type="email"
+                        autocomplete="email"
                         class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
                     />
 
@@ -413,7 +462,7 @@ function editMember(member) {
                                 <span class="text-xs font-semibold text-app-muted dark:text-app-muted-dark">Geïnstalleerd</span>
                                 <span class="rounded bg-brand-blue/10 px-2 py-0.5 text-xs font-semibold text-app-ink dark:text-app-ink-dark">{{ yesNo(member.installed) }}</span>
                             </div>
-                            <div v-if="!isBestuurSection" class="mt-2 flex flex-wrap items-center gap-2" @click.stop>
+                            <div v-if="!isBestuurSection && !isBeversSection" class="mt-2 flex flex-wrap items-center gap-2" @click.stop>
                                 <span class="text-xs font-semibold text-app-muted dark:text-app-muted-dark">Gedoopt</span>
                                 <span class="rounded bg-brand-blue/10 px-2 py-0.5 text-xs font-semibold text-app-ink dark:text-app-ink-dark">{{ yesNo(member.gedoopt) }}</span>
                             </div>
@@ -424,7 +473,7 @@ function editMember(member) {
                         <thead class="border-b border-brand-blue/35 bg-app-sidebar dark:bg-app-canvas-dark/80">
                             <tr class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Geïnstalleerd</th>
-                                <th v-if="!isBestuurSection" scope="col" class="whitespace-nowrap px-3 py-2.5">Gedoopt</th>
+                                <th v-if="!isBestuurSection && !isBeversSection" scope="col" class="whitespace-nowrap px-3 py-2.5">Gedoopt</th>
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Voornaam</th>
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Achternaam</th>
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Verjaardag</th>
@@ -448,7 +497,7 @@ function editMember(member) {
                                 <td class="whitespace-nowrap px-3 py-2.5 align-top text-app-ink dark:text-app-ink-dark">
                                     {{ yesNo(member.installed) }}
                                 </td>
-                                <td v-if="!isBestuurSection" class="whitespace-nowrap px-3 py-2.5 align-top text-app-ink dark:text-app-ink-dark">
+                                <td v-if="!isBestuurSection && !isBeversSection" class="whitespace-nowrap px-3 py-2.5 align-top text-app-ink dark:text-app-ink-dark">
                                     {{ yesNo(member.gedoopt) }}
                                 </td>
                                 <td class="max-w-[10rem] px-3 py-2.5 align-top">{{ member.first_name || '–' }}</td>

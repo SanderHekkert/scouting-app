@@ -10,6 +10,9 @@ return new class extends Migration
     {
         Schema::create('agenda_items', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('owner_user_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->string('audience_scope', 20)->default('self');
+            $table->json('target_user_ids')->nullable();
             $table->string('theme')->default('');
             $table->date('event_date');
             $table->string('location')->nullable();

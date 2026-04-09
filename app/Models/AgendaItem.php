@@ -2,14 +2,15 @@
 
 namespace App\Models;
 
-use App\Models\Concerns\BelongsToSection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AgendaItem extends Model
 {
-    use BelongsToSection;
-
     protected $fillable = [
+        'owner_user_id',
+        'audience_scope',
+        'target_user_ids',
         'theme',
         'event_date',
         'location',
@@ -18,5 +19,15 @@ class AgendaItem extends Model
         'link_url',
         'attachments',
         'notes',
+        'section',
     ];
+
+    protected $casts = [
+        'target_user_ids' => 'array',
+    ];
+
+    public function owner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'owner_user_id');
+    }
 }

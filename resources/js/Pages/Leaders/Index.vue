@@ -25,6 +25,7 @@ const form = useForm({
     city: '',
     birthday: '',
     phone_number: '',
+    emergency_contact: '',
     email: '',
     bijzonderheden: '',
 });
@@ -258,6 +259,18 @@ function leaderAge(value) {
                         class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
                     />
 
+                    <label for="add-leader-emergency-contact" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
+                        Noodcontact
+                    </label>
+                    <input
+                        id="add-leader-emergency-contact"
+                        v-model="form.emergency_contact"
+                        type="text"
+                        autocomplete="tel"
+                        placeholder="Bijv. Ouder/verzorger + telefoon"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
+                    />
+
                     <label for="add-leader-email" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         E-mail
                     </label>
@@ -355,6 +368,7 @@ function leaderAge(value) {
                                 <p><span class="font-medium">Geboortedatum:</span> {{ formatBirthday(leader.birthday) }}</p>
                                 <p><span class="font-medium">Leeftijd:</span> {{ leaderAge(leader.birthday) }}</p>
                                 <p><span class="font-medium">Telefoon:</span> {{ leader.phone_number || '–' }}</p>
+                                <p><span class="font-medium">Noodcontact:</span> {{ leader.emergency_contact || '–' }}</p>
                                 <p><span class="font-medium">E-mail:</span> {{ leader.email || '–' }}</p>
                             </div>
                             <div class="mt-3 flex items-center gap-2">
@@ -379,6 +393,7 @@ function leaderAge(value) {
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Geboortedatum</th>
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Leeftijd</th>
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Telefoonnummer</th>
+                                <th scope="col" class="whitespace-nowrap px-3 py-2.5">Noodcontact</th>
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">E-mail</th>
                                 <th scope="col" class="min-w-[11rem] whitespace-nowrap px-3 py-2.5 text-end sm:text-start">
                                     Acties
@@ -411,6 +426,9 @@ function leaderAge(value) {
                                 </td>
                                 <td class="whitespace-nowrap px-3 py-2.5 align-top tabular-nums text-app-ink dark:text-app-ink-dark">
                                     {{ leader.phone_number || '–' }}
+                                </td>
+                                <td class="max-w-[16rem] px-3 py-2.5 align-top">
+                                    {{ leader.emergency_contact || '–' }}
                                 </td>
                                 <td class="max-w-[16rem] break-all px-3 py-2.5 align-top">
                                     {{ leader.email || '–' }}

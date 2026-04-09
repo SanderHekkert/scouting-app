@@ -78,6 +78,7 @@ class LeaderController extends Controller
             'installed' => ['sometimes', 'boolean'],
             'gedoopt' => ['sometimes', 'boolean'],
             'phone_number' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'emergency_contact' => ['sometimes', 'nullable', 'string', 'max:255'],
             'email' => ['sometimes', 'nullable', 'string', 'max:255', 'email'],
             'bijzonderheden' => ['sometimes', 'nullable', 'string', 'max:65535'],
         ]);
@@ -103,6 +104,7 @@ class LeaderController extends Controller
             'installed' => ['nullable', 'boolean'],
             'gedoopt' => ['nullable', 'boolean'],
             'phone_number' => ['nullable', 'string', 'max:255'],
+            'emergency_contact' => ['nullable', 'string', 'max:255'],
             'email' => ['nullable', 'string', 'max:255', 'email'],
             'bijzonderheden' => ['nullable', 'string', 'max:65535'],
         ]);
@@ -132,6 +134,7 @@ class LeaderController extends Controller
             'installed' => ['nullable', 'boolean'],
             'gedoopt' => ['nullable', 'boolean'],
             'phone_number' => ['nullable', 'string', 'max:255'],
+            'emergency_contact' => ['nullable', 'string', 'max:255'],
             'email' => ['nullable', 'string', 'max:255', 'email'],
             'bijzonderheden' => ['nullable', 'string', 'max:65535'],
         ]);

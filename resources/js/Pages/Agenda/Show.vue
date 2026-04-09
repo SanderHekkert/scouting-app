@@ -1,73 +1,104 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ArrowLeftCircleIcon, DocumentCheckIcon } from '@heroicons/vue/24/outline';
+import { Head, Link } from '@inertiajs/vue3';
+import { ArrowLeftCircleIcon, ArrowTopRightOnSquareIcon, CalendarDaysIcon, PaperClipIcon } from '@heroicons/vue/24/outline';
+import { computed } from 'vue';
 
 const props = defineProps({
     item: { type: Object, required: true },
 });
 
-const form = useForm({
-    theme: props.item.theme || '',
-    event_date: String(props.item.event_date || '').slice(0, 10),
-    location: props.item.location || '',
-    time_slot: props.item.time_slot || '',
-    invitees: props.item.invitees || '',
-    link_url: props.item.link_url || '',
-    attachment_file: null,
-    notes: props.item.notes || '',
+const audienceLabel = computed(() => {
+    if (props.item.audience_scope === 'all') return 'Iedereen';
+    if (props.item.audience_scope === 'selected') return 'Specifieke personen';
+    return 'Alleen mezelf';
 });
-
-function submit() {
-    form.transform((data) => ({ ...data, _method: 'patch' })).post(route('agenda.update', props.item.id), {
-        forceFormData: true,
-        preserveScroll: true,
-    });
-}
-
-function onAttachmentChange(event) {
-    form.attachment_file = event?.target?.files?.[0] || null;
-}
 </script>
 
 <template>
-    <Head title="Agenda-item bewerken" />
+    <Head title="Agenda-item details" />
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center justify-between gap-3">
-                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Agenda-item bewerken</h2>
+                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Agenda-item details</h2>
                 <Link :href="route('agenda.index')" class="inline-flex items-center justify-center rounded border border-app-border p-2 text-app-ink hover:bg-brand-blue/10 dark:border-app-border-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/15" title="Terug">
                     <ArrowLeftCircleIcon class="h-5 w-5" />
                 </Link>
             </div>
         </template>
-        <form class="surface-brand-top space-y-4 rounded-xl border border-app-border bg-app-panel p-5 text-app-ink shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark dark:text-app-ink-dark" @submit.prevent="submit">
-            <div class="grid gap-4 sm:grid-cols-[10rem_1fr] sm:items-start">
-                <label class="text-sm font-semibold sm:pt-2.5">Naam activiteit</label>
-                <input v-model="form.theme" type="text" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 dark:border-app-border-dark dark:bg-app-canvas-dark" />
-                <label class="text-sm font-semibold sm:pt-2.5">Datum</label>
-                <input v-model="form.event_date" type="date" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 dark:border-app-border-dark dark:bg-app-canvas-dark" />
-                <label class="text-sm font-semibold sm:pt-2.5">Locatie</label>
-                <input v-model="form.location" type="text" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 dark:border-app-border-dark dark:bg-app-canvas-dark" />
-                <label class="text-sm font-semibold sm:pt-2.5">Tijdstip</label>
-                <input v-model="form.time_slot" type="text" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 dark:border-app-border-dark dark:bg-app-canvas-dark" />
-                <label class="text-sm font-semibold sm:pt-2.5">Genodigden</label>
-                <textarea v-model="form.invitees" rows="2" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 dark:border-app-border-dark dark:bg-app-canvas-dark" />
-                <label class="text-sm font-semibold sm:pt-2.5">URL</label>
-                <input v-model="form.link_url" type="url" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 dark:border-app-border-dark dark:bg-app-canvas-dark" />
-                <label class="text-sm font-semibold sm:pt-2.5">Bijlage</label>
-                <div class="space-y-2">
-                    <a v-if="props.item.attachment_name" :href="route('agenda.attachment.download', props.item.id)" class="inline-flex text-sm text-brand-blue underline">{{ props.item.attachment_name }}</a>
-                    <input type="file" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 dark:border-app-border-dark dark:bg-app-canvas-dark" @change="onAttachmentChange" />
-                </div>
-                <label class="text-sm font-semibold sm:pt-2.5">Notities</label>
-                <textarea v-model="form.notes" rows="4" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 dark:border-app-border-dark dark:bg-app-canvas-dark" />
-                <span class="hidden sm:block" />
-                <button type="submit" class="inline-flex items-center gap-2 rounded bg-brand-blue px-4 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark disabled:opacity-50" :disabled="form.processing">
-                    <DocumentCheckIcon class="h-5 w-5" />
-                    Opslaan
-                </button>
+        <div class="surface-brand-top space-y-5 rounded-xl border border-app-border bg-app-panel p-5 text-app-ink shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark dark:text-app-ink-dark">
+            <div class="flex flex-wrap gap-2">
+                <a
+                    v-if="props.item.google_calendar_url"
+                    :href="props.item.google_calendar_url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="inline-flex items-center gap-2 rounded-lg border border-app-border bg-white px-3 py-2 text-sm font-medium text-app-ink hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/15"
+                >
+                    <CalendarDaysIcon class="h-4 w-4" />
+                    Google Agenda
+                </a>
+                <a
+                    :href="route('agenda.ics', props.item.id)"
+                    class="inline-flex items-center gap-2 rounded-lg border border-app-border bg-white px-3 py-2 text-sm font-medium text-app-ink hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/15"
+                >
+                    <CalendarDaysIcon class="h-4 w-4" />
+                    Download .ics
+                </a>
+                <a
+                    v-if="props.item.attachment_name"
+                    :href="route('agenda.attachment.download', props.item.id)"
+                    class="inline-flex items-center gap-2 rounded-lg border border-app-border bg-white px-3 py-2 text-sm font-medium text-app-ink hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/15"
+                >
+                    <PaperClipIcon class="h-4 w-4" />
+                    {{ props.item.attachment_name }}
+                </a>
+                <a
+                    v-if="props.item.link_url"
+                    :href="props.item.link_url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="inline-flex items-center gap-2 rounded-lg border border-app-border bg-white px-3 py-2 text-sm font-medium text-app-ink hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/15"
+                >
+                    <ArrowTopRightOnSquareIcon class="h-4 w-4" />
+                    Externe link
+                </a>
             </div>
-        </form>
+
+            <div class="grid gap-4 sm:grid-cols-[12rem_1fr] sm:items-start">
+                <p class="text-sm font-semibold sm:pt-1">Naam activiteit</p>
+                <p class="rounded border border-app-border bg-white px-3 py-2 dark:border-app-border-dark dark:bg-app-canvas-dark">{{ props.item.theme || '-' }}</p>
+
+                <p class="text-sm font-semibold sm:pt-1">Datum</p>
+                <p class="rounded border border-app-border bg-white px-3 py-2 dark:border-app-border-dark dark:bg-app-canvas-dark">{{ props.item.event_date || '-' }}</p>
+
+                <p class="text-sm font-semibold sm:pt-1">Locatie</p>
+                <p class="rounded border border-app-border bg-white px-3 py-2 dark:border-app-border-dark dark:bg-app-canvas-dark">{{ props.item.location || '-' }}</p>
+
+                <p class="text-sm font-semibold sm:pt-1">Tijdstip</p>
+                <p class="rounded border border-app-border bg-white px-3 py-2 dark:border-app-border-dark dark:bg-app-canvas-dark">{{ props.item.time_slot || '-' }}</p>
+
+                <p class="text-sm font-semibold sm:pt-1">Genodigden</p>
+                <p class="rounded border border-app-border bg-white px-3 py-2 whitespace-pre-wrap dark:border-app-border-dark dark:bg-app-canvas-dark">{{ props.item.invitees || '-' }}</p>
+
+                <p class="text-sm font-semibold sm:pt-1">Notities</p>
+                <p class="rounded border border-app-border bg-white px-3 py-2 whitespace-pre-wrap dark:border-app-border-dark dark:bg-app-canvas-dark">{{ props.item.notes || '-' }}</p>
+
+                <p class="text-sm font-semibold sm:pt-1">Zichtbaar voor</p>
+                <div class="rounded border border-app-border bg-white px-3 py-2 dark:border-app-border-dark dark:bg-app-canvas-dark">
+                    <p>{{ audienceLabel }}</p>
+                    <div v-if="props.item.audience_scope === 'selected'" class="mt-2 flex flex-wrap gap-2">
+                        <span
+                            v-for="user in props.item.target_users || []"
+                            :key="`target-user-${user.id}`"
+                            class="inline-flex items-center rounded-full bg-brand-blue/15 px-2.5 py-1 text-xs"
+                        >
+                            {{ user.name }}
+                        </span>
+                        <span v-if="!(props.item.target_users || []).length" class="text-sm text-app-muted dark:text-app-muted-dark">Geen specifieke personen gekozen</span>
+                    </div>
+                </div>
+            </div>
+        </div>
     </AuthenticatedLayout>
 </template>

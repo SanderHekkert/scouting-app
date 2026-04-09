@@ -22,6 +22,7 @@ const form = useForm({
     postal_code: props.leader.postal_code || '',
     city: props.leader.city || '',
     phone_number: props.leader.phone_number || '',
+    emergency_contact: props.leader.emergency_contact || '',
     email: props.leader.email || '',
 });
 
@@ -85,6 +86,9 @@ function deleteLeader() {
 
                 <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Telefoon</label>
                 <input v-model="form.phone_number" type="text" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
+
+                <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Noodcontact</label>
+                <input v-model="form.emergency_contact" type="text" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
 
                 <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">E-mail</label>
                 <input v-model="form.email" type="email" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />

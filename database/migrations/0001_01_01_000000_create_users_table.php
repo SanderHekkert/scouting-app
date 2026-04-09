@@ -24,6 +24,7 @@ return new class extends Migration
             $table->boolean('installed')->default(false);
             $table->boolean('gedoopt')->default(false);
             $table->string('phone_number')->nullable();
+            $table->string('emergency_contact')->nullable();
             $table->text('bijzonderheden')->nullable();
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();

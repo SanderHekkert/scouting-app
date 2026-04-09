@@ -19,6 +19,7 @@ const sectionLabelMap = {
 };
 const speltakLabel = computed(() => sectionLabelMap[page.props.auth?.active_section] || 'Dolfijnen');
 const isBestuurSection = computed(() => (page.props.auth?.active_section ?? '') === 'bestuur');
+const isBeversSection = computed(() => (page.props.auth?.active_section ?? '') === 'bevers');
 const allSections = ['bevers', 'dolfijnen', 'zeeverkenners', 'wilde_vaart', 'loodsen', 'bestuur'];
 const transferOptions = computed(() => {
     return allSections.map((section) => ({
@@ -86,7 +87,7 @@ function deleteMember() {
                     <option :value="false">Nee</option>
                 </select>
 
-                <template v-if="!isBestuurSection">
+                <template v-if="!isBestuurSection && !isBeversSection">
                     <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Gedoopt</label>
                     <select v-model="form.gedoopt" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark">
                         <option :value="true">Ja</option>

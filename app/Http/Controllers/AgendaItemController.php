@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AgendaItem;
 use App\Models\Event;
+use App\Models\User;
 use App\Models\UserSectionRole;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
@@ -11,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -21,28 +23,47 @@ class AgendaItemController extends Controller
     public function index()
     {
         $today = Carbon::today();
-        $section = $this->activeSection();
+        $user = request()->user();
+        abort_unless($user instanceof User, 403);
+        $sections = $this->userSections($user);
 
         $items = AgendaItem::query()
+            ->where(function (Builder $query) use ($user, $sections): void {
+                $query->where('owner_user_id', $user->id);
+                $query->orWhere('audience_scope', 'all');
+                $query->orWhere(function (Builder $q) use ($user): void {
+                    $q->where('audience_scope', 'selected')
+                        ->whereJsonContains('target_user_ids', (int) $user->id);
+                });
+                if ($sections !== []) {
+                    $query->orWhere(function (Builder $q) use ($sections): void {
+                        $q->whereNull('owner_user_id')
+                            ->whereIn('section', $sections);
+                    });
+                }
+            })
             ->whereDate('event_date', '>=', $today)
             ->orderBy('event_date')
             ->orderBy('theme')
             ->get();
 
-        $opkomsten = collect();
-        if ($section !== UserSectionRole::SECTION_BESTUUR) {
-            $opkomsten = Event::withoutGlobalScope('section')
-                ->where(function (Builder $query) use ($section): void {
-                    $query->where('section', $section);
+        $opkomsten = Event::withoutGlobalScope('section')
+            ->where(function (Builder $query) use ($sections): void {
+                foreach ($sections as $index => $section) {
+                    if ($index === 0) {
+                        $query->where('section', $section);
+                    } else {
+                        $query->orWhere('section', $section);
+                    }
                     if ($this->supportsSharedEventsForSection($section)) {
                         $query->orWhereJsonContains('shared_sections', $section);
                     }
-                })
-                ->whereDate('event_date', '>=', $today)
-                ->orderBy('event_date')
-                ->orderBy('theme')
-                ->get();
-        }
+                }
+            })
+            ->whereDate('event_date', '>=', $today)
+            ->orderBy('event_date')
+            ->orderBy('theme')
+            ->get();
 
         return Inertia::render('Agenda/Index', [
             'items' => $items->map(fn (AgendaItem $item): array => [
@@ -58,16 +79,42 @@ class AgendaItemController extends Controller
                 'event_type' => (string) ($event->event_type ?? ''),
                 'activity' => (string) ($event->activity ?? ''),
                 'section' => (string) ($event->section ?? ''),
-                'is_shared' => in_array($section, collect($event->shared_sections ?? [])->map(fn ($s) => (string) $s)->all(), true),
+                'is_shared' => count(array_intersect($sections, collect($event->shared_sections ?? [])->map(fn ($s) => (string) $s)->all())) > 0,
                 'shared_sections' => collect($event->shared_sections ?? [])->map(fn ($s) => (string) $s)->values()->all(),
             ])->values(),
+            'availableUsers' => User::query()
+                ->orderBy('first_name')
+                ->orderBy('last_name')
+                ->get(['id', 'first_name', 'last_name', 'name', 'email'])
+                ->map(fn (User $u): array => [
+                    'id' => (int) $u->id,
+                    'name' => trim((string) ($u->first_name ?? '').' '.(string) ($u->last_name ?? '')) ?: (string) $u->name,
+                    'email' => (string) $u->email,
+                ])->values(),
         ]);
     }
 
     public function archived()
     {
         $today = Carbon::today();
+        $user = request()->user();
+        abort_unless($user instanceof User, 403);
+        $sections = $this->userSections($user);
         $items = AgendaItem::query()
+            ->where(function (Builder $query) use ($user, $sections): void {
+                $query->where('owner_user_id', $user->id);
+                $query->orWhere('audience_scope', 'all');
+                $query->orWhere(function (Builder $q) use ($user): void {
+                    $q->where('audience_scope', 'selected')
+                        ->whereJsonContains('target_user_ids', (int) $user->id);
+                });
+                if ($sections !== []) {
+                    $query->orWhere(function (Builder $q) use ($sections): void {
+                        $q->whereNull('owner_user_id')
+                            ->whereIn('section', $sections);
+                    });
+                }
+            })
             ->whereDate('event_date', '<', $today)
             ->orderByDesc('event_date')
             ->orderBy('theme')
@@ -85,11 +132,36 @@ class AgendaItemController extends Controller
 
     public function show(AgendaItem $agendaItem)
     {
+        $this->authorizeAgendaItem($agendaItem);
+
+        $targetIds = collect($agendaItem->target_user_ids ?? [])
+            ->map(fn ($id): int => (int) $id)
+            ->filter(fn (int $id): bool => $id > 0)
+            ->unique()
+            ->values()
+            ->all();
+
+        $targetUsers = $targetIds === []
+            ? []
+            : User::query()
+                ->whereIn('id', $targetIds)
+                ->orderBy('first_name')
+                ->orderBy('last_name')
+                ->get(['id', 'first_name', 'last_name', 'name', 'email'])
+                ->map(fn (User $u): array => [
+                    'id' => (int) $u->id,
+                    'name' => trim((string) ($u->first_name ?? '').' '.(string) ($u->last_name ?? '')) ?: (string) $u->name,
+                    'email' => (string) $u->email,
+                ])
+                ->values()
+                ->all();
+
         return Inertia::render('Agenda/Show', [
             'item' => [
                 ...$agendaItem->toArray(),
                 'attachment_name' => $this->attachmentName($agendaItem->attachments),
                 'google_calendar_url' => $this->googleCalendarUrl($agendaItem),
+                'target_users' => $targetUsers,
             ],
         ]);
     }
@@ -105,9 +177,20 @@ class AgendaItemController extends Controller
             'link_url' => ['nullable', 'url', 'max:2048'],
             'attachment_file' => ['nullable', File::types(['pdf', 'jpg', 'jpeg', 'png'])->max(10 * 1024)],
             'notes' => ['nullable', 'string'],
+            'audience_scope' => ['nullable', 'string', Rule::in(['self', 'all', 'selected'])],
+            'target_user_ids' => ['nullable', 'array'],
+            'target_user_ids.*' => ['integer', Rule::exists('users', 'id')],
         ]);
 
         $data['theme'] = (string) ($data['theme'] ?? '');
+        $data['owner_user_id'] = (int) $request->user()->id;
+        $data['section'] = session('active_section', UserSectionRole::SECTION_DOLFIJNEN);
+        $activeSection = (string) $data['section'];
+        $isBestuur = $activeSection === UserSectionRole::SECTION_BESTUUR;
+        $data['audience_scope'] = $isBestuur ? (string) ($data['audience_scope'] ?? 'self') : 'self';
+        $data['target_user_ids'] = $data['audience_scope'] === 'selected'
+            ? $this->normalizeTargetUserIds($data['target_user_ids'] ?? null)
+            : [];
 
         if ($request->hasFile('attachment_file')) {
             $data['attachments'] = $this->encodeAttachmentMeta($request->file('attachment_file'));
@@ -120,6 +203,8 @@ class AgendaItemController extends Controller
 
     public function update(Request $request, AgendaItem $agendaItem)
     {
+        $this->authorizeAgendaItem($agendaItem);
+
         $data = $request->validate([
             'theme' => ['nullable', 'string', 'max:255'],
             'event_date' => ['required', 'date'],
@@ -129,8 +214,17 @@ class AgendaItemController extends Controller
             'link_url' => ['nullable', 'url', 'max:2048'],
             'attachment_file' => ['nullable', File::types(['pdf', 'jpg', 'jpeg', 'png'])->max(10 * 1024)],
             'notes' => ['nullable', 'string'],
+            'audience_scope' => ['nullable', 'string', Rule::in(['self', 'all', 'selected'])],
+            'target_user_ids' => ['nullable', 'array'],
+            'target_user_ids.*' => ['integer', Rule::exists('users', 'id')],
         ]);
         $data['theme'] = (string) ($data['theme'] ?? '');
+        $activeSection = (string) ($agendaItem->section ?? session('active_section', UserSectionRole::SECTION_DOLFIJNEN));
+        $isBestuur = $activeSection === UserSectionRole::SECTION_BESTUUR;
+        $data['audience_scope'] = $isBestuur ? (string) ($data['audience_scope'] ?? ($agendaItem->audience_scope ?? 'self')) : 'self';
+        $data['target_user_ids'] = $data['audience_scope'] === 'selected'
+            ? $this->normalizeTargetUserIds($data['target_user_ids'] ?? null)
+            : [];
 
         if ($request->hasFile('attachment_file')) {
             $this->deleteAttachmentFile($agendaItem->attachments);
@@ -144,6 +238,7 @@ class AgendaItemController extends Controller
 
     public function destroy(AgendaItem $agendaItem)
     {
+        $this->authorizeAgendaItem($agendaItem);
         $this->deleteAttachmentFile($agendaItem->attachments);
         $agendaItem->delete();
 
@@ -152,6 +247,7 @@ class AgendaItemController extends Controller
 
     public function downloadAttachment(AgendaItem $agendaItem): BinaryFileResponse
     {
+        $this->authorizeAgendaItem($agendaItem);
         $meta = $this->attachmentMeta($agendaItem->attachments);
         abort_unless($meta !== null, 404);
         abort_unless(Storage::disk('local')->exists($meta['path']), 404);
@@ -161,6 +257,7 @@ class AgendaItemController extends Controller
 
     public function ics(AgendaItem $agendaItem): Response
     {
+        $this->authorizeAgendaItem($agendaItem);
         $start = Carbon::parse($agendaItem->event_date)->startOfDay();
         $end = $start->copy()->addDay();
         $uid = 'agenda-item-'.$agendaItem->id.'@scouting-app';
@@ -270,11 +367,6 @@ class AgendaItemController extends Controller
         );
     }
 
-    private function activeSection(): string
-    {
-        return session('active_section', UserSectionRole::SECTION_DOLFIJNEN);
-    }
-
     private function supportsSharedEventsForSection(string $section): bool
     {
         return in_array($section, [
@@ -283,5 +375,63 @@ class AgendaItemController extends Controller
             UserSectionRole::SECTION_ZEEVERKENNERS,
             UserSectionRole::SECTION_WILDE_VAART,
         ], true);
+    }
+
+    /**
+     * @param  array<int, mixed>|null  $raw
+     * @return list<int>
+     */
+    private function normalizeTargetUserIds(?array $raw): array
+    {
+        return collect($raw ?? [])
+            ->map(fn ($id): int => (int) $id)
+            ->filter(fn (int $id): bool => $id > 0)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function userSections(User $user): array
+    {
+        if ($user->isGlobalAdmin() || $user->isGlobalBoardMember()) {
+            return UserSectionRole::ALL_SECTIONS;
+        }
+
+        return $user->sectionRoles()
+            ->where('section', '!=', UserSectionRole::SECTION_ALL)
+            ->pluck('section')
+            ->map(fn ($v): string => (string) $v)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    private function authorizeAgendaItem(AgendaItem $agendaItem): void
+    {
+        $user = request()->user();
+        abort_unless($user instanceof User, 403);
+        if ((int) ($agendaItem->owner_user_id ?? 0) === (int) $user->id) {
+            return;
+        }
+
+        if (($agendaItem->audience_scope ?? 'self') === 'all') {
+            return;
+        }
+        if (($agendaItem->audience_scope ?? 'self') === 'selected') {
+            $targets = collect($agendaItem->target_user_ids ?? [])->map(fn ($id): int => (int) $id)->all();
+            if (in_array((int) $user->id, $targets, true)) {
+                return;
+            }
+        }
+
+        $sections = $this->userSections($user);
+        if ($agendaItem->owner_user_id === null && in_array((string) ($agendaItem->section ?? ''), $sections, true)) {
+            return;
+        }
+
+        abort(403);
     }
 }

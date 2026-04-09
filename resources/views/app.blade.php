@@ -7,9 +7,10 @@
 
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
 
-        <link rel="icon" href="/favicon.ico" sizes="any">
-        <link rel="apple-touch-icon" href="/favicon.ico">
-        <link rel="manifest" href="/images/site.webmanifest">
+        <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}" sizes="any">
+        <link rel="shortcut icon" href="{{ asset('favicon.ico') }}">
+        <link rel="apple-touch-icon" href="{{ asset('favicon.ico') }}">
+        <link rel="manifest" href="{{ asset('images/site.webmanifest') }}">
         <meta name="theme-color" content="#0068B7">
 
         <!-- Fonts -->
