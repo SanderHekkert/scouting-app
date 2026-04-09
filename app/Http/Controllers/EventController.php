@@ -364,10 +364,7 @@ class EventController extends Controller
     {
         $section = $this->activeSection();
         $role = $request->user()?->roleInSection($section);
-        if (
-            $role !== UserSectionRole::ROLE_LID
-            || ! in_array($section, [UserSectionRole::SECTION_LOODSEN, UserSectionRole::SECTION_WILDE_VAART], true)
-        ) {
+        if ($role !== UserSectionRole::ROLE_LID || ! in_array($section, $this->selfAttendanceSections(), true)) {
             abort(403);
         }
 
@@ -390,6 +387,7 @@ class EventController extends Controller
             ->values();
 
         $normalizedSelf = Str::lower($name);
+        $defaultAbsent = in_array($section, $this->defaultAbsentSections(), true);
 
         $filtered = $existing->reject(function (string $item) use ($normalizedSelf): bool {
             return Str::lower($item) === $normalizedSelf;
@@ -400,8 +398,16 @@ class EventController extends Controller
 
         if ($data['present']) {
             $presentFiltered->push($name);
+            $filtered = $filtered->reject(function (string $item) use ($normalizedSelf): bool {
+                return Str::lower($item) === $normalizedSelf;
+            })->values();
         } else {
-            $filtered->push($name);
+            if ($defaultAbsent) {
+                // In default-afwezig secties is "afwezig" de standaard.
+                // We bewaren de expliciete afwezigheid niet per se in absent-tekst.
+            } else {
+                $filtered->push($name);
+            }
         }
 
         $event->update([
@@ -590,6 +596,31 @@ class EventController extends Controller
         }
 
         return '';
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function selfAttendanceSections(): array
+    {
+        return [
+            UserSectionRole::SECTION_DOLFIJNEN,
+            UserSectionRole::SECTION_BEVERS,
+            UserSectionRole::SECTION_ZEEVERKENNERS,
+            UserSectionRole::SECTION_WILDE_VAART,
+            UserSectionRole::SECTION_LOODSEN,
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function defaultAbsentSections(): array
+    {
+        return [
+            UserSectionRole::SECTION_WILDE_VAART,
+            UserSectionRole::SECTION_LOODSEN,
+        ];
     }
 
     private function deleteAttachmentFile(?string $raw): void

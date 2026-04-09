@@ -67,9 +67,9 @@ class AgendaItemController extends Controller
         $user = request()->user();
         abort_unless($user instanceof User, 403);
         $sections = $this->userSections($user);
-
-        $items = AgendaItem::query()
-            ->where(function (Builder $query) use ($user, $sections): void {
+        $itemsQuery = AgendaItem::query();
+        if (! $user->isGlobalAdmin() && ! $user->isGlobalBoardMember()) {
+            $itemsQuery->where(function (Builder $query) use ($user, $sections): void {
                 $query->where('owner_user_id', $user->id);
                 $query->orWhere('audience_scope', 'all');
                 $query->orWhere(function (Builder $q) use ($user): void {
@@ -82,7 +82,9 @@ class AgendaItemController extends Controller
                             ->whereIn('section', $sections);
                     });
                 }
-            })
+            });
+        }
+        $items = $itemsQuery
             ->where(function (Builder $query) use ($today): void {
                 $query->whereDate('event_date', '>=', $today)
                     ->orWhereDate('end_date', '>=', $today);
@@ -144,8 +146,9 @@ class AgendaItemController extends Controller
         $user = request()->user();
         abort_unless($user instanceof User, 403);
         $sections = $this->userSections($user);
-        $items = AgendaItem::query()
-            ->where(function (Builder $query) use ($user, $sections): void {
+        $itemsQuery = AgendaItem::query();
+        if (! $user->isGlobalAdmin() && ! $user->isGlobalBoardMember()) {
+            $itemsQuery->where(function (Builder $query) use ($user, $sections): void {
                 $query->where('owner_user_id', $user->id);
                 $query->orWhere('audience_scope', 'all');
                 $query->orWhere(function (Builder $q) use ($user): void {
@@ -158,7 +161,9 @@ class AgendaItemController extends Controller
                             ->whereIn('section', $sections);
                     });
                 }
-            })
+            });
+        }
+        $items = $itemsQuery
             ->where(function (Builder $query) use ($today): void {
                 $query->whereDate('end_date', '<', $today)
                     ->orWhere(function (Builder $q) use ($today): void {
@@ -233,6 +238,8 @@ class AgendaItemController extends Controller
                 'invitees' => (string) ($event->invitees ?? ''),
                 'link_url' => (string) ($event->link_url ?? ''),
                 'notes' => (string) ($event->notes ?? ''),
+                'present_names' => collect($event->present_names ?? [])->map(fn ($v): string => trim((string) $v))->filter()->values()->all(),
+                'absent' => (string) ($event->absent ?? ''),
                 'section' => (string) ($event->section ?? ''),
                 'is_shared' => ! empty($event->shared_sections ?? []),
             ],
@@ -588,6 +595,9 @@ class AgendaItemController extends Controller
     {
         $user = request()->user();
         abort_unless($user instanceof User, 403);
+        if ($user->isGlobalAdmin() || $user->isGlobalBoardMember()) {
+            return;
+        }
         if ((int) ($agendaItem->owner_user_id ?? 0) === (int) $user->id) {
             return;
         }

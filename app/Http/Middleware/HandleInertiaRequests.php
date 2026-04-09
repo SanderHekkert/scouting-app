@@ -45,7 +45,16 @@ class HandleInertiaRequests extends Middleware
             $isBoard = $user->isGlobalBoardMember();
             $role = $user->roleInSection($activeSection);
 
-            if ($isAdmin || $role === UserSectionRole::ROLE_TEAMLEIDER) {
+            if ($isAdmin) {
+                foreach (SectionPermission::ALL_MODULES as $module) {
+                    $permissions[$module] = [
+                        'view' => true,
+                        'create' => true,
+                        'update' => true,
+                        'delete' => true,
+                    ];
+                }
+            } elseif ($isBoard && $activeSection === UserSectionRole::SECTION_BESTUUR) {
                 foreach (SectionPermission::ALL_MODULES as $module) {
                     $permissions[$module] = [
                         'view' => true,
@@ -61,6 +70,15 @@ class HandleInertiaRequests extends Middleware
                         'create' => false,
                         'update' => false,
                         'delete' => false,
+                    ];
+                }
+            } elseif ($role === UserSectionRole::ROLE_TEAMLEIDER) {
+                foreach (SectionPermission::ALL_MODULES as $module) {
+                    $permissions[$module] = [
+                        'view' => true,
+                        'create' => true,
+                        'update' => true,
+                        'delete' => true,
                     ];
                 }
             } elseif ($role) {

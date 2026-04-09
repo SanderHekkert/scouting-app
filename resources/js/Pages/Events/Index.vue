@@ -35,7 +35,7 @@ const currentRole = computed(() => {
 });
 const canManageAgenda = computed(() => currentRole.value !== 'lid' && canManageEvents.value);
 const canMarkOwnPresence = computed(
-    () => currentRole.value === 'lid' && ['loodsen', 'wilde_vaart'].includes(activeSection.value),
+    () => currentRole.value === 'lid' && ['dolfijnen', 'bevers', 'zeeverkenners', 'wilde_vaart', 'loodsen'].includes(activeSection.value),
 );
 const currentUserName = computed(() => {
     const first = String(page.props.auth?.user?.first_name ?? '').trim();

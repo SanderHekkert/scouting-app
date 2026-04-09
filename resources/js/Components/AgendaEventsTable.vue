@@ -61,6 +61,19 @@ function splitAbsentNames(value) {
     return [...new Set(items)];
 }
 
+function splitPresentNames(value) {
+    if (Array.isArray(value)) {
+        return [...new Set(value.map((n) => String(n || '').trim()).filter(Boolean))];
+    }
+    const text = String(value ?? '').trim();
+    if (!text) return [];
+    const items = text
+        .split(',')
+        .map((n) => n.trim())
+        .filter(Boolean);
+    return [...new Set(items)];
+}
+
 function firstNameOnly(name) {
     const s = String(name ?? '').trim();
     if (!s) return '';
@@ -70,7 +83,14 @@ function firstNameOnly(name) {
 function isCurrentUserAbsent(event) {
     const self = String(props.currentUserName || '').trim().toLowerCase();
     if (!self) return false;
-    return splitAbsentNames(event?.absent).some((name) => String(name).trim().toLowerCase() === self);
+    const section = String(event?.section || '').trim().toLowerCase();
+    const defaultAbsent = ['loodsen', 'wilde_vaart'].includes(section);
+    const inAbsent = splitAbsentNames(event?.absent).some((name) => String(name).trim().toLowerCase() === self);
+    const inPresent = splitPresentNames(event?.present_names).some((name) => String(name).trim().toLowerCase() === self);
+    if (defaultAbsent) {
+        return !inPresent;
+    }
+    return inAbsent;
 }
 
 function taskIdsForEvent(event) {
@@ -165,6 +185,18 @@ function safeExternalUrl(url) {
                         <p v-else>-</p>
                     </div>
                     <div v-if="!props.isBestuur">
+                        <p class="text-xs text-app-muted dark:text-app-muted-dark">Aanwezig</p>
+                        <div class="mt-1 flex flex-wrap gap-1.5">
+                            <span
+                                v-for="name in splitPresentNames(event.present_names)"
+                                :key="`mob-present-chip-${event.id}-${name}`"
+                                class="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs text-emerald-800 dark:text-emerald-200"
+                            >
+                                {{ firstNameOnly(name) }}
+                            </span>
+                        </div>
+                    </div>
+                    <div v-if="!props.isBestuur">
                         <p class="text-xs text-app-muted dark:text-app-muted-dark">Afwezig</p>
                         <div class="mt-1 flex flex-wrap gap-1.5">
                             <span
@@ -227,6 +259,7 @@ function safeExternalUrl(url) {
                     <th v-if="props.isBestuur" scope="col" class="min-w-[8rem] px-3 py-2.5">URL</th>
                     <th v-if="props.isBestuur" scope="col" class="min-w-[8rem] px-3 py-2.5">Bijlagen</th>
                     <th v-if="!props.isBestuur" scope="col" class="min-w-[9rem] px-3 py-2.5">Afwezig</th>
+                    <th v-if="!props.isBestuur" scope="col" class="min-w-[9rem] px-3 py-2.5">Aanwezig</th>
                     <th v-if="!props.isBestuur" scope="col" class="min-w-[8rem] px-3 py-2.5">Taken</th>
                     <th scope="col" class="min-w-[8rem] px-3 py-2.5">Bijzonderheden</th>
                     <th scope="col" class="min-w-[7rem] px-3 py-2.5 text-end sm:text-start">Acties</th>
@@ -284,6 +317,17 @@ function safeExternalUrl(url) {
                         >
                             {{ isCurrentUserAbsent(event) ? 'Meld aanwezig' : 'Meld afwezig' }}
                         </button>
+                    </td>
+                    <td v-if="!props.isBestuur" class="max-w-[18rem] px-3 py-2.5 align-top">
+                        <div class="flex flex-wrap gap-1.5">
+                            <span
+                                v-for="name in splitPresentNames(event.present_names)"
+                                :key="`desk-present-chip-${event.id}-${name}`"
+                                class="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs text-emerald-800 dark:text-emerald-200"
+                            >
+                                {{ firstNameOnly(name) }}
+                            </span>
+                        </div>
                     </td>
                     <td v-if="!props.isBestuur" class="max-w-[16rem] px-3 py-2.5 align-top">
                         <div class="flex flex-wrap gap-1.5">

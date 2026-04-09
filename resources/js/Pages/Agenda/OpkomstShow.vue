@@ -19,6 +19,15 @@ const sectionLabel = computed(() =>
         .filter(Boolean)
         .join(' ') || '-',
 );
+
+function splitNames(value) {
+    if (Array.isArray(value)) {
+        return [...new Set(value.map((v) => String(v || '').trim()).filter(Boolean))];
+    }
+    const text = String(value || '').trim();
+    if (!text) return [];
+    return [...new Set(text.split(',').map((v) => v.trim()).filter(Boolean))];
+}
 </script>
 
 <template>
@@ -71,6 +80,34 @@ const sectionLabel = computed(() =>
 
                 <p class="text-sm font-semibold sm:pt-1">Genodigden</p>
                 <p class="rounded border border-app-border bg-white px-3 py-2 whitespace-pre-wrap dark:border-app-border-dark dark:bg-app-canvas-dark">{{ item.invitees || '-' }}</p>
+
+                <p class="text-sm font-semibold sm:pt-1">Aanwezig</p>
+                <div class="rounded border border-app-border bg-white px-3 py-2 dark:border-app-border-dark dark:bg-app-canvas-dark">
+                    <div class="flex flex-wrap gap-1.5">
+                        <span
+                            v-for="name in splitNames(item.present_names)"
+                            :key="`present-chip-${name}`"
+                            class="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs text-emerald-800 dark:text-emerald-200"
+                        >
+                            {{ name }}
+                        </span>
+                    </div>
+                    <p v-if="!splitNames(item.present_names).length" class="text-sm text-app-muted dark:text-app-muted-dark">-</p>
+                </div>
+
+                <p class="text-sm font-semibold sm:pt-1">Afwezig</p>
+                <div class="rounded border border-app-border bg-white px-3 py-2 dark:border-app-border-dark dark:bg-app-canvas-dark">
+                    <div class="flex flex-wrap gap-1.5">
+                        <span
+                            v-for="name in splitNames(item.absent)"
+                            :key="`absent-chip-${name}`"
+                            class="inline-flex items-center gap-1 rounded-full bg-brand-blue/15 px-2 py-0.5 text-xs"
+                        >
+                            {{ name }}
+                        </span>
+                    </div>
+                    <p v-if="!splitNames(item.absent).length" class="text-sm text-app-muted dark:text-app-muted-dark">-</p>
+                </div>
 
                 <p class="text-sm font-semibold sm:pt-1">Notities</p>
                 <p class="rounded border border-app-border bg-white px-3 py-2 whitespace-pre-wrap dark:border-app-border-dark dark:bg-app-canvas-dark">{{ item.notes || '-' }}</p>
