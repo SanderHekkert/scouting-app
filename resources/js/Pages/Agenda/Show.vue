@@ -13,6 +13,23 @@ const audienceLabel = computed(() => {
     if (props.item.audience_scope === 'selected') return 'Specifieke personen';
     return 'Alleen mezelf';
 });
+
+const dateLabel = computed(() => {
+    const start = String(props.item.event_date || '').trim();
+    const end = String(props.item.end_date || '').trim() || start;
+    if (!start) return '-';
+    if (start === end) return start;
+    return `${start} t/m ${end}`;
+});
+
+const timeLabel = computed(() => {
+    const from = String(props.item.start_time || '').trim();
+    const to = String(props.item.end_time || '').trim();
+    if (from && to) return `${from} - ${to}`;
+    if (from) return from;
+    if (to) return `tot ${to}`;
+    return String(props.item.time_slot || '').trim() || '-';
+});
 </script>
 
 <template>
@@ -70,13 +87,13 @@ const audienceLabel = computed(() => {
                 <p class="rounded border border-app-border bg-white px-3 py-2 dark:border-app-border-dark dark:bg-app-canvas-dark">{{ props.item.theme || '-' }}</p>
 
                 <p class="text-sm font-semibold sm:pt-1">Datum</p>
-                <p class="rounded border border-app-border bg-white px-3 py-2 dark:border-app-border-dark dark:bg-app-canvas-dark">{{ props.item.event_date || '-' }}</p>
+                <p class="rounded border border-app-border bg-white px-3 py-2 dark:border-app-border-dark dark:bg-app-canvas-dark">{{ dateLabel }}</p>
 
                 <p class="text-sm font-semibold sm:pt-1">Locatie</p>
                 <p class="rounded border border-app-border bg-white px-3 py-2 dark:border-app-border-dark dark:bg-app-canvas-dark">{{ props.item.location || '-' }}</p>
 
                 <p class="text-sm font-semibold sm:pt-1">Tijdstip</p>
-                <p class="rounded border border-app-border bg-white px-3 py-2 dark:border-app-border-dark dark:bg-app-canvas-dark">{{ props.item.time_slot || '-' }}</p>
+                <p class="rounded border border-app-border bg-white px-3 py-2 dark:border-app-border-dark dark:bg-app-canvas-dark">{{ timeLabel }}</p>
 
                 <p class="text-sm font-semibold sm:pt-1">Genodigden</p>
                 <p class="rounded border border-app-border bg-white px-3 py-2 whitespace-pre-wrap dark:border-app-border-dark dark:bg-app-canvas-dark">{{ props.item.invitees || '-' }}</p>

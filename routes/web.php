@@ -120,6 +120,7 @@ Route::middleware(['auth', 'verified', 'has.role', 'section.role:admin,bestuursl
 
 Route::middleware(['auth', 'verified', 'has.role'])->group(function () {
     Route::get('/agenda/archived', [AgendaItemController::class, 'archived'])->middleware('section.permission:events')->name('agenda.archived');
+    Route::get('/agenda/nieuw', [AgendaItemController::class, 'create'])->middleware('section.permission:events')->name('agenda.create');
     Route::get('/agenda/{agendaItem}/attachment', [AgendaItemController::class, 'downloadAttachment'])->middleware('section.permission:events')->name('agenda.attachment.download');
     Route::get('/agenda/{agendaItem}/ics', [AgendaItemController::class, 'ics'])->middleware('section.permission:events')->name('agenda.ics');
     Route::get('/agenda/{agendaItem}', [AgendaItemController::class, 'show'])->middleware('section.permission:events')->name('agenda.show');

@@ -15,6 +15,9 @@ return new class extends Migration
             $table->json('target_user_ids')->nullable();
             $table->string('theme')->default('');
             $table->date('event_date');
+            $table->date('end_date')->nullable();
+            $table->string('start_time', 5)->nullable();
+            $table->string('end_time', 5)->nullable();
             $table->string('location')->nullable();
             $table->string('time_slot')->nullable();
             $table->text('invitees')->nullable();

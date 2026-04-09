@@ -20,6 +20,43 @@ use Symfony\Component\HttpFoundation\Response;
 
 class AgendaItemController extends Controller
 {
+    public function create()
+    {
+        $activeSection = session('active_section', UserSectionRole::SECTION_DOLFIJNEN);
+        $prefillDate = request()->query('date');
+        $eventDate = is_string($prefillDate) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $prefillDate) === 1
+            ? $prefillDate
+            : '';
+
+        return Inertia::render('Agenda/Create', [
+            'item' => [
+                'id' => null,
+                'theme' => '',
+                'event_date' => $eventDate,
+                'end_date' => $eventDate,
+                'start_time' => '',
+                'end_time' => '',
+                'location' => '',
+                'time_slot' => '',
+                'invitees' => '',
+                'link_url' => '',
+                'notes' => '',
+                'audience_scope' => 'self',
+                'target_user_ids' => [],
+            ],
+            'isBestuur' => $activeSection === UserSectionRole::SECTION_BESTUUR,
+            'availableUsers' => User::query()
+                ->orderBy('first_name')
+                ->orderBy('last_name')
+                ->get(['id', 'first_name', 'last_name', 'name', 'email'])
+                ->map(fn (User $u): array => [
+                    'id' => (int) $u->id,
+                    'name' => trim((string) ($u->first_name ?? '').' '.(string) ($u->last_name ?? '')) ?: (string) $u->name,
+                    'email' => (string) $u->email,
+                ])->values(),
+        ]);
+    }
+
     public function index()
     {
         $today = Carbon::today();
@@ -42,7 +79,10 @@ class AgendaItemController extends Controller
                     });
                 }
             })
-            ->whereDate('event_date', '>=', $today)
+            ->where(function (Builder $query) use ($today): void {
+                $query->whereDate('event_date', '>=', $today)
+                    ->orWhereDate('end_date', '>=', $today);
+            })
             ->orderBy('event_date')
             ->orderBy('theme')
             ->get();
@@ -115,7 +155,13 @@ class AgendaItemController extends Controller
                     });
                 }
             })
-            ->whereDate('event_date', '<', $today)
+            ->where(function (Builder $query) use ($today): void {
+                $query->whereDate('end_date', '<', $today)
+                    ->orWhere(function (Builder $q) use ($today): void {
+                        $q->whereNull('end_date')
+                            ->whereDate('event_date', '<', $today);
+                    });
+            })
             ->orderByDesc('event_date')
             ->orderBy('theme')
             ->get();
@@ -171,6 +217,9 @@ class AgendaItemController extends Controller
         $data = $request->validate([
             'theme' => ['nullable', 'string', 'max:255'],
             'event_date' => ['required', 'date'],
+            'end_date' => ['nullable', 'date', 'after_or_equal:event_date'],
+            'start_time' => ['nullable', 'date_format:H:i'],
+            'end_time' => ['nullable', 'date_format:H:i'],
             'location' => ['nullable', 'string', 'max:255'],
             'time_slot' => ['nullable', 'string', 'max:255'],
             'invitees' => ['nullable', 'string'],
@@ -183,6 +232,10 @@ class AgendaItemController extends Controller
         ]);
 
         $data['theme'] = (string) ($data['theme'] ?? '');
+        $data['end_date'] = (string) ($data['end_date'] ?? '') !== '' ? $data['end_date'] : $data['event_date'];
+        $data['start_time'] = trim((string) ($data['start_time'] ?? ''));
+        $data['end_time'] = trim((string) ($data['end_time'] ?? ''));
+        $data['time_slot'] = $this->buildTimeSlot($data['start_time'], $data['end_time']);
         $data['owner_user_id'] = (int) $request->user()->id;
         $data['section'] = session('active_section', UserSectionRole::SECTION_DOLFIJNEN);
         $activeSection = (string) $data['section'];
@@ -196,7 +249,7 @@ class AgendaItemController extends Controller
             $data['attachments'] = $this->encodeAttachmentMeta($request->file('attachment_file'));
         }
 
-        AgendaItem::create($data);
+        $item = AgendaItem::create($data);
 
         return to_route('agenda.index');
     }
@@ -208,6 +261,9 @@ class AgendaItemController extends Controller
         $data = $request->validate([
             'theme' => ['nullable', 'string', 'max:255'],
             'event_date' => ['required', 'date'],
+            'end_date' => ['nullable', 'date', 'after_or_equal:event_date'],
+            'start_time' => ['nullable', 'date_format:H:i'],
+            'end_time' => ['nullable', 'date_format:H:i'],
             'location' => ['nullable', 'string', 'max:255'],
             'time_slot' => ['nullable', 'string', 'max:255'],
             'invitees' => ['nullable', 'string'],
@@ -219,6 +275,10 @@ class AgendaItemController extends Controller
             'target_user_ids.*' => ['integer', Rule::exists('users', 'id')],
         ]);
         $data['theme'] = (string) ($data['theme'] ?? '');
+        $data['end_date'] = (string) ($data['end_date'] ?? '') !== '' ? $data['end_date'] : $data['event_date'];
+        $data['start_time'] = trim((string) ($data['start_time'] ?? ''));
+        $data['end_time'] = trim((string) ($data['end_time'] ?? ''));
+        $data['time_slot'] = $this->buildTimeSlot($data['start_time'], $data['end_time']);
         $activeSection = (string) ($agendaItem->section ?? session('active_section', UserSectionRole::SECTION_DOLFIJNEN));
         $isBestuur = $activeSection === UserSectionRole::SECTION_BESTUUR;
         $data['audience_scope'] = $isBestuur ? (string) ($data['audience_scope'] ?? ($agendaItem->audience_scope ?? 'self')) : 'self';
@@ -258,8 +318,26 @@ class AgendaItemController extends Controller
     public function ics(AgendaItem $agendaItem): Response
     {
         $this->authorizeAgendaItem($agendaItem);
-        $start = Carbon::parse($agendaItem->event_date)->startOfDay();
-        $end = $start->copy()->addDay();
+        $startDate = Carbon::parse($agendaItem->event_date)->startOfDay();
+        $endDate = Carbon::parse($agendaItem->end_date ?? $agendaItem->event_date)->startOfDay();
+        $hasTime = trim((string) ($agendaItem->start_time ?? '')) !== '' || trim((string) ($agendaItem->end_time ?? '')) !== '';
+        $start = $startDate->copy();
+        $end = $endDate->copy()->addDay();
+        if ($hasTime) {
+            if (preg_match('/^\d{2}:\d{2}$/', (string) $agendaItem->start_time) === 1) {
+                [$h, $m] = array_map('intval', explode(':', (string) $agendaItem->start_time));
+                $start->setTime($h, $m);
+            }
+            if (preg_match('/^\d{2}:\d{2}$/', (string) $agendaItem->end_time) === 1) {
+                [$h, $m] = array_map('intval', explode(':', (string) $agendaItem->end_time));
+                $end = $endDate->copy()->setTime($h, $m);
+                if ($end->lessThanOrEqualTo($start)) {
+                    $end = $start->copy()->addHour();
+                }
+            } else {
+                $end = $start->copy()->addHour();
+            }
+        }
         $uid = 'agenda-item-'.$agendaItem->id.'@scouting-app';
         $summary = $this->icsEscape((string) ($agendaItem->theme ?? 'Agenda-item'));
         $description = $this->icsEscape(trim((string) ($agendaItem->notes ?? '')));
@@ -274,8 +352,15 @@ class AgendaItemController extends Controller
             'BEGIN:VEVENT',
             'UID:'.$uid,
             'DTSTAMP:'.now()->utc()->format('Ymd\THis\Z'),
-            'DTSTART;VALUE=DATE:'.$start->format('Ymd'),
-            'DTEND;VALUE=DATE:'.$end->format('Ymd'),
+            ...($hasTime
+                ? [
+                    'DTSTART:'.$start->format('Ymd\THis'),
+                    'DTEND:'.$end->format('Ymd\THis'),
+                ]
+                : [
+                    'DTSTART;VALUE=DATE:'.$startDate->format('Ymd'),
+                    'DTEND;VALUE=DATE:'.$endDate->copy()->addDay()->format('Ymd'),
+                ]),
             'SUMMARY:'.$summary,
             'DESCRIPTION:'.$description,
             'LOCATION:'.$location,
@@ -295,15 +380,51 @@ class AgendaItemController extends Controller
 
     private function googleCalendarUrl(AgendaItem $agendaItem): string
     {
-        $start = Carbon::parse($agendaItem->event_date)->startOfDay();
-        $end = $start->copy()->addDay();
+        $startDate = Carbon::parse($agendaItem->event_date)->startOfDay();
+        $endDate = Carbon::parse($agendaItem->end_date ?? $agendaItem->event_date)->startOfDay();
+        $hasTime = trim((string) ($agendaItem->start_time ?? '')) !== '' || trim((string) ($agendaItem->end_time ?? '')) !== '';
+        $start = $startDate->copy();
+        $end = $endDate->copy()->addDay();
+        if ($hasTime) {
+            if (preg_match('/^\d{2}:\d{2}$/', (string) $agendaItem->start_time) === 1) {
+                [$h, $m] = array_map('intval', explode(':', (string) $agendaItem->start_time));
+                $start->setTime($h, $m);
+            }
+            if (preg_match('/^\d{2}:\d{2}$/', (string) $agendaItem->end_time) === 1) {
+                [$h, $m] = array_map('intval', explode(':', (string) $agendaItem->end_time));
+                $end = $endDate->copy()->setTime($h, $m);
+                if ($end->lessThanOrEqualTo($start)) {
+                    $end = $start->copy()->addHour();
+                }
+            } else {
+                $end = $start->copy()->addHour();
+            }
+        }
+        $dateRange = $hasTime
+            ? $start->format('Ymd\THis').'/'.$end->format('Ymd\THis')
+            : $startDate->format('Ymd').'/'.$endDate->copy()->addDay()->format('Ymd');
 
         return 'https://calendar.google.com/calendar/render?action=TEMPLATE'
             .'&text='.rawurlencode((string) ($agendaItem->theme ?? 'Agenda-item'))
-            .'&dates='.$start->format('Ymd').'/'.$end->format('Ymd')
+            .'&dates='.$dateRange
             .'&details='.rawurlencode((string) ($agendaItem->notes ?? ''))
             .'&location='.rawurlencode((string) ($agendaItem->location ?? ''))
             .'&sprop='.rawurlencode((string) ($agendaItem->link_url ?? ''));
+    }
+
+    private function buildTimeSlot(string $startTime, string $endTime): ?string
+    {
+        if ($startTime !== '' && $endTime !== '') {
+            return $startTime.' - '.$endTime;
+        }
+        if ($startTime !== '') {
+            return $startTime;
+        }
+        if ($endTime !== '') {
+            return 'tot '.$endTime;
+        }
+
+        return null;
     }
 
     private function encodeAttachmentMeta(?UploadedFile $file): ?string

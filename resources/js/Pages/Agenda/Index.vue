@@ -1,8 +1,8 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
-import { ChevronLeftIcon, ChevronRightIcon, DocumentCheckIcon, MagnifyingGlassIcon, PlusIcon } from '@heroicons/vue/24/outline';
-import { computed, ref, watch } from 'vue';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { ChevronLeftIcon, ChevronRightIcon, MagnifyingGlassIcon, PlusIcon } from '@heroicons/vue/24/outline';
+import { computed, ref } from 'vue';
 
 const props = defineProps({
     items: { type: Array, default: () => [] },
@@ -17,82 +17,28 @@ const weekDays = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'];
 const visibleMonth = ref(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
 const selectedDateKey = ref('');
 const agendaSearch = ref('');
+const showSearchPanel = ref(false);
 const viewMode = ref('month');
 const monthFormatter = new Intl.DateTimeFormat('nl-NL', { month: 'long', year: 'numeric' });
 const dayFormatter = new Intl.DateTimeFormat('nl-NL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 const yearFormatter = new Intl.DateTimeFormat('nl-NL', { year: 'numeric' });
 
-const showAddForm = ref(false);
-const form = useForm({
-    theme: '',
-    event_date: '',
-    location: '',
-    time_slot: '',
-    invitees: '',
-    link_url: '',
-    attachment_file: null,
-    notes: '',
-    audience_scope: 'self',
-    target_user_ids: [],
-});
-
-function toggleAddForm() {
+function goToCreateAgendaItem() {
     if (!canCreateAgendaItem.value) return;
-    showAddForm.value = !showAddForm.value;
-    if (showAddForm.value) {
-        form.reset();
-        form.audience_scope = 'self';
-        form.target_user_ids = [];
-        form.clearErrors();
+    router.get(route('agenda.create'));
+}
+
+function toggleSearchPanel() {
+    showSearchPanel.value = !showSearchPanel.value;
+    if (!showSearchPanel.value) {
+        agendaSearch.value = '';
     }
 }
 
-function submitAdd() {
-    form.post(route('agenda.store'), {
-        forceFormData: true,
-        preserveScroll: true,
-        onSuccess: () => {
-            form.reset();
-            showAddForm.value = false;
-        },
-    });
+function createAgendaItemForDay(dayKey) {
+    if (!canCreateAgendaItem.value) return;
+    router.get(route('agenda.create'), { date: dayKey });
 }
-
-function onAttachmentChange(event) {
-    form.attachment_file = event?.target?.files?.[0] || null;
-}
-
-function addTargetUser(event) {
-    const id = Number(event?.target?.value || 0);
-    if (!id) return;
-    if (!form.target_user_ids.includes(id)) {
-        form.target_user_ids.push(id);
-    }
-    event.target.value = '';
-}
-
-function removeTargetUser(id) {
-    form.target_user_ids = form.target_user_ids.filter((v) => Number(v) !== Number(id));
-}
-
-const selectedTargetUsers = computed(() => {
-    const ids = new Set((form.target_user_ids || []).map((v) => Number(v)));
-    return (props.availableUsers || []).filter((u) => ids.has(Number(u.id)));
-});
-
-const selectableTargetUsers = computed(() => {
-    const ids = new Set((form.target_user_ids || []).map((v) => Number(v)));
-    return (props.availableUsers || []).filter((u) => !ids.has(Number(u.id)));
-});
-
-watch(
-    () => form.audience_scope,
-    (value) => {
-        if (value !== 'selected') {
-            form.target_user_ids = [];
-        }
-    },
-);
 
 function toDateKey(date) {
     const y = date.getFullYear();
@@ -108,14 +54,28 @@ function fromDateKey(key) {
 }
 
 const calendarEntries = computed(() => {
-    const agendaItems = (props.items || []).map((item) => ({
-        id: item.id,
-        kind: 'agenda',
-        title: item.theme || 'Agenda-item',
-        date: String(item.event_date || ''),
-        href: route('agenda.show', item.id),
-        tag: 'Agenda',
-    }));
+    const agendaItems = (props.items || []).flatMap((item) => {
+        const start = String(item.event_date || '');
+        const end = String(item.end_date || item.event_date || '');
+        if (!start) return [];
+        const startDate = fromDateKey(start);
+        const endDate = fromDateKey(end);
+        const rangeEnd = endDate >= startDate ? endDate : startDate;
+        const entries = [];
+        const cursor = new Date(startDate);
+        while (cursor <= rangeEnd) {
+            entries.push({
+                id: item.id,
+                kind: 'agenda',
+                title: item.theme || 'Agenda-item',
+                date: toDateKey(cursor),
+                href: route('agenda.show', item.id),
+                tag: 'Agenda',
+            });
+            cursor.setDate(cursor.getDate() + 1);
+        }
+        return entries;
+    });
 
     const opkomstenItems = (props.opkomsten || []).map((ev) => ({
         id: ev.id,
@@ -130,17 +90,17 @@ const calendarEntries = computed(() => {
     return [...agendaItems, ...opkomstenItems];
 });
 
-const filteredCalendarEntries = computed(() => {
+const searchResults = computed(() => {
     const q = String(agendaSearch.value || '').trim().toLowerCase();
-    if (!q) return calendarEntries.value;
+    if (!q) return [];
     return calendarEntries.value.filter((entry) =>
-        `${entry.title} ${entry.tag}`.toLowerCase().includes(q),
+        `${entry.title} ${entry.tag} ${entry.date || ''}`.toLowerCase().includes(q),
     );
 });
 
 const entriesByDate = computed(() => {
     const map = {};
-    for (const entry of filteredCalendarEntries.value) {
+    for (const entry of calendarEntries.value) {
         if (!entry.date) continue;
         if (!map[entry.date]) map[entry.date] = [];
         map[entry.date].push(entry);
@@ -338,16 +298,16 @@ function opkomstColorClass(section) {
                         <button type="button" class="rounded-md px-3 py-1.5 text-sm font-medium" :class="viewMode === 'month' ? 'bg-brand-blue text-white' : 'text-app-ink hover:bg-brand-blue/10 dark:text-app-ink-dark dark:hover:bg-brand-blue/20'" @click="viewMode = 'month'">Maand</button>
                         <button type="button" class="rounded-md px-3 py-1.5 text-sm font-medium" :class="viewMode === 'year' ? 'bg-brand-blue text-white' : 'text-app-ink hover:bg-brand-blue/10 dark:text-app-ink-dark dark:hover:bg-brand-blue/20'" @click="viewMode = 'year'">Jaar</button>
                     </div>
-                    <div class="flex w-full max-w-[10rem] items-center gap-2 sm:w-auto">
-                        <MagnifyingGlassIcon class="h-4 w-4 text-app-muted dark:text-app-muted-dark" />
-                        <input
-                            v-model="agendaSearch"
-                            type="search"
-                            placeholder="Zoek..."
-                            class="w-full rounded border border-app-border bg-white px-2.5 py-1.5 text-xs text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted-dark"
-                        />
-                    </div>
-                    <button v-if="canCreateAgendaItem" type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-app-border bg-app-panel text-app-ink shadow-sm transition hover:border-brand-blue/40 hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:border-brand-blue/45 dark:hover:bg-brand-blue/15" title="Toevoegen" aria-label="Toevoegen" @click="toggleAddForm">
+                    <button
+                        type="button"
+                        class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-app-border bg-app-panel text-app-ink shadow-sm transition hover:border-brand-blue/40 hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:border-brand-blue/45 dark:hover:bg-brand-blue/15"
+                        :title="showSearchPanel ? 'Zoeken sluiten' : 'Zoeken'"
+                        :aria-label="showSearchPanel ? 'Zoeken sluiten' : 'Zoeken'"
+                        @click="toggleSearchPanel"
+                    >
+                        <MagnifyingGlassIcon class="h-5 w-5" />
+                    </button>
+                    <button v-if="canCreateAgendaItem" type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-app-border bg-app-panel text-app-ink shadow-sm transition hover:border-brand-blue/40 hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:border-brand-blue/45 dark:hover:bg-brand-blue/15" title="Toevoegen" aria-label="Toevoegen" @click="goToCreateAgendaItem">
                         <PlusIcon class="h-5 w-5" />
                     </button>
                 </div>
@@ -374,6 +334,33 @@ function opkomstColorClass(section) {
                     </button>
                 </div>
 
+                <div v-if="showSearchPanel" class="mb-3 rounded-xl border border-app-border bg-app-panel p-3 dark:border-app-border-dark dark:bg-app-canvas-dark/70">
+                    <input
+                        v-model="agendaSearch"
+                        type="search"
+                        placeholder="Zoek in agenda en opkomsten..."
+                        class="w-full rounded border border-app-border bg-white px-3 py-2 text-sm text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted-dark"
+                    />
+                    <div class="mt-3">
+                        <table class="w-full text-sm text-app-ink dark:text-app-ink-dark">
+                            <tbody class="divide-y divide-brand-blue/20">
+                                <tr v-for="entry in searchResults" :key="`search-${entry.kind}-${entry.id}`">
+                                    <td class="py-2 pe-2 whitespace-nowrap text-xs text-app-muted dark:text-app-muted-dark">{{ entry.date || '-' }}</td>
+                                    <td class="py-2">
+                                        <Link :href="entry.href" class="hover:underline">
+                                            <span class="font-semibold">{{ entry.tag }}</span>
+                                            <span class="ms-1">{{ entry.title }}</span>
+                                        </Link>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p v-if="agendaSearch.trim() !== '' && !searchResults.length" class="py-2 text-sm text-app-muted dark:text-app-muted-dark">
+                            Geen resultaten gevonden.
+                        </p>
+                    </div>
+                </div>
+
                 <div v-if="viewMode === 'month'" class="grid grid-cols-7 border-b border-app-border pb-2 text-center text-xs font-semibold uppercase tracking-wide text-app-muted dark:border-app-border-dark dark:text-app-muted-dark">
                     <span v-for="day in weekDays" :key="`week-${day}`">{{ day }}</span>
                 </div>
@@ -391,6 +378,7 @@ function opkomstColorClass(section) {
                             selectedDateKey === cell.key ? 'ring-2 ring-brand-yellow/70' : '',
                         ]"
                         @click="selectDay(cell.key)"
+                        @dblclick="createAgendaItemForDay(cell.key)"
                     >
                         <div class="mb-1 flex items-center justify-between">
                             <span class="text-sm font-semibold" :class="cell.inCurrentMonth ? 'text-app-ink dark:text-app-ink-dark' : 'text-app-muted dark:text-app-muted-dark'">
@@ -482,58 +470,6 @@ function opkomstColorClass(section) {
 
             </div>
 
-            <form v-if="canCreateAgendaItem" v-show="showAddForm" class="surface-brand-top space-y-4 rounded-xl border border-app-border bg-app-panel p-5 shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark" @submit.prevent="submitAdd">
-                <div class="grid gap-4 sm:grid-cols-[10rem_1fr] sm:items-start">
-                    <label class="text-sm font-semibold sm:pt-2.5">Naam activiteit</label>
-                    <input v-model="form.theme" type="text" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 dark:border-app-border-dark dark:bg-app-canvas-dark" />
-                    <label class="text-sm font-semibold sm:pt-2.5">Datum</label>
-                    <input v-model="form.event_date" type="date" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 dark:border-app-border-dark dark:bg-app-canvas-dark" />
-                    <label class="text-sm font-semibold sm:pt-2.5">Locatie</label>
-                    <input v-model="form.location" type="text" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 dark:border-app-border-dark dark:bg-app-canvas-dark" />
-                    <label class="text-sm font-semibold sm:pt-2.5">Tijdstip</label>
-                    <input v-model="form.time_slot" type="text" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 dark:border-app-border-dark dark:bg-app-canvas-dark" />
-                    <label class="text-sm font-semibold sm:pt-2.5">Genodigden</label>
-                    <textarea v-model="form.invitees" rows="2" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 dark:border-app-border-dark dark:bg-app-canvas-dark" />
-                    <label class="text-sm font-semibold sm:pt-2.5">URL</label>
-                    <input v-model="form.link_url" type="url" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 dark:border-app-border-dark dark:bg-app-canvas-dark" />
-                    <label class="text-sm font-semibold sm:pt-2.5">Bijlage</label>
-                    <input type="file" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 dark:border-app-border-dark dark:bg-app-canvas-dark" @change="onAttachmentChange" />
-                    <label class="text-sm font-semibold sm:pt-2.5">Notities</label>
-                    <textarea v-model="form.notes" rows="3" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 dark:border-app-border-dark dark:bg-app-canvas-dark" />
-                    <template v-if="isBestuur">
-                        <label class="text-sm font-semibold sm:pt-2.5">Zichtbaar voor</label>
-                        <div class="space-y-2">
-                            <select v-model="form.audience_scope" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black">
-                                <option value="self">Alleen mezelf</option>
-                                <option value="all">Iedereen</option>
-                                <option value="selected">Specifieke personen</option>
-                            </select>
-                            <div v-if="form.audience_scope === 'selected'" class="space-y-2">
-                                <select class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" @change="addTargetUser">
-                                    <option value="">Kies een gebruiker...</option>
-                                    <option v-for="user in selectableTargetUsers" :key="`target-option-${user.id}`" :value="user.id">
-                                        {{ user.name }} ({{ user.email }})
-                                    </option>
-                                </select>
-                                <div class="flex flex-wrap gap-2">
-                                    <span v-for="user in selectedTargetUsers" :key="`target-chip-${user.id}`" class="inline-flex items-center gap-2 rounded-full bg-brand-blue/15 px-3 py-1 text-xs text-app-ink dark:text-app-ink-dark">
-                                        {{ user.name }}
-                                        <button type="button" class="text-app-muted hover:text-app-ink dark:text-app-muted-dark dark:hover:text-app-ink-dark" @click="removeTargetUser(user.id)">
-                                            x
-                                        </button>
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </template>
-                    <span class="hidden sm:block" />
-                    <button type="submit" class="btn-action-save" :disabled="form.processing" title="Opslaan" aria-label="Opslaan">
-                        <DocumentCheckIcon class="h-5 w-5" />
-                    </button>
-                </div>
-            </form>
-
-            
         </div>
     </AuthenticatedLayout>
 </template>

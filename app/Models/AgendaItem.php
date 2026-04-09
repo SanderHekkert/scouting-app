@@ -13,6 +13,9 @@ class AgendaItem extends Model
         'target_user_ids',
         'theme',
         'event_date',
+        'end_date',
+        'start_time',
+        'end_time',
         'location',
         'time_slot',
         'invitees',
@@ -24,6 +27,8 @@ class AgendaItem extends Model
 
     protected $casts = [
         'target_user_ids' => 'array',
+        'event_date' => 'date',
+        'end_date' => 'date',
     ];
 
     public function owner(): BelongsTo
