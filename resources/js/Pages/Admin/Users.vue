@@ -55,10 +55,11 @@ function roleEntries(user) {
                 <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Gebruikers</h2>
                 <Link
                     :href="route('admin.users.invite.create')"
-                    class="inline-flex items-center gap-2 rounded bg-brand-blue px-4 py-2 text-sm font-semibold text-white hover:bg-brand-blue-dark"
+                    class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand-blue text-white hover:bg-brand-blue-dark"
+                    title="Gebruiker uitnodigen"
+                    aria-label="Gebruiker uitnodigen"
                 >
                     <PlusIcon class="h-4 w-4" />
-                    Gebruiker uitnodigen
                 </Link>
             </div>
         </template>

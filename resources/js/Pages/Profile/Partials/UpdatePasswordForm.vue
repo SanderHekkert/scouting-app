@@ -102,9 +102,8 @@ const updatePassword = () => {
             </div>
 
             <div class="flex items-center gap-4">
-                <PrimaryButton :disabled="form.processing">
+                <PrimaryButton :disabled="form.processing" class="h-10 w-10 !rounded-full !px-0 !py-0" title="Opslaan" aria-label="Opslaan">
                     <DocumentCheckIcon class="h-4 w-4" />
-                    <span>Opslaan</span>
                 </PrimaryButton>
 
                 <Transition

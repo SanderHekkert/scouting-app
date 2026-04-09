@@ -237,19 +237,21 @@ function onDragEnterZone(podId, sectionKey) {
                 <div class="flex flex-wrap items-center justify-end gap-2 sm:ms-auto">
                     <button
                         type="button"
-                        class="inline-flex items-center gap-2 rounded-lg border border-app-border bg-app-panel px-3 py-2 text-sm font-medium text-app-ink shadow-sm transition hover:border-brand-blue/40 hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:border-brand-blue/45 dark:hover:bg-brand-blue/15"
+                        class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-app-border bg-app-panel text-app-ink shadow-sm transition hover:border-brand-blue/40 hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:border-brand-blue/45 dark:hover:bg-brand-blue/15"
+                        title="Toevoegen"
+                        aria-label="Toevoegen"
                         @click="toggleGroupForm"
                     >
                         <PlusIcon class="h-5 w-5" />
-                        Nieuwe {{ groupWordCapitalized }}
                     </button>
                     <button
                         type="button"
-                        class="inline-flex items-center gap-2 rounded-lg border border-app-border bg-app-panel px-3 py-2 text-sm font-medium text-app-ink shadow-sm transition hover:border-brand-blue/40 hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:border-brand-blue/45 dark:hover:bg-brand-blue/15"
+                        class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-app-border bg-app-panel text-app-ink shadow-sm transition hover:border-brand-blue/40 hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:border-brand-blue/45 dark:hover:bg-brand-blue/15"
+                        title="Toevoegen"
+                        aria-label="Toevoegen"
                         @click="toggleLinkForm"
                     >
                         <PlusIcon class="h-5 w-5" />
-                        {{ speltakSingular }} koppelen aan {{ groupWordCapitalized }}
                     </button>
                 </div>
             </div>

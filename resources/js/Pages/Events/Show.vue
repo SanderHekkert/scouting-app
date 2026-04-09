@@ -251,9 +251,8 @@ function removeTask(taskId) {
 
                 <span class="hidden sm:block" aria-hidden="true" />
                 <div>
-                    <button type="submit" class="inline-flex items-center gap-2 rounded bg-brand-blue px-4 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark disabled:opacity-50" :disabled="form.processing" title="Opslaan">
+                    <button type="submit" class="btn-action-save" :disabled="form.processing" title="Opslaan" aria-label="Opslaan">
                         <DocumentCheckIcon class="h-5 w-5" />
-                        <span>Opslaan</span>
                     </button>
                 </div>
             </div>

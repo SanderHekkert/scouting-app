@@ -221,6 +221,8 @@ class MemberController extends Controller
 
         $member->update([
             'section' => $data['target_section'],
+            'installed' => false,
+            'gedoopt' => false,
         ]);
 
         return to_route('members.index');

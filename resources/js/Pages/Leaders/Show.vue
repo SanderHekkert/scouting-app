@@ -1,7 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
-import { ArrowLeftCircleIcon, DocumentCheckIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import { ArrowUturnLeftIcon, DocumentCheckIcon, TrashIcon } from '@heroicons/vue/24/outline';
 import { computed } from 'vue';
 
 const props = defineProps({
@@ -44,8 +44,8 @@ function deleteLeader() {
         <template #header>
             <div class="flex items-center justify-between gap-3">
                 <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Leiding bewerken</h2>
-                <Link :href="route('leaders.index')" class="inline-flex items-center justify-center rounded border border-app-border p-2 text-app-ink hover:bg-brand-blue/10 dark:border-app-border-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/15" title="Terug">
-                    <ArrowLeftCircleIcon class="h-5 w-5" />
+                <Link :href="route('leaders.index')" class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-app-border text-app-ink hover:bg-brand-blue/10 dark:border-app-border-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/15" title="Terug" aria-label="Terug">
+                    <ArrowUturnLeftIcon class="h-5 w-5" />
                 </Link>
             </div>
         </template>
@@ -98,9 +98,8 @@ function deleteLeader() {
 
                 <span class="hidden sm:block" aria-hidden="true" />
                 <div class="flex items-center gap-2">
-                    <button type="submit" class="inline-flex items-center gap-2 rounded bg-brand-blue px-4 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark disabled:opacity-50" :disabled="form.processing" title="Opslaan">
+                    <button type="submit" class="btn-action-save" :disabled="form.processing" title="Opslaan" aria-label="Opslaan">
                         <DocumentCheckIcon class="h-5 w-5" />
-                        <span>Opslaan</span>
                     </button>
                     <button type="button" class="btn-action-delete btn-action-delete--lg" title="Verwijderen" @click="deleteLeader">
                         <TrashIcon class="h-5 w-5" />

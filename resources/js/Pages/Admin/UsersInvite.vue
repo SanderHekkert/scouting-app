@@ -1,7 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ChevronLeftIcon } from '@heroicons/vue/24/outline';
+import { ArrowUturnLeftIcon } from '@heroicons/vue/24/outline';
 
 const form = useForm({
     email: '',
@@ -25,10 +25,11 @@ function submit() {
                 <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Gebruiker uitnodigen</h2>
                 <Link
                     :href="route('admin.users.index')"
-                    class="inline-flex items-center gap-1 rounded border border-app-border px-3 py-1.5 text-sm text-app-ink hover:bg-brand-blue/10 dark:border-app-border-dark dark:text-app-ink-dark"
+                    class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-app-border text-app-ink hover:bg-brand-blue/10 dark:border-app-border-dark dark:text-app-ink-dark"
+                    title="Terug"
+                    aria-label="Terug"
                 >
-                    <ChevronLeftIcon class="h-4 w-4" />
-                    Terug
+                    <ArrowUturnLeftIcon class="h-5 w-5" />
                 </Link>
             </div>
         </template>
