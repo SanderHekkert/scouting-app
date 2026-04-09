@@ -310,7 +310,7 @@ class TaskItemController extends Controller
 
         $finalOrder = [
             ...$requested,
-            ...array_values(array_filter($current, fn (string $name): bool => !isset($requestedSet[$name]))),
+            ...array_values(array_filter($current, fn (string $name): bool => ! isset($requestedSet[$name]))),
         ];
 
         DB::transaction(function () use ($section, $finalOrder): void {

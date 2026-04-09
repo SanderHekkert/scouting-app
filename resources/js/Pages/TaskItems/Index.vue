@@ -656,15 +656,15 @@ function onCategoryDrop(category, event) {
                     :key="section.category"
                     class="surface-brand-top rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-4"
                     :class="{ 'ring-2 ring-brand-blue/50': dragOverCategory === section.category }"
-                    :draggable="!hideCategories && canUpdateTasks"
-                    @dragstart="onSectionDragStart(section.category)"
-                    @dragend="onSectionDragEnd"
                     @dragover="onCategoryDragOver(section.category, $event)"
                     @drop="onCategoryDrop(section.category, $event)"
                 >
                     <h3
                         v-if="!hideCategories"
                         class="mb-3 flex items-center gap-2 border-b border-brand-blue/35 pb-2 text-lg font-semibold text-app-ink dark:text-app-ink-dark"
+                        :draggable="canUpdateTasks"
+                        @dragstart="onSectionDragStart(section.category)"
+                        @dragend="onSectionDragEnd"
                     >
                         <Bars3Icon v-if="canUpdateTasks" class="h-4 w-4 text-app-muted dark:text-app-muted-dark" />
                         {{ section.category }}

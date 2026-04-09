@@ -54,12 +54,12 @@
 
     /** Terug: ronde actieknop met wit icoon op geel. */
     .btn-action-back {
-        @apply inline-flex h-10 w-10 items-center justify-center rounded-full bg-yellow-500 text-white shadow-sm transition hover:bg-yellow-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-yellow-600;
+        @apply inline-flex h-10 w-10 items-center justify-center rounded-full bg-yellow-400 text-white shadow-sm transition hover:bg-yellow-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-yellow-500;
     }
 
     /** Annuleren: gele knop met witte tekst/icoon. */
     .btn-action-cancel {
-        @apply inline-flex items-center justify-center rounded-md bg-yellow-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-yellow-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-yellow-600;
+        @apply inline-flex items-center justify-center rounded-md bg-yellow-400 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-yellow-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-yellow-500;
     }
 
     /** Opslaan: ronde actieknop met gecentreerd icoon. */

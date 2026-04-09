@@ -14,6 +14,7 @@ const props = defineProps({
 
 const selectedAction = ref(null);
 const addDeadlineInput = ref('');
+const ownerSelectValue = ref('');
 const shareableSections = computed(() => (props.allSections || []).filter((s) => s !== props.activeSection));
 const hasCategories = computed(() => (props.taskCategories || []).length > 0);
 
@@ -48,6 +49,28 @@ function addTaskDeadline() {
 
 function removeTaskDeadline(value) {
     taskForm.deadlines = (taskForm.deadlines || []).filter((d) => d !== value);
+}
+
+function leaderNameById(id) {
+    return props.leaders.find((leader) => Number(leader.id) === Number(id))?.name || '';
+}
+
+function addTaskOwner(id) {
+    const value = Number(id);
+    if (!Number.isFinite(value)) return;
+    const current = (taskForm.owner_user_ids || []).map((v) => Number(v));
+    if (current.includes(value)) return;
+    taskForm.owner_user_ids = [...current, value];
+}
+
+function removeTaskOwner(id) {
+    taskForm.owner_user_ids = (taskForm.owner_user_ids || []).filter((v) => Number(v) !== Number(id));
+}
+
+function onTaskOwnerSelectChange(event) {
+    const id = event?.target?.value;
+    addTaskOwner(id);
+    ownerSelectValue.value = '';
 }
 
 function submitTask() {
@@ -86,7 +109,7 @@ function submitCategory() {
         <div class="grid grid-cols-2 gap-3">
             <button
                 type="button"
-                class="surface-brand-top rounded-xl border border-app-border bg-app-panel p-5 text-left shadow-sm transition hover:border-brand-blue/40 hover:bg-brand-blue/10 dark:border-brand-blue/30 dark:bg-app-panel-dark dark:hover:bg-brand-blue/15"
+                class="surface-brand-top rounded-xl border border-app-border bg-app-panel p-5 text-left shadow-sm transition hover:border-slate-300 hover:bg-slate-100 dark:border-brand-blue/30 dark:bg-app-panel-dark dark:hover:bg-slate-800/60"
                 :class="selectedAction === 'task' ? 'ring-2 ring-brand-blue/60' : ''"
                 @click="goToTaskCreate"
             >
@@ -99,7 +122,7 @@ function submitCategory() {
 
             <button
                 type="button"
-                class="surface-brand-top rounded-xl border border-app-border bg-app-panel p-5 text-left shadow-sm transition hover:border-brand-blue/40 hover:bg-brand-blue/10 disabled:cursor-not-allowed disabled:opacity-50 dark:border-brand-blue/30 dark:bg-app-panel-dark dark:hover:bg-brand-blue/15"
+                class="surface-brand-top rounded-xl border border-app-border bg-app-panel p-5 text-left shadow-sm transition hover:border-slate-300 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-brand-blue/30 dark:bg-app-panel-dark dark:hover:bg-slate-800/60"
                 :class="selectedAction === 'category' ? 'ring-2 ring-brand-blue/60' : ''"
                 :disabled="!props.canCreateCategory"
                 @click="goToCategoryCreate"
@@ -132,10 +155,33 @@ function submitCategory() {
                 <label class="text-sm font-semibold text-app-muted dark:text-app-muted-dark sm:pt-2.5">Taak</label>
                 <input v-model="taskForm.title" type="text" required class="rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" />
 
-                <label class="text-sm font-semibold text-app-muted dark:text-app-muted-dark sm:pt-2.5">Eigenaar</label>
-                <select v-model="taskForm.owner_user_ids" multiple class="min-h-24 rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black">
-                    <option v-for="leader in props.leaders" :key="`create-task-owner-${leader.id}`" :value="leader.id">{{ leader.name }}</option>
-                </select>
+                <label class="text-sm font-semibold text-app-muted dark:text-app-muted-dark sm:pt-2.5">Eigenaren</label>
+                <div>
+                    <div class="flex flex-wrap gap-1.5">
+                        <span
+                            v-for="id in taskForm.owner_user_ids"
+                            :key="`create-task-owner-chip-${id}`"
+                            class="inline-flex items-center gap-1 rounded-full bg-brand-blue/15 px-2 py-0.5 text-xs text-black"
+                        >
+                            {{ leaderNameById(id) || `Leiding #${id}` }}
+                            <button type="button" class="rounded p-0.5 hover:bg-brand-blue/20" @click="removeTaskOwner(id)">x</button>
+                        </span>
+                    </div>
+                    <select
+                        v-model="ownerSelectValue"
+                        class="mt-2 w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black"
+                        @change="onTaskOwnerSelectChange"
+                    >
+                        <option value="">Naam toevoegen…</option>
+                        <option
+                            v-for="leader in props.leaders.filter((l) => !(taskForm.owner_user_ids || []).map((v) => Number(v)).includes(Number(l.id)))"
+                            :key="`create-task-owner-option-${leader.id}`"
+                            :value="leader.id"
+                        >
+                            {{ leader.name }}
+                        </option>
+                    </select>
+                </div>
 
                 <label class="text-sm font-semibold text-app-muted dark:text-app-muted-dark sm:pt-2.5">Omschrijving</label>
                 <textarea v-model="taskForm.description" rows="4" required class="rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" />
