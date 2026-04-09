@@ -123,6 +123,7 @@ Route::middleware(['auth', 'verified', 'has.role'])->group(function () {
     Route::get('/agenda/nieuw', [AgendaItemController::class, 'create'])->middleware('section.permission:events')->name('agenda.create');
     Route::get('/agenda/{agendaItem}/attachment', [AgendaItemController::class, 'downloadAttachment'])->middleware('section.permission:events')->name('agenda.attachment.download');
     Route::get('/agenda/{agendaItem}/ics', [AgendaItemController::class, 'ics'])->middleware('section.permission:events')->name('agenda.ics');
+    Route::patch('/agenda/{agendaItem}/schedule', [AgendaItemController::class, 'updateSchedule'])->middleware('section.permission:events')->name('agenda.schedule.update');
     Route::get('/agenda/{agendaItem}', [AgendaItemController::class, 'show'])->middleware('section.permission:events')->name('agenda.show');
     Route::resource('agenda', AgendaItemController::class)->middleware('section.permission:events')->parameters(['agenda' => 'agendaItem'])->except(['create', 'show', 'edit']);
 

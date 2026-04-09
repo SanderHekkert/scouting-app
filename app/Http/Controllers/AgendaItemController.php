@@ -24,8 +24,12 @@ class AgendaItemController extends Controller
     {
         $activeSection = session('active_section', UserSectionRole::SECTION_DOLFIJNEN);
         $prefillDate = request()->query('date');
+        $prefillStartTime = request()->query('start_time');
         $eventDate = is_string($prefillDate) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $prefillDate) === 1
             ? $prefillDate
+            : '';
+        $startTime = is_string($prefillStartTime) && preg_match('/^\d{2}:\d{2}$/', $prefillStartTime) === 1
+            ? $prefillStartTime
             : '';
 
         return Inertia::render('Agenda/Create', [
@@ -34,7 +38,7 @@ class AgendaItemController extends Controller
                 'theme' => '',
                 'event_date' => $eventDate,
                 'end_date' => $eventDate,
-                'start_time' => '',
+                'start_time' => $startTime,
                 'end_time' => '',
                 'location' => '',
                 'time_slot' => '',
@@ -294,6 +298,33 @@ class AgendaItemController extends Controller
         $agendaItem->update($data);
 
         return to_route('agenda.index');
+    }
+
+    public function updateSchedule(Request $request, AgendaItem $agendaItem)
+    {
+        $this->authorizeAgendaItem($agendaItem);
+
+        $data = $request->validate([
+            'event_date' => ['required', 'date'],
+            'end_date' => ['nullable', 'date', 'after_or_equal:event_date'],
+            'start_time' => ['nullable', 'date_format:H:i'],
+            'end_time' => ['nullable', 'date_format:H:i'],
+        ]);
+
+        $eventDate = (string) $data['event_date'];
+        $endDate = (string) ($data['end_date'] ?? '') !== '' ? (string) $data['end_date'] : $eventDate;
+        $startTime = trim((string) ($data['start_time'] ?? ''));
+        $endTime = trim((string) ($data['end_time'] ?? ''));
+
+        $agendaItem->update([
+            'event_date' => $eventDate,
+            'end_date' => $endDate,
+            'start_time' => $startTime !== '' ? $startTime : null,
+            'end_time' => $endTime !== '' ? $endTime : null,
+            'time_slot' => $this->buildTimeSlot($startTime, $endTime),
+        ]);
+
+        return back();
     }
 
     public function destroy(AgendaItem $agendaItem)
