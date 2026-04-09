@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\UserSectionRole;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
@@ -276,6 +277,52 @@ class TaskItemController extends Controller
         ]);
 
         return to_route('task-items.index');
+    }
+
+    public function reorderCategories(Request $request)
+    {
+        $section = $this->activeSection();
+        $data = $request->validate([
+            'ordered_categories' => ['required', 'array', 'min:1'],
+            'ordered_categories.*' => ['required', 'string'],
+        ]);
+
+        $current = TaskCategory::query()
+            ->orderBy('position')
+            ->orderBy('name')
+            ->pluck('name')
+            ->values()
+            ->all();
+
+        $requested = collect($data['ordered_categories'])
+            ->map(fn ($v): string => trim((string) $v))
+            ->filter(fn (string $v): bool => $v !== '')
+            ->unique()
+            ->values()
+            ->all();
+
+        $requestedSet = array_fill_keys($requested, true);
+        foreach ($requested as $name) {
+            if (! in_array($name, $current, true)) {
+                abort(422, "Onbekende sectie: {$name}");
+            }
+        }
+
+        $finalOrder = [
+            ...$requested,
+            ...array_values(array_filter($current, fn (string $name): bool => !isset($requestedSet[$name]))),
+        ];
+
+        DB::transaction(function () use ($section, $finalOrder): void {
+            foreach ($finalOrder as $index => $name) {
+                TaskCategory::query()
+                    ->where('section', $section)
+                    ->where('name', $name)
+                    ->update(['position' => $index + 1]);
+            }
+        });
+
+        return back();
     }
 
     /**

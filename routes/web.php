@@ -117,6 +117,7 @@ Route::middleware(['auth', 'verified', 'has.role', 'section.role:admin,bestuursl
     Route::get('/task-items/nieuw', [TaskItemController::class, 'create'])->middleware('section.permission:task_items')->name('task-items.create');
     Route::resource('task-items', TaskItemController::class)->middleware('section.permission:task_items')->except(['create', 'show', 'edit']);
     Route::post('/task-categories', [TaskItemController::class, 'storeCategory'])->middleware('section.permission:task_items')->name('task-categories.store');
+    Route::patch('/task-categories/order', [TaskItemController::class, 'reorderCategories'])->middleware('section.permission:task_items')->name('task-categories.reorder');
 });
 
 Route::middleware(['auth', 'verified', 'has.role'])->group(function () {

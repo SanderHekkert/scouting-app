@@ -292,7 +292,7 @@ function onDragEnterZone(podId, sectionKey) {
                     </button>
                     <button
                         type="button"
-                        class="rounded border border-brand-blue-light/50 px-4 py-2 text-sm font-medium text-app-ink dark:text-app-ink-dark transition hover:bg-brand-blue/20"
+                        class="btn-action-cancel"
                         @click="toggleGroupForm"
                     >
                         Annuleren
@@ -363,7 +363,7 @@ function onDragEnterZone(podId, sectionKey) {
                     </button>
                     <button
                         type="button"
-                        class="rounded border border-brand-blue-light/50 px-5 py-2 text-sm font-medium text-app-ink dark:text-app-ink-dark transition hover:bg-brand-blue/20"
+                        class="btn-action-cancel"
                         @click="toggleLinkForm"
                     >
                         Annuleren

@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, useForm, router, usePage } from '@inertiajs/vue3';
 import { Bars3Icon, DocumentCheckIcon, PencilSquareIcon, PlusIcon, TrashIcon, XMarkIcon } from '@heroicons/vue/24/outline';
@@ -43,6 +43,15 @@ function defaultCategory() {
     return props.taskCategories?.length ? props.taskCategories[0] : 'Algemeen';
 }
 
+const categoryOrder = ref([...(props.taskCategories || [])]);
+watch(
+    () => props.taskCategories,
+    (next) => {
+        categoryOrder.value = [...(next || [])];
+    },
+    { immediate: true },
+);
+
 const groupedSections = computed(() => {
     if (hideCategories.value) {
         return [
@@ -53,9 +62,7 @@ const groupedSections = computed(() => {
         ];
     }
 
-    const byCat = Object.fromEntries(
-        (props.taskCategories || []).map((c) => [c, []]),
-    );
+    const byCat = Object.fromEntries((categoryOrder.value || []).map((c) => [c, []]));
     for (const task of props.tasks || []) {
         const cat = task.category || 'Algemeen';
         if (!byCat[cat]) {
@@ -63,7 +70,7 @@ const groupedSections = computed(() => {
         }
         byCat[cat].push(task);
     }
-    return (props.taskCategories || []).map((category) => ({
+    return (categoryOrder.value || []).map((category) => ({
         category,
         tasks: byCat[category] || [],
     }));
@@ -93,6 +100,7 @@ const addDeadlineInput = ref('');
 const taskFieldSaving = ref(null);
 const editingTaskId = ref(null);
 const draggingTaskId = ref(null);
+const draggingSectionName = ref('');
 const dragOverCategory = ref('');
 
 function toggleAddForm() {
@@ -352,7 +360,45 @@ function onTaskDragStart(task) {
 
 function onTaskDragEnd() {
     draggingTaskId.value = null;
+    draggingSectionName.value = '';
     dragOverCategory.value = '';
+}
+
+function onSectionDragStart(category) {
+    if (!canUpdateTasks.value || hideCategories.value) return;
+    draggingSectionName.value = String(category || '');
+}
+
+function onSectionDragEnd() {
+    draggingSectionName.value = '';
+    dragOverCategory.value = '';
+}
+
+function persistCategoryOrder(nextOrder, previousOrder) {
+    router.patch(route('task-categories.reorder'), {
+        ordered_categories: nextOrder,
+    }, {
+        preserveScroll: true,
+        onError: () => {
+            categoryOrder.value = [...previousOrder];
+        },
+    });
+}
+
+function moveSectionTo(targetCategory) {
+    if (hideCategories.value) return;
+    const source = String(draggingSectionName.value || '');
+    const target = String(targetCategory || '');
+    if (!source || !target || source === target) return;
+    const previous = [...categoryOrder.value];
+    const sourceIndex = previous.indexOf(source);
+    const targetIndex = previous.indexOf(target);
+    if (sourceIndex === -1 || targetIndex === -1) return;
+    const next = [...previous];
+    const [moved] = next.splice(sourceIndex, 1);
+    next.splice(targetIndex, 0, moved);
+    categoryOrder.value = next;
+    persistCategoryOrder(next, previous);
 }
 
 function onCategoryDragOver(category, event) {
@@ -363,6 +409,11 @@ function onCategoryDragOver(category, event) {
 function onCategoryDrop(category, event) {
     if (!canUpdateTasks.value) return;
     event.preventDefault();
+    if (draggingSectionName.value) {
+        moveSectionTo(category);
+        onSectionDragEnd();
+        return;
+    }
     const id = draggingTaskId.value;
     if (!id) return;
     const task = (props.tasks || []).find((t) => t.id === id);
@@ -605,13 +656,17 @@ function onCategoryDrop(category, event) {
                     :key="section.category"
                     class="surface-brand-top rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-4"
                     :class="{ 'ring-2 ring-brand-blue/50': dragOverCategory === section.category }"
+                    :draggable="!hideCategories && canUpdateTasks"
+                    @dragstart="onSectionDragStart(section.category)"
+                    @dragend="onSectionDragEnd"
                     @dragover="onCategoryDragOver(section.category, $event)"
                     @drop="onCategoryDrop(section.category, $event)"
                 >
                     <h3
                         v-if="!hideCategories"
-                        class="mb-3 border-b border-brand-blue/35 pb-2 text-lg font-semibold text-app-ink dark:text-app-ink-dark"
+                        class="mb-3 flex items-center gap-2 border-b border-brand-blue/35 pb-2 text-lg font-semibold text-app-ink dark:text-app-ink-dark"
                     >
+                        <Bars3Icon v-if="canUpdateTasks" class="h-4 w-4 text-app-muted dark:text-app-muted-dark" />
                         {{ section.category }}
                     </h3>
                     <div v-if="section.tasks.length === 0" class="py-3 text-sm text-app-muted dark:text-app-muted-dark">

@@ -74,7 +74,7 @@ function submitCategory() {
                 <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Taakverdeling toevoegen</h2>
                 <Link
                     :href="route('task-items.index')"
-                    class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-app-border text-app-ink hover:bg-brand-blue/10 dark:border-app-border-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/15"
+                    class="btn-action-back"
                     title="Terug"
                     aria-label="Terug"
                 >
@@ -132,7 +132,7 @@ function submitCategory() {
                 <label class="text-sm font-semibold text-app-muted dark:text-app-muted-dark sm:pt-2.5">Taak</label>
                 <input v-model="taskForm.title" type="text" required class="rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" />
 
-                <label class="text-sm font-semibold text-app-muted dark:text-app-muted-dark sm:pt-2.5">Eigenaar(s)</label>
+                <label class="text-sm font-semibold text-app-muted dark:text-app-muted-dark sm:pt-2.5">Eigenaar</label>
                 <select v-model="taskForm.owner_user_ids" multiple class="min-h-24 rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black">
                     <option v-for="leader in props.leaders" :key="`create-task-owner-${leader.id}`" :value="leader.id">{{ leader.name }}</option>
                 </select>

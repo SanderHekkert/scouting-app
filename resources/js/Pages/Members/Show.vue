@@ -73,7 +73,7 @@ function deleteMember() {
         <template #header>
             <div class="flex items-center justify-between gap-3">
                 <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Lid bewerken - {{ speltakLabel }}</h2>
-                <Link :href="route('members.index')" class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-app-border text-app-ink hover:bg-brand-blue/10 dark:border-app-border-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/15" title="Terug" aria-label="Terug">
+                <Link :href="route('members.index')" class="btn-action-back" title="Terug" aria-label="Terug">
                     <ArrowUturnLeftIcon class="h-5 w-5" />
                 </Link>
             </div>

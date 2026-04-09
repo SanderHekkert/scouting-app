@@ -89,7 +89,7 @@ const closeModal = () => {
                 </div>
 
                 <div class="mt-6 flex justify-end">
-                    <SecondaryButton @click="closeModal">
+                    <SecondaryButton class="btn-action-cancel" @click="closeModal">
                         Annuleren
                     </SecondaryButton>
 
