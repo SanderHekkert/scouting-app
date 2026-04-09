@@ -39,6 +39,16 @@ class EventController extends Controller
             ->orderBy('event_date')
             ->orderBy('theme')
             ->get();
+        $memberSections = $active
+            ->pluck('section')
+            ->map(fn ($value): string => (string) $value)
+            ->filter(fn (string $value): bool => $value !== '')
+            ->push($section)
+            ->unique()
+            ->values();
+        $sectionMembers = $memberSections
+            ->mapWithKeys(fn (string $memberSection): array => [$memberSection => $this->memberNamesForSection($memberSection)])
+            ->all();
 
         $taskItems = TaskItem::query()
             ->withoutGlobalScope('section')
@@ -58,9 +68,10 @@ class EventController extends Controller
             ->all();
 
         return Inertia::render('Events/Index', [
-            'events' => $active->map(function (Event $event): array {
+            'events' => $active->map(function (Event $event) use ($sectionMembers): array {
                 return [
                     ...$event->toArray(),
+                    'present_names' => $this->resolvedPresentNames($event, $sectionMembers),
                     'attachment_name' => $this->attachmentName($event->attachments),
                     'has_attachment' => $this->attachmentName($event->attachments) !== null,
                 ];
@@ -91,9 +102,24 @@ class EventController extends Controller
             ->orderByDesc('event_date')
             ->orderBy('theme')
             ->get();
+        $memberSections = $archived
+            ->pluck('section')
+            ->map(fn ($value): string => (string) $value)
+            ->filter(fn (string $value): bool => $value !== '')
+            ->push($section)
+            ->unique()
+            ->values();
+        $sectionMembers = $memberSections
+            ->mapWithKeys(fn (string $memberSection): array => [$memberSection => $this->memberNamesForSection($memberSection)])
+            ->all();
 
         return Inertia::render('Events/Archived', [
-            'archivedEvents' => $archived,
+            'archivedEvents' => $archived->map(function (Event $event) use ($sectionMembers): array {
+                return [
+                    ...$event->toArray(),
+                    'present_names' => $this->resolvedPresentNames($event, $sectionMembers),
+                ];
+            })->values(),
             'leaders' => $this->leaderNamesForActiveSection(),
         ]);
     }
@@ -229,6 +255,8 @@ class EventController extends Controller
         if (trim((string) ($data['time_slot'] ?? '')) === '') {
             $data['time_slot'] = $this->defaultTimeSlotForSection($section);
         }
+        $data['absent'] = $this->normalizeAbsentText((string) ($data['absent'] ?? ''));
+        $data['present_names'] = $this->filterPresentAgainstAbsent([], $data['absent']);
         $data['task_item_ids'] = $this->normalizeTaskItemIds($data['task_item_ids'] ?? null);
         $data['shared_sections'] = $this->normalizeSharedSections($data['shared_sections'] ?? null);
         if ($request->hasFile('attachment_file')) {
@@ -270,6 +298,11 @@ class EventController extends Controller
         if (trim((string) ($data['time_slot'] ?? '')) === '') {
             $data['time_slot'] = $this->defaultTimeSlotForSection($section);
         }
+        $data['absent'] = $this->normalizeAbsentText((string) ($data['absent'] ?? ''));
+        $data['present_names'] = $this->filterPresentAgainstAbsent(
+            collect($event->present_names ?? [])->map(fn ($v): string => trim((string) $v))->all(),
+            $data['absent']
+        );
         $data['task_item_ids'] = $this->normalizeTaskItemIds($data['task_item_ids'] ?? null);
         $data['shared_sections'] = $this->normalizeSharedSections($data['shared_sections'] ?? null);
         if ($request->hasFile('attachment_file')) {
@@ -328,6 +361,13 @@ class EventController extends Controller
         }
         if (array_key_exists('shared_sections', $data)) {
             $data['shared_sections'] = $this->normalizeSharedSections($data['shared_sections']);
+        }
+        if (array_key_exists('absent', $data)) {
+            $data['absent'] = $this->normalizeAbsentText((string) ($data['absent'] ?? ''));
+            $data['present_names'] = $this->filterPresentAgainstAbsent(
+                collect($event->present_names ?? [])->map(fn ($v): string => trim((string) $v))->all(),
+                $data['absent']
+            );
         }
         $event->update($data);
 
@@ -621,6 +661,124 @@ class EventController extends Controller
             UserSectionRole::SECTION_WILDE_VAART,
             UserSectionRole::SECTION_LOODSEN,
         ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function memberNamesForSection(string $section): array
+    {
+        return User::query()
+            ->whereHas('sectionRoles', function (Builder $query) use ($section): void {
+                $query->where('section', $section);
+            })
+            ->orderBy('first_name')
+            ->orderBy('last_name')
+            ->get()
+            ->map(fn (User $member): string => $this->currentUserDisplayName($member))
+            ->filter(fn (string $name): bool => $name !== '')
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  array<string, list<string>>  $sectionMembers
+     * @return list<string>
+     */
+    private function resolvedPresentNames(Event $event, array $sectionMembers): array
+    {
+        $section = (string) ($event->section ?: $this->activeSection());
+        $explicitPresent = $this->uniqueNames(
+            collect($event->present_names ?? [])
+                ->map(fn ($item): string => trim((string) $item))
+                ->filter(fn (string $item): bool => $item !== '')
+                ->values()
+                ->all()
+        );
+
+        if (in_array($section, $this->defaultAbsentSections(), true)) {
+            return $explicitPresent;
+        }
+
+        $members = $sectionMembers[$section] ?? [];
+        $absentLookup = collect($this->splitAbsentNames((string) ($event->absent ?? '')))
+            ->mapWithKeys(fn (string $name): array => [Str::lower($name) => true]);
+        $explicitPresent = collect($explicitPresent)
+            ->reject(fn (string $name): bool => $absentLookup->has(Str::lower($name)))
+            ->values()
+            ->all();
+
+        $defaultPresent = collect($members)
+            ->reject(fn (string $name): bool => $absentLookup->has(Str::lower($name)))
+            ->values()
+            ->all();
+
+        return $this->uniqueNames([
+            ...$defaultPresent,
+            ...$explicitPresent,
+        ]);
+    }
+
+    /**
+     * @param  list<string>  $names
+     * @return list<string>
+     */
+    private function uniqueNames(array $names): array
+    {
+        $seen = [];
+        $unique = [];
+
+        foreach ($names as $name) {
+            $trimmed = trim((string) $name);
+            if ($trimmed === '') {
+                continue;
+            }
+            $key = Str::lower($trimmed);
+            if (isset($seen[$key])) {
+                continue;
+            }
+            $seen[$key] = true;
+            $unique[] = $trimmed;
+        }
+
+        return $unique;
+    }
+
+    private function normalizeAbsentText(string $absent): string
+    {
+        return implode(', ', $this->splitAbsentNames($absent));
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function splitAbsentNames(string $absent): array
+    {
+        return $this->uniqueNames(
+            collect(explode(',', $absent))
+                ->map(fn (string $item): string => trim($item))
+                ->filter(fn (string $item): bool => $item !== '')
+                ->values()
+                ->all()
+        );
+    }
+
+    /**
+     * @param  list<string>  $presentNames
+     * @return list<string>
+     */
+    private function filterPresentAgainstAbsent(array $presentNames, string $absent): array
+    {
+        $absentLookup = collect($this->splitAbsentNames($absent))
+            ->mapWithKeys(fn (string $name): array => [Str::lower($name) => true]);
+
+        return $this->uniqueNames(
+            collect($presentNames)
+                ->map(fn ($name): string => trim((string) $name))
+                ->reject(fn (string $name): bool => $name === '' || $absentLookup->has(Str::lower($name)))
+                ->values()
+                ->all()
+        );
     }
 
     private function deleteAttachmentFile(?string $raw): void

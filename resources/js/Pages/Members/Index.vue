@@ -231,7 +231,7 @@ function editMember(member) {
                     <button
                         v-if="canCreateMembers"
                         type="button"
-                        class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-app-border bg-app-panel text-app-ink shadow-sm transition hover:border-brand-blue/40 hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:border-brand-blue/45 dark:hover:bg-brand-blue/15"
+                        class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand-blue text-white shadow-sm transition hover:bg-brand-blue-dark"
                         title="Toevoegen"
                         aria-label="Toevoegen"
                         @click="toggleAddForm"

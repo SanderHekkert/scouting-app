@@ -296,6 +296,9 @@ class AgendaItemController extends Controller
     public function showOpkomst(Event $event)
     {
         $this->authorizeOpkomst($event);
+        $section = (string) ($event->section ?? '');
+        $absent = (string) ($event->absent ?? '');
+        $presentNames = $this->resolvedOpkomstPresentNames($event, $section, $absent);
 
         return Inertia::render('Agenda/OpkomstShow', [
             'item' => [
@@ -310,9 +313,9 @@ class AgendaItemController extends Controller
                 'invitees' => (string) ($event->invitees ?? ''),
                 'link_url' => (string) ($event->link_url ?? ''),
                 'notes' => (string) ($event->notes ?? ''),
-                'present_names' => collect($event->present_names ?? [])->map(fn ($v): string => trim((string) $v))->filter()->values()->all(),
-                'absent' => (string) ($event->absent ?? ''),
-                'section' => (string) ($event->section ?? ''),
+                'present_names' => $presentNames,
+                'absent' => $absent,
+                'section' => $section,
                 'is_shared' => ! empty($event->shared_sections ?? []),
             ],
         ]);
@@ -629,6 +632,126 @@ class AgendaItemController extends Controller
             UserSectionRole::SECTION_ZEEVERKENNERS,
             UserSectionRole::SECTION_WILDE_VAART,
         ], true);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function resolvedOpkomstPresentNames(Event $event, string $section, string $absent): array
+    {
+        $explicitPresent = $this->uniqueNames(
+            collect($event->present_names ?? [])
+                ->map(fn ($v): string => trim((string) $v))
+                ->filter(fn (string $name): bool => $name !== '')
+                ->values()
+                ->all()
+        );
+
+        $absentLookup = $this->absentLookup($absent);
+        $explicitPresent = collect($explicitPresent)
+            ->reject(fn (string $name): bool => $this->nameMatchesLookup($name, $absentLookup))
+            ->values()
+            ->all();
+
+        if (in_array($section, [UserSectionRole::SECTION_WILDE_VAART, UserSectionRole::SECTION_LOODSEN], true)) {
+            return $explicitPresent;
+        }
+
+        $members = User::query()
+            ->whereHas('sectionRoles', function (Builder $query) use ($section): void {
+                $query->where('section', $section);
+            })
+            ->orderBy('first_name')
+            ->orderBy('last_name')
+            ->get(['first_name', 'last_name', 'name'])
+            ->map(function (User $user): string {
+                $full = trim((string) ($user->first_name ?? '').' '.(string) ($user->last_name ?? ''));
+
+                return $full !== '' ? $full : trim((string) ($user->name ?? ''));
+            })
+            ->filter(fn (string $name): bool => $name !== '')
+            ->reject(fn (string $name): bool => $this->nameMatchesLookup($name, $absentLookup))
+            ->values()
+            ->all();
+
+        return $this->uniqueNames([
+            ...$members,
+            ...$explicitPresent,
+        ]);
+    }
+
+    /**
+     * @return array<string, true>
+     */
+    private function absentLookup(string $absent): array
+    {
+        $lookup = [];
+        foreach (explode(',', $absent) as $raw) {
+            $name = trim((string) $raw);
+            if ($name === '') {
+                continue;
+            }
+            foreach ($this->nameKeys($name) as $key) {
+                $lookup[$key] = true;
+            }
+        }
+
+        return $lookup;
+    }
+
+    private function nameMatchesLookup(string $name, array $lookup): bool
+    {
+        foreach ($this->nameKeys($name) as $key) {
+            if (isset($lookup[$key])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function nameKeys(string $name): array
+    {
+        $trimmed = trim($name);
+        if ($trimmed === '') {
+            return [];
+        }
+
+        $keys = [Str::lower($trimmed)];
+        $first = Str::lower((string) Str::of($trimmed)->before(' '));
+        if ($first !== '' && ! in_array($first, $keys, true)) {
+            $keys[] = $first;
+        }
+
+        return $keys;
+    }
+
+    /**
+     * @param  list<string>  $names
+     * @return list<string>
+     */
+    private function uniqueNames(array $names): array
+    {
+        $seen = [];
+        $result = [];
+
+        foreach ($names as $name) {
+            $trimmed = trim((string) $name);
+            if ($trimmed === '') {
+                continue;
+            }
+            $key = Str::lower($trimmed);
+            if (isset($seen[$key])) {
+                continue;
+            }
+            $seen[$key] = true;
+            $result[] = $trimmed;
+        }
+
+        return $result;
     }
 
     /**

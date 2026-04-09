@@ -7,6 +7,7 @@ import {
     Bars3Icon,
     CalendarDaysIcon,
     ClipboardDocumentListIcon,
+    FlagIcon,
     BellAlertIcon,
     DocumentTextIcon,
     HomeIcon,
@@ -113,7 +114,7 @@ const userInitials = computed(() => {
 const mainNavItems = computed(() => ([
     { label: 'Dashboard', route: 'dashboard', module: 'dashboard', icon: HomeIcon },
     { label: 'Agenda', route: 'agenda.index', matchRoutes: ['agenda.*'], module: 'events', icon: CalendarDaysIcon },
-    { label: 'Opkomsten', route: 'opkomsten.index', matchRoutes: ['opkomsten.*', 'jaar-thema'], module: 'events', icon: CalendarDaysIcon, hideForBestuur: true },
+    { label: 'Opkomsten', route: 'opkomsten.index', matchRoutes: ['opkomsten.*', 'jaar-thema'], module: 'events', icon: FlagIcon, hideForBestuur: true },
 ]).filter((item) => canView(item.module) && !(item.hideForBestuur && activeSection.value === 'bestuur')));
 
 /** Eén sidebar-link; subpagina’s bereik je via SpeltakSubnav op de pagina zelf. */

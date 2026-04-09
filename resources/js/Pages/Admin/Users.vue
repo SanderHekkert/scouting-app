@@ -80,13 +80,13 @@ function roleEntries(user) {
                     class="rounded-xl border border-brand-blue/25 bg-brand-blue/5 p-3 dark:bg-app-panel-dark/50 cursor-pointer"
                     @click="openUser(user)"
                 >
-                    <div class="text-sm font-semibold">{{ user.name }}</div>
-                    <div class="text-xs text-app-muted dark:text-app-muted-dark">{{ user.email }}</div>
+                    <div class="text-sm font-semibold text-black">{{ user.name }}</div>
+                    <div class="text-xs text-black">{{ user.email }}</div>
                     <div class="mt-2 flex flex-wrap gap-1.5">
                         <span
                             v-for="[section, role] in roleEntries(user)"
                             :key="`mob-new-badge-${user.id}-${section}`"
-                            class="rounded-full bg-brand-blue/15 px-2 py-0.5 text-xs"
+                            class="rounded-full bg-brand-blue/15 px-2 py-0.5 text-xs text-black"
                         >
                             {{ sectionLabel[section] || section }}: {{ roleLabel[role] || role }}
                         </span>
@@ -158,13 +158,13 @@ function roleEntries(user) {
                     class="rounded-xl border border-brand-blue/25 bg-brand-blue/5 p-3 dark:bg-app-panel-dark/50 cursor-pointer"
                     @click="openUser(user)"
                 >
-                    <div class="text-sm font-semibold">{{ user.name }}</div>
-                    <div class="text-xs text-app-muted dark:text-app-muted-dark">{{ user.email }}</div>
+                    <div class="text-sm font-semibold text-black">{{ user.name }}</div>
+                    <div class="text-xs text-black">{{ user.email }}</div>
                     <div class="mt-2 flex flex-wrap gap-1.5">
                         <span
                             v-for="[section, role] in roleEntries(user)"
                             :key="`mob-badge-${user.id}-${section}`"
-                            class="rounded-full bg-brand-blue/15 px-2 py-0.5 text-xs"
+                            class="rounded-full bg-brand-blue/15 px-2 py-0.5 text-xs text-black"
                         >
                             {{ sectionLabel[section] || section }}: {{ roleLabel[role] || role }}
                         </span>

@@ -372,7 +372,7 @@ function onCategoryDrop(category, event) {
                     <button
                         v-if="canCreateTasks"
                         type="button"
-                        class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-app-border bg-app-panel text-app-ink shadow-sm transition hover:border-brand-blue/40 hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:border-brand-blue/45 dark:hover:bg-brand-blue/15"
+                        class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand-blue text-white shadow-sm transition hover:bg-brand-blue-dark"
                         title="Taak toevoegen"
                         aria-label="Taak toevoegen"
                         @click="toggleAddForm"
@@ -381,7 +381,7 @@ function onCategoryDrop(category, event) {
                     </button>
                     <button
                         type="button"
-                        class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-app-border bg-app-panel text-app-ink shadow-sm transition hover:border-brand-blue/40 hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:border-brand-blue/45 dark:hover:bg-brand-blue/15"
+                        class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand-blue text-white shadow-sm transition hover:bg-brand-blue-dark"
                         v-if="!hideCategories && canCreateTasks"
                         title="Sectie toevoegen"
                         aria-label="Sectie toevoegen"

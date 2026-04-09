@@ -125,12 +125,12 @@ function roleLabelFor(role) {
         <div class="space-y-4">
             <div class="surface-brand-top rounded-xl border border-app-border bg-app-panel p-4 shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark">
                 <div class="flex flex-wrap items-center gap-2">
-                    <span class="me-1 text-sm font-semibold text-app-muted dark:text-app-muted-dark">Speltak</span>
+                    <span class="me-1 text-sm font-semibold text-black">Speltak</span>
                     <button
                         v-for="section in orderedManageableSections"
                         :key="`perm-s-btn-${section}`"
                         type="button"
-                        class="rounded-md border px-3 py-1.5 text-sm font-medium transition"
+                        class="rounded-md border px-3 py-1.5 text-sm font-medium text-black transition"
                         :class="section === selectedSection
                             ? 'border-brand-blue bg-brand-blue/15 text-brand-blue-dark dark:border-brand-blue/60 dark:bg-brand-blue/25 dark:text-brand-blue-light'
                             : 'border-app-border bg-white text-app-ink hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/15'"
@@ -149,7 +149,35 @@ function roleLabelFor(role) {
                     class="surface-brand-top rounded-xl border border-app-border bg-app-panel p-4 shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark"
                 >
                     <h3 class="mb-3 text-base font-semibold text-app-ink dark:text-app-ink-dark">{{ roleLabelFor(role) }}</h3>
-                    <table class="w-full text-sm">
+                    <div class="space-y-2 md:hidden">
+                        <div
+                            v-for="row in groupedRows[role]"
+                            :key="`perm-mob-row-${row.id}`"
+                            class="rounded-lg border border-app-border bg-white p-3 dark:border-app-border-dark dark:bg-app-canvas-dark"
+                        >
+                            <p class="mb-2 text-sm font-semibold text-black">{{ moduleLabels[row.module] || row.module }}</p>
+                            <div class="grid grid-cols-2 gap-2 text-xs text-black">
+                                <label class="inline-flex items-center gap-2 rounded border border-app-border px-2 py-1.5 text-black dark:border-app-border-dark">
+                                    <input type="checkbox" :checked="row.can_view" @change="updatePermission(row, 'can_view', $event.target.checked)" />
+                                    <span>Bekijken</span>
+                                </label>
+                                <label class="inline-flex items-center gap-2 rounded border border-app-border px-2 py-1.5 text-black dark:border-app-border-dark">
+                                    <input type="checkbox" :checked="row.can_create" @change="updatePermission(row, 'can_create', $event.target.checked)" />
+                                    <span>Toevoegen</span>
+                                </label>
+                                <label class="inline-flex items-center gap-2 rounded border border-app-border px-2 py-1.5 text-black dark:border-app-border-dark">
+                                    <input type="checkbox" :checked="row.can_update" @change="updatePermission(row, 'can_update', $event.target.checked)" />
+                                    <span>Bewerken</span>
+                                </label>
+                                <label class="inline-flex items-center gap-2 rounded border border-app-border px-2 py-1.5 text-black dark:border-app-border-dark">
+                                    <input type="checkbox" :checked="row.can_delete" @change="updatePermission(row, 'can_delete', $event.target.checked)" />
+                                    <span>Verwijderen</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <table class="hidden w-full text-sm md:table">
                         <thead class="text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
                             <tr>
                                 <th class="py-2 text-left">Module</th>

@@ -62,6 +62,10 @@ const sectionLabels = {
     loodsen: 'Loodsen',
     bestuur: 'Bestuur',
 };
+const selectedFilterUserName = computed(() => {
+    const selected = (props.filterUsers || []).find((u) => Number(u.id) === Number(userFilter.value));
+    return selected?.name ? String(selected.name) : '';
+});
 
 function applyAgendaScopeFilters() {
     if (!props.canBrowseAllAgendas) return;
@@ -454,11 +458,21 @@ function selectDay(dayKey) {
     selectedDateKey.value = dayKey;
 }
 
+function selectDayAndOpenDayView(dayKey) {
+    selectedDateKey.value = dayKey;
+    viewMode.value = 'day';
+}
+
 function openMonth(monthIndex) {
     const year = selectedDate.value.getFullYear();
     visibleMonth.value = new Date(year, monthIndex, 1);
     selectedDateKey.value = toDateKey(new Date(year, monthIndex, 1));
     viewMode.value = 'month';
+}
+
+function openDay(dayKey) {
+    selectedDateKey.value = dayKey;
+    viewMode.value = 'day';
 }
 
 function goToToday() {
@@ -577,11 +591,11 @@ function opkomstColorClass(section) {
         <template #header>
             <div class="flex w-full flex-wrap items-center justify-between gap-3">
                 <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Agenda</h2>
-                <div class="flex flex-1 flex-wrap items-center justify-end gap-2">
+                <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-1 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
                     <template v-if="props.canBrowseAllAgendas">
                         <select
                             v-model="sectionFilter"
-                            class="rounded-full border border-app-border bg-app-panel px-3.5 py-1.5 text-sm font-semibold text-app-ink shadow-sm transition hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/20"
+                            class="w-full rounded-full border border-app-border bg-app-panel px-3.5 py-2 text-sm font-semibold text-app-ink shadow-sm transition hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/20 sm:w-auto sm:py-1.5"
                             @change="applyAgendaScopeFilters"
                         >
                             <option v-for="section in props.sectionOptions" :key="`section-filter-${section}`" :value="section">
@@ -590,33 +604,38 @@ function opkomstColorClass(section) {
                         </select>
                         <select
                             v-model="userFilter"
-                            class="rounded-full border border-app-border bg-app-panel px-3.5 py-1.5 text-sm font-semibold text-app-ink shadow-sm transition hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/20"
+                            class="w-full rounded-full border border-app-border bg-app-panel px-3.5 py-2 text-sm font-semibold text-app-ink shadow-sm transition hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/20 sm:w-auto sm:py-1.5"
                             @change="applyAgendaScopeFilters"
                         >
                             <option v-for="u in props.filterUsers" :key="`user-filter-${u.id}`" :value="u.id">
                                 {{ u.name }}
                             </option>
                         </select>
+                        <p v-if="selectedFilterUserName" class="px-1 text-xs text-app-muted dark:text-app-muted-dark sm:hidden">
+                            Gebruiker: {{ selectedFilterUserName }}
+                        </p>
                     </template>
-                    <button type="button" class="rounded-full border border-app-border bg-app-panel px-3.5 py-1.5 text-sm font-semibold text-app-ink shadow-sm transition hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/20" @click="goToToday">Vandaag</button>
-                    <div class="inline-flex items-center rounded-full border border-app-border bg-app-panel p-1 shadow-sm dark:border-app-border-dark dark:bg-app-panel-dark">
+                    <div class="flex w-full items-center gap-2 sm:w-auto">
+                        <button type="button" class="w-full rounded-full border border-app-border bg-app-panel px-3.5 py-2 text-sm font-semibold text-app-ink shadow-sm transition hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/20 sm:w-auto sm:py-1.5" @click="goToToday">Vandaag</button>
+                        <button
+                            type="button"
+                            class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-app-border bg-app-panel text-app-ink shadow-sm transition hover:border-brand-blue/40 hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:border-brand-blue/45 dark:hover:bg-brand-blue/15"
+                            :title="showSearchPanel ? 'Zoeken sluiten' : 'Zoeken'"
+                            :aria-label="showSearchPanel ? 'Zoeken sluiten' : 'Zoeken'"
+                            @click="toggleSearchPanel"
+                        >
+                            <MagnifyingGlassIcon class="h-5 w-5" />
+                        </button>
+                        <button v-if="canCreateAgendaItem" type="button" class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-blue text-white shadow-sm transition hover:bg-brand-blue-dark" title="Toevoegen" aria-label="Toevoegen" @click="goToCreateAgendaItem">
+                            <PlusIcon class="h-5 w-5" />
+                        </button>
+                    </div>
+                    <div class="inline-flex w-full items-center rounded-full border border-app-border bg-app-panel p-1 shadow-sm dark:border-app-border-dark dark:bg-app-panel-dark sm:w-auto">
                         <button type="button" class="rounded-full px-3.5 py-1.5 text-sm font-semibold transition" :class="viewMode === 'day' ? 'bg-brand-blue text-white shadow-sm' : 'text-app-ink hover:bg-brand-blue/10 dark:text-app-ink-dark dark:hover:bg-brand-blue/20'" @click="viewMode = 'day'">Dag</button>
-                        <button type="button" class="rounded-full px-3.5 py-1.5 text-sm font-semibold transition" :class="viewMode === 'week' ? 'bg-brand-blue text-white shadow-sm' : 'text-app-ink hover:bg-brand-blue/10 dark:text-app-ink-dark dark:hover:bg-brand-blue/20'" @click="viewMode = 'week'">Week</button>
+                        <button type="button" class="hidden rounded-full px-3.5 py-1.5 text-sm font-semibold transition sm:inline-flex" :class="viewMode === 'week' ? 'bg-brand-blue text-white shadow-sm' : 'text-app-ink hover:bg-brand-blue/10 dark:text-app-ink-dark dark:hover:bg-brand-blue/20'" @click="viewMode = 'week'">Week</button>
                         <button type="button" class="rounded-full px-3.5 py-1.5 text-sm font-semibold transition" :class="viewMode === 'month' ? 'bg-brand-blue text-white shadow-sm' : 'text-app-ink hover:bg-brand-blue/10 dark:text-app-ink-dark dark:hover:bg-brand-blue/20'" @click="viewMode = 'month'">Maand</button>
                         <button type="button" class="rounded-full px-3.5 py-1.5 text-sm font-semibold transition" :class="viewMode === 'year' ? 'bg-brand-blue text-white shadow-sm' : 'text-app-ink hover:bg-brand-blue/10 dark:text-app-ink-dark dark:hover:bg-brand-blue/20'" @click="viewMode = 'year'">Jaar</button>
                     </div>
-                    <button
-                        type="button"
-                        class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-app-border bg-app-panel text-app-ink shadow-sm transition hover:border-brand-blue/40 hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:border-brand-blue/45 dark:hover:bg-brand-blue/15"
-                        :title="showSearchPanel ? 'Zoeken sluiten' : 'Zoeken'"
-                        :aria-label="showSearchPanel ? 'Zoeken sluiten' : 'Zoeken'"
-                        @click="toggleSearchPanel"
-                    >
-                        <MagnifyingGlassIcon class="h-5 w-5" />
-                    </button>
-                    <button v-if="canCreateAgendaItem" type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-app-border bg-app-panel text-app-ink shadow-sm transition hover:border-brand-blue/40 hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:border-brand-blue/45 dark:hover:bg-brand-blue/15" title="Toevoegen" aria-label="Toevoegen" @click="goToCreateAgendaItem">
-                        <PlusIcon class="h-5 w-5" />
-                    </button>
                 </div>
             </div>
         </template>
@@ -672,7 +691,7 @@ function opkomstColorClass(section) {
                     <span v-for="day in weekDays" :key="`week-${day}`">{{ day }}</span>
                 </div>
 
-                <div v-if="viewMode === 'month'" class="mt-2 grid grid-cols-7 gap-2">
+                <div v-if="viewMode === 'month'" class="mt-2 hidden grid-cols-7 gap-2 sm:grid">
                     <div
                         v-for="cell in calendarDays"
                         :key="cell.key"
@@ -718,8 +737,49 @@ function opkomstColorClass(section) {
                         </div>
                     </div>
                 </div>
+                <div v-if="viewMode === 'month'" class="mt-2 sm:hidden">
+                    <div class="grid grid-cols-7 gap-1">
+                        <button
+                            v-for="cell in calendarDays"
+                            :key="`mobile-month-${cell.key}`"
+                            type="button"
+                            class="rounded-xl border border-app-border/70 bg-app-panel px-1 py-2 text-center dark:border-app-border-dark/70 dark:bg-app-panel-dark"
+                            :class="[
+                                !cell.inCurrentMonth ? 'opacity-45' : '',
+                                cell.isToday ? 'ring-2 ring-brand-blue/60' : '',
+                                selectedDateKey === cell.key ? 'ring-2 ring-brand-yellow/70' : '',
+                            ]"
+                            @click="selectDayAndOpenDayView(cell.key)"
+                            @dblclick="createAgendaItemForDay(cell.key)"
+                        >
+                            <span
+                                class="mx-auto inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold"
+                                :class="cell.isToday
+                                    ? 'bg-brand-blue text-white'
+                                    : 'text-app-ink dark:text-app-ink-dark'"
+                            >
+                                {{ cell.day }}
+                            </span>
+                            <div class="mt-1 flex min-h-3 items-center justify-center gap-1">
+                                <span
+                                    v-for="entry in cell.entries.slice(0, 2)"
+                                    :key="`mobile-month-dot-${cell.key}-${entry.sourceType}-${entry.sourceId}`"
+                                    class="h-1.5 w-1.5 rounded-full"
+                                    :class="entry.sourceType === 'agenda'
+                                        ? 'bg-slate-500 dark:bg-slate-300'
+                                        : entry.sourceType === 'task'
+                                            ? 'bg-amber-500 dark:bg-amber-300'
+                                            : 'bg-brand-blue'"
+                                />
+                            </div>
+                            <p v-if="cell.entries.length > 2" class="mt-0.5 text-[10px] font-semibold text-app-muted dark:text-app-muted-dark">
+                                +{{ cell.entries.length - 2 }}
+                            </p>
+                        </button>
+                    </div>
+                </div>
 
-                <div v-if="viewMode === 'week'" class="mt-2">
+                <div v-if="viewMode === 'week'" class="mt-2 hidden sm:block">
                     <div class="grid grid-cols-[3.5rem_repeat(7,minmax(0,1fr))] border-b border-app-border pb-2 text-center text-xs font-semibold uppercase tracking-wide text-app-muted dark:border-app-border-dark dark:text-app-muted-dark">
                         <span />
                         <span v-for="day in weekDays" :key="`week-view-${day}`">{{ day }}</span>
@@ -820,7 +880,7 @@ function opkomstColorClass(section) {
                             <p class="mt-0.5 font-medium">{{ entry.title }}</p>
                         </Link>
                     </div>
-                    <div class="mt-3 grid grid-cols-[3.5rem_1fr] gap-2">
+                    <div class="mt-3 grid grid-cols-[3rem_1fr] gap-2 sm:grid-cols-[3.5rem_1fr]">
                         <div class="relative h-[1344px]">
                             <div v-for="slot in dayHours" :key="`day-hour-label-${slot.hour}`" class="h-14 pe-1 pt-0.5 text-right text-[10px] text-app-muted dark:text-app-muted-dark">
                                 {{ slot.label }}
@@ -873,32 +933,39 @@ function opkomstColorClass(section) {
                             />
                         </div>
                     </div>
+                    <p v-if="!selectedDateEntries.length" class="mt-3 text-sm text-app-muted dark:text-app-muted-dark">Geen activiteiten op deze dag.</p>
                 </div>
 
                 <div v-if="viewMode === 'year'" class="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    <button
+                    <div
                         v-for="month in yearMonths"
                         :key="`year-month-${month.monthIndex}`"
-                        type="button"
                         class="rounded-xl border border-app-border bg-app-panel p-3 text-left transition hover:border-brand-blue/50 hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:hover:border-brand-blue/40 dark:hover:bg-brand-blue/15"
-                        @click="openMonth(month.monthIndex)"
                     >
-                        <p class="font-semibold text-app-ink dark:text-app-ink-dark">{{ month.monthTitle }}</p>
+                        <button
+                            type="button"
+                            class="font-semibold text-app-ink dark:text-app-ink-dark"
+                            @click="openMonth(month.monthIndex)"
+                        >
+                            {{ month.monthTitle }}
+                        </button>
                         <div class="mt-2 grid grid-cols-7 gap-0.5 text-[10px]">
-                            <span
+                            <button
                                 v-for="cell in month.cells"
                                 :key="`year-cell-${month.monthIndex}-${cell.key}`"
+                                type="button"
                                 class="flex h-4 items-center justify-center rounded-sm"
                                 :class="[
                                     cell.inCurrentMonth ? 'text-app-ink dark:text-app-ink-dark' : 'text-app-muted/50 dark:text-app-muted-dark/50',
                                     cell.isToday ? 'ring-1 ring-brand-blue/70' : '',
                                     cell.count > 0 ? 'bg-brand-blue/15 dark:bg-brand-blue/25' : '',
                                 ]"
+                                @click="openDay(cell.key)"
                             >
                                 {{ cell.day }}
-                            </span>
+                            </button>
                         </div>
-                    </button>
+                    </div>
                 </div>
 
             </div>
