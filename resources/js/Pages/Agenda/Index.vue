@@ -626,7 +626,7 @@ function opkomstColorClass(section) {
                         >
                             <MagnifyingGlassIcon class="h-5 w-5" />
                         </button>
-                        <button v-if="canCreateAgendaItem" type="button" class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-blue text-white shadow-sm transition hover:bg-brand-blue-dark" title="Toevoegen" aria-label="Toevoegen" @click="goToCreateAgendaItem">
+                        <button v-if="canCreateAgendaItem" type="button" class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-700 text-white shadow-sm transition hover:bg-emerald-800" title="Toevoegen" aria-label="Toevoegen" @click="goToCreateAgendaItem">
                             <PlusIcon class="h-5 w-5" />
                         </button>
                     </div>

@@ -69,8 +69,12 @@ const groupedSections = computed(() => {
     }));
 });
 
-const showAddForm = ref(false);
-const showCategoryForm = ref(false);
+const initialCreateAction = (() => {
+    const query = page.url.includes('?') ? page.url.split('?')[1] : '';
+    return new URLSearchParams(query).get('create');
+})();
+const showAddForm = ref(initialCreateAction === 'task' || (initialCreateAction === 'category' && hideCategories.value));
+const showCategoryForm = ref(initialCreateAction === 'category' && !hideCategories.value);
 
 const categoryForm = useForm({
     name: '',
@@ -113,38 +117,11 @@ function toggleCategoryForm() {
 
 function toggleCreateShortcut() {
     if (!canCreateTasks.value) return;
-    if (hideCategories.value) {
-        toggleAddForm();
-        return;
-    }
-
-    if (showAddForm.value) {
-        showAddForm.value = false;
-        showCategoryForm.value = true;
-        categoryForm.reset();
-        return;
-    }
-
-    if (showCategoryForm.value) {
-        showCategoryForm.value = false;
-        showAddForm.value = true;
-        form.reset();
-        form.category = defaultCategory();
-        addDeadlineInput.value = '';
-        return;
-    }
-
-    showAddForm.value = true;
-    form.reset();
-    form.category = defaultCategory();
-    addDeadlineInput.value = '';
+    router.get(route('task-items.create'));
 }
 
 const createButtonLabel = computed(() => {
-    if (hideCategories.value) return 'Taak toevoegen';
-    if (showAddForm.value) return 'Sectie toevoegen';
-    if (showCategoryForm.value) return 'Taak toevoegen';
-    return 'Taak toevoegen';
+    return 'Toevoegen';
 });
 
 function submitAdd() {
@@ -405,16 +382,17 @@ function onCategoryDrop(category, event) {
             <div class="flex w-full flex-wrap items-center justify-between gap-3">
                 <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Taakverdeling</h2>
                 <div class="flex flex-wrap items-center justify-end gap-2 sm:ms-auto">
-                    <button
-                        v-if="canCreateTasks"
-                        type="button"
-                        class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand-blue text-white shadow-sm transition hover:bg-brand-blue-dark"
-                        :title="createButtonLabel"
-                        :aria-label="createButtonLabel"
-                        @click="toggleCreateShortcut"
-                    >
-                        <PlusIcon class="h-5 w-5" />
-                    </button>
+                    <div v-if="canCreateTasks" class="relative">
+                        <button
+                            type="button"
+                            class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-emerald-700 text-white shadow-sm transition hover:bg-emerald-800"
+                            :title="createButtonLabel"
+                            :aria-label="createButtonLabel"
+                            @click="toggleCreateShortcut"
+                        >
+                            <PlusIcon class="h-5 w-5" />
+                        </button>
+                    </div>
                 </div>
             </div>
         </template>

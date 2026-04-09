@@ -107,6 +107,45 @@ class TaskItemController extends Controller
     }
 
     /**
+     * Keuzepagina: nieuw taak-item of nieuwe sectie.
+     */
+    public function create()
+    {
+        $section = $this->activeSection();
+        $canCreateCategory = ! in_array($section, [
+            UserSectionRole::SECTION_BEVERS,
+            UserSectionRole::SECTION_ZEEVERKENNERS,
+            UserSectionRole::SECTION_LOODSEN,
+            UserSectionRole::SECTION_WILDE_VAART,
+            UserSectionRole::SECTION_BESTUUR,
+        ], true);
+        $taskCategories = TaskCategory::query()
+            ->orderBy('position')
+            ->orderBy('name')
+            ->pluck('name')
+            ->all();
+        $leaders = User::query()
+            ->whereNotNull('first_name')
+            ->orderBy('last_name')
+            ->orderBy('first_name')
+            ->get(['id', 'first_name', 'last_name'])
+            ->map(fn (User $leader) => [
+                'id' => (int) $leader->id,
+                'name' => trim(($leader->first_name ?? '').' '.($leader->last_name ?? '')) ?: $leader->name,
+            ])
+            ->values()
+            ->all();
+
+        return Inertia::render('TaskItems/Create', [
+            'canCreateCategory' => $canCreateCategory,
+            'taskCategories' => $taskCategories,
+            'leaders' => $leaders,
+            'activeSection' => $section,
+            'allSections' => UserSectionRole::ALL_SECTIONS,
+        ]);
+    }
+
+    /**
      * Store a newly created resource in storage.
      */
     public function store(Request $request)

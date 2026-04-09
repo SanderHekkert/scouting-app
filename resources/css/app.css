@@ -36,7 +36,7 @@
 
     /** Bewerken: ronde actieknop met gecentreerd icoon. */
     .btn-action-edit {
-        @apply inline-flex h-8 w-8 items-center justify-center rounded-full border border-brand-blue/50 bg-brand-blue/25 text-black shadow-sm transition hover:bg-brand-blue/35 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue dark:border-sky-400/55 dark:bg-sky-400/75 dark:text-black dark:hover:bg-sky-400;
+        @apply inline-flex h-8 w-8 items-center justify-center rounded-full bg-brand-blue text-white shadow-sm transition hover:bg-brand-blue-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue;
     }
 
     .btn-action-edit--lg {

@@ -237,7 +237,7 @@ function onDragEnterZone(podId, sectionKey) {
                 <div class="flex flex-wrap items-center justify-end gap-2 sm:ms-auto">
                     <button
                         type="button"
-                        class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand-blue text-white shadow-sm transition hover:bg-brand-blue-dark"
+                        class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-emerald-700 text-white shadow-sm transition hover:bg-emerald-800"
                         title="Toevoegen"
                         aria-label="Toevoegen"
                         @click="toggleGroupForm"
@@ -246,7 +246,7 @@ function onDragEnterZone(podId, sectionKey) {
                     </button>
                     <button
                         type="button"
-                        class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand-blue text-white shadow-sm transition hover:bg-brand-blue-dark"
+                        class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-emerald-700 text-white shadow-sm transition hover:bg-emerald-800"
                         title="Toevoegen"
                         aria-label="Toevoegen"
                         @click="toggleLinkForm"
