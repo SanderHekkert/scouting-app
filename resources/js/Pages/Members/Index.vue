@@ -33,6 +33,10 @@ const speltakLabel = computed(() => sectionLabelMap[page.props.auth?.active_sect
 const speltakSingular = computed(() => sectionSingularMap[page.props.auth?.active_section] || 'Dolfijn');
 const isBestuurSection = computed(() => (page.props.auth?.active_section ?? '') === 'bestuur');
 const isBeversSection = computed(() => (page.props.auth?.active_section ?? '') === 'bevers');
+const memberPerms = computed(() => page.props.auth?.permissions?.members ?? {});
+const canCreateMembers = computed(() => !!memberPerms.value.create);
+const canUpdateMembers = computed(() => !!memberPerms.value.update);
+const canDeleteMembers = computed(() => !!memberPerms.value.delete);
 
 const showAddForm = ref(false);
 const rowHighlightMemberId = ref(null);
@@ -150,6 +154,7 @@ const sortedFilteredMembers = computed(() => {
 });
 
 function toggleAddForm() {
+    if (!canCreateMembers.value) return;
     showAddForm.value = !showAddForm.value;
     if (showAddForm.value) {
         rowHighlightMemberId.value = null;
@@ -166,6 +171,7 @@ function normalizeMemberFields(data) {
 }
 
 function submitAdd() {
+    if (!canCreateMembers.value) return;
     form
         .transform((d) => normalizeMemberFields(d))
         .post(route('members.store'), {
@@ -178,6 +184,7 @@ function submitAdd() {
 }
 
 function deleteMember(member) {
+    if (!canDeleteMembers.value) return;
     if (!member?.id) return;
     if (!confirm('Dit contact verwijderen?')) return;
     if (rowHighlightMemberId.value === member.id) {
@@ -208,6 +215,7 @@ function yesNo(value) {
 }
 
 function editMember(member) {
+    if (!canUpdateMembers.value) return;
     if (!member?.id) return;
     router.get(route('members.show', member.id));
 }
@@ -221,6 +229,7 @@ function editMember(member) {
                 <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">{{ speltakLabel }}</h2>
                 <div class="flex flex-wrap items-center justify-end gap-2 sm:ms-auto">
                     <button
+                        v-if="canCreateMembers"
                         type="button"
                         class="inline-flex items-center gap-2 rounded-lg border border-app-border bg-app-panel px-3 py-2 text-sm font-medium text-app-ink shadow-sm transition hover:border-brand-blue/40 hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:border-brand-blue/45 dark:hover:bg-brand-blue/15"
                         @click="toggleAddForm"
@@ -233,6 +242,7 @@ function editMember(member) {
         </template>
         <div class="space-y-4 text-app-ink dark:text-app-ink-dark">
             <form
+                v-if="canCreateMembers"
                 v-show="showAddForm"
                 class="surface-brand-top space-y-4 rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5"
                 @submit.prevent="submitAdd"
@@ -512,10 +522,10 @@ function editMember(member) {
                                 <td class="px-3 py-2.5 align-top tabular-nums text-app-ink dark:text-app-ink-dark">{{ member.phone_mother || '–' }}</td>
                                 <td class="px-3 py-2.5 align-top tabular-nums text-app-ink dark:text-app-ink-dark">{{ member.phone_father || '–' }}</td>
                                 <td class="px-3 py-2.5 align-top">
-                                    <button type="button" class="btn-action-edit me-2" title="Bewerken" @click="editMember(member)">
+                                    <button v-if="canUpdateMembers" type="button" class="btn-action-edit me-2" title="Bewerken" @click="editMember(member)">
                                         <PencilSquareIcon class="h-4 w-4 shrink-0" />
                                     </button>
-                                    <button type="button" class="btn-action-delete" title="Verwijderen" @click="deleteMember(member)">
+                                    <button v-if="canDeleteMembers" type="button" class="btn-action-delete" title="Verwijderen" @click="deleteMember(member)">
                                         <TrashIcon class="h-4 w-4 shrink-0" />
                                     </button>
                                 </td>

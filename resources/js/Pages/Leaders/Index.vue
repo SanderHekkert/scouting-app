@@ -12,6 +12,10 @@ const props = defineProps({
 });
 const page = usePage();
 const isBestuurSection = computed(() => (page.props.auth?.active_section ?? '') === 'bestuur');
+const leaderPerms = computed(() => page.props.auth?.permissions?.leaders ?? {});
+const canCreateLeaders = computed(() => !!leaderPerms.value.create);
+const canUpdateLeaders = computed(() => !!leaderPerms.value.update);
+const canDeleteLeaders = computed(() => !!leaderPerms.value.delete);
 
 const showAddForm = ref(false);
 
@@ -73,6 +77,7 @@ const filteredLeaders = computed(() =>
 );
 
 function toggleAddForm() {
+    if (!canCreateLeaders.value) return;
     showAddForm.value = !showAddForm.value;
     if (showAddForm.value) {
         form.reset();
@@ -108,6 +113,7 @@ function normalizeLeaderPayload(data) {
 }
 
 function submitAdd() {
+    if (!canCreateLeaders.value) return;
     form.transform((d) => normalizeLeaderPayload(d)).post(route('leaders.store'), {
         preserveScroll: true,
         onSuccess: () => {
@@ -118,6 +124,7 @@ function submitAdd() {
 }
 
 function deleteLeader(leader) {
+    if (!canDeleteLeaders.value) return;
     if (!leader?.id) return;
     if (!confirm('Deze leiding verwijderen?')) return;
     router.delete(route('leaders.destroy', leader.id), {
@@ -126,6 +133,7 @@ function deleteLeader(leader) {
 }
 
 function goToLeaderDetail(leader) {
+    if (!canUpdateLeaders.value) return;
     if (!leader?.id) return;
     router.get(route('leaders.show', leader.id));
 }
@@ -164,6 +172,7 @@ function leaderAge(value) {
                 <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Leiding</h2>
                 <div class="flex flex-wrap items-center justify-end gap-2 sm:ms-auto">
                     <button
+                        v-if="canCreateLeaders"
                         type="button"
                         class="inline-flex items-center gap-2 rounded-lg border border-app-border bg-app-panel px-3 py-2 text-sm font-medium text-app-ink shadow-sm transition hover:border-brand-blue/40 hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:border-brand-blue/45 dark:hover:bg-brand-blue/15"
                         @click="toggleAddForm"
@@ -177,6 +186,7 @@ function leaderAge(value) {
 
         <div class="space-y-4 text-app-ink dark:text-app-ink-dark">
             <form
+                v-if="canCreateLeaders"
                 v-show="showAddForm"
                 class="surface-brand-top space-y-4 rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5"
                 @submit.prevent="submitAdd"
@@ -372,10 +382,10 @@ function leaderAge(value) {
                                 <p><span class="font-medium">E-mail:</span> {{ leader.email || '–' }}</p>
                             </div>
                             <div class="mt-3 flex items-center gap-2">
-                                <button type="button" class="btn-action-edit" title="Bewerken" @click.stop="goToLeaderDetail(leader)">
+                                <button v-if="canUpdateLeaders" type="button" class="btn-action-edit" title="Bewerken" @click.stop="goToLeaderDetail(leader)">
                                     <PencilSquareIcon class="h-4 w-4 shrink-0" />
                                 </button>
-                                <button type="button" class="btn-action-delete" title="Verwijderen" @click.stop="deleteLeader(leader)">
+                                <button v-if="canDeleteLeaders" type="button" class="btn-action-delete" title="Verwijderen" @click.stop="deleteLeader(leader)">
                                     <TrashIcon class="h-4 w-4 shrink-0" />
                                 </button>
                             </div>
@@ -434,10 +444,10 @@ function leaderAge(value) {
                                     {{ leader.email || '–' }}
                                 </td>
                                 <td class="px-3 py-2.5 align-top">
-                                    <button type="button" class="btn-action-edit me-2" title="Bewerken" @click="goToLeaderDetail(leader)">
+                                    <button v-if="canUpdateLeaders" type="button" class="btn-action-edit me-2" title="Bewerken" @click="goToLeaderDetail(leader)">
                                         <PencilSquareIcon class="h-4 w-4 shrink-0" />
                                     </button>
-                                    <button type="button" class="btn-action-delete" title="Verwijderen" @click="deleteLeader(leader)">
+                                    <button v-if="canDeleteLeaders" type="button" class="btn-action-delete" title="Verwijderen" @click="deleteLeader(leader)">
                                         <TrashIcon class="h-4 w-4 shrink-0" />
                                     </button>
                                 </td>

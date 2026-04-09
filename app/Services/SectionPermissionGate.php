@@ -40,6 +40,7 @@ class SectionPermissionGate
             if ($role === UserSectionRole::ROLE_LID) {
                 return $module === SectionPermission::MODULE_EVENTS && $action === 'view';
             }
+
             return false;
         }
 

@@ -156,6 +156,15 @@ const tailNavItems = computed(() => ([
         : []),
 ]).filter((item) => !item.module || canView(item.module)));
 
+const firstAccessibleRoute = computed(() => {
+    const primary = mainNavItems.value[0]?.route;
+    if (primary) return primary;
+    if (showSpeltakNav.value) return dolfijnenNavItem.route;
+    const secondary = tailNavItems.value[0]?.route;
+    if (secondary) return secondary;
+    return 'profile.edit';
+});
+
 const mobileMenuOpen = ref(false);
 
 function navItemIsActive(item) {
@@ -222,7 +231,7 @@ onUnmounted(() => {
                 <div class="flex h-full min-h-0 min-w-0 flex-1 flex-col p-5">
                     <div class="shrink-0">
                         <Link
-                            :href="route('dashboard')"
+                            :href="route(firstAccessibleRoute)"
                             class="mb-3 block rounded-lg outline-none transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-brand-blue/80"
                         >
                             <ApplicationLogo class="max-h-14 max-w-[13rem]" />
@@ -335,7 +344,7 @@ onUnmounted(() => {
             >
                 <div class="flex h-14 min-h-[3.5rem] items-center gap-2 px-3 sm:px-4">
                     <Link
-                        :href="route('dashboard')"
+                        :href="route(firstAccessibleRoute)"
                         class="touch-manipulation shrink-0 rounded-lg p-2 -ms-1 outline-none ring-brand-blue/80 focus-visible:ring-2 active:bg-slate-100 dark:active:bg-slate-800"
                         aria-label="Naar dashboard"
                         @click="closeMobileMenu"

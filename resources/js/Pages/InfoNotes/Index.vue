@@ -1,10 +1,15 @@
 <script setup>
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, useForm, router } from '@inertiajs/vue3';
+import { Head, useForm, router, usePage } from '@inertiajs/vue3';
 import { ArrowTopRightOnSquareIcon, DocumentCheckIcon, PencilSquareIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({ notes: Array });
+const page = usePage();
+const notePerms = computed(() => page.props.auth?.permissions?.info_notes ?? {});
+const canCreateNotes = computed(() => !!notePerms.value.create);
+const canUpdateNotes = computed(() => !!notePerms.value.update);
+const canDeleteNotes = computed(() => !!notePerms.value.delete);
 
 const showAddForm = ref(false);
 
@@ -16,6 +21,7 @@ const form = useForm({
 
 
 function toggleAddForm() {
+    if (!canCreateNotes.value) return;
     showAddForm.value = !showAddForm.value;
     if (showAddForm.value) {
         form.reset();
@@ -24,6 +30,7 @@ function toggleAddForm() {
 }
 
 function submitAdd() {
+    if (!canCreateNotes.value) return;
     form.post(route('info-notes.store'), {
         preserveScroll: true,
         onSuccess: () => {
@@ -34,6 +41,7 @@ function submitAdd() {
 }
 
 function deleteNote(note) {
+    if (!canDeleteNotes.value) return;
     if (!note?.id) return;
     if (!confirm('Deze notitie verwijderen?')) return;
     router.delete(route('info-notes.destroy', note.id), {
@@ -67,6 +75,7 @@ function safeExternalUrl(url) {
 }
 
 function editNote(note) {
+    if (!canUpdateNotes.value) return;
     if (!note?.id) return;
     router.get(route('info-notes.show', note.id));
 }
@@ -80,6 +89,7 @@ function editNote(note) {
                 <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Belangrijke info</h2>
                 <div class="flex flex-wrap items-center justify-end gap-2 sm:ms-auto">
                     <button
+                        v-if="canCreateNotes"
                         type="button"
                         class="inline-flex items-center gap-2 rounded-lg border border-app-border bg-app-panel px-3 py-2 text-sm font-medium text-app-ink shadow-sm transition hover:border-brand-blue/40 hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:border-brand-blue/45 dark:hover:bg-brand-blue/15"
                         @click="toggleAddForm"
@@ -92,6 +102,7 @@ function editNote(note) {
         </template>
         <div class="space-y-4 text-app-ink dark:text-app-ink-dark">
             <form
+                v-if="canCreateNotes"
                 v-show="showAddForm"
                 class="surface-brand-top space-y-4 rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5"
                 @submit.prevent="submitAdd"
@@ -184,10 +195,10 @@ function editNote(note) {
                                 </a>
                             </div>
                             <div class="mt-3 flex items-center gap-2 border-t border-brand-blue/25 pt-3 dark:border-brand-blue/35">
-                                <button type="button" class="btn-action-edit" title="Bewerken" @click="editNote(note)">
+                                <button v-if="canUpdateNotes" type="button" class="btn-action-edit" title="Bewerken" @click="editNote(note)">
                                     <PencilSquareIcon class="h-4 w-4" />
                                 </button>
-                                <button type="button" class="btn-action-delete" title="Verwijderen" @click="deleteNote(note)">
+                                <button v-if="canDeleteNotes" type="button" class="btn-action-delete" title="Verwijderen" @click="deleteNote(note)">
                                     <TrashIcon class="h-4 w-4" />
                                 </button>
                             </div>
@@ -241,10 +252,10 @@ function editNote(note) {
                                 </div>
                             </td>
                             <td class="px-3 py-2.5 align-top">
-                                <button type="button" class="btn-action-edit me-2" title="Bewerken" @click="editNote(note)">
+                                <button v-if="canUpdateNotes" type="button" class="btn-action-edit me-2" title="Bewerken" @click="editNote(note)">
                                     <PencilSquareIcon class="h-4 w-4" />
                                 </button>
-                                <button type="button" class="btn-action-delete" title="Verwijderen" @click="deleteNote(note)">
+                                <button v-if="canDeleteNotes" type="button" class="btn-action-delete" title="Verwijderen" @click="deleteNote(note)">
                                     <TrashIcon class="h-4 w-4" />
                                 </button>
                             </td>

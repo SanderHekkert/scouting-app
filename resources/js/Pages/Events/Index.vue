@@ -24,11 +24,16 @@ const props = defineProps({
 
 const page = usePage();
 const activeSection = computed(() => page.props.auth?.active_section ?? 'dolfijnen');
+const eventPerms = computed(() => page.props.auth?.permissions?.events ?? {});
+const canCreateEvents = computed(() => !!eventPerms.value.create);
+const canUpdateEvents = computed(() => !!eventPerms.value.update);
+const canDeleteEvents = computed(() => !!eventPerms.value.delete);
+const canManageEvents = computed(() => canCreateEvents.value || canUpdateEvents.value || canDeleteEvents.value);
 const currentRole = computed(() => {
     const roles = page.props.auth?.section_roles ?? [];
     return roles.find((r) => r.section === activeSection.value)?.role ?? null;
 });
-const canManageAgenda = computed(() => currentRole.value !== 'lid');
+const canManageAgenda = computed(() => currentRole.value !== 'lid' && canManageEvents.value);
 const canMarkOwnPresence = computed(
     () => currentRole.value === 'lid' && ['loodsen', 'wilde_vaart'].includes(activeSection.value),
 );
@@ -97,6 +102,7 @@ const shareableSections = computed(() =>
 );
 
 function toggleAddForm() {
+    if (!canCreateEvents.value) return;
     showAddForm.value = !showAddForm.value;
     if (showAddForm.value) {
         form.reset();
@@ -105,6 +111,7 @@ function toggleAddForm() {
 }
 
 function submitAdd() {
+    if (!canCreateEvents.value) return;
     form.post(route('opkomsten.store'), {
         forceFormData: true,
         preserveScroll: true,
@@ -120,6 +127,7 @@ function onAttachmentChange(event) {
 }
 
 function deleteEvent(event) {
+    if (!canDeleteEvents.value) return;
     if (!event?.id) return;
     if (!confirm('Dit agenda-item verwijderen?')) return;
     router.delete(route('opkomsten.destroy', event.id), {
@@ -128,6 +136,7 @@ function deleteEvent(event) {
 }
 
 function editEvent(event) {
+    if (!canUpdateEvents.value) return;
     if (!event?.id) return;
     router.get(route('opkomsten.show', event.id));
 }
@@ -149,7 +158,7 @@ function setOwnAttendance(event, present) {
         <template #header>
             <div class="flex w-full flex-wrap items-center justify-between gap-3">
                 <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Opkomsten</h2>
-                <div v-if="canManageAgenda" class="flex flex-wrap items-center justify-end gap-2 sm:ms-auto">
+                <div v-if="canCreateEvents" class="flex flex-wrap items-center justify-end gap-2 sm:ms-auto">
                     <button
                         type="button"
                         class="inline-flex items-center gap-2 rounded-lg border border-app-border bg-app-panel px-3 py-2 text-sm font-medium text-app-ink shadow-sm transition hover:border-brand-blue/40 hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:border-brand-blue/45 dark:hover:bg-brand-blue/15"
@@ -163,7 +172,7 @@ function setOwnAttendance(event, present) {
         </template>
         <div class="space-y-4 text-app-ink dark:text-app-ink-dark">
             <form
-                v-if="canManageAgenda"
+                v-if="canCreateEvents"
                 v-show="showAddForm"
                 class="surface-brand-top space-y-4 rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5"
                 @submit.prevent="submitAdd"
@@ -374,7 +383,7 @@ function setOwnAttendance(event, present) {
                     :is-bestuur="isBestuur"
                     :highlight-event-id="highlightEventId"
                     :is-field-saving="() => false"
-                    :can-edit-agenda="canManageAgenda"
+                    :can-edit-agenda="canUpdateEvents || canDeleteEvents"
                     :can-mark-own-presence="canMarkOwnPresence"
                     :current-user-name="currentUserName"
                     :type-label="typeLabel"
