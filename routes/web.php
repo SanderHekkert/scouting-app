@@ -122,7 +122,6 @@ Route::middleware(['auth', 'verified', 'has.role', 'section.role:admin,bestuursl
     Route::post('/financien/declaraties', [FinanceController::class, 'storeDeclaration'])->middleware('section.permission:financien')->name('finance.declarations.store');
     Route::patch('/financien/declaraties/{declaration}/approve', [FinanceController::class, 'approveDeclaration'])->middleware('section.permission:financien')->name('finance.declarations.approve');
     Route::patch('/financien/declaraties/{declaration}/reject', [FinanceController::class, 'rejectDeclaration'])->middleware('section.permission:financien')->name('finance.declarations.reject');
-    Route::post('/financien/ocr', [FinanceController::class, 'ocr'])->middleware('section.permission:financien')->name('finance.ocr');
 });
 
 Route::middleware(['auth', 'verified', 'has.role'])->group(function () {

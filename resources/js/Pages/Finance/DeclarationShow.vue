@@ -9,7 +9,6 @@ const props = defineProps({
 });
 
 const page = usePage();
-const csrf = computed(() => page.props.csrf_token || '');
 const sectionLabelMap = {
     bevers: 'Bevers',
     dolfijnen: 'Dolfijnen',
@@ -31,10 +30,7 @@ const form = useForm({
     receipt_file: null,
 });
 
-const ocrLoading = ref(false);
-const cameraReceiptInput = ref(null);
-const galleryReceiptInput = ref(null);
-const receiptRows = ref([{ name: '', quantity: '1', amount: '', vat: '21' }]);
+const receiptRows = ref([{ name: '', quantity: '1', amount: '' }]);
 const hasActivePots = computed(() => props.pots.length > 0);
 
 function formatCurrency(value) {
@@ -47,19 +43,18 @@ function normalizeRow(row) {
         name: String(row?.name || '').trim(),
         quantity: String(row?.quantity || '').trim(),
         amount: String(row?.amount || '').trim(),
-        vat: String(row?.vat || '').trim(),
     };
 }
 
 function buildDescriptionLinesFromRows() {
     const rows = receiptRows.value
         .map((row) => normalizeRow(row))
-        .filter((row) => row.name || row.amount || row.quantity || row.vat);
+        .filter((row) => row.name || row.amount || row.quantity);
     if (!rows.length) return '';
 
-    const header = 'Naam | Aantal | Bedrag | Btw%';
+    const header = 'Naam | Aantal | Bedrag';
     const body = rows
-        .map((row) => `${row.name || '-'} | ${row.quantity || '-'} | ${row.amount || '-'} | ${row.vat || '-'}`)
+        .map((row) => `${row.name || '-'} | ${row.quantity || '-'} | ${row.amount || '-'}`)
         .join('\n');
 
     return `${header}\n${body}`;
@@ -83,7 +78,7 @@ function syncAmountFromRows() {
 }
 
 function addReceiptRow() {
-    receiptRows.value.push({ name: '', quantity: '1', amount: '', vat: '21' });
+    receiptRows.value.push({ name: '', quantity: '1', amount: '' });
 }
 
 function removeReceiptRow(index) {
@@ -91,52 +86,8 @@ function removeReceiptRow(index) {
     receiptRows.value.splice(index, 1);
 }
 
-function openCameraUpload() {
-    cameraReceiptInput.value?.click();
-}
-
-function openGalleryUpload() {
-    galleryReceiptInput.value?.click();
-}
-
-async function onReceiptChange(event) {
+function onReceiptChange(event) {
     form.receipt_file = event?.target?.files?.[0] || null;
-    if (!form.receipt_file) {
-        receiptRows.value = [{ name: '', quantity: '1', amount: '', vat: '21' }];
-        return;
-    }
-
-    await runOcrAssist();
-}
-
-async function runOcrAssist() {
-    if (!form.receipt_file) return;
-    ocrLoading.value = true;
-    try {
-        const formData = new FormData();
-        formData.append('receipt_file', form.receipt_file);
-
-        const response = await fetch(route('finance.ocr'), {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': csrf.value,
-                Accept: 'application/json',
-            },
-            body: formData,
-        });
-        if (!response.ok) return;
-        const data = await response.json();
-        const s = data?.suggestions || {};
-        if (s.declared_at) form.declared_at = s.declared_at;
-        if (Array.isArray(s.line_items) && s.line_items.length > 0) {
-            receiptRows.value = s.line_items.map((row) => normalizeRow(row));
-        }
-        syncAmountFromRows();
-        if (receiptRowsTotal.value <= 0 && s.amount != null) form.amount = String(s.amount);
-        form.description_lines = buildDescriptionLinesFromRows();
-    } finally {
-        ocrLoading.value = false;
-    }
 }
 
 function submit() {
@@ -145,7 +96,7 @@ function submit() {
         forceFormData: true,
         onSuccess: () => {
             form.reset();
-            receiptRows.value = [{ name: '', quantity: '1', amount: '', vat: '21' }];
+            receiptRows.value = [{ name: '', quantity: '1', amount: '' }];
         },
     });
 }
@@ -211,16 +162,7 @@ watch(receiptRows, () => {
 
                 <div class="order-6 space-y-2 sm:col-span-2">
                     <label class="text-xs font-semibold uppercase tracking-wide text-slate-600">Bonnetje uploaden</label>
-                    <div class="flex flex-wrap items-center gap-2">
-                        <button type="button" class="rounded bg-brand-blue px-3 py-2 text-sm font-semibold text-white hover:bg-brand-blue-dark disabled:cursor-not-allowed disabled:opacity-60" :disabled="ocrLoading" @click="openGalleryUpload">
-                            Upload uit galerij / bestanden
-                        </button>
-                        <button type="button" class="rounded bg-slate-800 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-60" :disabled="ocrLoading" @click="openCameraUpload">
-                            Gebruik camera (OCR)
-                        </button>
-                    </div>
-                    <input ref="galleryReceiptInput" type="file" accept="image/*,.pdf,.heic,.heif,image/heic,image/heif" class="hidden" @change="onReceiptChange" />
-                    <input ref="cameraReceiptInput" type="file" accept="image/*,.heic,.heif,image/heic,image/heif" capture="environment" class="hidden" @change="onReceiptChange" />
+                    <input type="file" accept="image/*,.pdf,.heic,.heif,image/heic,image/heif" class="w-full rounded border border-app-border bg-white px-3 py-2 text-black" required @change="onReceiptChange" />
                 </div>
 
                 <div class="order-7 space-y-2 sm:col-span-2">
@@ -234,7 +176,6 @@ watch(receiptRows, () => {
                                     <th class="px-2 py-2 text-left font-semibold text-slate-700">Naam</th>
                                     <th class="px-2 py-2 text-left font-semibold text-slate-700">Aantal</th>
                                     <th class="px-2 py-2 text-left font-semibold text-slate-700">Bedrag</th>
-                                    <th class="px-2 py-2 text-left font-semibold text-slate-700">Btw%</th>
                                     <th class="px-2 py-2 text-left font-semibold text-slate-700">Actie</th>
                                 </tr>
                             </thead>
@@ -243,7 +184,6 @@ watch(receiptRows, () => {
                                     <td class="px-2 py-2"><input v-model="row.name" type="text" class="w-full rounded border border-app-border px-2 py-1.5 text-black" /></td>
                                     <td class="px-2 py-2"><input v-model="row.quantity" type="number" min="0" step="0.01" class="w-24 rounded border border-app-border px-2 py-1.5 text-black" /></td>
                                     <td class="px-2 py-2"><input v-model="row.amount" type="number" min="0" step="0.01" class="w-28 rounded border border-app-border px-2 py-1.5 text-black" /></td>
-                                    <td class="px-2 py-2"><input v-model="row.vat" type="number" min="0" step="0.01" class="w-20 rounded border border-app-border px-2 py-1.5 text-black" /></td>
                                     <td class="px-2 py-2">
                                         <button type="button" class="btn-action-delete" title="Verwijderen" aria-label="Verwijderen" @click="removeReceiptRow(index)">
                                             <TrashIcon class="h-5 w-5" />

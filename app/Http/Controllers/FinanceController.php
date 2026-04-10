@@ -7,9 +7,7 @@ use App\Models\FinanceLedgerEntry;
 use App\Models\FinancePot;
 use App\Models\User;
 use App\Models\UserSectionRole;
-use App\Services\ReceiptOcrService;
 use Illuminate\Http\Request;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
@@ -18,10 +16,6 @@ use Inertia\Response;
 
 class FinanceController extends Controller
 {
-    public function __construct(
-        private readonly ReceiptOcrService $ocrService
-    ) {}
-
     public function index(Request $request)
     {
         return Inertia::location(route('finance.pots.index'));
@@ -303,20 +297,6 @@ class FinanceController extends Controller
         ]);
 
         return back();
-    }
-
-    public function ocr(Request $request)
-    {
-        $request->validate([
-            'receipt_file' => ['required', File::types(['pdf', 'jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'])->max(12 * 1024)],
-        ]);
-        $file = $request->file('receipt_file');
-        abort_unless($file instanceof UploadedFile, 422);
-        $suggestions = $this->ocrService->extractSuggestions($file);
-
-        return response()->json([
-            'suggestions' => $suggestions,
-        ]);
     }
 
     private function activeSection(): string
