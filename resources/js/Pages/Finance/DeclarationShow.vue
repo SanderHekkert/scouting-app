@@ -32,6 +32,7 @@ const form = useForm({
 
 const receiptRows = ref([{ name: '', quantity: '1', amount: '' }]);
 const hasActivePots = computed(() => props.pots.length > 0);
+const selectedReceiptName = computed(() => form.receipt_file?.name || 'Nog geen bestand gekozen');
 
 function formatCurrency(value) {
     const amount = Number(value || 0);
@@ -179,7 +180,19 @@ watch(receiptRows, () => {
 
                 <div class="order-6 space-y-2 sm:col-span-2">
                     <label class="text-xs font-semibold uppercase tracking-wide text-slate-600">Bonnetje uploaden</label>
-                    <input type="file" accept="image/*,.pdf,.heic,.heif,image/heic,image/heif" class="w-full rounded border border-app-border bg-white px-3 py-2 text-black" required @change="onReceiptChange" />
+                    <div class="flex flex-wrap items-center gap-2">
+                        <label class="inline-flex cursor-pointer items-center rounded-md bg-brand-blue px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-blue-dark">
+                            Bestand kiezen
+                            <input
+                                type="file"
+                                accept="image/*,.pdf,.heic,.heif,image/heic,image/heif"
+                                class="sr-only"
+                                required
+                                @change="onReceiptChange"
+                            />
+                        </label>
+                        <span class="text-sm text-black">{{ selectedReceiptName }}</span>
+                    </div>
                 </div>
 
                 <div class="order-7 space-y-2 sm:col-span-2">

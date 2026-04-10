@@ -1,13 +1,15 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
-import { ArrowUturnLeftIcon, DocumentCheckIcon, DocumentDuplicateIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import { ArrowDownTrayIcon, ArrowUturnLeftIcon, DocumentArrowDownIcon, DocumentCheckIcon, DocumentDuplicateIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     mode: { type: String, default: 'create' },
     item: { type: Object, default: null },
     copyItem: { type: Object, default: null },
+    defaultSections: { type: Array, default: () => [] },
+    defaultStandardValues: { type: Object, default: () => ({}) },
 });
 
 const page = usePage();
@@ -27,11 +29,24 @@ const sectionLabels = {
 const speltakLabel = computed(() => sectionLabels[page.props.auth?.active_section] || 'Dolfijnen');
 
 const source = props.item || props.copyItem || {};
+const initialSections = source.budget_sections || props.defaultSections || [];
+const initialStandardValues = source.standard_values || props.defaultStandardValues || {};
 const form = useForm({
     camp_year: source.camp_year || new Date().getFullYear(),
     title: source.title || '',
     content: source.content || '',
+    budget_sections: JSON.parse(JSON.stringify(initialSections)),
+    standard_values: {
+        prijs_per_dag_leiding: Number(initialStandardValues.prijs_per_dag_leiding ?? 0),
+        kosten_vaart_pu: Number(initialStandardValues.kosten_vaart_pu ?? 0),
+        kosten_aggregaat_pu: Number(initialStandardValues.kosten_aggregaat_pu ?? 0),
+        huur_fram_pppd: Number(initialStandardValues.huur_fram_pppd ?? 0),
+        proviand_pppd: Number(initialStandardValues.proviand_pppd ?? 0),
+        groepsafdracht_pjpd: Number(initialStandardValues.groepsafdracht_pjpd ?? 0),
+        reservering_nawaka_pjpd: Number(initialStandardValues.reservering_nawaka_pjpd ?? 0),
+    },
 });
+const activeSectionIndex = ref(0);
 
 function submit() {
     if (isEdit.value) {
@@ -53,6 +68,73 @@ function copyItem() {
     if (!isEdit.value || !canCreate.value) return;
     router.post(route('camp-budgets.copy', props.item.id));
 }
+
+function addSection() {
+    form.budget_sections.push({ title: 'Nieuwe sectie', rows: [] });
+    activeSectionIndex.value = form.budget_sections.length - 1;
+}
+
+function removeSection(index) {
+    if (form.budget_sections.length <= 1) return;
+    form.budget_sections.splice(index, 1);
+    if (activeSectionIndex.value >= form.budget_sections.length) {
+        activeSectionIndex.value = form.budget_sections.length - 1;
+    }
+}
+
+function addRow(sectionIndex) {
+    form.budget_sections[sectionIndex].rows.push({ label: '', quantity: 0, amount: 0, note: '' });
+}
+
+function removeRow(sectionIndex, rowIndex) {
+    form.budget_sections[sectionIndex].rows.splice(rowIndex, 1);
+}
+
+function sectionTotal(section) {
+    return (section?.rows || []).reduce((sum, row) => {
+        const quantity = Number(row.quantity ?? 1) || 0;
+        const amount = effectiveAmount(row, section?.title);
+        return sum + (quantity * amount);
+    }, 0);
+}
+
+function effectiveAmount(row, sectionTitle) {
+    const label = String(row?.label || '').trim().toLowerCase();
+    const section = String(sectionTitle || '').trim().toLowerCase();
+    if (!label) return Number(row?.amount || 0) || 0;
+
+    if (section === 'bijdragen' && label.includes('leiding')) return Number(form.standard_values.prijs_per_dag_leiding) || 0;
+    if (label.includes('vaart')) return Number(form.standard_values.kosten_vaart_pu) || 0;
+    if (label.includes('aggregaat')) return Number(form.standard_values.kosten_aggregaat_pu) || 0;
+    if (label.includes('fram')) return Number(form.standard_values.huur_fram_pppd) || 0;
+    if (label.includes('proviand')) return Number(form.standard_values.proviand_pppd) || 0;
+    if (label.includes('groepsafdracht')) return Number(form.standard_values.groepsafdracht_pjpd) || 0;
+    if (label.includes('nawaka')) return Number(form.standard_values.reservering_nawaka_pjpd) || 0;
+    return Number(row?.amount || 0) || 0;
+}
+
+const totals = computed(() => {
+    const incomeTitles = ['bijdragen', 'overige bijdragen'];
+    const expenseTitles = ['uitgaven', 'overige uitgaven'];
+    let income = 0;
+    let expenses = 0;
+    for (const section of form.budget_sections || []) {
+        const sum = sectionTotal(section);
+        const title = String(section.title || '').trim().toLowerCase();
+        if (incomeTitles.includes(title)) income += sum;
+        if (expenseTitles.includes(title)) expenses += sum;
+    }
+    return {
+        income: income.toFixed(2),
+        expenses: expenses.toFixed(2),
+        difference: (income - expenses).toFixed(2),
+    };
+});
+
+function generatePdf() {
+    if (!isEdit.value) return;
+    router.post(route('camp-budgets.pdf', props.item.id), {}, { preserveScroll: true });
+}
 </script>
 
 <template>
@@ -69,14 +151,134 @@ function copyItem() {
 
         <form class="surface-brand-top space-y-4 rounded-xl border border-app-border bg-app-panel p-5 shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark" @submit.prevent="submit">
             <div class="grid gap-3 sm:grid-cols-2">
-                <input v-model="form.camp_year" type="number" min="2020" max="2100" class="rounded border border-app-border bg-white px-3 py-2 text-black" placeholder="Jaar" required />
-                <input v-model="form.title" type="text" class="rounded border border-app-border bg-white px-3 py-2 text-black" placeholder="Titel (bijv. Pinksterkamp 2026)" required />
-                <textarea v-model="form.content" rows="12" class="rounded border border-app-border bg-white px-3 py-2 text-black sm:col-span-2" placeholder="Werk hier de begroting uit..." />
+                <div class="space-y-1">
+                    <label class="text-xs font-semibold uppercase tracking-wide text-slate-600">Jaar</label>
+                    <input v-model="form.camp_year" type="number" min="2020" max="2100" class="w-full rounded border border-app-border bg-white px-3 py-2 text-black" required />
+                </div>
+                <div class="space-y-1">
+                    <label class="text-xs font-semibold uppercase tracking-wide text-slate-600">Titel</label>
+                    <input v-model="form.title" type="text" class="w-full rounded border border-app-border bg-white px-3 py-2 text-black" required />
+                </div>
+                <div class="space-y-1 sm:col-span-2">
+                    <label class="text-xs font-semibold uppercase tracking-wide text-slate-600">Notitie</label>
+                    <textarea v-model="form.content" rows="3" class="w-full rounded border border-app-border bg-white px-3 py-2 text-black" placeholder="Korte toelichting..." />
+                </div>
+            </div>
+
+            <div class="rounded-xl border border-app-border bg-white p-3">
+                <h3 class="mb-2 text-sm font-semibold text-black">Standaardwaarden</h3>
+                <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    <label class="text-xs text-black">Prijs per dag leiding <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2 text-slate-500">€</span><input v-model.number="form.standard_values.prijs_per_dag_leiding" type="number" step="0.01" class="w-full rounded border border-app-border py-1.5 pl-6 pr-2 text-black" /></div></label>
+                    <label class="text-xs text-black">Kosten vaart pu <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2 text-slate-500">€</span><input v-model.number="form.standard_values.kosten_vaart_pu" type="number" step="0.01" class="w-full rounded border border-app-border py-1.5 pl-6 pr-2 text-black" /></div></label>
+                    <label class="text-xs text-black">Kosten aggregaat pu <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2 text-slate-500">€</span><input v-model.number="form.standard_values.kosten_aggregaat_pu" type="number" step="0.01" class="w-full rounded border border-app-border py-1.5 pl-6 pr-2 text-black" /></div></label>
+                    <label class="text-xs text-black">Huur Fram pppd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2 text-slate-500">€</span><input v-model.number="form.standard_values.huur_fram_pppd" type="number" step="0.01" class="w-full rounded border border-app-border py-1.5 pl-6 pr-2 text-black" /></div></label>
+                    <label class="text-xs text-black">Proviand pppd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2 text-slate-500">€</span><input v-model.number="form.standard_values.proviand_pppd" type="number" step="0.01" class="w-full rounded border border-app-border py-1.5 pl-6 pr-2 text-black" /></div></label>
+                    <label class="text-xs text-black">Groepsafdracht pjpd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2 text-slate-500">€</span><input v-model.number="form.standard_values.groepsafdracht_pjpd" type="number" step="0.01" class="w-full rounded border border-app-border py-1.5 pl-6 pr-2 text-black" /></div></label>
+                    <label class="text-xs text-black">Reservering NaWaKa pjpd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2 text-slate-500">€</span><input v-model.number="form.standard_values.reservering_nawaka_pjpd" type="number" step="0.01" class="w-full rounded border border-app-border py-1.5 pl-6 pr-2 text-black" /></div></label>
+                </div>
+            </div>
+
+            <div class="space-y-3 rounded-xl border border-app-border bg-white p-3">
+                <div class="flex flex-wrap items-center gap-2">
+                    <button
+                        v-for="(section, idx) in form.budget_sections"
+                        :key="`section-tab-${idx}`"
+                        type="button"
+                        class="rounded-md border px-3 py-1.5 text-sm"
+                        :class="idx === activeSectionIndex ? 'border-brand-blue bg-brand-blue/10 text-black' : 'border-app-border bg-white text-black'"
+                        @click="activeSectionIndex = idx"
+                    >
+                        {{ section.title || `Sectie ${idx + 1}` }}
+                    </button>
+                    <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-700 text-white" title="Sectie toevoegen" @click="addSection">
+                        <PlusIcon class="h-4 w-4" />
+                    </button>
+                </div>
+
+                <div v-if="form.budget_sections[activeSectionIndex]" class="space-y-3">
+                    <div class="flex items-center gap-2">
+                        <input
+                            v-model="form.budget_sections[activeSectionIndex].title"
+                            type="text"
+                            class="w-full rounded border border-app-border bg-white px-3 py-2 text-black"
+                            placeholder="Naam sectie"
+                        />
+                        <button type="button" class="btn-action-delete" title="Sectie verwijderen" @click="removeSection(activeSectionIndex)">
+                            <TrashIcon class="h-5 w-5" />
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto rounded border border-app-border">
+                        <table class="min-w-full text-sm">
+                            <thead class="bg-slate-50 text-black">
+                                <tr>
+                                    <th class="px-2 py-2 text-left">Post</th>
+                                    <th class="px-2 py-2 text-left">Aantal</th>
+                                    <th class="px-2 py-2 text-left">Bedrag</th>
+                                    <th class="px-2 py-2 text-left">Notitie</th>
+                                    <th class="px-2 py-2 text-left">Totaal</th>
+                                    <th class="px-2 py-2 text-left">Actie</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-app-border bg-white">
+                                <tr v-for="(row, rowIdx) in form.budget_sections[activeSectionIndex].rows" :key="`row-${rowIdx}`">
+                                    <td class="px-2 py-2">
+                                        <input v-model="row.label" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black" />
+                                    </td>
+                                    <td class="px-2 py-2">
+                                        <input v-model.number="row.quantity" type="number" min="0" step="0.01" class="w-24 rounded border border-app-border bg-white px-2 py-1.5 text-black" />
+                                    </td>
+                                    <td class="px-2 py-2">
+                                        <div class="relative w-36">
+                                            <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2 text-slate-500">€</span>
+                                            <input v-model.number="row.amount" type="number" step="0.01" class="w-full rounded border border-app-border bg-white py-1.5 pl-6 pr-2 text-black" :disabled="effectiveAmount(row, form.budget_sections[activeSectionIndex].title) !== (Number(row.amount) || 0) && String(row.label || '').trim() !== ''" />
+                                        </div>
+                                    </td>
+                                    <td class="px-2 py-2">
+                                        <input v-model="row.note" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black" />
+                                    </td>
+                                    <td class="px-2 py-2">
+                                        <span class="text-xs text-black">€ {{ (Number(row.quantity || 0) * effectiveAmount(row, form.budget_sections[activeSectionIndex].title)).toFixed(2) }}</span>
+                                    </td>
+                                    <td class="px-2 py-2">
+                                        <button type="button" class="btn-action-delete" title="Regel verwijderen" @click="removeRow(activeSectionIndex, rowIdx)">
+                                            <TrashIcon class="h-5 w-5" />
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-700 text-white" title="Regel toevoegen" @click="addRow(activeSectionIndex)">
+                            <PlusIcon class="h-4 w-4" />
+                        </button>
+                        <p class="text-sm font-semibold text-black">Sectietotaal: € {{ sectionTotal(form.budget_sections[activeSectionIndex]).toFixed(2) }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid gap-2 rounded-xl border border-app-border bg-white p-3 sm:grid-cols-3">
+                <p class="text-sm font-semibold text-black">Totaal bijdragen: € {{ totals.income }}</p>
+                <p class="text-sm font-semibold text-black">Totaal uitgaven: € {{ totals.expenses }}</p>
+                <p class="text-sm font-semibold text-black">Verschil: € {{ totals.difference }}</p>
             </div>
             <div class="flex flex-wrap items-center gap-2 border-t border-app-border pt-3">
                 <button type="submit" class="btn-action-save" :disabled="form.processing" title="Opslaan" aria-label="Opslaan">
                     <DocumentCheckIcon class="h-5 w-5" />
                 </button>
+                <button v-if="isEdit" type="button" class="btn-action-save" title="PDF maken en opslaan" aria-label="PDF maken en opslaan" @click="generatePdf">
+                    <DocumentArrowDownIcon class="h-5 w-5" />
+                </button>
+                <a
+                    v-if="isEdit && item?.pdf_path"
+                    :href="route('camp-budgets.pdf.download', item.id)"
+                    class="btn-action-save"
+                    title="PDF downloaden"
+                    aria-label="PDF downloaden"
+                >
+                    <ArrowDownTrayIcon class="h-5 w-5" />
+                </a>
                 <button v-if="isEdit && canCreate" type="button" class="btn-action-save" title="Kopie maken" aria-label="Kopie maken" @click="copyItem">
                     <DocumentDuplicateIcon class="h-5 w-5" />
                 </button>
