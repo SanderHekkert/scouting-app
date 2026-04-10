@@ -155,12 +155,7 @@ const sortedFilteredMembers = computed(() => {
 
 function toggleAddForm() {
     if (!canCreateMembers.value) return;
-    showAddForm.value = !showAddForm.value;
-    if (showAddForm.value) {
-        rowHighlightMemberId.value = null;
-        form.reset();
-        form.clearErrors();
-    }
+    router.get(route('members.create'));
 }
 
 function normalizeMemberFields(data) {

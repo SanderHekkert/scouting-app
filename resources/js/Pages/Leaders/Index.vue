@@ -87,11 +87,7 @@ const filteredLeaders = computed(() =>
 
 function toggleAddForm() {
     if (!canCreateLeaders.value) return;
-    showAddForm.value = !showAddForm.value;
-    if (showAddForm.value) {
-        form.reset();
-        form.clearErrors();
-    }
+    router.get(route('leaders.create'));
 }
 
 function leaderListName(l) {

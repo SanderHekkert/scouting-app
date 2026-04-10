@@ -22,13 +22,17 @@ class FinanceController extends Controller
         private readonly ReceiptOcrService $ocrService
     ) {}
 
-    public function index(Request $request): Response
+    public function index(Request $request)
+    {
+        return Inertia::location(route('finance.pots.index'));
+    }
+
+    public function potsIndex(Request $request): Response
     {
         $user = $request->user();
         abort_unless($user instanceof User, 403);
         $section = $this->activeSection();
 
-        $canManage = $this->canManageFinance($user, $section);
         $canCreatePots = $this->canCreatePots($user, $section);
         $pots = FinancePot::withoutGlobalScope('section')
             ->where('section', $section)
@@ -41,6 +45,34 @@ class FinanceController extends Controller
                 'starting_amount' => (float) $pot->starting_amount,
                 'current_amount' => (float) $pot->current_amount,
                 'active' => (bool) $pot->active,
+            ])
+            ->values()
+            ->all();
+
+        return Inertia::render('Finance/PotsIndex', [
+            'pots' => $pots,
+            'canManage' => $this->canManageFinance($user, $section),
+            'canCreatePots' => $canCreatePots,
+            'activeSection' => $section,
+        ]);
+    }
+
+    public function declarationsIndex(Request $request): Response
+    {
+        $user = $request->user();
+        abort_unless($user instanceof User, 403);
+        $section = $this->activeSection();
+        $canManage = $this->canManageFinance($user, $section);
+
+        $pots = FinancePot::withoutGlobalScope('section')
+            ->where('section', $section)
+            ->where('active', true)
+            ->orderBy('name')
+            ->get()
+            ->map(fn (FinancePot $pot): array => [
+                'id' => (int) $pot->id,
+                'name' => (string) $pot->name,
+                'current_amount' => (float) $pot->current_amount,
             ])
             ->values()
             ->all();
@@ -59,26 +91,19 @@ class FinanceController extends Controller
                 'id' => (int) $row->id,
                 'status' => (string) $row->status,
                 'amount' => (float) $row->amount,
-                'iban' => (string) ($row->iban ?? ''),
-                'account_name' => (string) ($row->account_name ?? ''),
                 'description_total' => (string) ($row->description_total ?? ''),
-                'description_lines' => (string) ($row->description_lines ?? ''),
                 'declared_at' => optional($row->declared_at)?->toDateString(),
-                'pot_id' => $row->pot_id ? (int) $row->pot_id : null,
                 'pot_name' => (string) optional($row->pot)->name,
-                'receipt_name' => (string) ($row->receipt_name ?? ''),
                 'created_by_name' => (string) optional($row->createdBy)->name,
-                'review_note' => (string) ($row->review_note ?? ''),
                 'can_review' => $canManage && in_array((string) $row->status, [FinanceDeclaration::STATUS_SUBMITTED], true),
             ])
             ->values()
             ->all();
 
-        return Inertia::render('Finance/Index', [
+        return Inertia::render('Finance/DeclarationsIndex', [
             'pots' => $pots,
             'declarations' => $declarations,
             'canManage' => $canManage,
-            'canCreatePots' => $canCreatePots,
             'activeSection' => $section,
         ]);
     }

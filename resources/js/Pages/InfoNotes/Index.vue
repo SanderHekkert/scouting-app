@@ -35,11 +35,7 @@ const speltakLabel = computed(() => sectionLabels[page.props.auth?.active_sectio
 
 function toggleAddForm() {
     if (!canCreateNotes.value) return;
-    showAddForm.value = !showAddForm.value;
-    if (showAddForm.value) {
-        form.reset();
-        form.clearErrors();
-    }
+    router.get(route('info-notes.create'));
 }
 
 function submitAdd() {

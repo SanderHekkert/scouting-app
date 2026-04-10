@@ -124,8 +124,8 @@ const mainNavItems = computed(() => ([
     { label: 'Dashboard', route: 'dashboard', module: 'dashboard', icon: HomeIcon },
     { label: 'Agenda', route: 'agenda.index', matchRoutes: ['agenda.*'], module: 'events', icon: CalendarDaysIcon },
     { label: 'Opkomsten', route: 'opkomsten.index', matchRoutes: ['opkomsten.*', 'jaar-thema'], module: 'events', icon: FlagIcon, hideForBestuur: true },
-    { label: 'Potjes', route: 'finance.index', href: `${route('finance.index')}#potjes`, matchRoutes: ['finance.*'], module: 'financien', icon: BanknotesIcon },
-    { label: 'Declaraties', route: 'finance.index', href: `${route('finance.index')}#declaraties`, matchRoutes: ['finance.*'], module: 'financien', icon: BanknotesIcon },
+    { label: 'Potjes', route: 'finance.pots.index', matchRoutes: ['finance.pots.*'], module: 'financien', icon: BanknotesIcon },
+    { label: 'Declaraties', route: 'finance.declarations.index', matchRoutes: ['finance.declarations.*'], module: 'financien', icon: BanknotesIcon },
 ]).filter((item) => canView(item.module) && !(item.hideForBestuur && activeSection.value === 'bestuur')));
 
 /** Eén sidebar-link; subpagina’s bereik je via SpeltakSubnav op de pagina zelf. */
@@ -180,21 +180,6 @@ const firstAccessibleRoute = computed(() => {
 const mobileMenuOpen = ref(false);
 
 function navItemIsActive(item) {
-    if (item.matchRoutes?.includes('finance.*')) {
-        if (!route().current('finance.*')) {
-            return false;
-        }
-        if (!item.href?.includes('#')) {
-            return true;
-        }
-        if (typeof window === 'undefined') {
-            return false;
-        }
-
-        const hash = item.href.split('#')[1] || '';
-        return window.location.hash === `#${hash}`;
-    }
-
     if (item.matchRoutes?.length) {
         return item.matchRoutes.some((pattern) => route().current(pattern));
     }
@@ -293,7 +278,7 @@ onUnmounted(() => {
                         <Link
                             v-for="item in mainNavItems"
                             :key="`main-${item.label}-${item.href || item.route}`"
-                            :href="item.href || route(item.route)"
+                            :href="route(item.route)"
                             class="block shrink-0 rounded-lg px-3 py-2 text-sm font-medium transition"
                             :class="
                                 navItemIsActive(item)
@@ -419,7 +404,7 @@ onUnmounted(() => {
                     <Link
                         v-for="item in mainNavItems"
                         :key="`mobile-${item.label}-${item.href || item.route}`"
-                        :href="item.href || route(item.route)"
+                        :href="route(item.route)"
                         class="flex min-h-12 items-center rounded-xl px-4 text-base font-medium transition touch-manipulation active:scale-[0.99]"
                         :class="
                             navItemIsActive(item)

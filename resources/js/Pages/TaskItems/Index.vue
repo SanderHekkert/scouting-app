@@ -63,14 +63,6 @@ watch(
     },
     { immediate: true },
 );
-watch(
-    () => form.target_section,
-    (section) => {
-        if (!props.canCreateCrossSection) return;
-        const list = section ? (props.taskCategoriesBySection?.[section] || []) : (props.taskCategories || []);
-        form.category = list[0] || '';
-    },
-);
 
 const groupedSections = computed(() => {
     if (hideCategories.value) {
@@ -117,6 +109,14 @@ const form = useForm({
     shared_sections: [],
 });
 const addDeadlineInput = ref('');
+watch(
+    () => form.target_section,
+    (section) => {
+        if (!props.canCreateCrossSection) return;
+        const list = section ? (props.taskCategoriesBySection?.[section] || []) : (props.taskCategories || []);
+        form.category = list[0] || '';
+    },
+);
 
 const createTaskCategories = computed(() => {
     if (props.canCreateCrossSection && form.target_section) {

@@ -99,7 +99,9 @@ Route::middleware(['auth', 'verified', 'has.role', 'section.role:admin,bestuursl
     Route::patch('/members/{member}/tipper-topper-opkomst', [MemberController::class, 'updateTipperTopperOpkomst'])->middleware('section.permission:members')->name('members.tipper-topper-opkomst');
     Route::patch('/members/{member}/transfer', [MemberController::class, 'transfer'])->middleware('section.permission:members')->name('members.transfer');
     Route::get('/members/bijzonderheden', [MemberController::class, 'indexBijzonderheden'])->middleware('section.permission:members')->name('members.bijzonderheden');
+    Route::get('/members/nieuw', [MemberController::class, 'create'])->middleware('section.permission:members')->name('members.create');
     Route::get('/members/{member}', [MemberController::class, 'show'])->middleware('section.permission:members')->name('members.show');
+    Route::get('/leaders/nieuw', [LeaderController::class, 'create'])->middleware('section.permission:leaders')->name('leaders.create');
     Route::patch('/leaders/{leader}/fields', [LeaderController::class, 'quickUpdate'])->middleware('section.permission:leaders')->name('leaders.quick-update');
     Route::patch('/leaders/{leader}/installed', [LeaderController::class, 'updateInstalled'])->middleware('section.permission:leaders')->name('leaders.update-installed');
     Route::patch('/leaders/{leader}/gedoopt', [LeaderController::class, 'updateGedoopt'])->middleware('section.permission:leaders')->name('leaders.update-gedoopt');
@@ -111,6 +113,10 @@ Route::middleware(['auth', 'verified', 'has.role', 'section.role:admin,bestuursl
     Route::patch('/pod-memberships/{podMembership}', [PodController::class, 'moveMember'])->middleware('section.permission:pods')->name('pods.members.move');
     Route::delete('/pod-memberships/{podMembership}', [PodController::class, 'removeMember'])->middleware('section.permission:pods')->name('pods.members.destroy');
     Route::get('/financien', [FinanceController::class, 'index'])->middleware('section.permission:financien')->name('finance.index');
+    Route::get('/financien/potjes', [FinanceController::class, 'potsIndex'])->middleware('section.permission:financien')->name('finance.pots.index');
+    Route::get('/financien/declaraties', [FinanceController::class, 'declarationsIndex'])->middleware('section.permission:financien')->name('finance.declarations.index');
+    Route::get('/financien/potjes/nieuw', [FinanceController::class, 'createPot'])->middleware('section.permission:financien')->name('finance.pots.create');
+    Route::get('/financien/declaraties/nieuw', [FinanceController::class, 'createDeclaration'])->middleware('section.permission:financien')->name('finance.declarations.create');
     Route::post('/financien/potjes', [FinanceController::class, 'storePot'])->middleware('section.permission:financien')->name('finance.pots.store');
     Route::patch('/financien/potjes/{pot}', [FinanceController::class, 'updatePot'])->middleware('section.permission:financien')->name('finance.pots.update');
     Route::post('/financien/declaraties', [FinanceController::class, 'storeDeclaration'])->middleware('section.permission:financien')->name('finance.declarations.store');
@@ -137,6 +143,7 @@ Route::middleware(['auth', 'verified', 'has.role'])->group(function () {
     Route::patch('/task-categories/order', [TaskItemController::class, 'reorderCategories'])->middleware('section.permission:task_items')->name('task-categories.reorder');
 
     Route::patch('/info-notes/{info_note}/fields', [InfoNoteController::class, 'quickUpdate'])->middleware('section.permission:info_notes')->name('info-notes.quick-update');
+    Route::get('/info-notes/nieuw', [InfoNoteController::class, 'create'])->middleware('section.permission:info_notes')->name('info-notes.create');
     Route::get('/info-notes/{info_note}', [InfoNoteController::class, 'show'])->middleware('section.permission:info_notes')->name('info-notes.show');
     Route::resource('info-notes', InfoNoteController::class)->middleware('section.permission:info_notes')->except(['create', 'show', 'edit']);
 

@@ -1,7 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ArrowDownTrayIcon, ChevronDownIcon, ChevronUpIcon, CloudArrowUpIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import { ArrowDownTrayIcon, ChevronDownIcon, ChevronUpIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
 import { ref } from 'vue';
 
 const props = defineProps({
@@ -47,10 +47,11 @@ function formatSize(size) {
                 <Link
                     v-if="props.can_manage"
                     :href="route('admin.health-forms.create')"
-                    class="inline-flex items-center gap-2 rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-blue-dark"
+                    class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand-blue text-white shadow-sm transition hover:bg-brand-blue-dark"
+                    title="Nieuw formulier uploaden"
+                    aria-label="Nieuw formulier uploaden"
                 >
-                    <CloudArrowUpIcon class="h-5 w-5" />
-                    Nieuw formulier uploaden
+                    <PlusIcon class="h-5 w-5" />
                 </Link>
             </div>
         </template>

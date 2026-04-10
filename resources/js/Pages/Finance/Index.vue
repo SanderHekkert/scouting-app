@@ -1,6 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, useForm, usePage, router } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage, router } from '@inertiajs/vue3';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 
 const props = defineProps({
@@ -221,7 +221,24 @@ watch(receiptRows, () => {
     <Head title="Financiën" />
     <AuthenticatedLayout>
         <template #header>
-            <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">{{ speltakLabel }} - Geldpotjes</h2>
+            <div class="flex w-full flex-wrap items-center justify-between gap-3">
+                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">{{ speltakLabel }} - Geldpotjes</h2>
+                <div class="flex items-center gap-2">
+                    <Link
+                        v-if="canCreatePots"
+                        :href="route('finance.pots.create')"
+                        class="rounded bg-brand-blue px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-blue-dark"
+                    >
+                        Potje toevoegen
+                    </Link>
+                    <Link
+                        :href="route('finance.declarations.create')"
+                        class="rounded bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800"
+                    >
+                        Declaratie toevoegen
+                    </Link>
+                </div>
+            </div>
         </template>
 
         <div class="space-y-4">
