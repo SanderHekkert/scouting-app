@@ -57,6 +57,7 @@ class FinanceController extends Controller
         abort_unless($user instanceof User, 403);
         $section = $this->activeSection();
         $canManage = $this->canManageFinance($user, $section);
+        $canReview = $this->canReviewDeclarations($user, $section);
 
         $pots = FinancePot::withoutGlobalScope('section')
             ->where('section', $section)
@@ -89,7 +90,8 @@ class FinanceController extends Controller
                 'declared_at' => optional($row->declared_at)?->toDateString(),
                 'pot_name' => (string) optional($row->pot)->name,
                 'created_by_name' => (string) optional($row->createdBy)->name,
-                'can_review' => $canManage && in_array((string) $row->status, [FinanceDeclaration::STATUS_SUBMITTED], true),
+                'review_note' => (string) ($row->review_note ?? ''),
+                'can_review' => $canReview && in_array((string) $row->status, [FinanceDeclaration::STATUS_SUBMITTED], true),
             ])
             ->values()
             ->all();
@@ -98,6 +100,7 @@ class FinanceController extends Controller
             'pots' => $pots,
             'declarations' => $declarations,
             'canManage' => $canManage,
+            'canReview' => $canReview,
             'activeSection' => $section,
         ]);
     }
@@ -236,7 +239,7 @@ class FinanceController extends Controller
         $user = $request->user();
         abort_unless($user instanceof User, 403);
         $section = $this->activeSection();
-        abort_unless($this->canManageFinance($user, $section), 403);
+        abort_unless($this->canReviewDeclarations($user, $section), 403);
         abort_unless((string) $declaration->section === $section, 403);
         abort_unless((string) $declaration->status === FinanceDeclaration::STATUS_SUBMITTED, 422);
 
@@ -281,19 +284,19 @@ class FinanceController extends Controller
         $user = $request->user();
         abort_unless($user instanceof User, 403);
         $section = $this->activeSection();
-        abort_unless($this->canManageFinance($user, $section), 403);
+        abort_unless($this->canReviewDeclarations($user, $section), 403);
         abort_unless((string) $declaration->section === $section, 403);
         abort_unless((string) $declaration->status === FinanceDeclaration::STATUS_SUBMITTED, 422);
 
         $data = $request->validate([
-            'review_note' => ['nullable', 'string', 'max:1000'],
+            'review_note' => ['required', 'string', 'max:1000'],
         ]);
 
         $declaration->update([
-            'status' => FinanceDeclaration::STATUS_REJECTED,
+            'status' => FinanceDeclaration::STATUS_NEEDS_CHANGES,
             'processed_by_user_id' => (int) $user->id,
             'processed_at' => now(),
-            'review_note' => trim((string) ($data['review_note'] ?? '')),
+            'review_note' => trim((string) $data['review_note']),
         ]);
 
         return back();
@@ -320,5 +323,17 @@ class FinanceController extends Controller
         }
 
         return $section === UserSectionRole::SECTION_BESTUUR && $this->canManageFinance($user, $section);
+    }
+
+    private function canReviewDeclarations(User $user, string $section): bool
+    {
+        if ($user->isGlobalAdmin()) {
+            return true;
+        }
+
+        return $user->sectionRoles()
+            ->whereIn('section', [UserSectionRole::SECTION_ALL, $section, UserSectionRole::SECTION_BESTUUR])
+            ->where('role', UserSectionRole::ROLE_PENNINGMEESTER)
+            ->exists();
     }
 }

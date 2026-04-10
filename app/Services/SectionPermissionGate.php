@@ -60,7 +60,7 @@ class SectionPermissionGate
             }
 
             if ($module === SectionPermission::MODULE_FINANCE) {
-                if ($section === UserSectionRole::SECTION_BESTUUR && $role === UserSectionRole::ROLE_BESTUURSLID) {
+                if ($section === UserSectionRole::SECTION_BESTUUR && in_array($role, UserSectionRole::BESTUUR_ROLES, true)) {
                     return true;
                 }
 

@@ -21,6 +21,9 @@ const sectionLabel = {
 const roleLabel = {
     admin: 'Admin',
     bestuurslid: 'Bestuurslid',
+    penningmeester: 'Penningmeester',
+    secretaresse: 'Secretaresse',
+    voorzitter: 'Voorzitter',
     teamleider: 'Teamleider',
     leiding: 'Leiding',
     ouder_contact: 'Oudercontact',

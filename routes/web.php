@@ -47,9 +47,10 @@ Route::middleware(['auth', 'verified', 'has.role', 'section.role:admin,bestuursl
     Route::post('/admin/push-notifications', [AdminPushNotificationController::class, 'store'])->name('admin.push-notifications.store');
 });
 
-Route::middleware(['auth', 'verified', 'has.role', 'section.role:admin'])->group(function () {
+Route::middleware(['auth', 'verified', 'has.role', 'section.role:admin,teamleider'])->group(function () {
     Route::get('/admin/rechten', [SectionPermissionController::class, 'index'])->name('permissions.index');
     Route::patch('/admin/rechten/{sectionPermission}', [SectionPermissionController::class, 'update'])->name('permissions.update');
+    Route::patch('/admin/rechten/rollen/zichtbaarheid', [SectionPermissionController::class, 'updateRoleVisibility'])->name('permissions.roles.visibility');
 });
 
 Route::middleware(['auth'])->group(function () {

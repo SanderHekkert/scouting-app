@@ -8,6 +8,7 @@ const props = defineProps({
     selectedSection: { type: String, required: true },
     isAdmin: { type: Boolean, default: false },
     rows: { type: Array, default: () => [] },
+    roleVisibility: { type: Object, default: () => ({}) },
 });
 
 const sectionLabels = {
@@ -26,6 +27,9 @@ const roleLabels = {
     teamleider: 'Teamleider',
     lid: 'Lid',
     bestuurslid: 'Bestuurslid',
+    penningmeester: 'Penningmeester',
+    secretaresse: 'Secretaresse',
+    voorzitter: 'Voorzitter',
 };
 
 const moduleLabels = {
@@ -43,10 +47,18 @@ const moduleLabels = {
 };
 
 const localRows = ref([]);
+const localRoleVisibility = ref({});
 watch(
     () => props.rows,
     (rows) => {
         localRows.value = (rows || []).map((row) => ({ ...row }));
+    },
+    { immediate: true },
+);
+watch(
+    () => props.roleVisibility,
+    (roleVisibility) => {
+        localRoleVisibility.value = { ...(roleVisibility || {}) };
     },
     { immediate: true },
 );
@@ -57,7 +69,7 @@ const groupedRows = computed(() => {
         if (!groups[row.role]) groups[row.role] = [];
         groups[row.role].push(row);
     }
-    const roleOrder = ['teamleider', 'lid', 'leiding', 'ouder_contact', 'bestuurslid'];
+    const roleOrder = ['teamleider', 'lid', 'leiding', 'ouder_contact', 'bestuurslid', 'penningmeester', 'secretaresse', 'voorzitter'];
     const sorted = {};
     Object.keys(groups)
         .sort((a, b) => {
@@ -137,6 +149,23 @@ function permissionCountLabel(role, field) {
     const enabled = rows.filter((row) => !!row[field]).length;
     return `${enabled}/${rows.length || 0}`;
 }
+
+function updateRoleVisibility(role, enabled) {
+    localRoleVisibility.value[role] = !!enabled;
+    router.patch(
+        route('permissions.roles.visibility'),
+        {
+            section: props.selectedSection,
+            roles: localRoleVisibility.value,
+        },
+        {
+            preserveScroll: true,
+            onError: () => {
+                localRoleVisibility.value = { ...(props.roleVisibility || {}) };
+            },
+        },
+    );
+}
 </script>
 
 <template>
@@ -163,6 +192,20 @@ function permissionCountLabel(role, field) {
                     >
                         {{ sectionLabels[section] || section }}
                     </button>
+                </div>
+            </div>
+
+            <div v-if="Object.keys(localRoleVisibility).length" class="surface-brand-top rounded-xl border border-app-border bg-app-panel p-4 shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark">
+                <h3 class="mb-2 text-base font-semibold text-app-ink dark:text-app-ink-dark">Rollen zichtbaar in deze speltak</h3>
+                <div class="flex flex-wrap gap-3">
+                    <label
+                        v-for="(enabled, role) in localRoleVisibility"
+                        :key="`role-visible-${role}`"
+                        class="inline-flex items-center gap-2 rounded-md border border-app-border bg-white px-3 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark"
+                    >
+                        <input type="checkbox" :checked="enabled" @change="updateRoleVisibility(role, $event.target.checked)" />
+                        <span>{{ roleLabelFor(role) }}</span>
+                    </label>
                 </div>
             </div>
 

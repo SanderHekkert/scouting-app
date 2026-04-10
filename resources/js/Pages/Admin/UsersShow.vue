@@ -2,11 +2,12 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { ArrowUturnLeftIcon, DocumentCheckIcon, TrashIcon, XMarkIcon } from '@heroicons/vue/24/outline';
+import { watch } from 'vue';
 
 const props = defineProps({
     user: { type: Object, required: true },
     sections: { type: Array, default: () => [] },
-    localRoles: { type: Array, default: () => [] },
+    localRolesBySection: { type: Object, default: () => ({}) },
     globalRoles: { type: Array, default: () => [] },
 });
 
@@ -22,6 +23,9 @@ const sectionLabel = {
 const roleLabel = {
     admin: 'Admin',
     bestuurslid: 'Bestuurslid',
+    penningmeester: 'Penningmeester',
+    secretaresse: 'Secretaresse',
+    voorzitter: 'Voorzitter',
     teamleider: 'Teamleider',
     leiding: 'Leiding',
     ouder_contact: 'Oudercontact',
@@ -39,8 +43,19 @@ const form = useForm({
 });
 
 function rolesForSection(section) {
-    return section === '*' ? props.globalRoles : props.localRoles;
+    return section === '*' ? props.globalRoles : (props.localRolesBySection?.[section] || []);
 }
+
+watch(
+    () => form.selectedSection,
+    (section) => {
+        const allowed = rolesForSection(section);
+        if (!allowed.includes(form.selectedRole)) {
+            form.selectedRole = allowed[0] || '';
+        }
+    },
+    { immediate: true },
+);
 
 function submit() {
     router.patch(route('admin.users.update', props.user.id), {

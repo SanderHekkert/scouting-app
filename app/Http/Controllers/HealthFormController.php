@@ -273,7 +273,7 @@ class HealthFormController extends Controller
             ->where('section', UserSectionRole::SECTION_BESTUUR)
             ->whereIn('role', [
                 UserSectionRole::ROLE_ADMIN,
-                UserSectionRole::ROLE_BESTUURSLID,
+                ...UserSectionRole::BESTUUR_ROLES,
             ])
             ->exists();
         $isGlobalAdmin = $user->isGlobalAdmin();

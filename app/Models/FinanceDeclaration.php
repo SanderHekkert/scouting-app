@@ -13,7 +13,7 @@ class FinanceDeclaration extends Model
 
     public const STATUS_APPROVED = 'approved';
 
-    public const STATUS_REJECTED = 'rejected';
+    public const STATUS_NEEDS_CHANGES = 'needs_changes';
 
     protected $fillable = [
         'section',

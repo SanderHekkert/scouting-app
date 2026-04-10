@@ -79,7 +79,7 @@ const isAdmin = computed(() =>
     (page.props.auth?.section_roles || []).some((r) => r.section === '*' && r.role === 'admin'),
 );
 const isBoardMember = computed(() =>
-    (page.props.auth?.section_roles || []).some((r) => r.section === '*' && r.role === 'bestuurslid'),
+    (page.props.auth?.section_roles || []).some((r) => r.section === '*' && ['bestuurslid', 'penningmeester', 'secretaresse', 'voorzitter'].includes(r.role)),
 );
 
 function canView(module) {

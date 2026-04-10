@@ -25,6 +25,12 @@ class UserSectionRole extends Model
 
     public const ROLE_BESTUURSLID = 'bestuurslid';
 
+    public const ROLE_PENNINGMEESTER = 'penningmeester';
+
+    public const ROLE_SECRETARESSE = 'secretaresse';
+
+    public const ROLE_VOORZITTER = 'voorzitter';
+
     public const ROLE_TEAMLEIDER = 'teamleider';
 
     public const ROLE_LEIDING = 'leiding';
@@ -45,10 +51,20 @@ class UserSectionRole extends Model
     public const ALL_ROLES = [
         self::ROLE_ADMIN,
         self::ROLE_BESTUURSLID,
+        self::ROLE_PENNINGMEESTER,
+        self::ROLE_SECRETARESSE,
+        self::ROLE_VOORZITTER,
         self::ROLE_TEAMLEIDER,
         self::ROLE_LEIDING,
         self::ROLE_OUDERCONTACT,
         self::ROLE_LID,
+    ];
+
+    public const BESTUUR_ROLES = [
+        self::ROLE_BESTUURSLID,
+        self::ROLE_PENNINGMEESTER,
+        self::ROLE_SECRETARESSE,
+        self::ROLE_VOORZITTER,
     ];
 
     protected $fillable = [

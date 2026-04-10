@@ -51,6 +51,9 @@ class User extends Authenticatable implements MustVerifyEmail
 
         $query = $this->sectionRoles()->where('section', $section);
         if ($roles !== []) {
+            if (in_array(UserSectionRole::ROLE_BESTUURSLID, $roles, true)) {
+                $roles = array_values(array_unique([...$roles, ...UserSectionRole::BESTUUR_ROLES]));
+            }
             $query->whereIn('role', $roles);
         }
 
@@ -83,7 +86,7 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->sectionRoles()
             ->where('section', UserSectionRole::SECTION_ALL)
-            ->where('role', UserSectionRole::ROLE_BESTUURSLID)
+            ->whereIn('role', UserSectionRole::BESTUUR_ROLES)
             ->exists();
     }
 

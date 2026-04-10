@@ -59,9 +59,9 @@ class FinanceFlowTest extends TestCase
         ]);
     }
 
-    public function test_bestuur_can_approve_and_balance_is_decreased(): void
+    public function test_penningmeester_can_approve_and_balance_is_decreased(): void
     {
-        $bestuur = $this->userWithRole(UserSectionRole::SECTION_BESTUUR, UserSectionRole::ROLE_BESTUURSLID);
+        $bestuur = $this->userWithRole(UserSectionRole::SECTION_BESTUUR, UserSectionRole::ROLE_PENNINGMEESTER);
         $pot = FinancePot::query()->create([
             'section' => UserSectionRole::SECTION_BESTUUR,
             'name' => 'Algemeen',
@@ -97,6 +97,35 @@ class FinanceFlowTest extends TestCase
             'type' => 'debit',
         ]);
         $this->assertSame('874.75', (string) $pot->fresh()->current_amount);
+    }
+
+    public function test_bestuurslid_cannot_review_declaration_without_penningmeester_role(): void
+    {
+        $bestuur = $this->userWithRole(UserSectionRole::SECTION_BESTUUR, UserSectionRole::ROLE_BESTUURSLID);
+        $pot = FinancePot::query()->create([
+            'section' => UserSectionRole::SECTION_BESTUUR,
+            'name' => 'Algemeen',
+            'starting_amount' => 1000,
+            'current_amount' => 1000,
+            'active' => true,
+        ]);
+        $declaration = FinanceDeclaration::query()->create([
+            'section' => UserSectionRole::SECTION_BESTUUR,
+            'created_by_user_id' => $bestuur->id,
+            'pot_id' => $pot->id,
+            'status' => FinanceDeclaration::STATUS_SUBMITTED,
+            'amount' => 20,
+            'iban' => 'NL91ABNA0417164300',
+            'account_name' => 'Bestuur User',
+            'description_total' => 'Materiaal',
+            'description_lines' => 'Diverse materialen',
+            'declared_at' => '2026-04-09',
+        ]);
+
+        $this->actingAs($bestuur)
+            ->withSession(['active_section' => UserSectionRole::SECTION_BESTUUR])
+            ->patch(route('finance.declarations.approve', $declaration))
+            ->assertForbidden();
     }
 
     public function test_admin_can_create_finance_pot_outside_bestuur_section(): void

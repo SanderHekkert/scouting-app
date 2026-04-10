@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\SectionRoleVisibility;
 use App\Models\User;
 use App\Models\UserSectionRole;
 use Illuminate\Http\Request;
@@ -22,7 +23,8 @@ class AdminRoleController extends Controller
                 $sectionRole = [];
                 foreach (UserSectionRole::ALL_SECTIONS as $section) {
                     $match = $roles->firstWhere('section', $section);
-                    $sectionRole[$section] = $match?->role ?? UserSectionRole::ROLE_LEIDING;
+                    $fallback = SectionRoleVisibility::enabledRolesForSection($section)[0] ?? UserSectionRole::ROLE_LEIDING;
+                    $sectionRole[$section] = $match?->role ?? $fallback;
                 }
 
                 $isAdmin = $roles->contains(fn (UserSectionRole $r) => $r->section === UserSectionRole::SECTION_ALL && $r->role === UserSectionRole::ROLE_ADMIN);
@@ -45,13 +47,9 @@ class AdminRoleController extends Controller
         return Inertia::render('Admin/Roles', [
             'users' => $users,
             'sections' => UserSectionRole::ALL_SECTIONS,
-            'roles' => [
-                UserSectionRole::ROLE_BESTUURSLID,
-                UserSectionRole::ROLE_TEAMLEIDER,
-                UserSectionRole::ROLE_LEIDING,
-                UserSectionRole::ROLE_OUDERCONTACT,
-                UserSectionRole::ROLE_LID,
-            ],
+            'rolesBySection' => collect(UserSectionRole::ALL_SECTIONS)
+                ->mapWithKeys(fn (string $section): array => [$section => SectionRoleVisibility::enabledRolesForSection($section)])
+                ->all(),
         ]);
     }
 
@@ -60,14 +58,14 @@ class AdminRoleController extends Controller
         $data = $request->validate([
             'is_admin' => ['required', 'boolean'],
             'selected_section' => ['required', 'string', Rule::in(UserSectionRole::ALL_SECTIONS)],
-            'selected_role' => ['required', 'string', Rule::in([
-                UserSectionRole::ROLE_BESTUURSLID,
-                UserSectionRole::ROLE_TEAMLEIDER,
-                UserSectionRole::ROLE_LEIDING,
-                UserSectionRole::ROLE_OUDERCONTACT,
-                UserSectionRole::ROLE_LID,
-            ])],
+            'selected_role' => ['required', 'string'],
         ]);
+
+        abort_unless(
+            in_array((string) $data['selected_role'], SectionRoleVisibility::enabledRolesForSection((string) $data['selected_section']), true),
+            422,
+            'Deze rol is uitgeschakeld voor deze speltak.'
+        );
 
         DB::transaction(function () use ($user, $data): void {
             UserSectionRole::query()->updateOrCreate(

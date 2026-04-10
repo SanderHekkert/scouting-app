@@ -6,7 +6,7 @@ import { computed, reactive } from 'vue';
 const props = defineProps({
     users: { type: Array, default: () => [] },
     sections: { type: Array, default: () => [] },
-    roles: { type: Array, default: () => [] },
+    rolesBySection: { type: Object, default: () => ({}) },
 });
 
 const labels = {
@@ -17,6 +17,9 @@ const labels = {
     wilde_vaart: 'Wilde Vaart',
     bestuur: 'Bestuur',
     bestuurslid: 'Bestuurslid',
+    penningmeester: 'Penningmeester',
+    secretaresse: 'Secretaresse',
+    voorzitter: 'Voorzitter',
     teamleider: 'Teamleider',
     leiding: 'Leiding',
     ouder_contact: 'Oudercontact',
@@ -45,15 +48,23 @@ const stateByUser = reactive(
 );
 const autosaveTimers = new Map();
 
+function availableRolesForSection(section) {
+    return props.rolesBySection?.[section] || [];
+}
+
 function saveUser(userId) {
     const state = stateByUser[userId];
     if (!state) return;
+    const availableRoles = availableRolesForSection(state.selected_section);
+    const selectedRole = state.section_roles[state.selected_section];
+    const roleToSave = availableRoles.includes(selectedRole) ? selectedRole : (availableRoles[0] || 'leiding');
+    state.section_roles[state.selected_section] = roleToSave;
     state.saving = true;
     router.patch(
         route('admin.roles.update', userId),
         {
             selected_section: state.selected_section,
-            selected_role: state.section_roles[state.selected_section] || 'leiding',
+            selected_role: roleToSave,
         },
         {
             preserveScroll: true,
@@ -113,7 +124,7 @@ function scheduleRoleSave(userId) {
                             class="mt-1 w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black"
                             @change="scheduleRoleSave(user.id)"
                         >
-                            <option v-for="role in roles" :key="`mob-r-${user.id}-${role}`" :value="role">
+                            <option v-for="role in availableRolesForSection(stateByUser[user.id].selected_section)" :key="`mob-r-${user.id}-${role}`" :value="role">
                                 {{ labels[role] || role }}
                             </option>
                         </select>
@@ -156,7 +167,7 @@ function scheduleRoleSave(userId) {
                                     class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black"
                                     @change="scheduleRoleSave(user.id)"
                                 >
-                                    <option v-for="role in roles" :key="`r-${user.id}-${role}`" :value="role">
+                                    <option v-for="role in availableRolesForSection(stateByUser[user.id].selected_section)" :key="`r-${user.id}-${role}`" :value="role">
                                         {{ labels[role] || role }}
                                     </option>
                                 </select>

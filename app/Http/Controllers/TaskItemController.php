@@ -513,7 +513,7 @@ class TaskItemController extends Controller
         }
 
         return $activeSection === UserSectionRole::SECTION_BESTUUR
-            && $user->roleInSection(UserSectionRole::SECTION_BESTUUR) === UserSectionRole::ROLE_BESTUURSLID;
+            && in_array((string) $user->roleInSection(UserSectionRole::SECTION_BESTUUR), UserSectionRole::BESTUUR_ROLES, true);
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\SectionRoleVisibility;
 use App\Models\User;
 use App\Models\UserSectionRole;
 use Illuminate\Http\Request;
@@ -76,15 +77,15 @@ class AdminUserController extends Controller
                 'roles' => $roles,
             ],
             'sections' => array_merge([UserSectionRole::SECTION_ALL], UserSectionRole::ALL_SECTIONS),
-            'localRoles' => [
-                UserSectionRole::ROLE_TEAMLEIDER,
-                UserSectionRole::ROLE_LEIDING,
-                UserSectionRole::ROLE_OUDERCONTACT,
-                UserSectionRole::ROLE_LID,
-            ],
+            'localRolesBySection' => collect(UserSectionRole::ALL_SECTIONS)
+                ->mapWithKeys(fn (string $section): array => [$section => SectionRoleVisibility::enabledRolesForSection($section)])
+                ->all(),
             'globalRoles' => [
                 UserSectionRole::ROLE_ADMIN,
                 UserSectionRole::ROLE_BESTUURSLID,
+                UserSectionRole::ROLE_PENNINGMEESTER,
+                UserSectionRole::ROLE_SECRETARESSE,
+                UserSectionRole::ROLE_VOORZITTER,
             ],
         ]);
     }
@@ -159,15 +160,19 @@ class AdminUserController extends Controller
         }
 
         if ($section === UserSectionRole::SECTION_ALL) {
-            if (! in_array($role, [UserSectionRole::ROLE_ADMIN, UserSectionRole::ROLE_BESTUURSLID], true)) {
-                abort(422, 'Alleen admin of bestuurslid is toegestaan voor Globaal.');
+            if (! in_array($role, [UserSectionRole::ROLE_ADMIN, ...UserSectionRole::BESTUUR_ROLES], true)) {
+                abort(422, 'Alleen admin of bestuursrol is toegestaan voor Globaal.');
             }
 
             return;
         }
 
-        if (in_array($role, [UserSectionRole::ROLE_ADMIN, UserSectionRole::ROLE_BESTUURSLID], true)) {
-            abort(422, 'Admin en bestuurslid zijn alleen toegestaan als globale rol.');
+        if (in_array($role, [UserSectionRole::ROLE_ADMIN, ...UserSectionRole::BESTUUR_ROLES], true)) {
+            abort(422, 'Admin en bestuursrollen zijn alleen toegestaan als globale rol.');
+        }
+
+        if (! in_array($role, SectionRoleVisibility::enabledRolesForSection($section), true)) {
+            abort(422, 'Deze rol is uitgeschakeld voor deze speltak.');
         }
     }
 }

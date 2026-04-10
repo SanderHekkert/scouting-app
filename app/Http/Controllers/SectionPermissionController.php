@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\SectionPermission;
+use App\Models\SectionRoleVisibility;
 use App\Models\User;
 use App\Models\UserSectionRole;
 use Illuminate\Http\Request;
@@ -50,6 +51,7 @@ class SectionPermissionController extends Controller
             'rows' => $rows,
             'roles' => $editableRoles,
             'modules' => $allowedModules,
+            'roleVisibility' => SectionRoleVisibility::visibilityMapForSection($section),
         ]);
     }
 
@@ -69,6 +71,48 @@ class SectionPermissionController extends Controller
         ]);
 
         $sectionPermission->update($data);
+
+        return back();
+    }
+
+    public function updateRoleVisibility(Request $request)
+    {
+        [, $manageableSections, $isAdmin] = $this->accessContext($request);
+
+        $data = $request->validate([
+            'section' => ['required', 'string', 'in:'.implode(',', UserSectionRole::ALL_SECTIONS)],
+            'roles' => ['required', 'array'],
+        ]);
+        $section = (string) $data['section'];
+        if (! $isAdmin && ! in_array($section, $manageableSections, true)) {
+            abort(403, 'Je mag alleen rollen in je eigen speltak beheren.');
+        }
+
+        $allowedRoles = SectionRoleVisibility::defaultsForSection($section);
+        $roles = collect((array) $data['roles'])
+            ->filter(fn ($_, $key): bool => is_string($key) && in_array($key, $allowedRoles, true))
+            ->map(fn ($v): bool => (bool) $v)
+            ->all();
+
+        abort_unless(collect($allowedRoles)->contains(fn (string $role): bool => (bool) ($roles[$role] ?? true)), 422, 'Minimaal 1 rol moet zichtbaar blijven.');
+
+        foreach ($allowedRoles as $role) {
+            SectionRoleVisibility::query()->updateOrCreate(
+                ['section' => $section, 'role' => $role],
+                ['is_enabled' => (bool) ($roles[$role] ?? true)],
+            );
+        }
+
+        $disabledRoles = collect($allowedRoles)
+            ->filter(fn (string $role): bool => ! ((bool) ($roles[$role] ?? true)))
+            ->values()
+            ->all();
+        if ($disabledRoles !== []) {
+            UserSectionRole::query()
+                ->where('section', $section)
+                ->whereIn('role', $disabledRoles)
+                ->delete();
+        }
 
         return back();
     }
@@ -108,23 +152,7 @@ class SectionPermissionController extends Controller
      */
     private function editableRolesForSection(string $section): array
     {
-        if ($section === UserSectionRole::SECTION_BESTUUR) {
-            return [UserSectionRole::ROLE_BESTUURSLID];
-        }
-
-        if (in_array($section, [UserSectionRole::SECTION_WILDE_VAART, UserSectionRole::SECTION_LOODSEN], true)) {
-            return [
-                UserSectionRole::ROLE_LID,
-                UserSectionRole::ROLE_LEIDING,
-                UserSectionRole::ROLE_TEAMLEIDER,
-            ];
-        }
-
-        return [
-            UserSectionRole::ROLE_LEIDING,
-            UserSectionRole::ROLE_OUDERCONTACT,
-            UserSectionRole::ROLE_TEAMLEIDER,
-        ];
+        return SectionRoleVisibility::enabledRolesForSection($section);
     }
 
     /**
@@ -158,6 +186,24 @@ class SectionPermissionController extends Controller
                 'can_delete' => false,
             ],
             UserSectionRole::ROLE_BESTUURSLID => [
+                'can_view' => true,
+                'can_create' => false,
+                'can_update' => false,
+                'can_delete' => false,
+            ],
+            UserSectionRole::ROLE_PENNINGMEESTER => [
+                'can_view' => true,
+                'can_create' => false,
+                'can_update' => false,
+                'can_delete' => false,
+            ],
+            UserSectionRole::ROLE_SECRETARESSE => [
+                'can_view' => true,
+                'can_create' => false,
+                'can_update' => false,
+                'can_delete' => false,
+            ],
+            UserSectionRole::ROLE_VOORZITTER => [
                 'can_view' => true,
                 'can_create' => false,
                 'can_update' => false,
@@ -221,7 +267,7 @@ class SectionPermissionController extends Controller
     private function actionsForModule(string $section, string $role, string $module, array $actions): array
     {
         if ($module === SectionPermission::MODULE_FINANCE) {
-            if ($section === UserSectionRole::SECTION_BESTUUR && $role === UserSectionRole::ROLE_BESTUURSLID) {
+            if ($section === UserSectionRole::SECTION_BESTUUR && in_array($role, UserSectionRole::BESTUUR_ROLES, true)) {
                 return [
                     'can_view' => true,
                     'can_create' => true,
