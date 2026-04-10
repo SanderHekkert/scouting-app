@@ -115,7 +115,7 @@ Zorg dat webserver kan schrijven naar:
 De app verstuurt automatisch:
 - taakmelding **1 week voor deadline**
 - taakmelding **op de dag van deadline**
-- op **zaterdag** een melding als er die dag een opkomst is en je je niet afwezig of juist aanwezig hebt gemeld.
+- op de **dag van de geplande opkomst** een melding als je je niet afwezig of juist aanwezig hebt gemeld.
 
 Hiervoor moet de Laravel scheduler draaien op productie:
 

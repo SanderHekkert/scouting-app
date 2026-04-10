@@ -34,7 +34,7 @@ class SendScheduledPushNotifications extends Command
 
         $this->sendTaskDeadlineNotificationsForDate($weekAhead, 'week_before');
         $this->sendTaskDeadlineNotificationsForDate($today, 'day_of');
-        $this->sendSaturdayEventNotifications($today);
+        $this->sendEventNotificationsForToday($today);
 
         return self::SUCCESS;
     }
@@ -96,18 +96,14 @@ class SendScheduledPushNotifications extends Command
         }
     }
 
-    private function sendSaturdayEventNotifications(Carbon $today): void
+    private function sendEventNotificationsForToday(Carbon $today): void
     {
-        if ((int) $today->dayOfWeek !== Carbon::SATURDAY) {
-            return;
-        }
-
         $events = Event::withoutGlobalScope('section')
             ->whereDate('event_date', $today->toDateString())
             ->get(['id', 'theme', 'event_date', 'section', 'shared_sections', 'absent', 'present_names']);
 
         foreach ($events as $event) {
-            $dispatchKey = "event:saturday:{$event->id}:{$today->toDateString()}";
+            $dispatchKey = "event:day_of:{$event->id}:{$today->toDateString()}";
             if ($this->isAlreadySent($dispatchKey)) {
                 continue;
             }
@@ -150,7 +146,7 @@ class SendScheduledPushNotifications extends Command
             $body = "Vandaag is er opkomst: \"{$event->theme}\".";
             $result = $this->webPushService->sendToSubscriptions($subscriptions, $title, $body, '/events');
 
-            $this->markAsSent($dispatchKey, 'event_saturday', $today, [
+            $this->markAsSent($dispatchKey, 'event_day_of', $today, [
                 'event_id' => (int) $event->id,
                 'sections' => $sections->all(),
                 'result' => $result,
