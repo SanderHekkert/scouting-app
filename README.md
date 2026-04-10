@@ -126,3 +126,35 @@ Hiervoor moet de Laravel scheduler draaien op productie:
 Intern draait dan dagelijks om 08:00:
 - `php artisan app:send-scheduled-push-notifications`
 
+### 11) Rollenmodel (bestuur + speltakken)
+
+- Globale rollen:
+  - `admin`
+  - `bestuurslid`
+  - `penningmeester`
+  - `secretaresse`
+  - `voorzitter`
+- Lokale rollen per speltak:
+  - `teamleider`
+  - `leiding`
+  - `ouder_contact`
+  - `lid`
+- Bestuursrollen hebben globale toegang zoals bestuurslid.
+- Teamleider kan in `Admin > Rechtenbeheer` per speltak rollen aan/uit zetten.
+- Uitgeschakelde rollen:
+  - zijn niet meer zichtbaar in rolkeuzes voor die speltak,
+  - zijn niet meer zichtbaar in rechtenbeheer voor die speltak,
+  - worden verwijderd van gebruikers in die speltak.
+
+### 12) Declaratie-goedkeuringsflow
+
+- Nieuwe declaratie krijgt status: `submitted` (wacht op goedkeuring).
+- Beoordeling van declaraties kan door:
+  - `penningmeester` (primair)
+  - `admin` (fallback)
+- Mogelijke uitkomst:
+  - `approved` (goedgekeurd)
+  - `needs_changes` (aanpassen nodig, met verplichte opmerking)
+- Bij `needs_changes` ziet de indiener de opmerking in het declaratie-overzicht.
+- Financiële afboeking op potje gebeurt alleen bij `approved`.
+
