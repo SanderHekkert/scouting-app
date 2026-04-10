@@ -121,7 +121,7 @@ function updatePermission(row, field, value) {
 }
 
 function roleLabelFor(role) {
-    if (role === 'leiding' && ['wilde_vaart', 'loodsen'].includes(props.selectedSection)) {
+    if (role === 'leiding') {
         return 'Leidinglid';
     }
     return roleLabels[role] || role;

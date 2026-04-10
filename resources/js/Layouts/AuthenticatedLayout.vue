@@ -5,8 +5,11 @@ import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
 import {
     Bars3Icon,
+    BookOpenIcon,
     CalendarDaysIcon,
     ClipboardDocumentListIcon,
+    CircleStackIcon,
+    CurrencyEuroIcon,
     FlagIcon,
     BellAlertIcon,
     BanknotesIcon,
@@ -124,8 +127,8 @@ const mainNavItems = computed(() => ([
     { label: 'Dashboard', route: 'dashboard', module: 'dashboard', icon: HomeIcon },
     { label: 'Agenda', route: 'agenda.index', matchRoutes: ['agenda.*'], module: 'events', icon: CalendarDaysIcon },
     { label: 'Opkomsten', route: 'opkomsten.index', matchRoutes: ['opkomsten.*', 'jaar-thema'], module: 'events', icon: FlagIcon, hideForBestuur: true },
-    { label: 'Potjes', route: 'finance.pots.index', matchRoutes: ['finance.pots.*'], module: 'financien', icon: BanknotesIcon },
-    { label: 'Declaraties', route: 'finance.declarations.index', matchRoutes: ['finance.declarations.*'], module: 'financien', icon: BanknotesIcon },
+    { label: 'Potjes', route: 'finance.pots.index', matchRoutes: ['finance.pots.*'], module: 'financien', icon: CircleStackIcon },
+    { label: 'Declaraties', route: 'finance.declarations.index', matchRoutes: ['finance.declarations.*'], module: 'financien', icon: CurrencyEuroIcon },
 ]).filter((item) => canView(item.module) && !(item.hideForBestuur && activeSection.value === 'bestuur')));
 
 /** Eén sidebar-link; subpagina’s bereik je via SpeltakSubnav op de pagina zelf. */
@@ -151,7 +154,7 @@ const tailNavItems = computed(() => ([
     { label: 'Belangrijke info', route: 'info-notes.index', matchRoutes: ['info-notes.*'], module: 'info_notes', icon: InformationCircleIcon },
     { label: 'Taakverdeling', route: 'task-items.index', matchRoutes: ['task-items.*', 'task-categories.*'], module: 'task_items', icon: ClipboardDocumentListIcon },
     { label: 'Begroting', route: 'camp-budgets.index', matchRoutes: ['camp-budgets.*'], module: 'camp_budgets', icon: BanknotesIcon },
-    { label: 'Draaiboek', route: 'camp-playbooks.index', matchRoutes: ['camp-playbooks.*'], module: 'camp_playbooks', icon: DocumentTextIcon },
+    { label: 'Draaiboek', route: 'camp-playbooks.index', matchRoutes: ['camp-playbooks.*'], module: 'camp_playbooks', icon: BookOpenIcon },
     ...((isAdmin.value || isBoardMember.value)
         ? [{ label: 'Gebruikers', route: 'admin.users.index', matchRoutes: ['admin.users.*'], icon: IdentificationIcon }]
         : []),
