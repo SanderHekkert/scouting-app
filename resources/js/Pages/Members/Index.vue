@@ -222,11 +222,11 @@ function editMember(member) {
 </script>
 
 <template>
-    <Head :title="speltakLabel" />
+    <Head :title="`${speltakLabel} - Leden`" />
     <AuthenticatedLayout>
         <template #header>
             <div class="flex w-full flex-wrap items-center justify-between gap-3">
-                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">{{ speltakLabel }}</h2>
+                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">{{ speltakLabel }} - Leden</h2>
                 <div class="flex flex-wrap items-center justify-end gap-2 sm:ms-auto">
                     <button
                         v-if="canCreateMembers"

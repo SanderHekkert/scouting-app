@@ -30,17 +30,34 @@ class TaskItemController extends Controller
      */
     public function index()
     {
+        $user = request()->user();
+        abort_unless($user instanceof User, 403);
         $section = $this->activeSection();
-        $taskCategories = TaskCategory::query()
+        $canCreateCrossSection = $this->canCreateCrossSection($user, $section);
+        $visibleSections = $canCreateCrossSection ? $this->targetSectionsForBoard() : [$section];
+        $taskCategories = TaskCategory::withoutGlobalScope('section')
+            ->whereIn('section', $visibleSections)
             ->orderBy('position')
             ->orderBy('name')
             ->pluck('name')
+            ->unique()
+            ->values()
+            ->all();
+        $taskCategoriesBySection = TaskCategory::withoutGlobalScope('section')
+            ->whereIn('section', $visibleSections)
+            ->orderBy('position')
+            ->orderBy('name')
+            ->get(['section', 'name'])
+            ->groupBy('section')
+            ->map(fn ($rows) => $rows->pluck('name')->values()->all())
             ->all();
 
         $events = Event::withoutGlobalScope('section')
-            ->where(function ($query) use ($section): void {
-                $query->where('section', $section)
-                    ->orWhereJsonContains('shared_sections', $section);
+            ->where(function ($query) use ($visibleSections): void {
+                foreach ($visibleSections as $visibleSection) {
+                    $query->orWhere('section', $visibleSection)
+                        ->orWhereJsonContains('shared_sections', $visibleSection);
+                }
             })
             ->orderBy('event_date')
             ->orderBy('theme')
@@ -56,9 +73,11 @@ class TaskItemController extends Controller
         }
 
         $tasks = TaskItem::withoutGlobalScope('section')
-            ->where(function ($query) use ($section): void {
-                $query->where('section', $section)
-                    ->orWhereJsonContains('shared_sections', $section);
+            ->where(function ($query) use ($visibleSections): void {
+                foreach ($visibleSections as $visibleSection) {
+                    $query->orWhere('section', $visibleSection)
+                        ->orWhereJsonContains('shared_sections', $visibleSection);
+                }
             })
             ->get()
             ->sortBy(function (TaskItem $task) use ($taskCategories) {
@@ -70,9 +89,10 @@ class TaskItemController extends Controller
                 ];
             })
             ->values()
-            ->map(function (TaskItem $task): array {
+            ->map(function (TaskItem $task) use ($user): array {
                 return [
                     'id' => $task->id,
+                    'section' => (string) $task->section,
                     'category' => $task->category,
                     'title' => $task->title,
                     'owner' => $task->owner,
@@ -82,6 +102,8 @@ class TaskItemController extends Controller
                     'deadlines' => $this->normalizedDeadlines($task->deadlines),
                     'event_ids' => collect($eventIdsByTask[(int) $task->id] ?? [])->map(fn ($v): int => (int) $v)->unique()->values()->all(),
                     'shared_sections' => $this->normalizedSharedSections($task->shared_sections ?? null),
+                    'can_update' => $this->canEditOrDeleteTask($user, $task),
+                    'can_delete' => $this->canEditOrDeleteTask($user, $task),
                 ];
             });
 
@@ -98,12 +120,15 @@ class TaskItemController extends Controller
         return Inertia::render('TaskItems/Index', [
             'tasks' => $tasks,
             'taskCategories' => $taskCategories,
+            'taskCategoriesBySection' => $taskCategoriesBySection,
             'leaders' => $leaders,
             'events' => $events->map(fn (Event $event): array => [
                 'id' => (int) $event->id,
                 'event_date' => (string) $event->event_date,
                 'theme' => (string) ($event->theme ?? ''),
             ])->values()->all(),
+            'canCreateCrossSection' => $canCreateCrossSection,
+            'targetSections' => $canCreateCrossSection ? $this->targetSectionsForBoard() : [],
         ]);
     }
 
@@ -151,15 +176,12 @@ class TaskItemController extends Controller
      */
     public function store(Request $request)
     {
+        $user = $request->user();
+        abort_unless($user instanceof User, 403);
         $section = $this->activeSection();
+        $canCreateCrossSection = $this->canCreateCrossSection($user, $section);
         $data = $request->validate([
-            'category' => [
-                'required',
-                'string',
-                Rule::exists('task_categories', 'name')->where(
-                    fn ($query) => $query->where('section', $section)
-                ),
-            ],
+            'category' => ['required', 'string'],
             'title' => ['required', 'string', 'max:255'],
             'owner_user_id' => ['nullable', 'integer', Rule::exists('users', 'id')],
             'owner_user_ids' => ['nullable', 'array'],
@@ -169,11 +191,26 @@ class TaskItemController extends Controller
             'deadlines.*' => ['date_format:Y-m-d'],
             'shared_sections' => ['nullable', 'array'],
             'shared_sections.*' => ['string', Rule::in(UserSectionRole::ALL_SECTIONS)],
+            'target_section' => [$canCreateCrossSection ? 'required' : 'nullable', 'string', Rule::in($this->targetSectionsForBoard())],
         ]);
+        $targetSection = $section;
+        if ($canCreateCrossSection) {
+            $targetSection = (string) $data['target_section'];
+        }
+        validator(['category' => $data['category']], [
+            'category' => [
+                'required',
+                'string',
+                Rule::exists('task_categories', 'name')->where(
+                    fn ($query) => $query->where('section', $targetSection)
+                ),
+            ],
+        ])->validate();
 
         $this->hydrateOwnerFields($data);
         $this->hydrateDeadlineFields($data);
         $data['shared_sections'] = $this->normalizedSharedSections($data['shared_sections'] ?? null);
+        $data['section'] = $targetSection;
 
         TaskItem::create($data);
 
@@ -185,6 +222,9 @@ class TaskItemController extends Controller
      */
     public function update(Request $request, TaskItem $task_item)
     {
+        $user = $request->user();
+        abort_unless($user instanceof User, 403);
+        abort_unless($this->canEditOrDeleteTask($user, $task_item), 403);
         $section = $this->activeSection();
         $data = $request->validate([
             'category' => [
@@ -219,6 +259,9 @@ class TaskItemController extends Controller
      */
     public function quickUpdate(Request $request, TaskItem $taskItem)
     {
+        $user = $request->user();
+        abort_unless($user instanceof User, 403);
+        abort_unless($this->canEditOrDeleteTask($user, $taskItem), 403);
         $section = $this->activeSection();
         $data = $request->validate([
             'category' => [
@@ -330,6 +373,9 @@ class TaskItemController extends Controller
      */
     public function destroy(TaskItem $task_item)
     {
+        $user = request()->user();
+        abort_unless($user instanceof User, 403);
+        abort_unless($this->canEditOrDeleteTask($user, $task_item), 403);
         $task_item->delete();
 
         return to_route('task-items.index');
@@ -337,6 +383,9 @@ class TaskItemController extends Controller
 
     public function updateLinkedEvents(Request $request, TaskItem $taskItem)
     {
+        $user = $request->user();
+        abort_unless($user instanceof User, 403);
+        abort_unless($this->canEditOrDeleteTask($user, $taskItem), 403);
         $section = $this->activeSection();
         $data = $request->validate([
             'event_ids' => ['nullable', 'array'],
@@ -455,5 +504,38 @@ class TaskItemController extends Controller
             ->unique()
             ->values()
             ->all();
+    }
+
+    private function canCreateCrossSection(User $user, string $activeSection): bool
+    {
+        if ($user->isGlobalAdmin()) {
+            return true;
+        }
+
+        return $activeSection === UserSectionRole::SECTION_BESTUUR
+            && $user->roleInSection(UserSectionRole::SECTION_BESTUUR) === UserSectionRole::ROLE_BESTUURSLID;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function targetSectionsForBoard(): array
+    {
+        return [
+            UserSectionRole::SECTION_BEVERS,
+            UserSectionRole::SECTION_DOLFIJNEN,
+            UserSectionRole::SECTION_ZEEVERKENNERS,
+            UserSectionRole::SECTION_WILDE_VAART,
+            UserSectionRole::SECTION_LOODSEN,
+        ];
+    }
+
+    private function canEditOrDeleteTask(User $user, TaskItem $task): bool
+    {
+        if ($user->isGlobalAdmin()) {
+            return true;
+        }
+
+        return $user->roleInSection((string) $task->section) === UserSectionRole::ROLE_TEAMLEIDER;
     }
 }

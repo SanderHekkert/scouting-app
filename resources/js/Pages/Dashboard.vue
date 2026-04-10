@@ -126,7 +126,7 @@ function setUpcomingAttendancePresent(present) {
     <AuthenticatedLayout>
         <template #header>
             <div class="flex w-full flex-wrap items-center justify-between gap-3">
-                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Dashboard</h2>
+                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">{{ speltakLabel }} - Dashboard</h2>
             </div>
         </template>
 

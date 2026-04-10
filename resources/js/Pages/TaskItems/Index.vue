@@ -18,6 +18,18 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
+    taskCategoriesBySection: {
+        type: Object,
+        default: () => ({}),
+    },
+    canCreateCrossSection: {
+        type: Boolean,
+        default: false,
+    },
+    targetSections: {
+        type: Array,
+        default: () => [],
+    },
 });
 const page = usePage();
 const taskPerms = computed(() => page.props.auth?.permissions?.task_items ?? {});
@@ -50,6 +62,14 @@ watch(
         categoryOrder.value = [...(next || [])];
     },
     { immediate: true },
+);
+watch(
+    () => form.target_section,
+    (section) => {
+        if (!props.canCreateCrossSection) return;
+        const list = section ? (props.taskCategoriesBySection?.[section] || []) : (props.taskCategories || []);
+        form.category = list[0] || '';
+    },
 );
 
 const groupedSections = computed(() => {
@@ -89,6 +109,7 @@ const categoryForm = useForm({
 
 const form = useForm({
     category: defaultCategory(),
+    target_section: '',
     title: '',
     owner_user_ids: [],
     description: '',
@@ -96,6 +117,13 @@ const form = useForm({
     shared_sections: [],
 });
 const addDeadlineInput = ref('');
+
+const createTaskCategories = computed(() => {
+    if (props.canCreateCrossSection && form.target_section) {
+        return props.taskCategoriesBySection?.[form.target_section] || [];
+    }
+    return props.taskCategories || [];
+});
 
 const taskFieldSaving = ref(null);
 const editingTaskId = ref(null);
@@ -109,6 +137,7 @@ function toggleAddForm() {
     if (showAddForm.value) {
         showCategoryForm.value = false;
         form.reset();
+        form.target_section = '';
         form.category = defaultCategory();
         addDeadlineInput.value = '';
     }
@@ -138,11 +167,20 @@ function submitAdd() {
         preserveScroll: true,
         onSuccess: () => {
             form.reset();
+            form.target_section = '';
             form.category = defaultCategory();
             addDeadlineInput.value = '';
             showAddForm.value = false;
         },
     });
+}
+
+function canEditTask(task) {
+    return !!canUpdateTasks.value && !!task?.can_update;
+}
+
+function canDeleteTask(task) {
+    return !!canDeleteTasks.value && !!task?.can_delete;
 }
 
 function submitCategory() {
@@ -171,11 +209,12 @@ function isTaskEditing(task) {
 
 function toggleTaskEdit(task) {
     if (!task?.id) return;
+    if (!canEditTask(task)) return;
     editingTaskId.value = editingTaskId.value === task.id ? null : task.id;
 }
 
 function patchTaskField(task, field, raw) {
-    if (!canUpdateTasks.value) return;
+    if (!canEditTask(task)) return;
     if (!task?.id) return;
     let payload = {};
     if (field === 'owner_user_ids') {
@@ -295,7 +334,7 @@ function availableEvents(task) {
 }
 
 function patchTaskEvents(task, ids) {
-    if (!canUpdateTasks.value) return;
+    if (!canEditTask(task)) return;
     if (!task?.id) return;
     taskFieldSaving.value = `${task.id}:events`;
     router.patch(route('task-items.linked-events.update', task.id), { event_ids: ids }, {
@@ -346,7 +385,7 @@ function removeTaskDeadline(task, value) {
 }
 
 function deleteTask(task) {
-    if (!canDeleteTasks.value) return;
+    if (!canDeleteTask(task)) return;
     if (!task?.id) return;
     if (!confirm('Deze taak verwijderen?')) return;
     router.delete(route('task-items.destroy', task.id), {
@@ -355,6 +394,7 @@ function deleteTask(task) {
 }
 
 function onTaskDragStart(task) {
+    if (!canEditTask(task)) return;
     draggingTaskId.value = task?.id ?? null;
 }
 
@@ -431,7 +471,7 @@ function onCategoryDrop(category, event) {
     <AuthenticatedLayout>
         <template #header>
             <div class="flex w-full flex-wrap items-center justify-between gap-3">
-                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Taakverdeling</h2>
+                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">{{ sectionLabels[activeSection] || activeSection }} - Taakverdeling</h2>
                 <div class="flex flex-wrap items-center justify-end gap-2 sm:ms-auto">
                     <div v-if="canCreateTasks" class="relative">
                         <button
@@ -488,12 +528,27 @@ function onCategoryDrop(category, event) {
             >
                 <h3 class="text-base font-semibold text-app-ink dark:text-app-ink-dark">Nieuwe taak</h3>
                 <div class="grid gap-4 sm:grid-cols-[8rem_1fr] sm:items-start">
+                    <label v-if="props.canCreateCrossSection" for="add-target-section" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
+                        Speltak
+                    </label>
+                    <select
+                        v-if="props.canCreateCrossSection"
+                        id="add-target-section"
+                        v-model="form.target_section"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
+                    >
+                        <option value="">Kies speltak</option>
+                        <option v-for="section in props.targetSections" :key="`task-target-${section}`" :value="section">
+                            {{ sectionLabels[section] || section }}
+                        </option>
+                    </select>
+
                     <span v-if="!hideCategories" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-1">
                         Kopje
                     </span>
                     <div v-if="!hideCategories" class="flex flex-wrap gap-2" role="radiogroup" aria-label="Kies kopje voor deze taak">
                         <label
-                            v-for="cat in taskCategories"
+                            v-for="cat in createTaskCategories"
                             :key="`add-${cat}`"
                             class="cursor-pointer rounded-lg border px-3 py-2 text-sm transition"
                             :class="
@@ -507,7 +562,7 @@ function onCategoryDrop(category, event) {
                                 type="radio"
                                 class="sr-only"
                                 :value="cat"
-                                :required="taskCategories[0] === cat"
+                                :required="createTaskCategories[0] === cat"
                             />
                             {{ cat }}
                         </label>
@@ -642,6 +697,7 @@ function onCategoryDrop(category, event) {
                     </div>
                 </div>
                 <p v-if="form.errors.category" class="text-sm text-red-400">{{ form.errors.category }}</p>
+                <p v-if="form.errors.target_section" class="text-sm text-red-400">{{ form.errors.target_section }}</p>
                 <p v-if="form.errors.title" class="text-sm text-red-400">
                     {{ form.errors.title }}
                 </p>
@@ -678,7 +734,7 @@ function onCategoryDrop(category, event) {
                                 v-for="task in section.tasks"
                                 :key="`task-mob-${task.id}`"
                                 class="surface-brand-top rounded-xl border border-brand-blue/30 bg-app-panel px-4 py-3 text-app-ink shadow-sm dark:bg-app-panel-dark/95 dark:text-app-ink-dark"
-                                :draggable="canUpdateTasks"
+                                :draggable="canEditTask(task)"
                                 @dragstart="onTaskDragStart(task)"
                                 @dragend="onTaskDragEnd"
                             >
@@ -824,7 +880,7 @@ function onCategoryDrop(category, event) {
 
                                 <div class="mt-3 border-t border-brand-blue/25 pt-3 dark:border-brand-blue/35">
                                     <button
-                                        v-if="canUpdateTasks"
+                                        v-if="canEditTask(task)"
                                         type="button"
                                         class="btn-action-edit mr-2"
                                         @click="toggleTaskEdit(task)"
@@ -833,7 +889,7 @@ function onCategoryDrop(category, event) {
                                         <PencilSquareIcon class="h-4 w-4" />
                                     </button>
                                     <button
-                                        v-if="canDeleteTasks"
+                                        v-if="canDeleteTask(task)"
                                         type="button"
                                         class="btn-action-delete"
                                         @click="deleteTask(task)"
@@ -871,12 +927,12 @@ function onCategoryDrop(category, event) {
                                 v-for="task in section.tasks"
                                 :key="task.id"
                                 class="bg-brand-blue/5 transition-colors hover:bg-brand-blue/12 dark:bg-app-panel-dark/50 dark:hover:bg-brand-blue/15"
-                                :draggable="canUpdateTasks"
+                                :draggable="canEditTask(task)"
                                 @dragstart="onTaskDragStart(task)"
                                 @dragend="onTaskDragEnd"
                             >
                                 <td class="px-3 py-2.5 align-middle text-app-muted dark:text-app-muted-dark">
-                                    <Bars3Icon v-if="canUpdateTasks" class="h-5 w-5 cursor-grab" />
+                                    <Bars3Icon v-if="canEditTask(task)" class="h-5 w-5 cursor-grab" />
                                 </td>
                                 <td class="px-3 py-2.5 align-middle">
                                     <input
@@ -1017,7 +1073,7 @@ function onCategoryDrop(category, event) {
                                 </td>
                                 <td class="px-3 py-2.5 align-middle">
                                     <button
-                                        v-if="canUpdateTasks"
+                                        v-if="canEditTask(task)"
                                         type="button"
                                         class="btn-action-edit mr-2"
                                         @click="toggleTaskEdit(task)"
@@ -1026,7 +1082,7 @@ function onCategoryDrop(category, event) {
                                         <PencilSquareIcon class="h-4 w-4" />
                                     </button>
                                     <button
-                                        v-if="canDeleteTasks"
+                                        v-if="canDeleteTask(task)"
                                         type="button"
                                         class="btn-action-delete"
                                         @click="deleteTask(task)"

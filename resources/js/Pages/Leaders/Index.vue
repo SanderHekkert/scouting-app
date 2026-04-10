@@ -12,6 +12,15 @@ const props = defineProps({
 });
 const page = usePage();
 const isBestuurSection = computed(() => (page.props.auth?.active_section ?? '') === 'bestuur');
+const sectionLabelMap = {
+    bevers: 'Bevers',
+    dolfijnen: 'Dolfijnen',
+    zeeverkenners: 'Zeeverkenners',
+    wilde_vaart: 'Wilde Vaart',
+    loodsen: 'Loodsen',
+    bestuur: 'Bestuur',
+};
+const speltakLabel = computed(() => sectionLabelMap[page.props.auth?.active_section] || 'Dolfijnen');
 const leaderPerms = computed(() => page.props.auth?.permissions?.leaders ?? {});
 const canCreateLeaders = computed(() => !!leaderPerms.value.create);
 const canUpdateLeaders = computed(() => !!leaderPerms.value.update);
@@ -169,7 +178,7 @@ function leaderAge(value) {
     <AuthenticatedLayout>
         <template #header>
             <div class="flex w-full flex-wrap items-center justify-between gap-3">
-                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Leiding</h2>
+                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">{{ speltakLabel }} - Leiding</h2>
                 <div class="flex flex-wrap items-center justify-end gap-2 sm:ms-auto">
                     <button
                         v-if="canCreateLeaders"

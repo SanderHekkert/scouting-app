@@ -36,6 +36,7 @@ const moduleLabels = {
     pods: 'Vin/Bakindeling',
     info_notes: 'Belangrijke info',
     task_items: 'Taakverdeling',
+    financien: 'Financiën',
     year_theme: 'Jaar thema',
     tipper_topper: 'Tipper/Topper opkomst',
     profile: 'Profiel',

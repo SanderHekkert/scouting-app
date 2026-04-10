@@ -10,6 +10,11 @@ use Inertia\Inertia;
 
 class LeaderController extends Controller
 {
+    public function create()
+    {
+        return Inertia::render('Leaders/Create');
+    }
+
     public function index()
     {
         $activeSection = app()->bound('currentSection') ? app('currentSection') : UserSectionRole::SECTION_DOLFIJNEN;

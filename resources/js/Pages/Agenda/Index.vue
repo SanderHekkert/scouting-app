@@ -586,11 +586,11 @@ function opkomstColorClass(section) {
 </script>
 
 <template>
-    <Head title="Agenda" />
+    <Head title="Persoonlijke Agenda" />
     <AuthenticatedLayout>
         <template #header>
             <div class="flex w-full flex-wrap items-center justify-between gap-3">
-                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Agenda</h2>
+                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Persoonlijke Agenda</h2>
                 <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-1 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
                     <template v-if="props.canBrowseAllAgendas">
                         <select

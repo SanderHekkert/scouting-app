@@ -1,6 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { ArrowUturnLeftIcon, DocumentCheckIcon, PaperClipIcon, TrashIcon } from '@heroicons/vue/24/outline';
 import { computed, ref, watch } from 'vue';
 
@@ -9,6 +9,16 @@ const props = defineProps({
     isBestuur: { type: Boolean, default: false },
     availableUsers: { type: Array, default: () => [] },
 });
+const page = usePage();
+const sectionLabels = {
+    bevers: 'Bevers',
+    dolfijnen: 'Dolfijnen',
+    zeeverkenners: 'Zeeverkenners',
+    wilde_vaart: 'Wilde Vaart',
+    loodsen: 'Loodsen',
+    bestuur: 'Bestuur',
+};
+const speltakLabel = computed(() => sectionLabels[page.props.auth?.active_section] || 'Dolfijnen');
 
 const form = useForm({
     theme: props.item.theme || '',
@@ -122,11 +132,11 @@ watch(
 </script>
 
 <template>
-    <Head title="Agenda activiteit toevoegen" />
+    <Head :title="`${speltakLabel} - Agenda activiteit toevoegen`" />
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center justify-between gap-3">
-                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Agenda activiteit toevoegen</h2>
+                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">{{ speltakLabel }} - Agenda activiteit toevoegen</h2>
                 <Link :href="route('agenda.index')" class="btn-action-back" title="Terug" aria-label="Terug">
                     <ArrowUturnLeftIcon class="h-5 w-5" />
                 </Link>

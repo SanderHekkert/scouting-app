@@ -24,6 +24,8 @@ class SectionPermission extends Model
 
     public const MODULE_TIPPER_TOPPER = 'tipper_topper';
 
+    public const MODULE_FINANCE = 'financien';
+
     public const MODULE_PROFILE = 'profile';
 
     public const ALL_MODULES = [
@@ -36,6 +38,7 @@ class SectionPermission extends Model
         self::MODULE_TASK_ITEMS,
         self::MODULE_YEAR_THEME,
         self::MODULE_TIPPER_TOPPER,
+        self::MODULE_FINANCE,
         self::MODULE_PROFILE,
     ];
 

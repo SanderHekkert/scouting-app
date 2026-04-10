@@ -11,6 +11,15 @@ const props = defineProps({
     activeSection: { type: String, default: 'dolfijnen' },
     allSections: { type: Array, default: () => [] },
 });
+const sectionLabels = {
+    bevers: 'Bevers',
+    dolfijnen: 'Dolfijnen',
+    zeeverkenners: 'Zeeverkenners',
+    wilde_vaart: 'Wilde Vaart',
+    loodsen: 'Loodsen',
+    bestuur: 'Bestuur',
+};
+const speltakLabel = computed(() => sectionLabels[props.activeSection] || 'Dolfijnen');
 
 const selectedAction = ref(null);
 const addDeadlineInput = ref('');
@@ -90,11 +99,11 @@ function submitCategory() {
 </script>
 
 <template>
-    <Head title="Taakverdeling toevoegen" />
+    <Head :title="`${speltakLabel} - Taakverdeling toevoegen`" />
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center justify-between gap-3">
-                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Taakverdeling toevoegen</h2>
+                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">{{ speltakLabel }} - Taakverdeling toevoegen</h2>
                 <Link
                     :href="route('task-items.index')"
                     class="btn-action-back"

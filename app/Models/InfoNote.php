@@ -13,5 +13,6 @@ class InfoNote extends Model
         'category',
         'content',
         'link',
+        'section',
     ];
 }

@@ -68,11 +68,11 @@ function deleteMember() {
 </script>
 
 <template>
-    <Head :title="`${form.first_name} ${form.last_name}`.trim() || 'Lid bewerken'" />
+    <Head :title="`${speltakLabel} - Lid bewerken`" />
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center justify-between gap-3">
-                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Lid bewerken - {{ speltakLabel }}</h2>
+                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">{{ speltakLabel }} - Lid bewerken</h2>
                 <Link :href="route('members.index')" class="btn-action-back" title="Terug" aria-label="Terug">
                     <ArrowUturnLeftIcon class="h-5 w-5" />
                 </Link>

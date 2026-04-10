@@ -13,6 +13,7 @@ class TaskItem extends Model
     protected $table = 'task_items';
 
     protected $fillable = [
+        'section',
         'category',
         'title',
         'owner',

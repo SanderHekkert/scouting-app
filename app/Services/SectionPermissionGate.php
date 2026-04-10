@@ -23,7 +23,16 @@ class SectionPermissionGate
             return true;
         }
         if ($user->isGlobalBoardMember()) {
-            return $action === 'view';
+            if ($action === 'view') {
+                return true;
+            }
+
+            return $module === SectionPermission::MODULE_INFO_NOTES
+                && $action === 'create'
+                && $section === UserSectionRole::SECTION_BESTUUR
+                || ($module === SectionPermission::MODULE_TASK_ITEMS
+                    && $action === 'create'
+                    && $section === UserSectionRole::SECTION_BESTUUR);
         }
 
         $role = $user->roleInSection($section);
@@ -42,6 +51,14 @@ class SectionPermissionGate
             ->first();
 
         if (! $permission) {
+            if ($module === SectionPermission::MODULE_FINANCE) {
+                if ($section === UserSectionRole::SECTION_BESTUUR && $role === UserSectionRole::ROLE_BESTUURSLID) {
+                    return true;
+                }
+
+                return in_array($action, ['view', 'create'], true);
+            }
+
             if ($role === UserSectionRole::ROLE_LID) {
                 return $module === SectionPermission::MODULE_EVENTS && $action === 'view';
             }

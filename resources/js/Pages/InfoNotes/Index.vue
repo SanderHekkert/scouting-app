@@ -4,12 +4,14 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, useForm, router, usePage } from '@inertiajs/vue3';
 import { ArrowTopRightOnSquareIcon, DocumentCheckIcon, PencilSquareIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
 
-const props = defineProps({ notes: Array });
+const props = defineProps({
+    notes: { type: Array, default: () => [] },
+    canCreateCrossSection: { type: Boolean, default: false },
+    targetSections: { type: Array, default: () => [] },
+});
 const page = usePage();
 const notePerms = computed(() => page.props.auth?.permissions?.info_notes ?? {});
 const canCreateNotes = computed(() => !!notePerms.value.create);
-const canUpdateNotes = computed(() => !!notePerms.value.update);
-const canDeleteNotes = computed(() => !!notePerms.value.delete);
 
 const showAddForm = ref(false);
 
@@ -17,7 +19,18 @@ const form = useForm({
     category: '',
     content: '',
     link: '',
+    target_section: '',
 });
+
+const sectionLabels = {
+    bevers: 'Bevers',
+    dolfijnen: 'Dolfijnen',
+    zeeverkenners: 'Zeeverkenners',
+    wilde_vaart: 'Wilde Vaart',
+    loodsen: 'Loodsen',
+    bestuur: 'Bestuur',
+};
+const speltakLabel = computed(() => sectionLabels[page.props.auth?.active_section] || 'Dolfijnen');
 
 
 function toggleAddForm() {
@@ -41,7 +54,7 @@ function submitAdd() {
 }
 
 function deleteNote(note) {
-    if (!canDeleteNotes.value) return;
+    if (!note?.can_delete) return;
     if (!note?.id) return;
     if (!confirm('Deze notitie verwijderen?')) return;
     router.delete(route('info-notes.destroy', note.id), {
@@ -75,7 +88,7 @@ function safeExternalUrl(url) {
 }
 
 function editNote(note) {
-    if (!canUpdateNotes.value) return;
+    if (!note?.can_update) return;
     if (!note?.id) return;
     router.get(route('info-notes.show', note.id));
 }
@@ -86,7 +99,7 @@ function editNote(note) {
     <AuthenticatedLayout>
         <template #header>
             <div class="flex w-full flex-wrap items-center justify-between gap-3">
-                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Belangrijke info</h2>
+                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">{{ speltakLabel }} - Belangrijke info</h2>
                 <div class="flex flex-wrap items-center justify-end gap-2 sm:ms-auto">
                     <button
                         v-if="canCreateNotes"
@@ -120,6 +133,21 @@ function editNote(note) {
                         placeholder="Bijv. Kamp, Ouder contact"
                         class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
                     />
+
+                    <label v-if="props.canCreateCrossSection" for="add-info-section" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
+                        Speltak
+                    </label>
+                    <select
+                        v-if="props.canCreateCrossSection"
+                        id="add-info-section"
+                        v-model="form.target_section"
+                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
+                    >
+                        <option value="">Kies speltak</option>
+                        <option v-for="section in props.targetSections" :key="`target-${section}`" :value="section">
+                            {{ sectionLabels[section] || section }}
+                        </option>
+                    </select>
 
                     <label for="add-info-content" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
                         Inhoud
@@ -161,6 +189,7 @@ function editNote(note) {
                 <p v-if="form.errors.category" class="text-sm text-red-400">{{ form.errors.category }}</p>
                 <p v-if="form.errors.content" class="text-sm text-red-400">{{ form.errors.content }}</p>
                 <p v-if="form.errors.link" class="text-sm text-red-400">{{ form.errors.link }}</p>
+                <p v-if="form.errors.target_section" class="text-sm text-red-400">{{ form.errors.target_section }}</p>
             </form>
 
             <div class="surface-brand-top rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-4">
@@ -197,10 +226,10 @@ function editNote(note) {
                                 </a>
                             </div>
                             <div class="mt-3 flex items-center gap-2 border-t border-brand-blue/25 pt-3 dark:border-brand-blue/35">
-                                <button v-if="canUpdateNotes" type="button" class="btn-action-edit" title="Bewerken" @click="editNote(note)">
+                                <button v-if="note.can_update" type="button" class="btn-action-edit" title="Bewerken" @click="editNote(note)">
                                     <PencilSquareIcon class="h-4 w-4" />
                                 </button>
-                                <button v-if="canDeleteNotes" type="button" class="btn-action-delete" title="Verwijderen" @click="deleteNote(note)">
+                                <button v-if="note.can_delete" type="button" class="btn-action-delete" title="Verwijderen" @click="deleteNote(note)">
                                     <TrashIcon class="h-4 w-4" />
                                 </button>
                             </div>
@@ -254,10 +283,10 @@ function editNote(note) {
                                 </div>
                             </td>
                             <td class="px-3 py-2.5 align-top">
-                                <button v-if="canUpdateNotes" type="button" class="btn-action-edit me-2" title="Bewerken" @click="editNote(note)">
+                                <button v-if="note.can_update" type="button" class="btn-action-edit me-2" title="Bewerken" @click="editNote(note)">
                                     <PencilSquareIcon class="h-4 w-4" />
                                 </button>
-                                <button v-if="canDeleteNotes" type="button" class="btn-action-delete" title="Verwijderen" @click="deleteNote(note)">
+                                <button v-if="note.can_delete" type="button" class="btn-action-delete" title="Verwijderen" @click="deleteNote(note)">
                                     <TrashIcon class="h-4 w-4" />
                                 </button>
                             </td>

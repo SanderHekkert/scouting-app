@@ -7,6 +7,7 @@ use App\Http\Controllers\AdminUserInvitationController;
 use App\Http\Controllers\AgendaItemController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\HealthFormController;
 use App\Http\Controllers\InfoNoteController;
 use App\Http\Controllers\LeaderController;
@@ -109,15 +110,13 @@ Route::middleware(['auth', 'verified', 'has.role', 'section.role:admin,bestuursl
     Route::post('/pods/{pod}/members', [PodController::class, 'addMember'])->middleware('section.permission:pods')->name('pods.members.store');
     Route::patch('/pod-memberships/{podMembership}', [PodController::class, 'moveMember'])->middleware('section.permission:pods')->name('pods.members.move');
     Route::delete('/pod-memberships/{podMembership}', [PodController::class, 'removeMember'])->middleware('section.permission:pods')->name('pods.members.destroy');
-    Route::patch('/info-notes/{info_note}/fields', [InfoNoteController::class, 'quickUpdate'])->middleware('section.permission:info_notes')->name('info-notes.quick-update');
-    Route::get('/info-notes/{info_note}', [InfoNoteController::class, 'show'])->middleware('section.permission:info_notes')->name('info-notes.show');
-    Route::resource('info-notes', InfoNoteController::class)->middleware('section.permission:info_notes')->except(['create', 'show', 'edit']);
-    Route::patch('/task-items/{taskItem}/fields', [TaskItemController::class, 'quickUpdate'])->middleware('section.permission:task_items')->name('task-items.quick-update');
-    Route::patch('/task-items/{taskItem}/linked-events', [TaskItemController::class, 'updateLinkedEvents'])->middleware('section.permission:task_items')->name('task-items.linked-events.update');
-    Route::get('/task-items/nieuw', [TaskItemController::class, 'create'])->middleware('section.permission:task_items')->name('task-items.create');
-    Route::resource('task-items', TaskItemController::class)->middleware('section.permission:task_items')->except(['create', 'show', 'edit']);
-    Route::post('/task-categories', [TaskItemController::class, 'storeCategory'])->middleware('section.permission:task_items')->name('task-categories.store');
-    Route::patch('/task-categories/order', [TaskItemController::class, 'reorderCategories'])->middleware('section.permission:task_items')->name('task-categories.reorder');
+    Route::get('/financien', [FinanceController::class, 'index'])->middleware('section.permission:financien')->name('finance.index');
+    Route::post('/financien/potjes', [FinanceController::class, 'storePot'])->middleware('section.permission:financien')->name('finance.pots.store');
+    Route::patch('/financien/potjes/{pot}', [FinanceController::class, 'updatePot'])->middleware('section.permission:financien')->name('finance.pots.update');
+    Route::post('/financien/declaraties', [FinanceController::class, 'storeDeclaration'])->middleware('section.permission:financien')->name('finance.declarations.store');
+    Route::patch('/financien/declaraties/{declaration}/approve', [FinanceController::class, 'approveDeclaration'])->middleware('section.permission:financien')->name('finance.declarations.approve');
+    Route::patch('/financien/declaraties/{declaration}/reject', [FinanceController::class, 'rejectDeclaration'])->middleware('section.permission:financien')->name('finance.declarations.reject');
+    Route::post('/financien/ocr', [FinanceController::class, 'ocr'])->middleware('section.permission:financien')->name('finance.ocr');
 });
 
 Route::middleware(['auth', 'verified', 'has.role'])->group(function () {
@@ -129,6 +128,17 @@ Route::middleware(['auth', 'verified', 'has.role'])->group(function () {
     Route::get('/agenda/opkomsten/{event}', [AgendaItemController::class, 'showOpkomst'])->middleware('section.permission:events')->name('agenda.opkomsten.show');
     Route::get('/agenda/{agendaItem}', [AgendaItemController::class, 'show'])->middleware('section.permission:events')->name('agenda.show');
     Route::resource('agenda', AgendaItemController::class)->middleware('section.permission:events')->parameters(['agenda' => 'agendaItem'])->except(['create', 'show', 'edit']);
+
+    Route::patch('/task-items/{taskItem}/fields', [TaskItemController::class, 'quickUpdate'])->middleware('section.permission:task_items')->name('task-items.quick-update');
+    Route::patch('/task-items/{taskItem}/linked-events', [TaskItemController::class, 'updateLinkedEvents'])->middleware('section.permission:task_items')->name('task-items.linked-events.update');
+    Route::get('/task-items/nieuw', [TaskItemController::class, 'create'])->middleware('section.permission:task_items')->name('task-items.create');
+    Route::resource('task-items', TaskItemController::class)->middleware('section.permission:task_items')->except(['create', 'show', 'edit']);
+    Route::post('/task-categories', [TaskItemController::class, 'storeCategory'])->middleware('section.permission:task_items')->name('task-categories.store');
+    Route::patch('/task-categories/order', [TaskItemController::class, 'reorderCategories'])->middleware('section.permission:task_items')->name('task-categories.reorder');
+
+    Route::patch('/info-notes/{info_note}/fields', [InfoNoteController::class, 'quickUpdate'])->middleware('section.permission:info_notes')->name('info-notes.quick-update');
+    Route::get('/info-notes/{info_note}', [InfoNoteController::class, 'show'])->middleware('section.permission:info_notes')->name('info-notes.show');
+    Route::resource('info-notes', InfoNoteController::class)->middleware('section.permission:info_notes')->except(['create', 'show', 'edit']);
 
     Route::get('/admin/gezondheidsformulieren', [HealthFormController::class, 'index'])->name('admin.health-forms.index');
     Route::get('/admin/gezondheidsformulieren/nieuw', [HealthFormController::class, 'create'])->name('admin.health-forms.create');

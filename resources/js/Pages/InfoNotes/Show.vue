@@ -1,11 +1,22 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { ArrowUturnLeftIcon, DocumentCheckIcon } from '@heroicons/vue/24/outline';
+import { computed } from 'vue';
 
 const props = defineProps({
     note: { type: Object, required: true },
 });
+const page = usePage();
+const sectionLabels = {
+    bevers: 'Bevers',
+    dolfijnen: 'Dolfijnen',
+    zeeverkenners: 'Zeeverkenners',
+    wilde_vaart: 'Wilde Vaart',
+    loodsen: 'Loodsen',
+    bestuur: 'Bestuur',
+};
+const speltakLabel = computed(() => sectionLabels[page.props.auth?.active_section] || 'Dolfijnen');
 
 const form = useForm({
     category: props.note.category || '',
@@ -21,11 +32,11 @@ function submit() {
 </script>
 
 <template>
-    <Head title="Belangrijke info bewerken" />
+    <Head :title="`${speltakLabel} - Belangrijke info bewerken`" />
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center justify-between gap-3">
-                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Belangrijke info bewerken</h2>
+                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">{{ speltakLabel }} - Belangrijke info bewerken</h2>
                 <Link :href="route('info-notes.index')" class="btn-action-back" title="Terug" aria-label="Terug">
                     <ArrowUturnLeftIcon class="h-5 w-5" />
                 </Link>

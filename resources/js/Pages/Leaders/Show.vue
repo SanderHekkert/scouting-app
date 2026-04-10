@@ -10,6 +10,15 @@ const props = defineProps({
 
 const page = usePage();
 const isBestuurSection = computed(() => (page.props.auth?.active_section ?? '') === 'bestuur');
+const sectionLabelMap = {
+    bevers: 'Bevers',
+    dolfijnen: 'Dolfijnen',
+    zeeverkenners: 'Zeeverkenners',
+    wilde_vaart: 'Wilde Vaart',
+    loodsen: 'Loodsen',
+    bestuur: 'Bestuur',
+};
+const speltakLabel = computed(() => sectionLabelMap[page.props.auth?.active_section] || 'Dolfijnen');
 
 const form = useForm({
     installed: Boolean(props.leader.installed),
@@ -39,11 +48,11 @@ function deleteLeader() {
 </script>
 
 <template>
-    <Head :title="`${form.first_name} ${form.last_name}`.trim() || 'Leiding bewerken'" />
+    <Head :title="`${speltakLabel} - Leiding bewerken`" />
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center justify-between gap-3">
-                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Leiding bewerken</h2>
+                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">{{ speltakLabel }} - Leiding bewerken</h2>
                 <Link :href="route('leaders.index')" class="btn-action-back" title="Terug" aria-label="Terug">
                     <ArrowUturnLeftIcon class="h-5 w-5" />
                 </Link>

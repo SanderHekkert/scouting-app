@@ -63,6 +63,10 @@ class HandleInertiaRequests extends Middleware
                         'delete' => false,
                     ];
                 }
+                if ($activeSection === UserSectionRole::SECTION_BESTUUR) {
+                    $permissions[SectionPermission::MODULE_INFO_NOTES]['create'] = true;
+                    $permissions[SectionPermission::MODULE_TASK_ITEMS]['create'] = true;
+                }
             } elseif ($role === UserSectionRole::ROLE_TEAMLEIDER) {
                 foreach (SectionPermission::ALL_MODULES as $module) {
                     $permissions[$module] = [
@@ -99,6 +103,15 @@ class HandleInertiaRequests extends Middleware
                     $permissions[SectionPermission::MODULE_EVENTS] = [
                         'view' => true,
                         'create' => false,
+                        'update' => false,
+                        'delete' => false,
+                    ];
+                }
+
+                if (! isset($permissions[SectionPermission::MODULE_FINANCE])) {
+                    $permissions[SectionPermission::MODULE_FINANCE] = [
+                        'view' => true,
+                        'create' => true,
                         'update' => false,
                         'delete' => false,
                     ];

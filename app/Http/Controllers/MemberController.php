@@ -10,6 +10,11 @@ use Inertia\Inertia;
 
 class MemberController extends Controller
 {
+    public function create()
+    {
+        return Inertia::render('Members/Create');
+    }
+
     /**
      * Display a listing of the resource.
      */

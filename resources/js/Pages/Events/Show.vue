@@ -23,6 +23,7 @@ const sectionLabels = {
     loodsen: 'Loodsen',
     bestuur: 'Bestuur',
 };
+const speltakLabel = computed(() => sectionLabels[activeSection.value] || 'Dolfijnen');
 const shareableSections = computed(() =>
     (props.allSections || []).filter(
         (s) => s !== activeSection.value
@@ -132,11 +133,11 @@ function removeTask(taskId) {
 </script>
 
 <template>
-    <Head :title="isCreateMode ? 'Opkomst toevoegen' : 'Opkomst bewerken'" />
+    <Head :title="`${speltakLabel} - ${isCreateMode ? 'Opkomst toevoegen' : 'Opkomst bewerken'}`" />
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center justify-between gap-3">
-                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">{{ isCreateMode ? 'Opkomst toevoegen' : 'Opkomst bewerken' }}</h2>
+                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">{{ speltakLabel }} - {{ isCreateMode ? 'Opkomst toevoegen' : 'Opkomst bewerken' }}</h2>
                 <Link :href="route('opkomsten.index')" class="btn-action-back" title="Terug" aria-label="Terug">
                     <ArrowUturnLeftIcon class="h-5 w-5" />
                 </Link>

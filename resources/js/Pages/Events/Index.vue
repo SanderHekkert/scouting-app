@@ -24,6 +24,15 @@ const props = defineProps({
 
 const page = usePage();
 const activeSection = computed(() => page.props.auth?.active_section ?? 'dolfijnen');
+const sectionLabelMap = {
+    bevers: 'Bevers',
+    dolfijnen: 'Dolfijnen',
+    zeeverkenners: 'Zeeverkenners',
+    wilde_vaart: 'Wilde Vaart',
+    loodsen: 'Loodsen',
+    bestuur: 'Bestuur',
+};
+const speltakLabel = computed(() => sectionLabelMap[activeSection.value] || 'Dolfijnen');
 const eventPerms = computed(() => page.props.auth?.permissions?.events ?? {});
 const canCreateEvents = computed(() => !!eventPerms.value.create);
 const canUpdateEvents = computed(() => !!eventPerms.value.update);
@@ -162,7 +171,7 @@ function setOwnAttendance(event, present) {
     <AuthenticatedLayout>
         <template #header>
             <div class="flex w-full flex-wrap items-center justify-between gap-3">
-                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Opkomsten</h2>
+                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">{{ speltakLabel }} - Opkomsten</h2>
                 <div v-if="canCreateEvents" class="flex flex-wrap items-center justify-end gap-2 sm:ms-auto">
                     <button
                         type="button"
