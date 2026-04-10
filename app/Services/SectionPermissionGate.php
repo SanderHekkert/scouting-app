@@ -27,6 +27,10 @@ class SectionPermissionGate
                 return true;
             }
 
+            if (in_array($module, [SectionPermission::MODULE_CAMP_BUDGETS, SectionPermission::MODULE_CAMP_PLAYBOOKS], true)) {
+                return true;
+            }
+
             return $module === SectionPermission::MODULE_INFO_NOTES
                 && $action === 'create'
                 && $section === UserSectionRole::SECTION_BESTUUR
@@ -51,6 +55,10 @@ class SectionPermissionGate
             ->first();
 
         if (! $permission) {
+            if (in_array($module, [SectionPermission::MODULE_CAMP_BUDGETS, SectionPermission::MODULE_CAMP_PLAYBOOKS], true)) {
+                return in_array($action, ['view', 'create', 'update'], true);
+            }
+
             if ($module === SectionPermission::MODULE_FINANCE) {
                 if ($section === UserSectionRole::SECTION_BESTUUR && $role === UserSectionRole::ROLE_BESTUURSLID) {
                     return true;

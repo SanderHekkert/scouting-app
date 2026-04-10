@@ -26,6 +26,10 @@ class SectionPermission extends Model
 
     public const MODULE_FINANCE = 'financien';
 
+    public const MODULE_CAMP_BUDGETS = 'camp_budgets';
+
+    public const MODULE_CAMP_PLAYBOOKS = 'camp_playbooks';
+
     public const MODULE_PROFILE = 'profile';
 
     public const ALL_MODULES = [
@@ -39,6 +43,8 @@ class SectionPermission extends Model
         self::MODULE_YEAR_THEME,
         self::MODULE_TIPPER_TOPPER,
         self::MODULE_FINANCE,
+        self::MODULE_CAMP_BUDGETS,
+        self::MODULE_CAMP_PLAYBOOKS,
         self::MODULE_PROFILE,
     ];
 

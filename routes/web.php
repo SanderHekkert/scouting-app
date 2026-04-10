@@ -5,6 +5,8 @@ use App\Http\Controllers\AdminRoleController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AdminUserInvitationController;
 use App\Http\Controllers\AgendaItemController;
+use App\Http\Controllers\CampBudgetController;
+use App\Http\Controllers\CampPlaybookController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\FinanceController;
@@ -122,6 +124,12 @@ Route::middleware(['auth', 'verified', 'has.role', 'section.role:admin,bestuursl
     Route::post('/financien/declaraties', [FinanceController::class, 'storeDeclaration'])->middleware('section.permission:financien')->name('finance.declarations.store');
     Route::patch('/financien/declaraties/{declaration}/approve', [FinanceController::class, 'approveDeclaration'])->middleware('section.permission:financien')->name('finance.declarations.approve');
     Route::patch('/financien/declaraties/{declaration}/reject', [FinanceController::class, 'rejectDeclaration'])->middleware('section.permission:financien')->name('finance.declarations.reject');
+    Route::get('/kamp/begroting', [CampBudgetController::class, 'index'])->middleware('section.permission:camp_budgets')->name('camp-budgets.index');
+    Route::post('/kamp/begroting', [CampBudgetController::class, 'store'])->middleware('section.permission:camp_budgets')->name('camp-budgets.store');
+    Route::patch('/kamp/begroting/{campBudget}', [CampBudgetController::class, 'update'])->middleware('section.permission:camp_budgets')->name('camp-budgets.update');
+    Route::get('/kamp/draaiboek', [CampPlaybookController::class, 'index'])->middleware('section.permission:camp_playbooks')->name('camp-playbooks.index');
+    Route::post('/kamp/draaiboek', [CampPlaybookController::class, 'store'])->middleware('section.permission:camp_playbooks')->name('camp-playbooks.store');
+    Route::patch('/kamp/draaiboek/{campPlaybook}', [CampPlaybookController::class, 'update'])->middleware('section.permission:camp_playbooks')->name('camp-playbooks.update');
 });
 
 Route::middleware(['auth', 'verified', 'has.role'])->group(function () {

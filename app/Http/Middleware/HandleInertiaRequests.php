@@ -58,8 +58,8 @@ class HandleInertiaRequests extends Middleware
                 foreach (SectionPermission::ALL_MODULES as $module) {
                     $permissions[$module] = [
                         'view' => true,
-                        'create' => false,
-                        'update' => false,
+                        'create' => in_array($module, [SectionPermission::MODULE_CAMP_BUDGETS, SectionPermission::MODULE_CAMP_PLAYBOOKS], true),
+                        'update' => in_array($module, [SectionPermission::MODULE_CAMP_BUDGETS, SectionPermission::MODULE_CAMP_PLAYBOOKS], true),
                         'delete' => false,
                     ];
                 }
@@ -115,6 +115,17 @@ class HandleInertiaRequests extends Middleware
                         'update' => false,
                         'delete' => false,
                     ];
+                }
+
+                foreach ([SectionPermission::MODULE_CAMP_BUDGETS, SectionPermission::MODULE_CAMP_PLAYBOOKS] as $campModule) {
+                    if (! isset($permissions[$campModule])) {
+                        $permissions[$campModule] = [
+                            'view' => true,
+                            'create' => true,
+                            'update' => true,
+                            'delete' => false,
+                        ];
+                    }
                 }
             }
 

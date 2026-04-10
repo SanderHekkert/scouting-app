@@ -150,6 +150,8 @@ const tailNavItems = computed(() => ([
     { label: 'Leiding', route: 'leaders.index', matchRoutes: ['leaders.*'], module: 'leaders', icon: UsersIcon },
     { label: 'Belangrijke info', route: 'info-notes.index', matchRoutes: ['info-notes.*'], module: 'info_notes', icon: InformationCircleIcon },
     { label: 'Taakverdeling', route: 'task-items.index', matchRoutes: ['task-items.*', 'task-categories.*'], module: 'task_items', icon: ClipboardDocumentListIcon },
+    { label: 'Begroting', route: 'camp-budgets.index', matchRoutes: ['camp-budgets.*'], module: 'camp_budgets', icon: BanknotesIcon },
+    { label: 'Draaiboek', route: 'camp-playbooks.index', matchRoutes: ['camp-playbooks.*'], module: 'camp_playbooks', icon: DocumentTextIcon },
     ...((isAdmin.value || isBoardMember.value)
         ? [{ label: 'Gebruikers', route: 'admin.users.index', matchRoutes: ['admin.users.*'], icon: IdentificationIcon }]
         : []),

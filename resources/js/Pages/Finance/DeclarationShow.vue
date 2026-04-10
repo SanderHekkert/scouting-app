@@ -65,6 +65,20 @@ function parseNumber(value) {
     return Number.parseFloat(String(value).replace(',', '.')) || 0;
 }
 
+function sanitizeMoneyInput(value) {
+    const cleaned = String(value ?? '')
+        .replace(',', '.')
+        .replace(/[^0-9.]/g, '');
+    const [intPartRaw, ...decimalParts] = cleaned.split('.');
+    const intPart = intPartRaw || '0';
+    const decimalPart = decimalParts.join('').slice(0, 2);
+    return decimalPart.length > 0 ? `${intPart}.${decimalPart}` : intPart;
+}
+
+function onRowAmountInput(row, event) {
+    row.amount = sanitizeMoneyInput(event?.target?.value ?? row.amount);
+}
+
 const receiptRowsTotal = computed(() => receiptRows.value.reduce((sum, row) => {
     const qty = parseNumber(row.quantity || 1) || 1;
     const amount = parseNumber(row.amount);
@@ -157,7 +171,10 @@ watch(receiptRows, () => {
 
                 <div class="order-8 space-y-1">
                     <label class="text-xs font-semibold uppercase tracking-wide text-slate-600">Bedrag (op basis van bonregels)</label>
-                    <input v-model="form.amount" type="number" step="0.01" min="0.01" class="w-full rounded border border-app-border bg-slate-100 px-3 py-2 text-black" required readonly />
+                    <div class="relative w-full sm:max-w-[12rem]">
+                        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500">€</span>
+                        <input v-model="form.amount" type="number" step="0.01" min="0.01" class="w-full rounded border border-app-border bg-slate-100 pl-8 pr-3 py-2 text-black" required readonly />
+                    </div>
                 </div>
 
                 <div class="order-6 space-y-2 sm:col-span-2">
@@ -183,7 +200,18 @@ watch(receiptRows, () => {
                                 <tr v-for="(row, index) in receiptRows" :key="`receipt-row-${index}`">
                                     <td class="px-2 py-2"><input v-model="row.name" type="text" class="w-full rounded border border-app-border px-2 py-1.5 text-black" /></td>
                                     <td class="px-2 py-2"><input v-model="row.quantity" type="number" min="0" step="0.01" class="w-24 rounded border border-app-border px-2 py-1.5 text-black" /></td>
-                                    <td class="px-2 py-2"><input v-model="row.amount" type="number" min="0" step="0.01" class="w-28 rounded border border-app-border px-2 py-1.5 text-black" /></td>
+                                    <td class="px-2 py-2">
+                                        <div class="relative w-28">
+                                            <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2 text-slate-500">€</span>
+                                            <input
+                                                :value="row.amount"
+                                                type="text"
+                                                inputmode="decimal"
+                                                class="w-28 rounded border border-app-border pl-6 pr-2 py-1.5 text-black"
+                                                @input="onRowAmountInput(row, $event)"
+                                            />
+                                        </div>
+                                    </td>
                                     <td class="px-2 py-2">
                                         <button type="button" class="btn-action-delete" title="Verwijderen" aria-label="Verwijderen" @click="removeReceiptRow(index)">
                                             <TrashIcon class="h-5 w-5" />
