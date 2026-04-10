@@ -115,7 +115,7 @@ class FinanceController extends Controller
         $section = $this->activeSection();
         abort_unless($this->canCreatePots($user, $section), 403);
 
-        return Inertia::render('Finance/CreatePot', [
+        return Inertia::render('Finance/PotShow', [
             'activeSection' => $section,
         ]);
     }
@@ -139,7 +139,7 @@ class FinanceController extends Controller
             ->values()
             ->all();
 
-        return Inertia::render('Finance/CreateDeclaration', [
+        return Inertia::render('Finance/DeclarationShow', [
             'activeSection' => $section,
             'pots' => $pots,
         ]);

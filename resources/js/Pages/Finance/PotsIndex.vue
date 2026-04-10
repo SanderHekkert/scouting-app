@@ -1,6 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { PlusIcon } from '@heroicons/vue/24/outline';
 import { computed } from 'vue';
 
 const props = defineProps({
@@ -20,19 +21,6 @@ const sectionLabelMap = {
 };
 const speltakLabel = computed(() => sectionLabelMap[page.props.auth?.active_section] || 'Dolfijnen');
 
-const potForm = useForm({
-    name: '',
-    starting_amount: '',
-    active: true,
-});
-
-function submitPot() {
-    potForm.post(route('finance.pots.store'), {
-        preserveScroll: true,
-        onSuccess: () => potForm.reset(),
-    });
-}
-
 function updatePot(pot) {
     router.patch(route('finance.pots.update', pot.id), {
         name: pot.name,
@@ -51,9 +39,11 @@ function updatePot(pot) {
                 <Link
                     v-if="canCreatePots"
                     :href="route('finance.pots.create')"
-                    class="rounded bg-brand-blue px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-blue-dark"
+                    class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand-blue text-white shadow-sm transition hover:bg-brand-blue-dark"
+                    title="Nieuw potje toevoegen"
+                    aria-label="Nieuw potje toevoegen"
                 >
-                    Nieuw potje
+                    <PlusIcon class="h-5 w-5" />
                 </Link>
             </div>
         </template>
@@ -61,24 +51,6 @@ function updatePot(pot) {
         <div class="space-y-4">
             <div class="surface-brand-top rounded-xl border border-app-border bg-app-panel p-4 shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark">
                 <h4 class="text-base font-semibold text-app-ink dark:text-app-ink-dark">Potjes overzicht</h4>
-
-                <form v-if="canCreatePots" class="mt-3 grid gap-3 rounded-lg border border-app-border bg-white p-3 sm:grid-cols-2 lg:grid-cols-4" @submit.prevent="submitPot">
-                    <div class="space-y-1">
-                        <label class="text-xs font-semibold uppercase tracking-wide text-slate-600">Naam potje</label>
-                        <input v-model="potForm.name" type="text" placeholder="Bijv. Kamp 2026" class="w-full rounded border border-app-border bg-white px-3 py-2 text-black" required />
-                    </div>
-                    <div class="space-y-1">
-                        <label class="text-xs font-semibold uppercase tracking-wide text-slate-600">Startbudget</label>
-                        <input v-model="potForm.starting_amount" type="number" step="0.01" min="0" placeholder="0,00" class="w-full rounded border border-app-border bg-white px-3 py-2 text-black" required />
-                    </div>
-                    <label class="inline-flex items-center gap-2 self-end rounded border border-app-border bg-slate-50 px-3 py-2.5 text-sm font-medium text-black">
-                        <input v-model="potForm.active" type="checkbox" />
-                        Direct actief
-                    </label>
-                    <button type="submit" class="self-end rounded bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60" :disabled="potForm.processing">
-                        {{ potForm.processing ? 'Bezig met aanmaken...' : 'Potje aanmaken' }}
-                    </button>
-                </form>
 
                 <div class="mt-3 space-y-2">
                     <p v-if="!props.pots.length" class="rounded-lg border border-dashed border-app-border bg-white px-3 py-3 text-sm text-slate-600">
