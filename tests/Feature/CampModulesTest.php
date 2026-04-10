@@ -55,6 +55,25 @@ class CampModulesTest extends TestCase
             'title' => 'Pinksterkamp begroting v2',
             'section' => UserSectionRole::SECTION_DOLFIJNEN,
         ]);
+
+        $this->actingAs($admin)
+            ->withSession(['active_section' => UserSectionRole::SECTION_DOLFIJNEN])
+            ->post(route('camp-budgets.copy', $budget))
+            ->assertRedirect(route('camp-budgets.index'));
+
+        $this->assertDatabaseHas('camp_budgets', [
+            'title' => 'Pinksterkamp begroting v2 (kopie)',
+            'section' => UserSectionRole::SECTION_DOLFIJNEN,
+        ]);
+
+        $this->actingAs($admin)
+            ->withSession(['active_section' => UserSectionRole::SECTION_DOLFIJNEN])
+            ->delete(route('camp-budgets.destroy', $budget))
+            ->assertRedirect(route('camp-budgets.index'));
+
+        $this->assertDatabaseMissing('camp_budgets', [
+            'id' => $budget->id,
+        ]);
     }
 
     public function test_admin_can_create_and_update_camp_playbook_in_active_section(): void
@@ -86,6 +105,25 @@ class CampModulesTest extends TestCase
             'id' => $playbook->id,
             'title' => 'Pinksterkamp draaiboek v2',
             'section' => UserSectionRole::SECTION_DOLFIJNEN,
+        ]);
+
+        $this->actingAs($admin)
+            ->withSession(['active_section' => UserSectionRole::SECTION_DOLFIJNEN])
+            ->post(route('camp-playbooks.copy', $playbook))
+            ->assertRedirect(route('camp-playbooks.index'));
+
+        $this->assertDatabaseHas('camp_playbooks', [
+            'title' => 'Pinksterkamp draaiboek v2 (kopie)',
+            'section' => UserSectionRole::SECTION_DOLFIJNEN,
+        ]);
+
+        $this->actingAs($admin)
+            ->withSession(['active_section' => UserSectionRole::SECTION_DOLFIJNEN])
+            ->delete(route('camp-playbooks.destroy', $playbook))
+            ->assertRedirect(route('camp-playbooks.index'));
+
+        $this->assertDatabaseMissing('camp_playbooks', [
+            'id' => $playbook->id,
         ]);
     }
 }

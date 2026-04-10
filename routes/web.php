@@ -82,8 +82,11 @@ Route::middleware(['auth', 'verified', 'has.role', 'section.role:admin,bestuursl
         return back();
     })->name('active-section.update');
 
+    // Dashboard
     Route::get('/dashboard', DashboardController::class)->middleware('section.permission:dashboard')->name('dashboard');
     Route::patch('/dashboard/komende-opkomst-aanwezigheid', [DashboardController::class, 'updateUpcomingAttendance'])->middleware('section.permission:dashboard')->name('dashboard.upcoming-attendance.update');
+
+    // Opkomsten
     Route::get('/jaar-thema', [YearThemeController::class, 'index'])->middleware('section.permission:year_theme')->name('jaar-thema');
     Route::patch('/jaar-thema/entries/{yearThemeEntry}', [YearThemeController::class, 'updateEntry'])->middleware('section.permission:year_theme')->name('jaar-thema.entries.update');
     Route::get('/tipper-topper-opkomst', TipperTopperOpkomstController::class)->middleware('section.permission:tipper_topper')->name('tipper-topper-opkomst.index');
@@ -96,6 +99,7 @@ Route::middleware(['auth', 'verified', 'has.role', 'section.role:admin,bestuursl
     Route::get('/opkomsten/{event}', [EventController::class, 'show'])->middleware('section.permission:events')->name('opkomsten.show');
     Route::resource('opkomsten', EventController::class)->middleware('section.permission:events')->parameters(['opkomsten' => 'event'])->except(['show', 'edit']);
 
+    // Leden
     Route::patch('/members/{member}/installed', [MemberController::class, 'updateInstalled'])->middleware('section.permission:members')->name('members.update-installed');
     Route::patch('/members/{member}/gedoopt', [MemberController::class, 'updateGedoopt'])->middleware('section.permission:members')->name('members.update-gedoopt');
     Route::patch('/members/{member}/fields', [MemberController::class, 'quickUpdate'])->middleware('section.permission:members')->name('members.quick-update');
@@ -105,6 +109,8 @@ Route::middleware(['auth', 'verified', 'has.role', 'section.role:admin,bestuursl
     Route::get('/members/nieuw', [MemberController::class, 'create'])->middleware('section.permission:members')->name('members.create');
     Route::get('/members/{member}', [MemberController::class, 'show'])->middleware('section.permission:members')->name('members.show');
     Route::get('/leaders/nieuw', [LeaderController::class, 'create'])->middleware('section.permission:leaders')->name('leaders.create');
+
+    // Leiding
     Route::patch('/leaders/{leader}/fields', [LeaderController::class, 'quickUpdate'])->middleware('section.permission:leaders')->name('leaders.quick-update');
     Route::patch('/leaders/{leader}/installed', [LeaderController::class, 'updateInstalled'])->middleware('section.permission:leaders')->name('leaders.update-installed');
     Route::patch('/leaders/{leader}/gedoopt', [LeaderController::class, 'updateGedoopt'])->middleware('section.permission:leaders')->name('leaders.update-gedoopt');
@@ -115,6 +121,8 @@ Route::middleware(['auth', 'verified', 'has.role', 'section.role:admin,bestuursl
     Route::post('/pods/{pod}/members', [PodController::class, 'addMember'])->middleware('section.permission:pods')->name('pods.members.store');
     Route::patch('/pod-memberships/{podMembership}', [PodController::class, 'moveMember'])->middleware('section.permission:pods')->name('pods.members.move');
     Route::delete('/pod-memberships/{podMembership}', [PodController::class, 'removeMember'])->middleware('section.permission:pods')->name('pods.members.destroy');
+
+    // Financiën
     Route::get('/financien', [FinanceController::class, 'index'])->middleware('section.permission:financien')->name('finance.index');
     Route::get('/financien/potjes', [FinanceController::class, 'potsIndex'])->middleware('section.permission:financien')->name('finance.pots.index');
     Route::get('/financien/declaraties', [FinanceController::class, 'declarationsIndex'])->middleware('section.permission:financien')->name('finance.declarations.index');
@@ -125,15 +133,28 @@ Route::middleware(['auth', 'verified', 'has.role', 'section.role:admin,bestuursl
     Route::post('/financien/declaraties', [FinanceController::class, 'storeDeclaration'])->middleware('section.permission:financien')->name('finance.declarations.store');
     Route::patch('/financien/declaraties/{declaration}/approve', [FinanceController::class, 'approveDeclaration'])->middleware('section.permission:financien')->name('finance.declarations.approve');
     Route::patch('/financien/declaraties/{declaration}/reject', [FinanceController::class, 'rejectDeclaration'])->middleware('section.permission:financien')->name('finance.declarations.reject');
+
+    // Begroting
     Route::get('/kamp/begroting', [CampBudgetController::class, 'index'])->middleware('section.permission:camp_budgets')->name('camp-budgets.index');
+    Route::get('/kamp/begroting/nieuw', [CampBudgetController::class, 'create'])->middleware('section.permission:camp_budgets')->name('camp-budgets.create');
+    Route::get('/kamp/begroting/{campBudget}', [CampBudgetController::class, 'show'])->middleware('section.permission:camp_budgets')->name('camp-budgets.show');
     Route::post('/kamp/begroting', [CampBudgetController::class, 'store'])->middleware('section.permission:camp_budgets')->name('camp-budgets.store');
+    Route::post('/kamp/begroting/{campBudget}/copy', [CampBudgetController::class, 'copy'])->middleware('section.permission:camp_budgets')->name('camp-budgets.copy');
     Route::patch('/kamp/begroting/{campBudget}', [CampBudgetController::class, 'update'])->middleware('section.permission:camp_budgets')->name('camp-budgets.update');
+
+    // Draaiboek
+    Route::delete('/kamp/begroting/{campBudget}', [CampBudgetController::class, 'destroy'])->middleware('section.permission:camp_budgets')->name('camp-budgets.destroy');
     Route::get('/kamp/draaiboek', [CampPlaybookController::class, 'index'])->middleware('section.permission:camp_playbooks')->name('camp-playbooks.index');
+    Route::get('/kamp/draaiboek/nieuw', [CampPlaybookController::class, 'create'])->middleware('section.permission:camp_playbooks')->name('camp-playbooks.create');
+    Route::get('/kamp/draaiboek/{campPlaybook}', [CampPlaybookController::class, 'show'])->middleware('section.permission:camp_playbooks')->name('camp-playbooks.show');
     Route::post('/kamp/draaiboek', [CampPlaybookController::class, 'store'])->middleware('section.permission:camp_playbooks')->name('camp-playbooks.store');
+    Route::post('/kamp/draaiboek/{campPlaybook}/copy', [CampPlaybookController::class, 'copy'])->middleware('section.permission:camp_playbooks')->name('camp-playbooks.copy');
     Route::patch('/kamp/draaiboek/{campPlaybook}', [CampPlaybookController::class, 'update'])->middleware('section.permission:camp_playbooks')->name('camp-playbooks.update');
+    Route::delete('/kamp/draaiboek/{campPlaybook}', [CampPlaybookController::class, 'destroy'])->middleware('section.permission:camp_playbooks')->name('camp-playbooks.destroy');
 });
 
 Route::middleware(['auth', 'verified', 'has.role'])->group(function () {
+    // Agenda
     Route::get('/agenda/archived', [AgendaItemController::class, 'archived'])->middleware('section.permission:events')->name('agenda.archived');
     Route::get('/agenda/nieuw', [AgendaItemController::class, 'create'])->middleware('section.permission:events')->name('agenda.create');
     Route::get('/agenda/{agendaItem}/attachment', [AgendaItemController::class, 'downloadAttachment'])->middleware('section.permission:events')->name('agenda.attachment.download');
@@ -143,6 +164,7 @@ Route::middleware(['auth', 'verified', 'has.role'])->group(function () {
     Route::get('/agenda/{agendaItem}', [AgendaItemController::class, 'show'])->middleware('section.permission:events')->name('agenda.show');
     Route::resource('agenda', AgendaItemController::class)->middleware('section.permission:events')->parameters(['agenda' => 'agendaItem'])->except(['create', 'show', 'edit']);
 
+    // Taakverdeling
     Route::patch('/task-items/{taskItem}/fields', [TaskItemController::class, 'quickUpdate'])->middleware('section.permission:task_items')->name('task-items.quick-update');
     Route::patch('/task-items/{taskItem}/linked-events', [TaskItemController::class, 'updateLinkedEvents'])->middleware('section.permission:task_items')->name('task-items.linked-events.update');
     Route::get('/task-items/nieuw', [TaskItemController::class, 'create'])->middleware('section.permission:task_items')->name('task-items.create');
@@ -150,11 +172,13 @@ Route::middleware(['auth', 'verified', 'has.role'])->group(function () {
     Route::post('/task-categories', [TaskItemController::class, 'storeCategory'])->middleware('section.permission:task_items')->name('task-categories.store');
     Route::patch('/task-categories/order', [TaskItemController::class, 'reorderCategories'])->middleware('section.permission:task_items')->name('task-categories.reorder');
 
+    // Belangrijke info
     Route::patch('/info-notes/{info_note}/fields', [InfoNoteController::class, 'quickUpdate'])->middleware('section.permission:info_notes')->name('info-notes.quick-update');
     Route::get('/info-notes/nieuw', [InfoNoteController::class, 'create'])->middleware('section.permission:info_notes')->name('info-notes.create');
     Route::get('/info-notes/{info_note}', [InfoNoteController::class, 'show'])->middleware('section.permission:info_notes')->name('info-notes.show');
     Route::resource('info-notes', InfoNoteController::class)->middleware('section.permission:info_notes')->except(['create', 'show', 'edit']);
 
+    // Gezondheidsformulieren
     Route::get('/admin/gezondheidsformulieren', [HealthFormController::class, 'index'])->name('admin.health-forms.index');
     Route::get('/admin/gezondheidsformulieren/nieuw', [HealthFormController::class, 'create'])->name('admin.health-forms.create');
     Route::post('/admin/gezondheidsformulieren', [HealthFormController::class, 'store'])->name('admin.health-forms.store');
