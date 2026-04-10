@@ -33,7 +33,6 @@ function submit() {
                 <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">{{ speltakLabel }} - Potje toevoegen</h2>
                 <Link :href="route('finance.pots.index')" class="btn-action-back">
                     <ArrowUturnLeftIcon class="h-4 w-4" />
-                    Terug
                 </Link>
             </div>
         </template>

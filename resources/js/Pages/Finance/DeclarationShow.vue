@@ -164,7 +164,6 @@ watch(receiptRows, () => {
                 <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">{{ speltakLabel }} - Declaratie toevoegen</h2>
                 <Link :href="route('finance.declarations.index')" class="btn-action-back">
                     <ArrowUturnLeftIcon class="h-4 w-4" />
-                    Terug
                 </Link>
             </div>
         </template>
