@@ -247,18 +247,18 @@ watch(receiptRows, () => {
                 <h4 class="text-base font-semibold text-app-ink dark:text-app-ink-dark">Potjes overzicht</h4>
                 <p class="text-xs text-app-muted dark:text-app-muted-dark">Actieve speltak: {{ activeSection }}</p>
 
-                <form v-if="canCreatePots" class="mt-3 grid gap-3 rounded-lg border border-app-border bg-white p-3 sm:grid-cols-2 lg:grid-cols-4" @submit.prevent="submitPot">
+                <form v-if="canCreatePots" class="mt-3 grid gap-3 rounded-lg border border-app-border bg-white p-3 sm:grid-cols-2 lg:grid-cols-4 dark:border-app-border-dark dark:bg-app-canvas-dark" @submit.prevent="submitPot">
                     <div class="order-1 space-y-1">
-                        <label class="text-xs font-semibold uppercase tracking-wide text-slate-600">Naam potje</label>
-                        <input v-model="potForm.name" type="text" placeholder="Bijv. Kamp 2026" class="w-full rounded border border-app-border bg-white px-3 py-2 text-black" required />
+                        <label class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Naam potje</label>
+                        <input v-model="potForm.name" type="text" placeholder="Bijv. Kamp 2026" class="w-full rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" required />
                         <p v-if="potForm.errors.name" class="text-xs text-red-600">{{ potForm.errors.name }}</p>
                     </div>
                     <div class="space-y-1">
-                        <label class="text-xs font-semibold uppercase tracking-wide text-slate-600">Startbudget</label>
-                        <input v-model="potForm.starting_amount" type="number" step="0.01" min="0" placeholder="0,00" class="w-full rounded border border-app-border bg-white px-3 py-2 text-black" required />
+                        <label class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Startbudget</label>
+                        <input v-model="potForm.starting_amount" type="number" step="0.01" min="0" placeholder="0,00" class="w-full rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" required />
                         <p v-if="potForm.errors.starting_amount" class="text-xs text-red-600">{{ potForm.errors.starting_amount }}</p>
                     </div>
-                    <label class="inline-flex items-center gap-2 self-end rounded border border-app-border bg-slate-50 px-3 py-2.5 text-sm font-medium text-black">
+                    <label class="inline-flex items-center gap-2 self-end rounded border border-app-border bg-slate-50 px-3 py-2.5 text-sm font-medium text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">
                         <input v-model="potForm.active" type="checkbox" />
                         Direct actief
                     </label>
@@ -268,13 +268,13 @@ watch(receiptRows, () => {
                 </form>
 
                 <div class="mt-3 space-y-2">
-                    <p v-if="!props.pots.length" class="rounded-lg border border-dashed border-app-border bg-white px-3 py-3 text-sm text-slate-600">
+                    <p v-if="!props.pots.length" class="rounded-lg border border-dashed border-app-border bg-white px-3 py-3 text-sm text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-muted-dark">
                         Er zijn nog geen potjes voor deze speltak.
                     </p>
-                    <div v-for="pot in props.pots" :key="`pot-${pot.id}`" class="grid gap-2 rounded-lg border border-app-border bg-white p-3 sm:grid-cols-[1fr_10rem_10rem_auto]">
-                        <input v-model="pot.name" class="rounded border border-app-border px-2 py-1.5 text-black" :disabled="!canManage" />
-                        <input :value="pot.starting_amount" class="rounded border border-app-border bg-slate-100 px-2 py-1.5 text-black" disabled />
-                        <input v-model="pot.current_amount" type="number" step="0.01" class="rounded border border-app-border px-2 py-1.5 text-black" :disabled="!canManage" />
+                    <div v-for="pot in props.pots" :key="`pot-${pot.id}`" class="grid gap-2 rounded-lg border border-app-border bg-white p-3 sm:grid-cols-[1fr_10rem_10rem_auto] dark:border-app-border-dark dark:bg-app-canvas-dark">
+                        <input v-model="pot.name" class="rounded border border-app-border px-2 py-1.5 text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" :disabled="!canManage" />
+                        <input :value="pot.starting_amount" class="rounded border border-app-border bg-slate-100 px-2 py-1.5 text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" disabled />
+                        <input v-model="pot.current_amount" type="number" step="0.01" class="rounded border border-app-border px-2 py-1.5 text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" :disabled="!canManage" />
                         <button v-if="canManage" type="button" class="rounded bg-brand-blue px-3 py-1.5 text-sm text-white hover:bg-brand-blue-dark" @click="updatePot(pot)">Opslaan</button>
                     </div>
                 </div>
@@ -290,14 +290,14 @@ watch(receiptRows, () => {
                     </div>
                 </div>
 
-                <p v-if="!hasActivePots" class="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                <p v-if="!hasActivePots" class="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-500/35 dark:bg-amber-500/15 dark:text-amber-200">
                     Er is geen actief potje beschikbaar. Activeer eerst een potje om declaraties in te dienen.
                 </p>
 
                 <div class="mt-4 grid gap-3 sm:grid-cols-2">
                     <div class="space-y-1">
-                        <label class="text-xs font-semibold uppercase tracking-wide text-slate-600">Potje</label>
-                        <select v-model="declarationForm.pot_id" class="w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:[&>option]:bg-app-canvas-dark dark:[&>option]:text-app-ink-dark" required :disabled="!hasActivePots">
+                        <label class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Potje</label>
+                        <select v-model="declarationForm.pot_id" class="w-full rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark dark:[&>option]:bg-slate-800 dark:[&>option]:text-app-ink-dark" required :disabled="!hasActivePots">
                             <option value="" disabled>Kies potje</option>
                             <option v-for="pot in activePots" :key="`declaration-pot-${pot.id}`" :value="pot.id">
                                 {{ pot.name }} ({{ formatCurrency(pot.current_amount) }})
@@ -307,32 +307,32 @@ watch(receiptRows, () => {
                     </div>
 
                     <div class="order-8 space-y-1">
-                        <label class="text-xs font-semibold uppercase tracking-wide text-slate-600">Bedrag (op basis van bonregels)</label>
-                        <input v-model="declarationForm.amount" type="number" step="0.01" min="0.01" placeholder="0,00" class="w-full rounded border border-app-border bg-slate-100 px-3 py-2 text-black" required readonly />
-                        <p class="text-xs text-slate-500">Automatisch berekend uit de bonregels.</p>
+                        <label class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Bedrag (op basis van bonregels)</label>
+                        <input v-model="declarationForm.amount" type="number" step="0.01" min="0.01" placeholder="0,00" class="w-full rounded border border-app-border bg-slate-100 px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" required readonly />
+                        <p class="text-xs text-app-muted dark:text-app-muted-dark">Automatisch berekend uit de bonregels.</p>
                         <p v-if="declarationForm.errors.amount" class="text-xs text-red-600">{{ declarationForm.errors.amount }}</p>
                     </div>
 
                     <div class="order-4 space-y-1">
-                        <label class="text-xs font-semibold uppercase tracking-wide text-slate-600">IBAN</label>
-                        <input v-model="declarationForm.iban" type="text" placeholder="NL.." class="w-full rounded border border-app-border bg-white px-3 py-2 text-black" required />
+                        <label class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">IBAN</label>
+                        <input v-model="declarationForm.iban" type="text" placeholder="NL.." class="w-full rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" required />
                         <p v-if="declarationForm.errors.iban" class="text-xs text-red-600">{{ declarationForm.errors.iban }}</p>
                     </div>
 
                     <div class="order-5 space-y-1">
-                        <label class="text-xs font-semibold uppercase tracking-wide text-slate-600">Rekeninghouder</label>
-                        <input v-model="declarationForm.account_name" type="text" placeholder="Naam rekeninghouder" class="w-full rounded border border-app-border bg-white px-3 py-2 text-black" required />
+                        <label class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Rekeninghouder</label>
+                        <input v-model="declarationForm.account_name" type="text" placeholder="Naam rekeninghouder" class="w-full rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" required />
                         <p v-if="declarationForm.errors.account_name" class="text-xs text-red-600">{{ declarationForm.errors.account_name }}</p>
                     </div>
 
                     <div class="order-6 space-y-1">
-                        <label class="text-xs font-semibold uppercase tracking-wide text-slate-600">Datum aankoop</label>
-                        <input v-model="declarationForm.declared_at" type="date" class="w-full rounded border border-app-border bg-white px-3 py-2 text-black" required />
+                        <label class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Datum aankoop</label>
+                        <input v-model="declarationForm.declared_at" type="date" class="w-full rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" required />
                         <p v-if="declarationForm.errors.declared_at" class="text-xs text-red-600">{{ declarationForm.errors.declared_at }}</p>
                     </div>
 
                     <div class="order-6 space-y-2 sm:col-span-2">
-                        <label class="text-xs font-semibold uppercase tracking-wide text-slate-600">Bonnetje uploaden</label>
+                        <label class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Bonnetje uploaden</label>
                         <div class="flex flex-wrap items-center gap-2">
                             <button type="button" class="rounded bg-brand-blue px-3 py-2 text-sm font-semibold text-white hover:bg-brand-blue-dark disabled:cursor-not-allowed disabled:opacity-60" :disabled="ocrLoading" @click="openGalleryUpload">
                                 Upload uit galerij / bestanden
@@ -340,7 +340,7 @@ watch(receiptRows, () => {
                             <button type="button" class="rounded bg-slate-800 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-60" :disabled="ocrLoading" @click="openCameraUpload">
                                 Gebruik camera (OCR)
                             </button>
-                            <span class="text-xs text-slate-500">{{ declarationForm.receipt_file ? declarationForm.receipt_file.name : 'Nog geen bon geselecteerd' }}</span>
+                            <span class="text-xs text-app-muted dark:text-app-muted-dark">{{ declarationForm.receipt_file ? declarationForm.receipt_file.name : 'Nog geen bon geselecteerd' }}</span>
                         </div>
                         <input ref="galleryReceiptInput" type="file" accept="image/*,.pdf,.heic,.heif,image/heic,image/heif" class="hidden" @change="onReceiptChange" />
                         <input ref="cameraReceiptInput" type="file" accept="image/*,.heic,.heif,image/heic,image/heif" capture="environment" class="hidden" @change="onReceiptChange" />
@@ -348,42 +348,42 @@ watch(receiptRows, () => {
                     </div>
 
                     <div class="order-2 space-y-1">
-                        <label class="text-xs font-semibold uppercase tracking-wide text-slate-600">Omschrijving totaal</label>
-                        <input v-model="declarationForm.description_total" type="text" placeholder="Korte samenvatting van de declaratie" class="w-full rounded border border-app-border bg-white px-3 py-2 text-black" required />
+                        <label class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Omschrijving</label>
+                        <input v-model="declarationForm.description_total" type="text" placeholder="Korte samenvatting van de declaratie" class="w-full rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" required />
                         <p v-if="declarationForm.errors.description_total" class="text-xs text-red-600">{{ declarationForm.errors.description_total }}</p>
                     </div>
 
                     <div class="order-7 space-y-2 sm:col-span-2">
                         <div class="flex items-center justify-between gap-2">
-                            <label class="text-xs font-semibold uppercase tracking-wide text-slate-600">Bonregels (Naam, Aantal, Bedrag, Btw)</label>
-                            <button type="button" class="rounded border border-app-border bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100" @click="addReceiptRow">
+                            <label class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Bonregels (Naam, Aantal, Bedrag, Btw)</label>
+                            <button type="button" class="rounded border border-app-border bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:border-app-border-dark dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700" @click="addReceiptRow">
                                 Regel toevoegen
                             </button>
                         </div>
-                        <div class="overflow-x-auto rounded-lg border border-app-border">
+                        <div class="overflow-x-auto rounded-lg border border-app-border dark:border-app-border-dark">
                             <table class="min-w-full divide-y divide-app-border text-sm">
-                                <thead class="bg-slate-50">
+                                <thead class="bg-slate-50 dark:bg-slate-800/70">
                                     <tr>
-                                        <th class="px-2 py-2 text-left font-semibold text-slate-700">Naam</th>
-                                        <th class="px-2 py-2 text-left font-semibold text-slate-700">Aantal</th>
-                                        <th class="px-2 py-2 text-left font-semibold text-slate-700">Bedrag</th>
-                                        <th class="px-2 py-2 text-left font-semibold text-slate-700">Btw%</th>
-                                        <th class="px-2 py-2 text-left font-semibold text-slate-700">Actie</th>
+                                        <th class="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-200">Naam</th>
+                                        <th class="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-200">Aantal</th>
+                                        <th class="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-200">Bedrag</th>
+                                        <th class="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-200">Btw%</th>
+                                        <th class="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-200">Actie</th>
                                     </tr>
                                 </thead>
-                                <tbody class="divide-y divide-app-border bg-white">
+                                <tbody class="divide-y divide-app-border bg-white dark:bg-app-canvas-dark">
                                     <tr v-for="(row, index) in receiptRows" :key="`receipt-row-${index}`">
                                         <td class="px-2 py-2">
-                                            <input v-model="row.name" type="text" class="w-full rounded border border-app-border px-2 py-1.5 text-black" placeholder="Bijv. Broodjes" />
+                                            <input v-model="row.name" type="text" class="w-full rounded border border-app-border px-2 py-1.5 text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" placeholder="Bijv. Broodjes" />
                                         </td>
                                         <td class="px-2 py-2">
-                                            <input v-model="row.quantity" type="number" min="0" step="0.01" class="w-24 rounded border border-app-border px-2 py-1.5 text-black" />
+                                            <input v-model="row.quantity" type="number" min="0" step="0.01" class="w-24 rounded border border-app-border px-2 py-1.5 text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" />
                                         </td>
                                         <td class="px-2 py-2">
-                                            <input v-model="row.amount" type="number" min="0" step="0.01" class="w-28 rounded border border-app-border px-2 py-1.5 text-black" placeholder="0,00" />
+                                            <input v-model="row.amount" type="number" min="0" step="0.01" class="w-28 rounded border border-app-border px-2 py-1.5 text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" placeholder="0,00" />
                                         </td>
                                         <td class="px-2 py-2">
-                                            <input v-model="row.vat" type="number" min="0" step="0.01" class="w-20 rounded border border-app-border px-2 py-1.5 text-black" placeholder="21" />
+                                            <input v-model="row.vat" type="number" min="0" step="0.01" class="w-20 rounded border border-app-border px-2 py-1.5 text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" placeholder="21" />
                                         </td>
                                         <td class="px-2 py-2">
                                             <button type="button" class="rounded border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-700 hover:bg-red-100" @click="removeReceiptRow(index)">
@@ -400,7 +400,7 @@ watch(receiptRows, () => {
                 </div>
 
                 <div class="mt-4 flex flex-wrap items-center gap-2 border-t border-app-border pt-3">
-                    <button type="button" class="rounded bg-slate-200 px-3 py-2 text-sm text-slate-800 hover:bg-slate-300 disabled:cursor-not-allowed disabled:opacity-60" :disabled="ocrLoading || !declarationForm.receipt_file" @click="runOcrAssist">
+                    <button type="button" class="rounded bg-slate-200 px-3 py-2 text-sm text-slate-800 hover:bg-slate-300 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600" :disabled="ocrLoading || !declarationForm.receipt_file" @click="runOcrAssist">
                         {{ ocrLoading ? 'OCR bezig...' : 'OCR voorstel invullen' }}
                     </button>
                     <button
@@ -419,14 +419,14 @@ watch(receiptRows, () => {
                         <div
                             v-for="row in props.declarations"
                             :key="`declaration-${row.id}`"
-                            class="rounded-lg border border-app-border bg-white p-3"
+                            class="rounded-lg border border-app-border bg-white p-3 dark:border-app-border-dark dark:bg-app-canvas-dark"
                         >
                             <div class="flex flex-wrap items-center justify-between gap-2">
-                                <p class="text-sm font-semibold text-black">{{ row.pot_name || 'Onbekend potje' }} - EUR {{ row.amount }}</p>
-                                <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-700">{{ row.status }}</span>
+                                <p class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">{{ row.pot_name || 'Onbekend potje' }} - EUR {{ row.amount }}</p>
+                                <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-700 dark:bg-slate-700/40 dark:text-slate-200">{{ row.status }}</span>
                             </div>
-                            <p class="mt-1 text-xs text-slate-600">{{ row.description_total }}</p>
-                            <p class="mt-1 text-xs text-slate-500">{{ row.created_by_name }} | {{ row.declared_at }}</p>
+                            <p class="mt-1 text-xs text-app-muted dark:text-app-muted-dark">{{ row.description_total }}</p>
+                            <p class="mt-1 text-xs text-app-muted dark:text-app-muted-dark">{{ row.created_by_name }} | {{ row.declared_at }}</p>
                             <div v-if="row.can_review" class="mt-2 flex gap-2">
                                 <button type="button" class="rounded bg-emerald-700 px-3 py-1.5 text-xs text-white hover:bg-emerald-800" @click="approve(row.id)">Goedkeuren</button>
                                 <button type="button" class="rounded bg-red-600 px-3 py-1.5 text-xs text-white hover:bg-red-700" @click="reject(row.id)">Afkeuren</button>

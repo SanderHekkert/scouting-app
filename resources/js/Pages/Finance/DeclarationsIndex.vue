@@ -37,9 +37,9 @@ function statusLabel(status) {
 }
 
 function statusClass(status) {
-    if (status === 'approved') return 'bg-emerald-100 text-emerald-800';
-    if (status === 'needs_changes') return 'bg-amber-100 text-amber-800';
-    return 'bg-slate-100 text-slate-700';
+    if (status === 'approved') return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300';
+    if (status === 'needs_changes') return 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300';
+    return 'bg-slate-100 text-slate-700 dark:bg-slate-700/40 dark:text-slate-200';
 }
 </script>
 
@@ -64,14 +64,14 @@ function statusClass(status) {
             <div class="surface-brand-top rounded-xl border border-app-border bg-app-panel p-4 shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark">
                 <h4 class="text-base font-semibold text-app-ink dark:text-app-ink-dark">Declaraties overzicht</h4>
                 <div class="mt-3 space-y-2">
-                    <div v-for="row in props.declarations" :key="`declaration-${row.id}`" class="rounded-lg border border-app-border bg-white p-3">
+                    <div v-for="row in props.declarations" :key="`declaration-${row.id}`" class="rounded-lg border border-app-border bg-white p-3 dark:border-app-border-dark dark:bg-app-canvas-dark">
                         <div class="flex flex-wrap items-center justify-between gap-2">
-                            <p class="text-sm font-semibold text-black">{{ row.pot_name || 'Onbekend potje' }} - EUR {{ row.amount }}</p>
+                            <p class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">{{ row.pot_name || 'Onbekend potje' }} - EUR {{ row.amount }}</p>
                             <span :class="['rounded-full px-2 py-0.5 text-xs', statusClass(row.status)]">{{ statusLabel(row.status) }}</span>
                         </div>
-                        <p class="mt-1 text-xs text-slate-600">{{ row.description_total }}</p>
-                        <p class="mt-1 text-xs text-slate-500">{{ row.created_by_name }} | {{ row.declared_at }}</p>
-                        <p v-if="row.review_note" class="mt-2 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-900">
+                        <p class="mt-1 text-xs text-app-muted dark:text-app-muted-dark">{{ row.description_total }}</p>
+                        <p class="mt-1 text-xs text-app-muted dark:text-app-muted-dark">{{ row.created_by_name }} | {{ row.declared_at }}</p>
+                        <p v-if="row.review_note" class="mt-2 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-900 dark:border-amber-500/35 dark:bg-amber-500/15 dark:text-amber-200">
                             Opmerking penningmeester: {{ row.review_note }}
                         </p>
                         <div v-if="row.can_review" class="mt-2 flex gap-2">

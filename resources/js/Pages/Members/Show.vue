@@ -1,8 +1,9 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import AppConfirmModal from '@/Components/AppConfirmModal.vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { ArrowUturnLeftIcon, DocumentCheckIcon, TrashIcon } from '@heroicons/vue/24/outline';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 const props = defineProps({
     member: { type: Object, required: true },
@@ -45,6 +46,7 @@ const form = useForm({
 const transferForm = useForm({
     target_section: transferOptions.value[0]?.value || '',
 });
+const showDeleteModal = ref(false);
 
 function submit() {
     form.patch(route('members.update', props.member.id), {
@@ -62,7 +64,10 @@ function submitTransfer() {
 }
 
 function deleteMember() {
-    if (!confirm('Dit contact verwijderen?')) return;
+    showDeleteModal.value = true;
+}
+
+function confirmDeleteMember() {
     router.delete(route('members.destroy', props.member.id));
 }
 </script>
@@ -151,4 +156,14 @@ function deleteMember() {
             </div>
         </form>
     </AuthenticatedLayout>
+
+    <AppConfirmModal
+        :show="showDeleteModal"
+        title="Contact verwijderen?"
+        :message="`Weet je zeker dat je ${props.member.first_name || 'dit contact'} wilt verwijderen?`"
+        confirm-text="Ja, verwijderen"
+        cancel-text="Annuleren"
+        @close="showDeleteModal = false"
+        @confirm="confirmDeleteMember"
+    />
 </template>

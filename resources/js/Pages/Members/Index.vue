@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue';
 import SpeltakSubnav from '@/Components/SpeltakSubnav.vue';
+import AppConfirmModal from '@/Components/AppConfirmModal.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, useForm, usePage, router } from '@inertiajs/vue3';
 import { ChevronRightIcon, DocumentCheckIcon, MagnifyingGlassIcon, PencilSquareIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
@@ -40,6 +41,7 @@ const canDeleteMembers = computed(() => !!memberPerms.value.delete);
 
 const showAddForm = ref(false);
 const rowHighlightMemberId = ref(null);
+const deleteModalMember = ref(null);
 
 const form = useForm({
     installed: false,
@@ -181,12 +183,24 @@ function submitAdd() {
 function deleteMember(member) {
     if (!canDeleteMembers.value) return;
     if (!member?.id) return;
-    if (!confirm('Dit contact verwijderen?')) return;
+    deleteModalMember.value = member;
+}
+
+function closeDeleteModal() {
+    deleteModalMember.value = null;
+}
+
+function confirmDeleteMember() {
+    const member = deleteModalMember.value;
+    if (!member?.id) return;
     if (rowHighlightMemberId.value === member.id) {
         rowHighlightMemberId.value = null;
     }
     router.delete(route('members.destroy', member.id), {
         preserveScroll: true,
+        onFinish: () => {
+            closeDeleteModal();
+        },
     });
 }
 
@@ -481,8 +495,7 @@ function editMember(member) {
                             <tr class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Geïnstalleerd</th>
                                 <th v-if="!isBestuurSection && !isBeversSection" scope="col" class="whitespace-nowrap px-3 py-2.5">Gedoopt</th>
-                                <th scope="col" class="whitespace-nowrap px-3 py-2.5">Voornaam</th>
-                                <th scope="col" class="whitespace-nowrap px-3 py-2.5">Achternaam</th>
+                                <th scope="col" class="whitespace-nowrap px-3 py-2.5">Naam</th>
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Verjaardag</th>
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Leeftijd</th>
                                 <th scope="col" class="min-w-[10rem] px-3 py-2.5">Adres</th>
@@ -507,8 +520,7 @@ function editMember(member) {
                                 <td v-if="!isBestuurSection && !isBeversSection" class="whitespace-nowrap px-3 py-2.5 align-top text-app-ink dark:text-app-ink-dark">
                                     {{ yesNo(member.gedoopt) }}
                                 </td>
-                                <td class="max-w-[10rem] px-3 py-2.5 align-top">{{ member.first_name || '–' }}</td>
-                                <td class="max-w-[10rem] px-3 py-2.5 align-top">{{ member.last_name || '–' }}</td>
+                                <td class="max-w-[16rem] px-3 py-2.5 align-top">{{ memberDisplayName(member) }}</td>
                                 <td class="whitespace-nowrap px-3 py-2.5 align-top tabular-nums text-app-ink dark:text-app-ink-dark">
                                     {{ member.birthday ? formatBirthday(member.birthday) : '–' }}
                                 </td>
@@ -575,4 +587,14 @@ function editMember(member) {
             </div>
         </div>
     </AuthenticatedLayout>
+
+    <AppConfirmModal
+        :show="!!deleteModalMember"
+        title="Contact verwijderen?"
+        :message="deleteModalMember ? `Weet je zeker dat je ${memberDisplayName(deleteModalMember)} wilt verwijderen?` : ''"
+        confirm-text="Ja, verwijderen"
+        cancel-text="Annuleren"
+        @close="closeDeleteModal"
+        @confirm="confirmDeleteMember"
+    />
 </template>

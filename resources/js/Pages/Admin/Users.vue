@@ -84,8 +84,8 @@ function roleEntries(user) {
                     @click="openUser(user)"
                 >
                     <div class="flex items-center gap-1 text-sm font-semibold text-black">
+                        <CheckBadgeIcon v-if="user.email_verified" class="h-4 w-4 text-brand-blue" title="E-mail geverifieerd" />
                         <span>{{ user.name }}</span>
-                        <CheckBadgeIcon v-if="user.email_verified" class="h-4 w-4 text-emerald-600" title="E-mail geverifieerd" />
                     </div>
                     <div class="text-xs text-black">{{ user.email }}</div>
                     <div class="mt-2 flex flex-wrap gap-1.5">
@@ -127,8 +127,8 @@ function roleEntries(user) {
                         >
                             <td class="px-3 py-2.5">
                                 <div class="flex items-center gap-1">
+                                    <CheckBadgeIcon v-if="user.email_verified" class="h-4 w-4 text-brand-blue" title="E-mail geverifieerd" />
                                     <span>{{ user.name }}</span>
-                                    <CheckBadgeIcon v-if="user.email_verified" class="h-4 w-4 text-emerald-600" title="E-mail geverifieerd" />
                                 </div>
                             </td>
                             <td class="px-3 py-2.5">{{ user.email }}</td>
@@ -170,8 +170,8 @@ function roleEntries(user) {
                     @click="openUser(user)"
                 >
                     <div class="flex items-center gap-1 text-sm font-semibold text-black">
+                        <CheckBadgeIcon v-if="user.email_verified" class="h-4 w-4 text-brand-blue" title="E-mail geverifieerd" />
                         <span>{{ user.name }}</span>
-                        <CheckBadgeIcon v-if="user.email_verified" class="h-4 w-4 text-emerald-600" title="E-mail geverifieerd" />
                     </div>
                     <div class="text-xs text-black">{{ user.email }}</div>
                     <div class="mt-2 flex flex-wrap gap-1.5">
@@ -213,8 +213,8 @@ function roleEntries(user) {
                         >
                             <td class="px-3 py-2.5">
                                 <div class="flex items-center gap-1">
+                                    <CheckBadgeIcon v-if="user.email_verified" class="h-4 w-4 text-brand-blue" title="E-mail geverifieerd" />
                                     <span>{{ user.name }}</span>
-                                    <CheckBadgeIcon v-if="user.email_verified" class="h-4 w-4 text-emerald-600" title="E-mail geverifieerd" />
                                 </div>
                             </td>
                             <td class="px-3 py-2.5">

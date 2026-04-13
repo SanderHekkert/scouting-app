@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue';
+import AppConfirmModal from '@/Components/AppConfirmModal.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, useForm, router, usePage } from '@inertiajs/vue3';
 import { CheckBadgeIcon, ChevronRightIcon, DocumentCheckIcon, MagnifyingGlassIcon, PencilSquareIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
@@ -27,6 +28,7 @@ const canUpdateLeaders = computed(() => !!leaderPerms.value.update);
 const canDeleteLeaders = computed(() => !!leaderPerms.value.delete);
 
 const showAddForm = ref(false);
+const deleteModalLeader = ref(null);
 
 const form = useForm({
     installed: false,
@@ -131,9 +133,21 @@ function submitAdd() {
 function deleteLeader(leader) {
     if (!canDeleteLeaders.value) return;
     if (!leader?.id) return;
-    if (!confirm('Deze leiding verwijderen?')) return;
+    deleteModalLeader.value = leader;
+}
+
+function closeDeleteModal() {
+    deleteModalLeader.value = null;
+}
+
+function confirmDeleteLeader() {
+    const leader = deleteModalLeader.value;
+    if (!leader?.id) return;
     router.delete(route('leaders.destroy', leader.id), {
         preserveScroll: true,
+        onFinish: () => {
+            closeDeleteModal();
+        },
     });
 }
 
@@ -405,7 +419,7 @@ function leaderAge(value) {
                         <table class="w-full min-w-[56rem] border-collapse text-left text-sm text-app-ink lg:min-w-[68rem] dark:text-app-ink-dark">
                         <thead class="border-b border-brand-blue/35 bg-app-sidebar dark:bg-app-canvas-dark/80">
                             <tr class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
-                                <th scope="col" class="whitespace-nowrap px-3 py-2.5">Volledige naam</th>
+                                <th scope="col" class="whitespace-nowrap px-3 py-2.5">Naam</th>
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Geïnstalleerd</th>
                                 <th v-if="!isBestuurSection" scope="col" class="whitespace-nowrap px-3 py-2.5">Gedoopt</th>
                                 <th scope="col" class="whitespace-nowrap px-3 py-2.5">Volledig adres</th>
@@ -472,4 +486,14 @@ function leaderAge(value) {
             </div>
         </div>
     </AuthenticatedLayout>
+
+    <AppConfirmModal
+        :show="!!deleteModalLeader"
+        title="Leiding verwijderen?"
+        :message="deleteModalLeader ? `Weet je zeker dat je ${leaderListName(deleteModalLeader)} wilt verwijderen?` : ''"
+        confirm-text="Ja, verwijderen"
+        cancel-text="Annuleren"
+        @close="closeDeleteModal"
+        @confirm="confirmDeleteLeader"
+    />
 </template>

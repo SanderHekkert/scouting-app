@@ -44,7 +44,7 @@ Route::middleware(['auth', 'verified', 'has.role', 'section.role:admin,bestuursl
     Route::patch('/admin/gebruikers/{user}', [AdminUserController::class, 'update'])->name('admin.users.update');
     Route::delete('/admin/gebruikers/{user}', [AdminUserController::class, 'destroy'])->name('admin.users.destroy');
     Route::post('/admin/gebruikers/uitnodigen', [AdminUserInvitationController::class, 'store'])->name('admin.users.invite');
-    Route::post('/admin/push-notifications', [AdminPushNotificationController::class, 'store'])->name('admin.push-notifications.store');
+    Route::post('/admin/push-notifications', [AdminPushNotificationController::class, 'store'])->middleware('throttle:10,1')->name('admin.push-notifications.store');
 });
 
 Route::middleware(['auth', 'verified', 'has.role', 'section.role:admin,teamleider'])->group(function () {
@@ -63,8 +63,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::patch('/profile/theme', [ProfileController::class, 'updateTheme'])->name('profile.theme.update');
-    Route::post('/push/subscriptions', [PushSubscriptionController::class, 'store'])->name('push.subscriptions.store');
-    Route::delete('/push/subscriptions', [PushSubscriptionController::class, 'destroy'])->name('push.subscriptions.destroy');
+    Route::post('/push/subscriptions', [PushSubscriptionController::class, 'store'])->middleware('throttle:20,1')->name('push.subscriptions.store');
+    Route::delete('/push/subscriptions', [PushSubscriptionController::class, 'destroy'])->middleware('throttle:20,1')->name('push.subscriptions.destroy');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 

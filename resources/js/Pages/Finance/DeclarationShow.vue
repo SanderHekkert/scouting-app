@@ -135,14 +135,14 @@ watch(receiptRows, () => {
         </template>
 
         <form class="surface-brand-top rounded-xl border border-app-border bg-app-panel p-4 shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark" @submit.prevent="submit">
-            <p v-if="!hasActivePots" class="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            <p v-if="!hasActivePots" class="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-500/35 dark:bg-amber-500/15 dark:text-amber-200">
                 Er is geen actief potje beschikbaar. Activeer eerst een potje om declaraties in te dienen.
             </p>
 
             <div class="mt-4 grid gap-3 sm:grid-cols-2">
                 <div class="space-y-1">
-                    <label class="text-xs font-semibold uppercase tracking-wide text-slate-600">Potje</label>
-                    <select v-model="form.pot_id" class="w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:[&>option]:bg-app-canvas-dark dark:[&>option]:text-app-ink-dark" required :disabled="!hasActivePots">
+                    <label class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Potje</label>
+                    <select v-model="form.pot_id" class="w-full rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:[&>option]:bg-app-canvas-dark dark:[&>option]:text-app-ink-dark" required :disabled="!hasActivePots">
                         <option value="" disabled>Kies potje</option>
                         <option v-for="pot in props.pots" :key="`declaration-pot-${pot.id}`" :value="pot.id">
                             {{ pot.name }} ({{ formatCurrency(pot.current_amount) }})
@@ -151,35 +151,35 @@ watch(receiptRows, () => {
                 </div>
 
                 <div class="order-2 space-y-1">
-                    <label class="text-xs font-semibold uppercase tracking-wide text-slate-600">Omschrijving totaal</label>
-                    <input v-model="form.description_total" type="text" placeholder="Korte samenvatting van de declaratie" class="w-full rounded border border-app-border bg-white px-3 py-2 text-black" required />
+                    <label class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Omschrijving</label>
+                    <input v-model="form.description_total" type="text" placeholder="Korte samenvatting van de declaratie" class="w-full rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" required />
                 </div>
 
                 <div class="order-4 space-y-1">
-                    <label class="text-xs font-semibold uppercase tracking-wide text-slate-600">IBAN</label>
-                    <input v-model="form.iban" type="text" placeholder="NL.." class="w-full rounded border border-app-border bg-white px-3 py-2 text-black" required />
+                    <label class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">IBAN</label>
+                    <input v-model="form.iban" type="text" placeholder="NL.." class="w-full rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" required />
                 </div>
 
                 <div class="order-5 space-y-1">
-                    <label class="text-xs font-semibold uppercase tracking-wide text-slate-600">Rekeninghouder</label>
-                    <input v-model="form.account_name" type="text" placeholder="Naam rekeninghouder" class="w-full rounded border border-app-border bg-white px-3 py-2 text-black" required />
+                    <label class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Rekeninghouder</label>
+                    <input v-model="form.account_name" type="text" placeholder="Naam rekeninghouder" class="w-full rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" required />
                 </div>
 
                 <div class="order-6 space-y-1">
-                    <label class="text-xs font-semibold uppercase tracking-wide text-slate-600">Datum aankoop</label>
-                    <input v-model="form.declared_at" type="date" class="w-full rounded border border-app-border bg-white px-3 py-2 text-black" required />
+                    <label class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Datum aankoop</label>
+                    <input v-model="form.declared_at" type="date" class="w-full rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" required />
                 </div>
 
                 <div class="order-8 space-y-1">
-                    <label class="text-xs font-semibold uppercase tracking-wide text-slate-600">Bedrag (op basis van bonregels)</label>
+                    <label class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Bedrag (op basis van bonregels)</label>
                     <div class="relative w-full sm:max-w-[12rem]">
-                        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500">€</span>
-                        <input v-model="form.amount" type="number" step="0.01" min="0.01" class="w-full rounded border border-app-border bg-slate-100 pl-8 pr-3 py-2 text-black" required readonly />
+                        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-app-muted dark:text-app-muted-dark">€</span>
+                        <input v-model="form.amount" type="number" step="0.01" min="0.01" class="w-full rounded border border-app-border bg-slate-100 pl-8 pr-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" required readonly />
                     </div>
                 </div>
 
                 <div class="order-6 space-y-2 sm:col-span-2">
-                    <label class="text-xs font-semibold uppercase tracking-wide text-slate-600">Bonnetje uploaden</label>
+                    <label class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Bonnetje uploaden</label>
                     <div class="flex flex-wrap items-center gap-2">
                         <label class="inline-flex cursor-pointer items-center rounded-md bg-brand-blue px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-blue-dark">
                             Bestand kiezen
@@ -191,36 +191,36 @@ watch(receiptRows, () => {
                                 @change="onReceiptChange"
                             />
                         </label>
-                        <span class="text-sm text-black">{{ selectedReceiptName }}</span>
+                        <span class="text-sm text-app-ink dark:text-app-ink-dark">{{ selectedReceiptName }}</span>
                     </div>
                 </div>
 
                 <div class="order-7 space-y-2 sm:col-span-2">
                     <div class="flex items-center justify-between gap-2">
-                        <label class="text-xs font-semibold uppercase tracking-wide text-slate-600">Bonregels</label>
+                        <label class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Bonregels</label>
                     </div>
-                    <div class="overflow-x-auto rounded-lg border border-app-border">
+                    <div class="overflow-x-auto rounded-lg border border-app-border dark:border-app-border-dark">
                         <table class="min-w-full divide-y divide-app-border text-sm">
-                            <thead class="bg-slate-50">
+                            <thead class="bg-slate-50 dark:bg-slate-800/70">
                                 <tr>
-                                    <th class="px-2 py-2 text-left font-semibold text-slate-700">Naam</th>
-                                    <th class="px-2 py-2 text-left font-semibold text-slate-700">Aantal</th>
-                                    <th class="px-2 py-2 text-left font-semibold text-slate-700">Bedrag</th>
-                                    <th class="px-2 py-2 text-left font-semibold text-slate-700">Actie</th>
+                                    <th class="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-200">Naam</th>
+                                    <th class="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-200">Aantal</th>
+                                    <th class="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-200">Bedrag</th>
+                                    <th class="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-200">Actie</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-app-border bg-white">
+                            <tbody class="divide-y divide-app-border bg-white dark:bg-app-canvas-dark">
                                 <tr v-for="(row, index) in receiptRows" :key="`receipt-row-${index}`">
-                                    <td class="px-2 py-2"><input v-model="row.name" type="text" class="w-full rounded border border-app-border px-2 py-1.5 text-black" /></td>
-                                    <td class="px-2 py-2"><input v-model="row.quantity" type="number" min="0" step="0.01" class="w-24 rounded border border-app-border px-2 py-1.5 text-black" /></td>
+                                    <td class="px-2 py-2"><input v-model="row.name" type="text" class="w-full rounded border border-app-border px-2 py-1.5 text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" /></td>
+                                    <td class="px-2 py-2"><input v-model="row.quantity" type="number" min="0" step="0.01" class="w-24 rounded border border-app-border px-2 py-1.5 text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" /></td>
                                     <td class="px-2 py-2">
                                         <div class="relative w-28">
-                                            <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2 text-slate-500">€</span>
+                                            <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2 text-app-muted dark:text-app-muted-dark">€</span>
                                             <input
                                                 :value="row.amount"
                                                 type="text"
                                                 inputmode="decimal"
-                                                class="w-28 rounded border border-app-border pl-6 pr-2 py-1.5 text-black"
+                                                class="w-28 rounded border border-app-border pl-6 pr-2 py-1.5 text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark"
                                                 @input="onRowAmountInput(row, $event)"
                                             />
                                         </div>

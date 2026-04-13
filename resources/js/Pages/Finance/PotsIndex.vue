@@ -50,19 +50,19 @@ function formatCurrency(value) {
                 <h4 class="text-base font-semibold text-app-ink dark:text-app-ink-dark">Potjes overzicht</h4>
 
                 <div class="mt-3 space-y-2">
-                    <p v-if="!props.pots.length" class="rounded-lg border border-dashed border-app-border bg-white px-3 py-3 text-sm text-slate-600">
+                    <p v-if="!props.pots.length" class="rounded-lg border border-dashed border-app-border bg-white px-3 py-3 text-sm text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-muted-dark">
                         Er zijn nog geen potjes voor deze speltak.
                     </p>
-                    <div v-for="pot in props.pots" :key="`pot-${pot.id}`" class="rounded-xl border border-app-border bg-white p-4 shadow-sm">
+                    <div v-for="pot in props.pots" :key="`pot-${pot.id}`" class="rounded-xl border border-app-border bg-white p-4 shadow-sm dark:border-app-border-dark dark:bg-app-canvas-dark">
                         <div class="flex items-start justify-between gap-3">
                             <div>
-                                <p class="text-sm font-semibold text-black">{{ pot.name }}</p>
-                                <p class="mt-1 text-xs text-slate-500">Startbudget: € {{ formatCurrency(pot.starting_amount) }}</p>
+                                <p class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">{{ pot.name }}</p>
+                                <p class="mt-1 text-xs text-app-muted dark:text-app-muted-dark">Startbudget: € {{ formatCurrency(pot.starting_amount) }}</p>
                             </div>
                             <BanknotesIcon class="h-8 w-8 text-emerald-700" />
                         </div>
-                        <p class="mt-4 text-4xl font-bold leading-none text-black">€ {{ formatCurrency(pot.current_amount) }}</p>
-                        <p class="mt-2 text-xs" :class="pot.active ? 'text-emerald-700' : 'text-slate-500'">
+                        <p class="mt-4 text-4xl font-bold leading-none text-app-ink dark:text-app-ink-dark">€ {{ formatCurrency(pot.current_amount) }}</p>
+                        <p class="mt-2 text-xs" :class="pot.active ? 'text-emerald-700 dark:text-emerald-400' : 'text-app-muted dark:text-app-muted-dark'">
                             {{ pot.active ? 'Actief potje' : 'Inactief potje' }}
                         </p>
                     </div>

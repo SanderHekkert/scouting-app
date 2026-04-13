@@ -1,8 +1,9 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import AppConfirmModal from '@/Components/AppConfirmModal.vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { ArrowUturnLeftIcon, DocumentCheckIcon, TrashIcon } from '@heroicons/vue/24/outline';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 const props = defineProps({
     leader: { type: Object, required: true },
@@ -34,6 +35,7 @@ const form = useForm({
     emergency_contact: props.leader.emergency_contact || '',
     email: props.leader.email || '',
 });
+const showDeleteModal = ref(false);
 
 function submit() {
     form.patch(route('leaders.update', props.leader.id), {
@@ -42,7 +44,10 @@ function submit() {
 }
 
 function deleteLeader() {
-    if (!confirm('Deze leiding verwijderen?')) return;
+    showDeleteModal.value = true;
+}
+
+function confirmDeleteLeader() {
     router.delete(route('leaders.destroy', props.leader.id));
 }
 </script>
@@ -117,4 +122,14 @@ function deleteLeader() {
             </div>
         </form>
     </AuthenticatedLayout>
+
+    <AppConfirmModal
+        :show="showDeleteModal"
+        title="Leiding verwijderen?"
+        :message="`Weet je zeker dat je ${props.leader.first_name || 'deze leiding'} wilt verwijderen?`"
+        confirm-text="Ja, verwijderen"
+        cancel-text="Annuleren"
+        @close="showDeleteModal = false"
+        @confirm="confirmDeleteLeader"
+    />
 </template>

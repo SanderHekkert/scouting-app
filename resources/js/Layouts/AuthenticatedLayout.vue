@@ -6,6 +6,7 @@ import BoatIcon from '@/Components/BoatIcon.vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
 import {
     Bars3Icon,
+    CheckBadgeIcon,
     BookOpenIcon,
     CalendarDaysIcon,
     ClipboardDocumentListIcon,
@@ -328,9 +329,16 @@ onUnmounted(() => {
                                 {{ userInitials }}
                             </span>
                             <span class="min-w-0 flex-1 text-left">
-                                <span class="block truncate text-sm font-medium text-slate-900 dark:text-slate-100">{{
-                                    $page.props.auth.user.name
-                                }}</span>
+                                <span class="flex items-center gap-1">
+                                    <CheckBadgeIcon
+                                        v-if="$page.props.auth?.user?.email_verified_at"
+                                        class="h-4 w-4 shrink-0 text-brand-blue"
+                                        title="E-mail geverifieerd"
+                                    />
+                                    <span class="block truncate text-sm font-medium text-slate-900 dark:text-slate-100">{{
+                                        $page.props.auth.user.name
+                                    }}</span>
+                                </span>
                                 <span class="block truncate text-xs text-app-muted dark:text-slate-400">{{
                                     $page.props.auth.user.email
                                 }}</span>

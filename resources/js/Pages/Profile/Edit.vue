@@ -160,11 +160,26 @@ async function disablePush() {
 
         await subscription.unsubscribe();
         pushEnabled.value = false;
-        pushMessage.value = 'Pushmeldingen uitgezet op dit apparaat.';
     } catch (error) {
         pushError.value = error?.message || 'Kon pushmeldingen niet uitschakelen.';
     } finally {
         pushBusy.value = false;
+    }
+}
+
+async function syncPushStateFromBrowser() {
+    const supportIssue = detectPushSupportIssue();
+    if (supportIssue) {
+        pushEnabled.value = false;
+        return;
+    }
+
+    try {
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+        pushEnabled.value = !!subscription;
+    } catch {
+        pushEnabled.value = false;
     }
 }
 
@@ -357,8 +372,10 @@ const pushKnobIconStyle = computed(() => {
 onMounted(() => {
     applyThemeClass(isDark.value);
     syncThemeKnobWithState();
-    syncPushKnobWithState();
     pushSupportIssue.value = detectPushSupportIssue();
+    void syncPushStateFromBrowser().finally(() => {
+        syncPushKnobWithState();
+    });
     window.addEventListener('mousemove', onGlobalMouseMove);
     window.addEventListener('mouseup', onGlobalPointerUp);
     window.addEventListener('touchmove', onGlobalTouchMove, { passive: true });
