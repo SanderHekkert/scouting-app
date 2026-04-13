@@ -216,6 +216,7 @@ class CampBudgetController extends Controller
         abort_unless($user instanceof User, 403);
         abort_unless($this->canReviewBudgets($user, (string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN)), 403);
         $campBudget = CampBudget::withoutGlobalScope('section')->findOrFail($campBudget);
+        abort_unless((string) $campBudget->section !== UserSectionRole::SECTION_BESTUUR, 403);
         abort_unless((string) $campBudget->status === CampBudget::STATUS_SUBMITTED, 422);
 
         $path = $this->buildAndStorePdf($campBudget);
@@ -241,6 +242,7 @@ class CampBudgetController extends Controller
         abort_unless($user instanceof User, 403);
         abort_unless($this->canReviewBudgets($user, (string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN)), 403);
         $campBudget = CampBudget::withoutGlobalScope('section')->findOrFail($campBudget);
+        abort_unless((string) $campBudget->section !== UserSectionRole::SECTION_BESTUUR, 403);
         abort_unless((string) $campBudget->status === CampBudget::STATUS_SUBMITTED, 422);
 
         $data = $request->validate([

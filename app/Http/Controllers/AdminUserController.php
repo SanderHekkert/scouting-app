@@ -94,6 +94,9 @@ class AdminUserController extends Controller
 
     public function update(Request $request, User $user)
     {
+        $actor = $request->user();
+        abort_unless($actor instanceof User, 403);
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
@@ -120,6 +123,15 @@ class AdminUserController extends Controller
             ->unique(fn (array $row): string => $row['section'].'|'.$row['role'])
             ->values();
 
+        $targetHasGlobalRoles = $user->sectionRoles()
+            ->where('section', UserSectionRole::SECTION_ALL)
+            ->exists();
+        $touchesGlobalRoles = $incomingRoles
+            ->contains(fn (array $row): bool => $row['section'] === UserSectionRole::SECTION_ALL);
+        if (! $actor->isGlobalAdmin() && ($targetHasGlobalRoles || $touchesGlobalRoles)) {
+            abort(403, 'Alleen globale admins mogen globale rollen beheren.');
+        }
+
         foreach ($incomingRoles as $row) {
             $this->assertRoleAllowedForSection($row['section'], $row['role']);
         }
@@ -145,8 +157,18 @@ class AdminUserController extends Controller
 
     public function destroy(Request $request, User $user)
     {
+        $actor = $request->user();
+        abort_unless($actor instanceof User, 403);
+
         if ((int) $request->user()->id === (int) $user->id) {
             return back()->withErrors(['user' => 'Je kunt je eigen account niet verwijderen.']);
+        }
+
+        $targetHasGlobalRoles = $user->sectionRoles()
+            ->where('section', UserSectionRole::SECTION_ALL)
+            ->exists();
+        if (! $actor->isGlobalAdmin() && $targetHasGlobalRoles) {
+            abort(403, 'Alleen globale admins mogen accounts met globale rollen verwijderen.');
         }
 
         $user->sectionRoles()->delete();

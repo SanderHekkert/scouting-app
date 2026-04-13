@@ -10,6 +10,39 @@ use Inertia\Inertia;
 
 class LeaderController extends Controller
 {
+    /**
+     * @return list<string>
+     */
+    private function editableLeaderRoles(): array
+    {
+        return [
+            UserSectionRole::ROLE_TEAMLEIDER,
+            UserSectionRole::ROLE_LEIDING,
+            UserSectionRole::ROLE_OUDERCONTACT,
+        ];
+    }
+
+    private function activeSection(): string
+    {
+        return app()->bound('currentSection')
+            ? (string) app('currentSection')
+            : UserSectionRole::SECTION_DOLFIJNEN;
+    }
+
+    private function resolveLeaderInActiveSection(User $leader): User
+    {
+        $activeSection = $this->activeSection();
+        $isEditableLeader = $leader->sectionRoles()
+            ->where('section', $activeSection)
+            ->whereIn('role', $this->editableLeaderRoles())
+            ->exists();
+
+        // Hide existence for users outside the active section/role scope.
+        abort_unless($isEditableLeader, 404);
+
+        return $leader;
+    }
+
     public function create()
     {
         return Inertia::render('Leaders/Create');
@@ -60,6 +93,8 @@ class LeaderController extends Controller
 
     public function show(User $leader)
     {
+        $leader = $this->resolveLeaderInActiveSection($leader);
+
         return Inertia::render('Leaders/Show', [
             'leader' => $leader,
         ]);
@@ -70,6 +105,8 @@ class LeaderController extends Controller
      */
     public function quickUpdate(Request $request, User $leader)
     {
+        $leader = $this->resolveLeaderInActiveSection($leader);
+
         if ($request->has('email') && $request->input('email') === '') {
             $request->merge(['email' => null]);
         }
@@ -130,6 +167,8 @@ class LeaderController extends Controller
 
     public function update(Request $request, User $leader)
     {
+        $leader = $this->resolveLeaderInActiveSection($leader);
+
         $data = $request->validate([
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['nullable', 'string', 'max:255'],
@@ -159,6 +198,8 @@ class LeaderController extends Controller
 
     public function destroy(User $leader)
     {
+        $leader = $this->resolveLeaderInActiveSection($leader);
+
         $leader->delete();
 
         return to_route('leaders.index');
@@ -166,6 +207,8 @@ class LeaderController extends Controller
 
     public function updateInstalled(Request $request, User $leader)
     {
+        $leader = $this->resolveLeaderInActiveSection($leader);
+
         $validated = $request->validate([
             'installed' => ['required', 'boolean'],
         ]);
@@ -176,6 +219,8 @@ class LeaderController extends Controller
 
     public function updateGedoopt(Request $request, User $leader)
     {
+        $leader = $this->resolveLeaderInActiveSection($leader);
+
         $validated = $request->validate([
             'gedoopt' => ['required', 'boolean'],
         ]);
