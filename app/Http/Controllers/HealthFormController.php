@@ -231,6 +231,7 @@ class HealthFormController extends Controller
             403
         );
 
+        abort_unless($this->isAllowedStoragePath((string) $health_form->storage_path), 404);
         abort_unless(Storage::disk('local')->exists($health_form->storage_path), 404);
 
         return response()->download(
@@ -247,7 +248,7 @@ class HealthFormController extends Controller
             403
         );
 
-        if (Storage::disk('local')->exists($health_form->storage_path)) {
+        if ($this->isAllowedStoragePath((string) $health_form->storage_path) && Storage::disk('local')->exists($health_form->storage_path)) {
             Storage::disk('local')->delete($health_form->storage_path);
         }
 
@@ -454,5 +455,10 @@ class HealthFormController extends Controller
         }
 
         return strtolower($v);
+    }
+
+    private function isAllowedStoragePath(string $path): bool
+    {
+        return $path !== '' && str_starts_with($path, 'health-forms/');
     }
 }

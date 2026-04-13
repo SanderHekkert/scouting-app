@@ -23,6 +23,8 @@ class AgendaItemController extends Controller
 {
     public function create()
     {
+        $user = request()->user();
+        abort_unless($user instanceof User, 403);
         $activeSection = session('active_section', UserSectionRole::SECTION_DOLFIJNEN);
         $prefillDate = request()->query('date');
         $prefillStartTime = request()->query('start_time');
@@ -50,15 +52,7 @@ class AgendaItemController extends Controller
                 'target_user_ids' => [],
             ],
             'isBestuur' => $activeSection === UserSectionRole::SECTION_BESTUUR,
-            'availableUsers' => User::query()
-                ->orderBy('first_name')
-                ->orderBy('last_name')
-                ->get(['id', 'first_name', 'last_name', 'name', 'email'])
-                ->map(fn (User $u): array => [
-                    'id' => (int) $u->id,
-                    'name' => trim((string) ($u->first_name ?? '').' '.(string) ($u->last_name ?? '')) ?: (string) $u->name,
-                    'email' => (string) $u->email,
-                ])->values(),
+            'availableUsers' => $this->agendaAudienceUsers($user),
         ]);
     }
 
@@ -195,15 +189,6 @@ class AgendaItemController extends Controller
                         ->all(),
                 ];
             })->values(),
-            'availableUsers' => User::query()
-                ->orderBy('first_name')
-                ->orderBy('last_name')
-                ->get(['id', 'first_name', 'last_name', 'name', 'email'])
-                ->map(fn (User $u): array => [
-                    'id' => (int) $u->id,
-                    'name' => trim((string) ($u->first_name ?? '').' '.(string) ($u->last_name ?? '')) ?: (string) $u->name,
-                    'email' => (string) $u->email,
-                ])->values(),
             'canBrowseAllAgendas' => $canBrowseAllAgendas,
             'sectionOptions' => UserSectionRole::ALL_SECTIONS,
             'selectedSectionFilter' => $selectedSection,
@@ -784,6 +769,25 @@ class AgendaItemController extends Controller
             ->unique()
             ->values()
             ->all();
+    }
+
+    private function agendaAudienceUsers(User $user)
+    {
+        $sections = $this->userSections($user);
+
+        return User::query()
+            ->whereHas('sectionRoles', function (Builder $query) use ($sections): void {
+                $query->whereIn('section', $sections);
+            })
+            ->orderBy('first_name')
+            ->orderBy('last_name')
+            ->get(['id', 'first_name', 'last_name', 'name', 'email'])
+            ->map(fn (User $u): array => [
+                'id' => (int) $u->id,
+                'name' => trim((string) ($u->first_name ?? '').' '.(string) ($u->last_name ?? '')) ?: (string) $u->name,
+                'email' => (string) $u->email,
+            ])
+            ->values();
     }
 
     private function authorizeAgendaItem(AgendaItem $agendaItem): void

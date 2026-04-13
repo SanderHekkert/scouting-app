@@ -264,7 +264,8 @@ class CampBudgetController extends Controller
     {
         abort_unless((string) $campBudget->section === (string) session('active_section', 'dolfijnen'), 403);
         $path = (string) data_get($campBudget->meta, 'pdf_path', '');
-        abort_unless($path !== '' && Storage::disk('local')->exists($path), 404);
+        abort_unless($path !== '' && str_starts_with($path, 'camp-budgets/'), 404);
+        abort_unless(Storage::disk('local')->exists($path), 404);
 
         return response()->download(
             Storage::disk('local')->path($path),

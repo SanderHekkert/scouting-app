@@ -142,7 +142,15 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'csrf_token' => csrf_token(),
             'auth' => [
-                'user' => $user,
+                'user' => $user ? [
+                    'id' => (int) $user->id,
+                    'name' => (string) $user->name,
+                    'email' => (string) $user->email,
+                    'first_name' => (string) ($user->first_name ?? ''),
+                    'last_name' => (string) ($user->last_name ?? ''),
+                    'theme_preference' => (string) ($user->theme_preference ?? ''),
+                    'email_verified_at' => optional($user->email_verified_at)?->toIso8601String(),
+                ] : null,
                 'active_section' => $activeSection,
                 'section_roles' => $sectionRoles,
                 'permissions' => $permissions,
