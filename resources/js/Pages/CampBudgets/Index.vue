@@ -64,7 +64,7 @@ function statusClass(status) {
     <AuthenticatedLayout>
         <template #header>
             <div class="flex w-full flex-wrap items-center justify-between gap-3">
-                <h2 class="text-xl font-semibold text-black">{{ speltakLabel }} - Begroting</h2>
+                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">{{ speltakLabel }} - Begroting</h2>
                 <Link
                     v-if="canCreate"
                     :href="route('camp-budgets.create')"
@@ -79,15 +79,15 @@ function statusClass(status) {
 
         <div class="space-y-4">
             <div class="surface-brand-top space-y-3 rounded-xl border border-app-border bg-app-panel p-4 shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark">
-                <div v-if="!props.items.length" class="py-6 text-center text-sm text-black">
+                <div v-if="!props.items.length" class="py-6 text-center text-sm text-app-ink dark:text-app-ink-dark">
                     Nog geen begroting toegevoegd.
                 </div>
-                <div v-for="item in props.items" :key="`budget-${item.id}`" class="rounded-lg border border-app-border bg-white p-3">
+                <div v-for="item in props.items" :key="`budget-${item.id}`" class="rounded-lg border border-app-border bg-white p-3 dark:bg-app-canvas-dark">
                     <div class="flex items-start justify-between gap-3">
                         <div>
-                            <p class="text-sm font-semibold text-black">{{ item.camp_year }} - {{ item.title }}</p>
+                            <p class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">{{ item.camp_year }} - {{ item.title }}</p>
                             <p class="mt-1 text-xs text-slate-500">{{ sectionLabels[item.section] || item.section }} | {{ item.created_by_name || 'Onbekend' }}</p>
-                            <p class="mt-1 line-clamp-4 whitespace-pre-wrap text-sm text-black">{{ item.content }}</p>
+                            <p class="mt-1 line-clamp-4 whitespace-pre-wrap text-sm text-app-ink dark:text-app-ink-dark">{{ item.content }}</p>
                             <p v-if="item.review_note" class="mt-2 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-900">
                                 Opmerking bestuur: {{ item.review_note }}
                             </p>

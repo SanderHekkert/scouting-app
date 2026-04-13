@@ -40,21 +40,9 @@ const props = defineProps({
                     </p>
                 </div>
             </div>
-
-            <p v-if="props.canCreate" class="mt-4 text-sm text-app-muted dark:text-app-muted-dark">
-                Nieuwe pushmelding versturen? Gebruik de plusknop rechtsboven.
-            </p>
-            <p v-else class="mt-4 text-sm text-app-muted dark:text-app-muted-dark">
-                Alleen bestuur en admin kunnen nieuwe pushmeldingen versturen.
-            </p>
-
             <p v-if="page.props.flash?.status" class="mt-3 text-sm text-emerald-700 dark:text-emerald-300">
                 {{ page.props.flash.status }}
             </p>
-
-            <div class="mt-5 rounded-lg border border-app-border bg-white/70 p-4 text-sm text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark/70 dark:text-app-ink-dark">
-                <p>Tip: gebruikers beheren hun eigen abonnement op de profielpagina bij <span class="font-semibold">Pushmeldingen</span>.</p>
-            </div>
         </div>
     </AuthenticatedLayout>
 </template>

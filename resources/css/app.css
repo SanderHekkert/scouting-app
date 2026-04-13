@@ -86,4 +86,31 @@
             color: #e8f1fb;
         }
     }
+
+    /*
+     * Fallback readability in dark mode:
+     * when a form field explicitly switches to a dark background class,
+     * force a light foreground even if an old `text-black` class remains.
+     */
+    .dark :is(input, textarea, select)[class*='dark:bg-app-canvas-dark'],
+    .dark :is(input, textarea, select)[class*='dark:bg-slate-900'] {
+        color: #e8f1fb;
+    }
+
+    .dark :is(input, textarea)[class*='dark:bg-app-canvas-dark']::placeholder,
+    .dark :is(input, textarea)[class*='dark:bg-slate-900']::placeholder {
+        color: rgb(148 163 184 / 0.9);
+    }
+
+    /*
+     * Legacy utility cleanup fallback:
+     * some pages still use `text-black` tokens. In dark mode those become unreadable.
+     */
+    .dark [class~='text-black'] {
+        color: #e8f1fb !important;
+    }
+
+    .dark [class*='text-black/70'] {
+        color: rgb(148 163 184 / 0.9) !important;
+    }
 }

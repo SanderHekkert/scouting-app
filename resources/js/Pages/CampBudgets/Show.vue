@@ -144,7 +144,7 @@ function generatePdf() {
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center justify-between gap-3">
-                <h2 class="text-xl font-semibold text-black">{{ speltakLabel }} - {{ isEdit ? 'Begroting bewerken' : 'Begroting toevoegen' }}</h2>
+                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">{{ speltakLabel }} - {{ isEdit ? 'Begroting bewerken' : 'Begroting toevoegen' }}</h2>
                 <Link :href="route('camp-budgets.index')" class="btn-action-back" title="Terug" aria-label="Terug">
                     <ArrowUturnLeftIcon class="h-5 w-5" />
                 </Link>
@@ -154,40 +154,40 @@ function generatePdf() {
         <form class="surface-brand-top space-y-4 rounded-xl border border-app-border bg-app-panel p-5 shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark" @submit.prevent="submit">
             <div class="grid gap-3 sm:grid-cols-2">
                 <div class="space-y-1">
-                    <label class="text-xs font-semibold uppercase tracking-wide text-slate-600">Jaar</label>
-                    <input v-model="form.camp_year" type="number" min="2020" max="2100" class="w-full rounded border border-app-border bg-white px-3 py-2 text-black" required />
+                    <label class="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-app-muted-dark">Jaar</label>
+                    <input v-model="form.camp_year" type="number" min="2020" max="2100" class="w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" required />
                 </div>
                 <div class="space-y-1">
-                    <label class="text-xs font-semibold uppercase tracking-wide text-slate-600">Titel</label>
-                    <input v-model="form.title" type="text" class="w-full rounded border border-app-border bg-white px-3 py-2 text-black" required />
+                    <label class="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-app-muted-dark">Titel</label>
+                    <input v-model="form.title" type="text" class="w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" required />
                 </div>
                 <div class="space-y-1 sm:col-span-2">
-                    <label class="text-xs font-semibold uppercase tracking-wide text-slate-600">Notitie</label>
-                    <textarea v-model="form.content" rows="3" class="w-full rounded border border-app-border bg-white px-3 py-2 text-black" placeholder="Korte toelichting..." />
+                    <label class="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-app-muted-dark">Notitie</label>
+                    <textarea v-model="form.content" rows="3" class="w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Korte toelichting..." />
                 </div>
             </div>
 
-            <div class="rounded-xl border border-app-border bg-white p-3">
-                <h3 class="mb-2 text-sm font-semibold text-black">Standaardwaarden</h3>
+            <div class="rounded-xl border border-app-border bg-white p-3 dark:border-app-border-dark dark:bg-app-canvas-dark">
+                <h3 class="mb-2 text-sm font-semibold text-app-ink dark:text-app-ink-dark">Standaardwaarden</h3>
                 <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                    <label class="text-xs text-black">Prijs per dag leiding <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700">€</span><input v-model.number="form.standard_values.prijs_per_dag_leiding" type="number" step="0.01" class="w-full rounded border border-app-border py-1.5 pl-8 pr-2 text-black" /></div></label>
-                    <label class="text-xs text-black">Kosten vaart pu <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700">€</span><input v-model.number="form.standard_values.kosten_vaart_pu" type="number" step="0.01" class="w-full rounded border border-app-border py-1.5 pl-8 pr-2 text-black" /></div></label>
-                    <label class="text-xs text-black">Kosten aggregaat pu <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700">€</span><input v-model.number="form.standard_values.kosten_aggregaat_pu" type="number" step="0.01" class="w-full rounded border border-app-border py-1.5 pl-8 pr-2 text-black" /></div></label>
-                    <label class="text-xs text-black">Huur Fram pppd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700">€</span><input v-model.number="form.standard_values.huur_fram_pppd" type="number" step="0.01" class="w-full rounded border border-app-border py-1.5 pl-8 pr-2 text-black" /></div></label>
-                    <label class="text-xs text-black">Proviand pppd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700">€</span><input v-model.number="form.standard_values.proviand_pppd" type="number" step="0.01" class="w-full rounded border border-app-border py-1.5 pl-8 pr-2 text-black" /></div></label>
-                    <label class="text-xs text-black">Groepsafdracht pjpd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700">€</span><input v-model.number="form.standard_values.groepsafdracht_pjpd" type="number" step="0.01" class="w-full rounded border border-app-border py-1.5 pl-8 pr-2 text-black" /></div></label>
-                    <label class="text-xs text-black">Reservering NaWaKa pjpd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700">€</span><input v-model.number="form.standard_values.reservering_nawaka_pjpd" type="number" step="0.01" class="w-full rounded border border-app-border py-1.5 pl-8 pr-2 text-black" /></div></label>
+                    <label class="text-xs text-app-ink dark:text-app-ink-dark">Prijs per dag leiding <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input v-model.number="form.standard_values.prijs_per_dag_leiding" type="number" step="0.01" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" /></div></label>
+                    <label class="text-xs text-app-ink dark:text-app-ink-dark">Kosten vaart pu <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input v-model.number="form.standard_values.kosten_vaart_pu" type="number" step="0.01" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" /></div></label>
+                    <label class="text-xs text-app-ink dark:text-app-ink-dark">Kosten aggregaat pu <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input v-model.number="form.standard_values.kosten_aggregaat_pu" type="number" step="0.01" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" /></div></label>
+                    <label class="text-xs text-app-ink dark:text-app-ink-dark">Huur Fram pppd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input v-model.number="form.standard_values.huur_fram_pppd" type="number" step="0.01" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" /></div></label>
+                    <label class="text-xs text-app-ink dark:text-app-ink-dark">Proviand pppd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input v-model.number="form.standard_values.proviand_pppd" type="number" step="0.01" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" /></div></label>
+                    <label class="text-xs text-app-ink dark:text-app-ink-dark">Groepsafdracht pjpd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input v-model.number="form.standard_values.groepsafdracht_pjpd" type="number" step="0.01" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" /></div></label>
+                    <label class="text-xs text-app-ink dark:text-app-ink-dark">Reservering NaWaKa pjpd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input v-model.number="form.standard_values.reservering_nawaka_pjpd" type="number" step="0.01" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" /></div></label>
                 </div>
             </div>
 
-            <div class="space-y-3 rounded-xl border border-app-border bg-white p-3">
+            <div class="space-y-3 rounded-xl border border-app-border bg-white p-3 dark:border-app-border-dark dark:bg-app-canvas-dark">
                 <div class="flex flex-wrap items-center gap-2">
                     <button
                         v-for="(section, idx) in form.budget_sections"
                         :key="`section-tab-${idx}`"
                         type="button"
                         class="rounded-md border px-3 py-1.5 text-sm"
-                        :class="idx === activeSectionIndex ? 'border-brand-blue bg-brand-blue/10 text-black' : 'border-app-border bg-white text-black'"
+                        :class="idx === activeSectionIndex ? 'border-brand-blue bg-brand-blue/10 text-app-ink dark:text-app-ink-dark' : 'border-app-border bg-white text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark'"
                         @click="activeSectionIndex = idx"
                     >
                         {{ section.title || `Sectie ${idx + 1}` }}
@@ -202,7 +202,7 @@ function generatePdf() {
                         <input
                             v-model="form.budget_sections[activeSectionIndex].title"
                             type="text"
-                            class="w-full rounded border border-app-border bg-white px-3 py-2 text-black"
+                            class="w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-slate-900 dark:text-app-ink-dark"
                             placeholder="Naam sectie"
                         />
                         <button type="button" class="btn-action-delete" title="Sectie verwijderen" @click="removeSection(activeSectionIndex)">
@@ -212,7 +212,7 @@ function generatePdf() {
 
                     <div class="overflow-x-auto rounded border border-app-border">
                         <table class="min-w-full text-sm">
-                            <thead class="bg-slate-50 text-black">
+                            <thead class="bg-slate-50 text-app-ink dark:bg-slate-900 dark:text-app-ink-dark">
                                 <tr>
                                     <th class="px-2 py-2 text-left">Post</th>
                                     <th class="px-2 py-2 text-left">Aantal</th>
@@ -222,25 +222,25 @@ function generatePdf() {
                                     <th class="px-2 py-2 text-left">Actie</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-app-border bg-white">
+                            <tbody class="divide-y divide-app-border bg-white dark:divide-app-border-dark dark:bg-app-canvas-dark">
                                 <tr v-for="(row, rowIdx) in form.budget_sections[activeSectionIndex].rows" :key="`row-${rowIdx}`">
                                     <td class="px-2 py-2">
-                                        <input v-model="row.label" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black" />
+                                        <input v-model="row.label" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-slate-900 dark:text-app-ink-dark" />
                                     </td>
                                     <td class="px-2 py-2">
-                                        <input v-model.number="row.quantity" type="number" min="0" step="0.01" class="w-24 rounded border border-app-border bg-white px-2 py-1.5 text-black" />
+                                        <input v-model.number="row.quantity" type="number" min="0" step="0.01" class="w-24 rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-slate-900 dark:text-app-ink-dark" />
                                     </td>
                                     <td class="px-2 py-2">
                                         <div class="relative w-36">
-                                            <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700">€</span>
-                                            <input v-model.number="row.amount" type="number" step="0.01" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black" />
+                                            <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span>
+                                            <input v-model.number="row.amount" type="number" step="0.01" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-slate-900 dark:text-app-ink-dark" />
                                         </div>
                                     </td>
                                     <td class="px-2 py-2">
-                                        <input v-model="row.note" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black" />
+                                        <input v-model="row.note" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-slate-900 dark:text-app-ink-dark" />
                                     </td>
                                     <td class="px-2 py-2">
-                                        <span class="text-xs text-black">€ {{ (Number(row.quantity || 0) * effectiveAmount(row, form.budget_sections[activeSectionIndex].title)).toFixed(2) }}</span>
+                                        <span class="text-xs text-app-ink dark:text-app-ink-dark">€ {{ (Number(row.quantity || 0) * effectiveAmount(row, form.budget_sections[activeSectionIndex].title)).toFixed(2) }}</span>
                                     </td>
                                     <td class="px-2 py-2">
                                         <button type="button" class="btn-action-delete" title="Regel verwijderen" @click="removeRow(activeSectionIndex, rowIdx)">
@@ -255,15 +255,15 @@ function generatePdf() {
                         <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-700 text-white" title="Regel toevoegen" @click="addRow(activeSectionIndex)">
                             <PlusIcon class="h-4 w-4" />
                         </button>
-                        <p class="text-sm font-semibold text-black">Sectietotaal: € {{ sectionTotal(form.budget_sections[activeSectionIndex]).toFixed(2) }}</p>
+                        <p class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">Sectietotaal: € {{ sectionTotal(form.budget_sections[activeSectionIndex]).toFixed(2) }}</p>
                     </div>
                 </div>
             </div>
 
-            <div class="grid gap-2 rounded-xl border border-app-border bg-white p-3 sm:grid-cols-3">
-                <p class="text-sm font-semibold text-black">Totaal bijdragen: € {{ totals.income }}</p>
-                <p class="text-sm font-semibold text-black">Totaal uitgaven: € {{ totals.expenses }}</p>
-                <p class="text-sm font-semibold text-black">Verschil: € {{ totals.difference }}</p>
+            <div class="grid gap-2 rounded-xl border border-app-border bg-white p-3 sm:grid-cols-3 dark:border-app-border-dark dark:bg-app-canvas-dark">
+                <p class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">Totaal bijdragen: € {{ totals.income }}</p>
+                <p class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">Totaal uitgaven: € {{ totals.expenses }}</p>
+                <p class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">Verschil: € {{ totals.difference }}</p>
             </div>
             <div class="flex flex-wrap items-center gap-2 border-t border-app-border pt-3">
                 <button type="submit" class="btn-action-save" :disabled="form.processing" title="Opslaan" aria-label="Opslaan">

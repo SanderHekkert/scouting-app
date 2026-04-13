@@ -36,37 +36,37 @@ const sectionLabels = {
 const allSections = ['bevers', 'dolfijnen', 'zeeverkenners', 'wilde_vaart', 'loodsen', 'bestuur'];
 const sectionButtonClass = {
     dolfijnen: {
-        active: 'bg-emerald-600/20 text-emerald-700 dark:bg-emerald-500/25 dark:text-emerald-200',
-        inactive: 'bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 dark:bg-emerald-500/15 dark:text-emerald-200 dark:hover:bg-emerald-500/25',
+        active: 'bg-emerald-600/20 text-emerald-700 dark:bg-emerald-400/45 dark:text-emerald-50',
+        inactive: 'bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 dark:bg-emerald-400/25 dark:text-emerald-100 dark:hover:bg-emerald-400/35',
     },
     zeeverkenners: {
-        active: 'bg-yellow-400/35 text-yellow-900 dark:bg-yellow-400/25 dark:text-yellow-200',
-        inactive: 'bg-yellow-300/25 text-yellow-900 hover:bg-yellow-300/40 dark:bg-yellow-300/20 dark:text-yellow-200 dark:hover:bg-yellow-300/30',
+        active: 'bg-yellow-400/35 text-yellow-900 dark:bg-yellow-300/50 dark:text-yellow-950',
+        inactive: 'bg-yellow-300/25 text-yellow-900 hover:bg-yellow-300/40 dark:bg-yellow-300/30 dark:text-yellow-100 dark:hover:bg-yellow-300/40',
     },
     loodsen: {
-        active: 'bg-purple-600/25 text-purple-800 dark:bg-purple-500/30 dark:text-purple-200',
-        inactive: 'bg-purple-500/15 text-purple-800 hover:bg-purple-500/25 dark:bg-purple-500/20 dark:text-purple-200 dark:hover:bg-purple-500/30',
+        active: 'bg-purple-600/25 text-purple-800 dark:bg-purple-400/45 dark:text-purple-50',
+        inactive: 'bg-purple-500/15 text-purple-800 hover:bg-purple-500/25 dark:bg-purple-400/25 dark:text-purple-100 dark:hover:bg-purple-400/35',
     },
     bevers: {
-        active: 'bg-red-600/20 text-red-700 dark:bg-red-500/25 dark:text-red-200',
-        inactive: 'bg-red-500/10 text-red-700 hover:bg-red-500/20 dark:bg-red-500/15 dark:text-red-200 dark:hover:bg-red-500/25',
+        active: 'bg-red-600/20 text-red-700 dark:bg-red-400/45 dark:text-red-50',
+        inactive: 'bg-red-500/10 text-red-700 hover:bg-red-500/20 dark:bg-red-400/25 dark:text-red-100 dark:hover:bg-red-400/35',
     },
     wilde_vaart: {
-        active: 'bg-blue-600/20 text-blue-700 dark:bg-blue-500/25 dark:text-blue-200',
-        inactive: 'bg-blue-500/10 text-blue-700 hover:bg-blue-500/20 dark:bg-blue-500/15 dark:text-blue-200 dark:hover:bg-blue-500/25',
+        active: 'bg-blue-600/20 text-blue-700 dark:bg-blue-400/45 dark:text-blue-50',
+        inactive: 'bg-blue-500/10 text-blue-700 hover:bg-blue-500/20 dark:bg-blue-400/25 dark:text-blue-100 dark:hover:bg-blue-400/35',
     },
     bestuur: {
-        active: 'bg-slate-600/20 text-slate-700 dark:bg-slate-500/25 dark:text-slate-200',
-        inactive: 'bg-slate-500/10 text-slate-700 hover:bg-slate-500/20 dark:bg-slate-500/15 dark:text-slate-200 dark:hover:bg-slate-500/25',
+        active: 'bg-slate-600/20 text-slate-700 dark:bg-slate-300/50 dark:text-slate-950',
+        inactive: 'bg-slate-500/10 text-slate-700 hover:bg-slate-500/20 dark:bg-slate-300/30 dark:text-slate-100 dark:hover:bg-slate-300/40',
     },
 };
 const sectionNavActiveClass = {
-    dolfijnen: 'bg-emerald-600/15 text-emerald-800 ring-1 ring-emerald-600/25 dark:bg-emerald-500/20 dark:text-emerald-100 dark:ring-emerald-400/30',
-    zeeverkenners: 'bg-yellow-400/25 text-yellow-900 ring-1 ring-yellow-500/35 dark:bg-yellow-400/20 dark:text-yellow-100 dark:ring-yellow-300/35',
-    loodsen: 'bg-purple-600/15 text-purple-800 ring-1 ring-purple-600/25 dark:bg-purple-500/20 dark:text-purple-100 dark:ring-purple-400/35',
-    bevers: 'bg-red-600/15 text-red-700 ring-1 ring-red-600/25 dark:bg-red-500/20 dark:text-red-100 dark:ring-red-400/35',
-    wilde_vaart: 'bg-blue-600/15 text-blue-700 ring-1 ring-blue-600/25 dark:bg-blue-500/20 dark:text-blue-100 dark:ring-blue-400/35',
-    bestuur: 'bg-slate-600/15 text-slate-700 ring-1 ring-slate-600/25 dark:bg-slate-500/20 dark:text-slate-100 dark:ring-slate-400/35',
+    dolfijnen: 'bg-emerald-600/15 text-emerald-800 ring-1 ring-emerald-600/25 dark:bg-emerald-400/35 dark:text-emerald-50 dark:ring-emerald-300/55',
+    zeeverkenners: 'bg-yellow-400/25 text-yellow-900 ring-1 ring-yellow-500/35 dark:bg-yellow-300/45 dark:text-yellow-950 dark:ring-yellow-200/60',
+    loodsen: 'bg-purple-600/15 text-purple-800 ring-1 ring-purple-600/25 dark:bg-purple-400/35 dark:text-purple-50 dark:ring-purple-300/55',
+    bevers: 'bg-red-600/15 text-red-700 ring-1 ring-red-600/25 dark:bg-red-400/35 dark:text-red-50 dark:ring-red-300/55',
+    wilde_vaart: 'bg-blue-600/15 text-blue-700 ring-1 ring-blue-600/25 dark:bg-blue-400/35 dark:text-blue-50 dark:ring-blue-300/55',
+    bestuur: 'bg-slate-600/15 text-slate-700 ring-1 ring-slate-600/25 dark:bg-slate-300/45 dark:text-slate-950 dark:ring-slate-200/60',
 };
 
 const activeSection = computed(() => page.props.auth?.active_section || 'dolfijnen');

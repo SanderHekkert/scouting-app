@@ -40,7 +40,7 @@ function deleteItem(item) {
     <AuthenticatedLayout>
         <template #header>
             <div class="flex w-full flex-wrap items-center justify-between gap-3">
-                <h2 class="text-xl font-semibold text-black">{{ speltakLabel }} - Draaiboek</h2>
+                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">{{ speltakLabel }} - Draaiboek</h2>
                 <Link
                     v-if="canCreate"
                     :href="route('camp-playbooks.create')"
@@ -55,14 +55,14 @@ function deleteItem(item) {
 
         <div class="space-y-4">
             <div class="surface-brand-top space-y-3 rounded-xl border border-app-border bg-app-panel p-4 shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark">
-                <div v-if="!props.items.length" class="py-6 text-center text-sm text-black">
+                <div v-if="!props.items.length" class="py-6 text-center text-sm text-app-ink dark:text-app-ink-dark">
                     Nog geen draaiboek toegevoegd.
                 </div>
-                <div v-for="item in props.items" :key="`playbook-${item.id}`" class="rounded-lg border border-app-border bg-white p-3">
+                <div v-for="item in props.items" :key="`playbook-${item.id}`" class="rounded-lg border border-app-border bg-white p-3 dark:bg-app-canvas-dark">
                     <div class="flex items-start justify-between gap-3">
                         <div>
-                            <p class="text-sm font-semibold text-black">{{ item.camp_year }} - {{ item.title }}</p>
-                            <p class="mt-1 line-clamp-4 whitespace-pre-wrap text-sm text-black">{{ item.content }}</p>
+                            <p class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">{{ item.camp_year }} - {{ item.title }}</p>
+                            <p class="mt-1 line-clamp-4 whitespace-pre-wrap text-sm text-app-ink dark:text-app-ink-dark">{{ item.content }}</p>
                         </div>
                         <div class="flex items-center gap-1">
                             <Link v-if="canUpdate" :href="route('camp-playbooks.show', item.id)" class="btn-action-save" title="Bewerken" aria-label="Bewerken">

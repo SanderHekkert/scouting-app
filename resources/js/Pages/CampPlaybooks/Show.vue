@@ -60,7 +60,7 @@ function copyItem() {
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center justify-between gap-3">
-                <h2 class="text-xl font-semibold text-black">{{ speltakLabel }} - {{ isEdit ? 'Draaiboek bewerken' : 'Draaiboek toevoegen' }}</h2>
+                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">{{ speltakLabel }} - {{ isEdit ? 'Draaiboek bewerken' : 'Draaiboek toevoegen' }}</h2>
                 <Link :href="route('camp-playbooks.index')" class="btn-action-back" title="Terug" aria-label="Terug">
                     <ArrowUturnLeftIcon class="h-5 w-5" />
                 </Link>
@@ -69,9 +69,9 @@ function copyItem() {
 
         <form class="surface-brand-top space-y-4 rounded-xl border border-app-border bg-app-panel p-5 shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark" @submit.prevent="submit">
             <div class="grid gap-3 sm:grid-cols-2">
-                <input v-model="form.camp_year" type="number" min="2020" max="2100" class="rounded border border-app-border bg-white px-3 py-2 text-black" placeholder="Jaar" required />
-                <input v-model="form.title" type="text" class="rounded border border-app-border bg-white px-3 py-2 text-black" placeholder="Titel (bijv. Pinksterkamp 2026)" required />
-                <textarea v-model="form.content" rows="12" class="rounded border border-app-border bg-white px-3 py-2 text-black sm:col-span-2" placeholder="Werk hier het draaiboek uit..." />
+                <input v-model="form.camp_year" type="number" min="2020" max="2100" class="rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Jaar" required />
+                <input v-model="form.title" type="text" class="rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Titel (bijv. Pinksterkamp 2026)" required />
+                <textarea v-model="form.content" rows="12" class="rounded border border-app-border bg-white px-3 py-2 text-black sm:col-span-2 dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Werk hier het draaiboek uit..." />
             </div>
             <div class="flex flex-wrap items-center gap-2 border-t border-app-border pt-3">
                 <button type="submit" class="btn-action-save" :disabled="form.processing" title="Opslaan" aria-label="Opslaan">
