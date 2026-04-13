@@ -36,7 +36,7 @@ Route::middleware(['auth', 'verified', 'has.role', 'section.role:admin'])->group
     Route::patch('/admin/rollen/{user}/basis', [AdminRoleController::class, 'updateBasics'])->name('admin.roles.update-basics');
 });
 
-Route::middleware(['auth', 'verified', 'has.role', 'section.role:admin,bestuurslid'])->group(function () {
+Route::middleware(['auth', 'verified', 'has.role', 'section.role:admin,bestuurslid,penningmeester,secretaresse,voorzitter'])->group(function () {
     Route::get('/admin/pushmeldingen/nieuw', [AdminPushNotificationController::class, 'create'])->name('admin.push-notifications.create');
     Route::get('/admin/gebruikers', [AdminUserController::class, 'index'])->name('admin.users.index');
     Route::get('/admin/gebruikers/uitnodigen', [AdminUserInvitationController::class, 'create'])->name('admin.users.invite.create');
@@ -68,7 +68,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-Route::middleware(['auth', 'verified', 'has.role', 'section.role:admin,bestuurslid'])->group(function () {
+Route::middleware(['auth', 'verified', 'has.role', 'section.role:admin,bestuurslid,penningmeester,secretaresse,voorzitter'])->group(function () {
     Route::post('/active-section', function (Request $request) {
         $data = $request->validate([
             'section' => ['required', 'string', Rule::in(UserSectionRole::ALL_SECTIONS)],
