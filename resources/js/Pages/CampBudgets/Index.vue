@@ -6,6 +6,7 @@ import { DocumentDuplicateIcon, PencilSquareIcon, PlusIcon, TrashIcon } from '@h
 
 const props = defineProps({
     items: { type: Array, default: () => [] },
+    canReview: { type: Boolean, default: false },
 });
 
 const page = usePage();
@@ -32,6 +33,29 @@ function deleteItem(item) {
     if (!canUpdate.value) return;
     if (!confirm(`Begroting "${item.title}" verwijderen?`)) return;
     router.delete(route('camp-budgets.destroy', item.id), { preserveScroll: true });
+}
+
+function approveItem(item) {
+    router.patch(route('camp-budgets.approve', item.id), {}, { preserveScroll: true });
+}
+
+function rejectItem(item) {
+    const review_note = prompt('Wat moet aangepast worden?') || '';
+    if (!review_note.trim()) return;
+    router.patch(route('camp-budgets.reject', item.id), { review_note }, { preserveScroll: true });
+}
+
+function statusLabel(status) {
+    if (status === 'submitted') return 'Wacht op goedkeuring';
+    if (status === 'approved') return 'Goedgekeurd';
+    if (status === 'needs_changes') return 'Aanpassen nodig';
+    return status;
+}
+
+function statusClass(status) {
+    if (status === 'approved') return 'bg-emerald-100 text-emerald-800';
+    if (status === 'needs_changes') return 'bg-amber-100 text-amber-800';
+    return 'bg-slate-100 text-slate-700';
 }
 </script>
 
@@ -62,9 +86,14 @@ function deleteItem(item) {
                     <div class="flex items-start justify-between gap-3">
                         <div>
                             <p class="text-sm font-semibold text-black">{{ item.camp_year }} - {{ item.title }}</p>
+                            <p class="mt-1 text-xs text-slate-500">{{ sectionLabels[item.section] || item.section }} | {{ item.created_by_name || 'Onbekend' }}</p>
                             <p class="mt-1 line-clamp-4 whitespace-pre-wrap text-sm text-black">{{ item.content }}</p>
+                            <p v-if="item.review_note" class="mt-2 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-900">
+                                Opmerking bestuur: {{ item.review_note }}
+                            </p>
                         </div>
                         <div class="flex items-center gap-1">
+                            <span :class="['rounded-full px-2 py-0.5 text-xs', statusClass(item.status)]">{{ statusLabel(item.status) }}</span>
                             <Link v-if="canUpdate" :href="route('camp-budgets.show', item.id)" class="btn-action-save" title="Bewerken" aria-label="Bewerken">
                                 <PencilSquareIcon class="h-5 w-5" />
                             </Link>
@@ -74,6 +103,8 @@ function deleteItem(item) {
                             <button v-if="canUpdate" type="button" class="btn-action-delete" title="Verwijderen" aria-label="Verwijderen" @click="deleteItem(item)">
                                 <TrashIcon class="h-5 w-5" />
                             </button>
+                            <button v-if="item.can_review" type="button" class="rounded bg-emerald-700 px-3 py-1.5 text-xs text-white hover:bg-emerald-800" @click="approveItem(item)">Goedkeuren</button>
+                            <button v-if="item.can_review" type="button" class="rounded bg-amber-600 px-3 py-1.5 text-xs text-white hover:bg-amber-700" @click="rejectItem(item)">Aanpassen nodig</button>
                         </div>
                     </div>
                 </div>

@@ -76,6 +76,55 @@ class CampModulesTest extends TestCase
         ]);
     }
 
+    public function test_bestuur_can_review_submitted_budget_and_approval_sets_status(): void
+    {
+        $board = $this->userWithRole(UserSectionRole::SECTION_ALL, UserSectionRole::ROLE_BESTUURSLID);
+        $submitter = $this->userWithRole(UserSectionRole::SECTION_DOLFIJNEN, UserSectionRole::ROLE_TEAMLEIDER);
+
+        $budget = CampBudget::query()->create([
+            'section' => UserSectionRole::SECTION_DOLFIJNEN,
+            'camp_year' => 2026,
+            'title' => 'Ingeleverd budget',
+            'content' => 'Test',
+            'status' => CampBudget::STATUS_SUBMITTED,
+            'created_by_user_id' => $submitter->id,
+            'updated_by_user_id' => $submitter->id,
+            'meta' => ['sections' => []],
+        ]);
+
+        $this->actingAs($board)
+            ->withSession(['active_section' => UserSectionRole::SECTION_BESTUUR])
+            ->patch(route('camp-budgets.reject', $budget), ['review_note' => 'Pas posten aan'])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('camp_budgets', [
+            'id' => $budget->id,
+            'status' => CampBudget::STATUS_NEEDS_CHANGES,
+        ]);
+
+        $budgetForApproval = CampBudget::query()->create([
+            'section' => UserSectionRole::SECTION_DOLFIJNEN,
+            'camp_year' => 2026,
+            'title' => 'Ingeleverd budget 2',
+            'content' => 'Test',
+            'status' => CampBudget::STATUS_SUBMITTED,
+            'created_by_user_id' => $submitter->id,
+            'updated_by_user_id' => $submitter->id,
+            'meta' => ['sections' => []],
+        ]);
+
+        $this->actingAs($board)
+            ->withSession(['active_section' => UserSectionRole::SECTION_BESTUUR])
+            ->patch(route('camp-budgets.approve', $budgetForApproval))
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('camp_budgets', [
+            'id' => $budgetForApproval->id,
+            'status' => CampBudget::STATUS_APPROVED,
+        ]);
+        $this->assertNotEmpty((string) data_get($budgetForApproval->fresh()->meta, 'pdf_path'));
+    }
+
     public function test_admin_can_create_and_update_camp_playbook_in_active_section(): void
     {
         $admin = $this->userWithRole(UserSectionRole::SECTION_ALL, UserSectionRole::ROLE_ADMIN);

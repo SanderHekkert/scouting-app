@@ -1,7 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { PlusIcon } from '@heroicons/vue/24/outline';
+import { Head, Link, usePage } from '@inertiajs/vue3';
+import { BanknotesIcon, PlusIcon } from '@heroicons/vue/24/outline';
 import { computed } from 'vue';
 
 const props = defineProps({
@@ -21,12 +21,9 @@ const sectionLabelMap = {
 };
 const speltakLabel = computed(() => sectionLabelMap[page.props.auth?.active_section] || 'Dolfijnen');
 
-function updatePot(pot) {
-    router.patch(route('finance.pots.update', pot.id), {
-        name: pot.name,
-        current_amount: pot.current_amount,
-        active: !!pot.active,
-    }, { preserveScroll: true });
+function formatCurrency(value) {
+    const amount = Number(value || 0);
+    return new Intl.NumberFormat('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
 }
 </script>
 
@@ -56,11 +53,18 @@ function updatePot(pot) {
                     <p v-if="!props.pots.length" class="rounded-lg border border-dashed border-app-border bg-white px-3 py-3 text-sm text-slate-600">
                         Er zijn nog geen potjes voor deze speltak.
                     </p>
-                    <div v-for="pot in props.pots" :key="`pot-${pot.id}`" class="grid gap-2 rounded-lg border border-app-border bg-white p-3 sm:grid-cols-[1fr_10rem_10rem_auto]">
-                        <input v-model="pot.name" class="rounded border border-app-border px-2 py-1.5 text-black" :disabled="!canManage" />
-                        <input :value="pot.starting_amount" class="rounded border border-app-border bg-slate-100 px-2 py-1.5 text-black" disabled />
-                        <input v-model="pot.current_amount" type="number" step="0.01" class="rounded border border-app-border px-2 py-1.5 text-black" :disabled="!canManage" />
-                        <button v-if="canManage" type="button" class="rounded bg-brand-blue px-3 py-1.5 text-sm text-white hover:bg-brand-blue-dark" @click="updatePot(pot)">Opslaan</button>
+                    <div v-for="pot in props.pots" :key="`pot-${pot.id}`" class="rounded-xl border border-app-border bg-white p-4 shadow-sm">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <p class="text-sm font-semibold text-black">{{ pot.name }}</p>
+                                <p class="mt-1 text-xs text-slate-500">Startbudget: € {{ formatCurrency(pot.starting_amount) }}</p>
+                            </div>
+                            <BanknotesIcon class="h-8 w-8 text-emerald-700" />
+                        </div>
+                        <p class="mt-4 text-4xl font-bold leading-none text-black">€ {{ formatCurrency(pot.current_amount) }}</p>
+                        <p class="mt-2 text-xs" :class="pot.active ? 'text-emerald-700' : 'text-slate-500'">
+                            {{ pot.active ? 'Actief potje' : 'Inactief potje' }}
+                        </p>
                     </div>
                 </div>
             </div>

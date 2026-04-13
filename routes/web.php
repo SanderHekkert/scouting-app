@@ -142,6 +142,8 @@ Route::middleware(['auth', 'verified', 'has.role', 'section.role:admin,bestuursl
     Route::post('/kamp/begroting/{campBudget}/copy', [CampBudgetController::class, 'copy'])->middleware('section.permission:camp_budgets')->name('camp-budgets.copy');
     Route::post('/kamp/begroting/{campBudget}/pdf', [CampBudgetController::class, 'generatePdf'])->middleware('section.permission:camp_budgets')->name('camp-budgets.pdf');
     Route::get('/kamp/begroting/{campBudget}/pdf', [CampBudgetController::class, 'downloadPdf'])->middleware('section.permission:camp_budgets')->name('camp-budgets.pdf.download');
+    Route::patch('/kamp/begroting/{campBudget}/approve', [CampBudgetController::class, 'approve'])->middleware('section.permission:camp_budgets')->name('camp-budgets.approve');
+    Route::patch('/kamp/begroting/{campBudget}/reject', [CampBudgetController::class, 'reject'])->middleware('section.permission:camp_budgets')->name('camp-budgets.reject');
     Route::patch('/kamp/begroting/{campBudget}', [CampBudgetController::class, 'update'])->middleware('section.permission:camp_budgets')->name('camp-budgets.update');
 
     // Draaiboek

@@ -15,11 +15,16 @@ return new class extends Migration
             $table->string('title', 255);
             $table->longText('content')->nullable();
             $table->json('meta')->nullable();
+            $table->string('status', 30)->default('submitted');
+            $table->text('review_note')->nullable();
+            $table->foreignId('processed_by_user_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->timestamp('processed_at')->nullable();
             $table->foreignId('created_by_user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('updated_by_user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
 
             $table->index(['section', 'camp_year']);
+            $table->index(['section', 'status']);
         });
     }
 

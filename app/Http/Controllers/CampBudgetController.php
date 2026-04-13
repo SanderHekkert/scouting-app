@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\CampBudget;
+use App\Models\User;
+use App\Models\UserSectionRole;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -13,20 +15,37 @@ class CampBudgetController extends Controller
 {
     public function index(): Response
     {
+        $user = request()->user();
+        abort_unless($user instanceof User, 403);
+        $activeSection = (string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN);
+        $canReview = $this->canReviewBudgets($user, $activeSection);
+
+        $query = CampBudget::query();
+        if ($canReview && $activeSection === UserSectionRole::SECTION_BESTUUR) {
+            $query = CampBudget::withoutGlobalScope('section')
+                ->where('section', '!=', UserSectionRole::SECTION_BESTUUR);
+        }
+
         return Inertia::render('CampBudgets/Index', [
-            'items' => CampBudget::query()
+            'items' => $query
                 ->latest('camp_year')
                 ->latest('id')
                 ->get()
                 ->map(fn (CampBudget $item): array => [
                     'id' => (int) $item->id,
+                    'section' => (string) $item->section,
                     'camp_year' => (int) $item->camp_year,
                     'title' => (string) $item->title,
                     'content' => (string) ($item->content ?? ''),
                     'pdf_path' => (string) data_get($item->meta, 'pdf_path', ''),
+                    'status' => (string) ($item->status ?: CampBudget::STATUS_SUBMITTED),
+                    'review_note' => (string) ($item->review_note ?? ''),
+                    'created_by_name' => (string) optional($item->createdBy)->name,
+                    'can_review' => $canReview && in_array((string) $item->status, [CampBudget::STATUS_SUBMITTED], true),
                 ])
                 ->values()
                 ->all(),
+            'canReview' => $canReview,
         ]);
     }
 
@@ -95,6 +114,7 @@ class CampBudgetController extends Controller
             'title' => (string) $data['title'],
             'content' => (string) ($data['content'] ?? ''),
             'meta' => ['sections' => $sections, 'standard_values' => $standardValues],
+            'status' => CampBudget::STATUS_SUBMITTED,
             'created_by_user_id' => $userId,
             'updated_by_user_id' => $userId,
         ]);
@@ -124,6 +144,10 @@ class CampBudgetController extends Controller
             'title' => (string) $data['title'],
             'content' => (string) ($data['content'] ?? ''),
             'meta' => $meta,
+            'status' => CampBudget::STATUS_SUBMITTED,
+            'review_note' => null,
+            'processed_by_user_id' => null,
+            'processed_at' => null,
             'updated_by_user_id' => $request->user()?->id,
         ]);
 
@@ -184,6 +208,54 @@ class CampBudgetController extends Controller
         ]);
 
         return to_route('camp-budgets.show', $campBudget->id);
+    }
+
+    public function approve(Request $request, int $campBudget)
+    {
+        $user = $request->user();
+        abort_unless($user instanceof User, 403);
+        abort_unless($this->canReviewBudgets($user, (string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN)), 403);
+        $campBudget = CampBudget::withoutGlobalScope('section')->findOrFail($campBudget);
+        abort_unless((string) $campBudget->status === CampBudget::STATUS_SUBMITTED, 422);
+
+        $path = $this->buildAndStorePdf($campBudget);
+        $meta = (array) ($campBudget->meta ?? []);
+        $meta['pdf_path'] = $path;
+        $meta['pdf_generated_at'] = now()->toIso8601String();
+
+        $campBudget->update([
+            'meta' => $meta,
+            'status' => CampBudget::STATUS_APPROVED,
+            'review_note' => null,
+            'processed_by_user_id' => (int) $user->id,
+            'processed_at' => now(),
+            'updated_by_user_id' => (int) $user->id,
+        ]);
+
+        return back();
+    }
+
+    public function reject(Request $request, int $campBudget)
+    {
+        $user = $request->user();
+        abort_unless($user instanceof User, 403);
+        abort_unless($this->canReviewBudgets($user, (string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN)), 403);
+        $campBudget = CampBudget::withoutGlobalScope('section')->findOrFail($campBudget);
+        abort_unless((string) $campBudget->status === CampBudget::STATUS_SUBMITTED, 422);
+
+        $data = $request->validate([
+            'review_note' => ['required', 'string', 'max:1000'],
+        ]);
+
+        $campBudget->update([
+            'status' => CampBudget::STATUS_NEEDS_CHANGES,
+            'review_note' => trim((string) $data['review_note']),
+            'processed_by_user_id' => (int) $user->id,
+            'processed_at' => now(),
+            'updated_by_user_id' => (int) $user->id,
+        ]);
+
+        return back();
     }
 
     public function downloadPdf(CampBudget $campBudget)
@@ -315,8 +387,12 @@ class CampBudgetController extends Controller
     {
         $label = mb_strtolower(trim((string) ($row['label'] ?? '')));
         $section = mb_strtolower(trim($sectionTitle));
+        $manualAmount = (float) ($row['amount'] ?? 0);
+        if ($manualAmount > 0) {
+            return $manualAmount;
+        }
         if ($label === '') {
-            return (float) ($row['amount'] ?? 0);
+            return $manualAmount;
         }
 
         if ($section === 'bijdragen' && str_contains($label, 'leiding')) {
@@ -341,6 +417,43 @@ class CampBudgetController extends Controller
             return (float) ($standardValues['reservering_nawaka_pjpd'] ?? 0);
         }
 
-        return (float) ($row['amount'] ?? 0);
+        return $manualAmount;
+    }
+
+    private function canReviewBudgets(User $user, string $activeSection): bool
+    {
+        if ($user->isGlobalAdmin()) {
+            return true;
+        }
+
+        if ($activeSection !== UserSectionRole::SECTION_BESTUUR) {
+            return false;
+        }
+
+        return $user->isGlobalBoardMember()
+            || $user->sectionRoles()
+                ->where('section', UserSectionRole::SECTION_BESTUUR)
+                ->whereIn('role', UserSectionRole::BESTUUR_ROLES)
+                ->exists();
+    }
+
+    private function buildAndStorePdf(CampBudget $campBudget): string
+    {
+        $sections = $this->normalizeSections(data_get($campBudget->meta, 'sections', []));
+        $standardValues = $this->normalizeStandardValues(data_get($campBudget->meta, 'standard_values', []));
+        $totals = $this->totalsForSections($sections, $standardValues);
+
+        $pdf = Pdf::loadView('pdf.camp-budget', [
+            'budget' => $campBudget,
+            'sections' => $sections,
+            'standardValues' => $standardValues,
+            'totals' => $totals,
+        ])->setPaper('a4');
+
+        $filename = sprintf('begroting-%d-%s.pdf', (int) $campBudget->id, now()->format('Ymd-His'));
+        $path = 'camp-budgets/'.$filename;
+        Storage::disk('local')->put($path, $pdf->output());
+
+        return $path;
     }
 }

@@ -101,7 +101,9 @@ function sectionTotal(section) {
 function effectiveAmount(row, sectionTitle) {
     const label = String(row?.label || '').trim().toLowerCase();
     const section = String(sectionTitle || '').trim().toLowerCase();
-    if (!label) return Number(row?.amount || 0) || 0;
+    const manualAmount = Number(row?.amount || 0) || 0;
+    if (manualAmount > 0) return manualAmount;
+    if (!label) return manualAmount;
 
     if (section === 'bijdragen' && label.includes('leiding')) return Number(form.standard_values.prijs_per_dag_leiding) || 0;
     if (label.includes('vaart')) return Number(form.standard_values.kosten_vaart_pu) || 0;
@@ -110,7 +112,7 @@ function effectiveAmount(row, sectionTitle) {
     if (label.includes('proviand')) return Number(form.standard_values.proviand_pppd) || 0;
     if (label.includes('groepsafdracht')) return Number(form.standard_values.groepsafdracht_pjpd) || 0;
     if (label.includes('nawaka')) return Number(form.standard_values.reservering_nawaka_pjpd) || 0;
-    return Number(row?.amount || 0) || 0;
+    return manualAmount;
 }
 
 const totals = computed(() => {
@@ -168,13 +170,13 @@ function generatePdf() {
             <div class="rounded-xl border border-app-border bg-white p-3">
                 <h3 class="mb-2 text-sm font-semibold text-black">Standaardwaarden</h3>
                 <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                    <label class="text-xs text-black">Prijs per dag leiding <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2 text-slate-500">€</span><input v-model.number="form.standard_values.prijs_per_dag_leiding" type="number" step="0.01" class="w-full rounded border border-app-border py-1.5 pl-6 pr-2 text-black" /></div></label>
-                    <label class="text-xs text-black">Kosten vaart pu <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2 text-slate-500">€</span><input v-model.number="form.standard_values.kosten_vaart_pu" type="number" step="0.01" class="w-full rounded border border-app-border py-1.5 pl-6 pr-2 text-black" /></div></label>
-                    <label class="text-xs text-black">Kosten aggregaat pu <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2 text-slate-500">€</span><input v-model.number="form.standard_values.kosten_aggregaat_pu" type="number" step="0.01" class="w-full rounded border border-app-border py-1.5 pl-6 pr-2 text-black" /></div></label>
-                    <label class="text-xs text-black">Huur Fram pppd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2 text-slate-500">€</span><input v-model.number="form.standard_values.huur_fram_pppd" type="number" step="0.01" class="w-full rounded border border-app-border py-1.5 pl-6 pr-2 text-black" /></div></label>
-                    <label class="text-xs text-black">Proviand pppd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2 text-slate-500">€</span><input v-model.number="form.standard_values.proviand_pppd" type="number" step="0.01" class="w-full rounded border border-app-border py-1.5 pl-6 pr-2 text-black" /></div></label>
-                    <label class="text-xs text-black">Groepsafdracht pjpd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2 text-slate-500">€</span><input v-model.number="form.standard_values.groepsafdracht_pjpd" type="number" step="0.01" class="w-full rounded border border-app-border py-1.5 pl-6 pr-2 text-black" /></div></label>
-                    <label class="text-xs text-black">Reservering NaWaKa pjpd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2 text-slate-500">€</span><input v-model.number="form.standard_values.reservering_nawaka_pjpd" type="number" step="0.01" class="w-full rounded border border-app-border py-1.5 pl-6 pr-2 text-black" /></div></label>
+                    <label class="text-xs text-black">Prijs per dag leiding <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700">€</span><input v-model.number="form.standard_values.prijs_per_dag_leiding" type="number" step="0.01" class="w-full rounded border border-app-border py-1.5 pl-8 pr-2 text-black" /></div></label>
+                    <label class="text-xs text-black">Kosten vaart pu <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700">€</span><input v-model.number="form.standard_values.kosten_vaart_pu" type="number" step="0.01" class="w-full rounded border border-app-border py-1.5 pl-8 pr-2 text-black" /></div></label>
+                    <label class="text-xs text-black">Kosten aggregaat pu <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700">€</span><input v-model.number="form.standard_values.kosten_aggregaat_pu" type="number" step="0.01" class="w-full rounded border border-app-border py-1.5 pl-8 pr-2 text-black" /></div></label>
+                    <label class="text-xs text-black">Huur Fram pppd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700">€</span><input v-model.number="form.standard_values.huur_fram_pppd" type="number" step="0.01" class="w-full rounded border border-app-border py-1.5 pl-8 pr-2 text-black" /></div></label>
+                    <label class="text-xs text-black">Proviand pppd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700">€</span><input v-model.number="form.standard_values.proviand_pppd" type="number" step="0.01" class="w-full rounded border border-app-border py-1.5 pl-8 pr-2 text-black" /></div></label>
+                    <label class="text-xs text-black">Groepsafdracht pjpd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700">€</span><input v-model.number="form.standard_values.groepsafdracht_pjpd" type="number" step="0.01" class="w-full rounded border border-app-border py-1.5 pl-8 pr-2 text-black" /></div></label>
+                    <label class="text-xs text-black">Reservering NaWaKa pjpd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700">€</span><input v-model.number="form.standard_values.reservering_nawaka_pjpd" type="number" step="0.01" class="w-full rounded border border-app-border py-1.5 pl-8 pr-2 text-black" /></div></label>
                 </div>
             </div>
 
@@ -230,8 +232,8 @@ function generatePdf() {
                                     </td>
                                     <td class="px-2 py-2">
                                         <div class="relative w-36">
-                                            <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2 text-slate-500">€</span>
-                                            <input v-model.number="row.amount" type="number" step="0.01" class="w-full rounded border border-app-border bg-white py-1.5 pl-6 pr-2 text-black" :disabled="effectiveAmount(row, form.budget_sections[activeSectionIndex].title) !== (Number(row.amount) || 0) && String(row.label || '').trim() !== ''" />
+                                            <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700">€</span>
+                                            <input v-model.number="row.amount" type="number" step="0.01" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black" />
                                         </div>
                                     </td>
                                     <td class="px-2 py-2">
