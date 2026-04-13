@@ -12,6 +12,14 @@ const destinations = [
     { label: 'Leiding', value: route('leaders.index') },
     { label: 'Taakverdeling', value: route('task-items.index') },
     { label: 'Belangrijke info', value: route('info-notes.index') },
+    { label: 'Gezondheidsformulieren', value: route('admin.health-forms.index') },
+    { label: 'Potjes', value: route('finance.pots.index') },
+    { label: 'Declaraties', value: route('finance.declarations.index') },
+    { label: 'Begroting', value: route('camp-budgets.index') },
+    { label: 'Draaiboek', value: route('camp-playbooks.index') },
+    { label: 'Pushmeldingen', value: route('admin.push-notifications.index') },
+    { label: 'Gebruikers', value: route('admin.users.index') },
+    { label: 'Rechtenbeheer', value: route('permissions.index') },
 ];
 
 const form = useForm({

@@ -202,7 +202,7 @@ function safeExternalUrl(url) {
                             <span
                                 v-for="name in splitAbsentNames(event.absent)"
                                 :key="`mob-absent-chip-${event.id}-${name}`"
-                                class="inline-flex items-center gap-1 rounded-full bg-brand-blue/15 px-2 py-0.5 text-xs"
+                                class="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-xs text-red-800 dark:text-red-200"
                             >
                                 {{ firstNameOnly(name) }}
                             </span>
@@ -304,7 +304,7 @@ function safeExternalUrl(url) {
                             <span
                                 v-for="name in splitAbsentNames(event.absent)"
                                 :key="`desk-absent-chip-${event.id}-${name}`"
-                                class="inline-flex items-center gap-1 rounded-full bg-brand-blue/15 px-2 py-0.5 text-xs"
+                                class="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-xs text-red-800 dark:text-red-200"
                             >
                                 {{ firstNameOnly(name) }}
                             </span>

@@ -197,7 +197,7 @@ function removeTask(taskId) {
                         <span
                             v-for="name in splitNames(form.absent)"
                             :key="`absent-chip-${name}`"
-                            class="inline-flex items-center gap-1 rounded-full bg-brand-blue/15 px-2 py-0.5 text-xs text-app-ink dark:text-app-ink-dark"
+                            class="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-xs text-red-800 dark:text-red-200"
                         >
                             {{ firstNameOnly(name) }}
                             <button type="button" class="rounded p-0.5 hover:bg-brand-blue/25" @click="removeAbsentName(name)">

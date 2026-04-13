@@ -101,7 +101,7 @@ function splitNames(value) {
                         <span
                             v-for="name in splitNames(item.absent)"
                             :key="`absent-chip-${name}`"
-                            class="inline-flex items-center gap-1 rounded-full bg-brand-blue/15 px-2 py-0.5 text-xs"
+                            class="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-xs text-red-800 dark:text-red-200"
                         >
                             {{ name }}
                         </span>
