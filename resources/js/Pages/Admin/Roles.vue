@@ -114,7 +114,7 @@ function scheduleRoleSave(userId) {
                         <p class="mt-2 text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Speltak</p>
                         <select
                             v-model="stateByUser[user.id].selected_section"
-                            class="mt-1 w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black"
+                            class="mt-1 w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                             @change="scheduleRoleSave(user.id)"
                         >
                             <option v-for="section in orderedSections" :key="`mob-s-${user.id}-${section}`" :value="section">
@@ -125,7 +125,7 @@ function scheduleRoleSave(userId) {
                         <p class="mt-2 text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Rol</p>
                         <select
                             v-model="stateByUser[user.id].section_roles[stateByUser[user.id].selected_section]"
-                            class="mt-1 w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black"
+                            class="mt-1 w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                             @change="scheduleRoleSave(user.id)"
                         >
                             <option v-for="role in availableRolesForSection(stateByUser[user.id].selected_section)" :key="`mob-r-${user.id}-${role}`" :value="role">
@@ -160,7 +160,7 @@ function scheduleRoleSave(userId) {
                             <td class="px-3 py-2 align-top">
                                 <select
                                     v-model="stateByUser[user.id].selected_section"
-                                    class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black"
+                                    class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                                     @change="scheduleRoleSave(user.id)"
                                 >
                                     <option v-for="section in orderedSections" :key="`s-${user.id}-${section}`" :value="section">
@@ -171,7 +171,7 @@ function scheduleRoleSave(userId) {
                             <td class="px-3 py-2 align-top">
                                 <select
                                     v-model="stateByUser[user.id].section_roles[stateByUser[user.id].selected_section]"
-                                    class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black"
+                                    class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                                     @change="scheduleRoleSave(user.id)"
                                 >
                                     <option v-for="role in availableRolesForSection(stateByUser[user.id].selected_section)" :key="`r-${user.id}-${role}`" :value="role">

@@ -84,7 +84,7 @@ function submit() {
 
             <div>
                 <InputLabel for="bijzonderheden" value="Bijzonderheden" />
-                <textarea id="bijzonderheden" v-model="form.bijzonderheden" rows="3" class="mt-1 block w-full rounded-md border-slate-300 text-black shadow-sm focus:border-brand-blue focus:ring-brand-blue dark:border-slate-600 dark:bg-slate-900 dark:text-black" />
+                <textarea id="bijzonderheden" v-model="form.bijzonderheden" rows="3" class="mt-1 block w-full rounded-md border-slate-300 text-black shadow-sm focus:border-brand-blue focus:ring-brand-blue dark:border-slate-600 dark:bg-slate-900 dark:text-app-ink-dark" />
                 <InputError class="mt-2" :message="form.errors.bijzonderheden" />
             </div>
 

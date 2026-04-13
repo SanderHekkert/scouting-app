@@ -157,12 +157,12 @@ function submitCategory() {
             </div>
             <div class="grid gap-4 sm:grid-cols-[9rem_1fr] sm:items-start">
                 <label class="text-sm font-semibold text-app-muted dark:text-app-muted-dark sm:pt-2.5">Sectie</label>
-                <select v-model="taskForm.category" class="rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" :disabled="!hasCategories">
+                <select v-model="taskForm.category" class="rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:[&>option]:bg-app-canvas-dark dark:[&>option]:text-app-ink-dark" :disabled="!hasCategories">
                     <option v-for="cat in props.taskCategories" :key="`create-task-cat-${cat}`" :value="cat">{{ cat }}</option>
                 </select>
 
                 <label class="text-sm font-semibold text-app-muted dark:text-app-muted-dark sm:pt-2.5">Taak</label>
-                <input v-model="taskForm.title" type="text" required class="rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" />
+                <input v-model="taskForm.title" type="text" required class="rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
 
                 <label class="text-sm font-semibold text-app-muted dark:text-app-muted-dark sm:pt-2.5">Eigenaren</label>
                 <div>
@@ -178,7 +178,7 @@ function submitCategory() {
                     </div>
                     <select
                         v-model="ownerSelectValue"
-                        class="mt-2 w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black"
+                        class="mt-2 w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
                         @change="onTaskOwnerSelectChange"
                     >
                         <option value="">Naam toevoegen…</option>
@@ -193,12 +193,12 @@ function submitCategory() {
                 </div>
 
                 <label class="text-sm font-semibold text-app-muted dark:text-app-muted-dark sm:pt-2.5">Omschrijving</label>
-                <textarea v-model="taskForm.description" rows="4" required class="rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" />
+                <textarea v-model="taskForm.description" rows="4" required class="rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
 
                 <label class="text-sm font-semibold text-app-muted dark:text-app-muted-dark sm:pt-2.5">Deadlines</label>
                 <div>
                     <div class="flex items-center gap-2">
-                        <input v-model="addDeadlineInput" type="date" class="rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" />
+                        <input v-model="addDeadlineInput" type="date" class="rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
                         <button type="button" class="rounded bg-brand-blue px-3 py-2 text-sm text-white hover:bg-brand-blue-dark" @click="addTaskDeadline">Toevoegen</button>
                     </div>
                     <div class="mt-2 flex flex-wrap gap-2">
@@ -232,7 +232,7 @@ function submitCategory() {
             <h3 class="text-base font-semibold text-app-ink dark:text-app-ink-dark">Sectie toevoegen</h3>
             <div class="grid gap-4 sm:grid-cols-[9rem_1fr] sm:items-start">
                 <label class="text-sm font-semibold text-app-muted dark:text-app-muted-dark sm:pt-2.5">Naam</label>
-                <input v-model="categoryForm.name" type="text" required class="rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" />
+                <input v-model="categoryForm.name" type="text" required class="rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
                 <span class="hidden sm:block" aria-hidden="true" />
                 <button type="submit" class="rounded bg-brand-blue px-5 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark disabled:opacity-50" :disabled="categoryForm.processing">
                     Aanmaken

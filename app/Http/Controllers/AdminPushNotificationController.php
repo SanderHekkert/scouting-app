@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\PushSubscription;
+use App\Models\User;
 use App\Services\WebPushService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -11,13 +12,24 @@ use Inertia\Response;
 
 class AdminPushNotificationController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        return Inertia::render('Admin/PushNotifications');
+        return Inertia::render('Admin/PushNotifications', [
+            'canCreate' => $this->canManagePushNotifications($request),
+        ]);
+    }
+
+    public function create(Request $request): Response
+    {
+        abort_unless($this->canManagePushNotifications($request), 403);
+
+        return Inertia::render('Admin/PushNotificationsShow');
     }
 
     public function store(Request $request, WebPushService $webPushService): RedirectResponse
     {
+        abort_unless($this->canManagePushNotifications($request), 403);
+
         $data = $request->validate([
             'title' => ['required', 'string', 'max:120'],
             'body' => ['required', 'string', 'max:280'],
@@ -37,6 +49,16 @@ class AdminPushNotificationController extends Controller
             $message .= ", {$result['failed']} mislukt";
         }
 
-        return back()->with('status', $message);
+        return to_route('admin.push-notifications.index')->with('status', $message);
+    }
+
+    private function canManagePushNotifications(Request $request): bool
+    {
+        $user = $request->user();
+        if (! $user instanceof User) {
+            return false;
+        }
+
+        return $user->isGlobalAdmin() || $user->isGlobalBoardMember();
     }
 }

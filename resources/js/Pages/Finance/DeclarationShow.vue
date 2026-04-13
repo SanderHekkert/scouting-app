@@ -142,7 +142,7 @@ watch(receiptRows, () => {
             <div class="mt-4 grid gap-3 sm:grid-cols-2">
                 <div class="space-y-1">
                     <label class="text-xs font-semibold uppercase tracking-wide text-slate-600">Potje</label>
-                    <select v-model="form.pot_id" class="w-full rounded border border-app-border bg-white px-3 py-2 text-black" required :disabled="!hasActivePots">
+                    <select v-model="form.pot_id" class="w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:[&>option]:bg-app-canvas-dark dark:[&>option]:text-app-ink-dark" required :disabled="!hasActivePots">
                         <option value="" disabled>Kies potje</option>
                         <option v-for="pot in props.pots" :key="`declaration-pot-${pot.id}`" :value="pot.id">
                             {{ pot.name }} ({{ formatCurrency(pot.current_amount) }})

@@ -37,7 +37,7 @@ Route::middleware(['auth', 'verified', 'has.role', 'section.role:admin'])->group
 });
 
 Route::middleware(['auth', 'verified', 'has.role', 'section.role:admin,bestuurslid'])->group(function () {
-    Route::get('/admin/pushmeldingen', [AdminPushNotificationController::class, 'index'])->name('admin.push-notifications.index');
+    Route::get('/admin/pushmeldingen/nieuw', [AdminPushNotificationController::class, 'create'])->name('admin.push-notifications.create');
     Route::get('/admin/gebruikers', [AdminUserController::class, 'index'])->name('admin.users.index');
     Route::get('/admin/gebruikers/uitnodigen', [AdminUserInvitationController::class, 'create'])->name('admin.users.invite.create');
     Route::get('/admin/gebruikers/{user}', [AdminUserController::class, 'show'])->name('admin.users.show');
@@ -159,6 +159,8 @@ Route::middleware(['auth', 'verified', 'has.role', 'section.role:admin,bestuursl
 });
 
 Route::middleware(['auth', 'verified', 'has.role'])->group(function () {
+    Route::get('/pushmeldingen', [AdminPushNotificationController::class, 'index'])->name('admin.push-notifications.index');
+
     // Agenda
     Route::get('/agenda/archived', [AgendaItemController::class, 'archived'])->middleware('section.permission:events')->name('agenda.archived');
     Route::get('/agenda/nieuw', [AgendaItemController::class, 'create'])->middleware('section.permission:events')->name('agenda.create');

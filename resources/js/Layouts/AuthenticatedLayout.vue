@@ -156,11 +156,9 @@ const tailNavItems = computed(() => ([
     { label: 'Taakverdeling', route: 'task-items.index', matchRoutes: ['task-items.*', 'task-categories.*'], module: 'task_items', icon: ClipboardDocumentListIcon },
     { label: 'Begroting', route: 'camp-budgets.index', matchRoutes: ['camp-budgets.*'], module: 'camp_budgets', icon: BanknotesIcon },
     { label: 'Draaiboek', route: 'camp-playbooks.index', matchRoutes: ['camp-playbooks.*'], module: 'camp_playbooks', icon: BookOpenIcon },
+    { label: 'Pushmeldingen', route: 'admin.push-notifications.index', matchRoutes: ['admin.push-notifications.*'], icon: BellAlertIcon },
     ...((isAdmin.value || isBoardMember.value)
         ? [{ label: 'Gebruikers', route: 'admin.users.index', matchRoutes: ['admin.users.*'], icon: IdentificationIcon }]
-        : []),
-    ...((activeSection.value === 'bestuur' && (isAdmin.value || isBoardMember.value))
-        ? [{ label: 'Pushmeldingen', route: 'admin.push-notifications.index', matchRoutes: ['admin.push-notifications.*'], icon: BellAlertIcon }]
         : []),
     ...((canView('members') && (
         isAdmin.value

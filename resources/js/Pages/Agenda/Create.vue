@@ -143,44 +143,44 @@ watch(
             </div>
         </template>
 
-        <form class="surface-brand-top space-y-4 rounded-xl border border-app-border bg-app-panel p-5 text-black shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark dark:text-black" @submit.prevent="submit">
+        <form class="surface-brand-top space-y-4 rounded-xl border border-app-border bg-app-panel p-5 text-black shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark dark:text-app-ink-dark" @submit.prevent="submit">
             <div v-if="Object.keys(form.errors).length" class="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
                 <p class="font-semibold">Opslaan mislukt. Controleer de velden.</p>
             </div>
             <div class="grid gap-4 sm:grid-cols-[10rem_1fr] sm:items-start">
-                <label class="text-sm font-semibold text-black sm:pt-2.5 dark:text-black">Naam activiteit</label>
+                <label class="text-sm font-semibold text-black sm:pt-2.5 dark:text-app-ink-dark">Naam activiteit</label>
                 <div>
-                    <input v-model="form.theme" type="text" class="min-w-0 w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" />
+                    <input v-model="form.theme" type="text" class="min-w-0 w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
                     <p v-if="form.errors.theme" class="mt-1 text-xs text-red-600">{{ form.errors.theme }}</p>
                 </div>
-                <label class="text-sm font-semibold text-black sm:pt-2.5 dark:text-black">Datum van</label>
+                <label class="text-sm font-semibold text-black sm:pt-2.5 dark:text-app-ink-dark">Datum van</label>
                 <div>
-                    <input v-model="form.event_date" type="date" class="min-w-0 w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" />
+                    <input v-model="form.event_date" type="date" class="min-w-0 w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
                     <p v-if="form.errors.event_date" class="mt-1 text-xs text-red-600">{{ form.errors.event_date }}</p>
                 </div>
-                <label class="text-sm font-semibold text-black sm:pt-2.5 dark:text-black">Datum tot</label>
+                <label class="text-sm font-semibold text-black sm:pt-2.5 dark:text-app-ink-dark">Datum tot</label>
                 <div>
-                    <input v-model="form.end_date" type="date" class="min-w-0 w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" />
+                    <input v-model="form.end_date" type="date" class="min-w-0 w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
                     <p v-if="form.errors.end_date" class="mt-1 text-xs text-red-600">{{ form.errors.end_date }}</p>
                 </div>
-                <label class="text-sm font-semibold text-black sm:pt-2.5 dark:text-black">Locatie</label>
+                <label class="text-sm font-semibold text-black sm:pt-2.5 dark:text-app-ink-dark">Locatie</label>
                 <div>
-                    <input v-model="form.location" type="text" class="min-w-0 w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" />
+                    <input v-model="form.location" type="text" class="min-w-0 w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
                     <p v-if="form.errors.location" class="mt-1 text-xs text-red-600">{{ form.errors.location }}</p>
                 </div>
-                <label class="text-sm font-semibold text-black sm:pt-2.5 dark:text-black">Tijd van</label>
+                <label class="text-sm font-semibold text-black sm:pt-2.5 dark:text-app-ink-dark">Tijd van</label>
                 <div>
-                    <input v-model="form.start_time" type="time" class="min-w-0 w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" />
+                    <input v-model="form.start_time" type="time" class="min-w-0 w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
                     <p v-if="form.errors.start_time" class="mt-1 text-xs text-red-600">{{ form.errors.start_time }}</p>
                 </div>
-                <label class="text-sm font-semibold text-black sm:pt-2.5 dark:text-black">Tijd tot</label>
+                <label class="text-sm font-semibold text-black sm:pt-2.5 dark:text-app-ink-dark">Tijd tot</label>
                 <div>
-                    <input v-model="form.end_time" type="time" class="min-w-0 w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" />
+                    <input v-model="form.end_time" type="time" class="min-w-0 w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
                     <p v-if="form.errors.end_time" class="mt-1 text-xs text-red-600">{{ form.errors.end_time }}</p>
                 </div>
-                <label class="text-sm font-semibold text-black sm:pt-2.5 dark:text-black">Genodigden</label>
+                <label class="text-sm font-semibold text-black sm:pt-2.5 dark:text-app-ink-dark">Genodigden</label>
                 <div class="space-y-2">
-                    <select class="min-w-0 w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" @change="addInviteeUser">
+                    <select class="min-w-0 w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:[&>option]:bg-app-canvas-dark dark:[&>option]:text-app-ink-dark" @change="addInviteeUser">
                         <option value="">Klik om genodigde toe te voegen...</option>
                         <option v-for="user in selectableInviteeUsers" :key="`invitee-option-${user.id}`" :value="user.email">
                             {{ user.name }}
@@ -190,38 +190,38 @@ watch(
                         <span
                             v-for="user in selectedInviteeUsers"
                             :key="`invitee-chip-${user.id}`"
-                            class="inline-flex items-center gap-2 rounded-full bg-brand-blue/15 px-3 py-1 text-xs text-black dark:text-black"
+                            class="inline-flex items-center gap-2 rounded-full bg-brand-blue/15 px-3 py-1 text-xs text-black dark:text-app-ink-dark"
                         >
                             {{ user.name }}
-                            <button type="button" class="text-black/70 hover:text-black dark:text-black/70 dark:hover:text-black" @click="removeInviteeUser(user.email)">
+                            <button type="button" class="text-black/70 hover:text-black dark:text-app-muted-dark dark:hover:text-app-ink-dark" @click="removeInviteeUser(user.email)">
                                 <TrashIcon class="h-3.5 w-3.5" />
                             </button>
                         </span>
                     </div>
-                    <p v-if="!selectedInviteeUsers.length" class="text-xs text-black/70 dark:text-black/70">Nog geen genodigden geselecteerd.</p>
+                    <p v-if="!selectedInviteeUsers.length" class="text-xs text-black/70 dark:text-app-muted-dark">Nog geen genodigden geselecteerd.</p>
                 </div>
-                <label class="text-sm font-semibold text-black sm:pt-2.5 dark:text-black">URL</label>
+                <label class="text-sm font-semibold text-black sm:pt-2.5 dark:text-app-ink-dark">URL</label>
                 <div>
-                    <input v-model="form.link_url" type="url" class="min-w-0 w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" />
+                    <input v-model="form.link_url" type="url" class="min-w-0 w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
                     <p v-if="form.errors.link_url" class="mt-1 text-xs text-red-600">{{ form.errors.link_url }}</p>
                 </div>
-                <label class="text-sm font-semibold text-black sm:pt-2.5 dark:text-black">Bijlage</label>
+                <label class="text-sm font-semibold text-black sm:pt-2.5 dark:text-app-ink-dark">Bijlage</label>
                 <div class="flex min-w-0 items-center gap-3">
                     <input ref="attachmentInput" type="file" class="hidden" @change="onAttachmentChange" />
                     <button
                         type="button"
-                        class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-app-border bg-white text-black shadow-sm transition hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black dark:hover:bg-brand-blue/15"
+                        class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-app-border bg-white text-black shadow-sm transition hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/15"
                         title="Bestand kiezen"
                         aria-label="Bestand kiezen"
                         @click="openAttachmentPicker"
                     >
                         <PaperClipIcon class="h-5 w-5" />
                     </button>
-                    <span class="truncate text-sm text-black dark:text-black">{{ attachmentFileName }}</span>
+                    <span class="truncate text-sm text-black dark:text-app-ink-dark">{{ attachmentFileName }}</span>
                     <button
                         v-if="form.attachment_file"
                         type="button"
-                        class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-app-border bg-white text-black shadow-sm transition hover:bg-red-50 dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black dark:hover:bg-red-900/20"
+                        class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-app-border bg-white text-black shadow-sm transition hover:bg-red-50 dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:hover:bg-red-900/20"
                         title="Bijlage verwijderen"
                         aria-label="Bijlage verwijderen"
                         @click="clearAttachment"
@@ -229,30 +229,30 @@ watch(
                         <TrashIcon class="h-4 w-4" />
                     </button>
                 </div>
-                <label class="text-sm font-semibold text-black sm:pt-2.5 dark:text-black">Notities</label>
+                <label class="text-sm font-semibold text-black sm:pt-2.5 dark:text-app-ink-dark">Notities</label>
                 <div>
-                    <textarea v-model="form.notes" rows="3" class="min-w-0 w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" />
+                    <textarea v-model="form.notes" rows="3" class="min-w-0 w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
                     <p v-if="form.errors.notes" class="mt-1 text-xs text-red-600">{{ form.errors.notes }}</p>
                 </div>
                 <template v-if="isBestuur">
-                    <label class="text-sm font-semibold text-black sm:pt-2.5 dark:text-black">Zichtbaar voor</label>
+                    <label class="text-sm font-semibold text-black sm:pt-2.5 dark:text-app-ink-dark">Zichtbaar voor</label>
                     <div class="space-y-2">
-                        <select v-model="form.audience_scope" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black">
+                        <select v-model="form.audience_scope" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:[&>option]:bg-app-canvas-dark dark:[&>option]:text-app-ink-dark">
                             <option value="self">Alleen mezelf</option>
                             <option value="all">Iedereen</option>
                             <option value="selected">Specifieke personen</option>
                         </select>
                         <div v-if="form.audience_scope === 'selected'" class="space-y-2">
-                            <select class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-black" @change="addTargetUser">
+                            <select class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:[&>option]:bg-app-canvas-dark dark:[&>option]:text-app-ink-dark" @change="addTargetUser">
                                 <option value="">Kies een gebruiker...</option>
                                 <option v-for="user in selectableTargetUsers" :key="`target-option-${user.id}`" :value="user.id">
                                     {{ user.name }} ({{ user.email }})
                                 </option>
                             </select>
                             <div class="flex flex-wrap gap-2">
-                                <span v-for="user in selectedTargetUsers" :key="`target-chip-${user.id}`" class="inline-flex items-center gap-2 rounded-full bg-brand-blue/15 px-3 py-1 text-xs text-black dark:text-black">
+                                <span v-for="user in selectedTargetUsers" :key="`target-chip-${user.id}`" class="inline-flex items-center gap-2 rounded-full bg-brand-blue/15 px-3 py-1 text-xs text-black dark:text-app-ink-dark">
                                     {{ user.name }}
-                                    <button type="button" class="text-black/70 hover:text-black dark:text-black/70 dark:hover:text-black" @click="removeTargetUser(user.id)">
+                                    <button type="button" class="text-black/70 hover:text-black dark:text-app-muted-dark dark:hover:text-app-ink-dark" @click="removeTargetUser(user.id)">
                                         x
                                     </button>
                                 </span>

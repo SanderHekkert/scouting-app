@@ -66,7 +66,7 @@ function detectPushSupportIssue() {
     }
 
     if (!window.isSecureContext) {
-        return 'Pushmeldingen werken alleen via https of op localhost.';
+        return 'Pushmeldingen zijn hier niet beschikbaar. Neem contact op met de beheerder.';
     }
 
     if (!('Notification' in window)) {
@@ -128,7 +128,6 @@ async function enablePush() {
         }
 
         pushEnabled.value = true;
-        pushMessage.value = 'Pushmeldingen staan aan op dit apparaat.';
     } catch (error) {
         pushError.value = error?.message || 'Kon pushmeldingen niet activeren.';
     } finally {
