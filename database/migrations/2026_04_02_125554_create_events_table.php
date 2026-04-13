@@ -24,6 +24,7 @@ return new class extends Migration
             $table->string('link_url', 2048)->nullable();
             $table->text('attachments')->nullable();
             $table->text('absent')->nullable();
+            $table->json('present_names')->nullable();
             $table->text('notes')->nullable();
             $table->json('task_item_ids')->nullable();
             $table->json('shared_sections')->nullable();
