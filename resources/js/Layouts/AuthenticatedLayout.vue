@@ -124,16 +124,8 @@ const userInitials = computed(() => {
     return '?';
 });
 
-const mainNavItems = computed(() => ([
-    { label: 'Dashboard', route: 'dashboard', module: 'dashboard', icon: HomeIcon },
-    { label: 'Agenda', route: 'agenda.index', matchRoutes: ['agenda.*'], module: 'events', icon: CalendarDaysIcon },
-    { label: 'Opkomsten', route: 'opkomsten.index', matchRoutes: ['opkomsten.*', 'jaar-thema'], module: 'events', icon: BoatIcon, hideForBestuur: true },
-    { label: 'Potjes', route: 'finance.pots.index', matchRoutes: ['finance.pots.*'], module: 'financien', icon: CircleStackIcon },
-    { label: 'Declaraties', route: 'finance.declarations.index', matchRoutes: ['finance.declarations.*'], module: 'financien', icon: CurrencyEuroIcon },
-]).filter((item) => canView(item.module) && !(item.hideForBestuur && activeSection.value === 'bestuur')));
-
 /** Eén sidebar-link; subpagina’s bereik je via SpeltakSubnav op de pagina zelf. */
-const dolfijnenNavItem = {
+const membersNavItem = {
     label: 'Leden',
     route: 'members.index',
     matchRoutes: [
@@ -146,38 +138,67 @@ const dolfijnenNavItem = {
     module: 'members',
     icon: UserGroupIcon,
 };
-const showSpeltakNav = computed(
-    () => canView(dolfijnenNavItem.module) && activeSection.value !== 'bestuur',
+const showMembersNav = computed(
+    () => canView(membersNavItem.module) && activeSection.value !== 'bestuur',
 );
 
-const tailNavItems = computed(() => ([
-    { label: 'Leiding', route: 'leaders.index', matchRoutes: ['leaders.*'], module: 'leaders', icon: UsersIcon },
-    { label: 'Belangrijke info', route: 'info-notes.index', matchRoutes: ['info-notes.*'], module: 'info_notes', icon: InformationCircleIcon },
-    { label: 'Taakverdeling', route: 'task-items.index', matchRoutes: ['task-items.*', 'task-categories.*'], module: 'task_items', icon: ClipboardDocumentListIcon },
-    { label: 'Begroting', route: 'camp-budgets.index', matchRoutes: ['camp-budgets.*'], module: 'camp_budgets', icon: BanknotesIcon },
-    { label: 'Draaiboek', route: 'camp-playbooks.index', matchRoutes: ['camp-playbooks.*'], module: 'camp_playbooks', icon: BookOpenIcon },
-    { label: 'Pushmeldingen', route: 'admin.push-notifications.index', matchRoutes: ['admin.push-notifications.*'], icon: BellAlertIcon },
-    ...((isAdmin.value || isBoardMember.value)
-        ? [{ label: 'Gebruikers', route: 'admin.users.index', matchRoutes: ['admin.users.*'], icon: IdentificationIcon }]
-        : []),
-    ...((canView('members') && (
-        isAdmin.value
-        || (activeSection.value === 'bestuur' && isBoardMember.value)
-        || (page.props.auth?.section_roles || []).some((r) => r.section === activeSection.value && ['teamleider', 'ouder_contact'].includes(r.role))
-    ))
-        ? [{ label: 'Gezondheidsformulieren', route: 'admin.health-forms.index', matchRoutes: ['admin.health-forms.*'], icon: DocumentTextIcon }]
-        : []),
-    ...((isAdmin.value || (page.props.auth?.section_roles || []).some((r) => r.section !== '*' && r.role === 'teamleider'))
-        ? [{ label: 'Rechtenbeheer', route: 'permissions.index', matchRoutes: ['permissions.*'], icon: ShieldCheckIcon }]
-        : []),
-]).filter((item) => !item.module || canView(item.module)));
+function allowed(item) {
+    if (item.hideForBestuur && activeSection.value === 'bestuur') return false;
+    if (item.module && !canView(item.module)) return false;
+    return true;
+}
+
+const navSections = computed(() => {
+    const planning = [
+        { label: 'Dashboard', route: 'dashboard', module: 'dashboard', icon: HomeIcon },
+        { label: 'Agenda', route: 'agenda.index', matchRoutes: ['agenda.*'], module: 'events', icon: CalendarDaysIcon },
+        { label: 'Opkomsten', route: 'opkomsten.index', matchRoutes: ['opkomsten.*', 'jaar-thema'], module: 'events', icon: BoatIcon, hideForBestuur: true },
+    ].filter(allowed);
+
+    const team = [
+        ...(showMembersNav.value ? [membersNavItem] : []),
+        { label: 'Leiding', route: 'leaders.index', matchRoutes: ['leaders.*'], module: 'leaders', icon: UsersIcon },
+        { label: 'Taakverdeling', route: 'task-items.index', matchRoutes: ['task-items.*', 'task-categories.*'], module: 'task_items', icon: ClipboardDocumentListIcon },
+        { label: 'Belangrijke info', route: 'info-notes.index', matchRoutes: ['info-notes.*'], module: 'info_notes', icon: InformationCircleIcon },
+        ...((canView('members') && (
+            isAdmin.value
+            || (activeSection.value === 'bestuur' && isBoardMember.value)
+            || (page.props.auth?.section_roles || []).some((r) => r.section === activeSection.value && ['teamleider', 'ouder_contact'].includes(r.role))
+        ))
+            ? [{ label: 'Gezondheidsformulieren', route: 'admin.health-forms.index', matchRoutes: ['admin.health-forms.*'], icon: DocumentTextIcon }]
+            : []),
+    ].filter(allowed);
+
+    const financeCamp = [
+        { label: 'Potjes', route: 'finance.pots.index', matchRoutes: ['finance.pots.*'], module: 'financien', icon: CircleStackIcon },
+        { label: 'Declaraties', route: 'finance.declarations.index', matchRoutes: ['finance.declarations.*'], module: 'financien', icon: CurrencyEuroIcon },
+        { label: 'Begroting', route: 'camp-budgets.index', matchRoutes: ['camp-budgets.*'], module: 'camp_budgets', icon: BanknotesIcon },
+        { label: 'Draaiboek', route: 'camp-playbooks.index', matchRoutes: ['camp-playbooks.*'], module: 'camp_playbooks', icon: BookOpenIcon },
+    ].filter(allowed);
+
+    const beheer = [
+        { label: 'Pushmeldingen', route: 'admin.push-notifications.index', matchRoutes: ['admin.push-notifications.*'], icon: BellAlertIcon },
+        ...((isAdmin.value || isBoardMember.value)
+            ? [{ label: 'Gebruikers', route: 'admin.users.index', matchRoutes: ['admin.users.*'], icon: IdentificationIcon }]
+            : []),
+        ...((isAdmin.value || (page.props.auth?.section_roles || []).some((r) => r.section !== '*' && r.role === 'teamleider'))
+            ? [{ label: 'Rechtenbeheer', route: 'permissions.index', matchRoutes: ['permissions.*'], icon: ShieldCheckIcon }]
+            : []),
+    ].filter(allowed);
+
+    return [
+        { key: 'planning', label: 'Planning', items: planning },
+        { key: 'team', label: 'Team', items: team },
+        { key: 'finance-camp', label: 'Financien & Kamp', items: financeCamp },
+        { key: 'beheer', label: 'Beheer', items: beheer },
+    ].filter((section) => section.items.length > 0);
+});
+
+const flatNavItems = computed(() => navSections.value.flatMap((section) => section.items));
 
 const firstAccessibleRoute = computed(() => {
-    const primary = mainNavItems.value[0]?.route;
+    const primary = flatNavItems.value[0]?.route;
     if (primary) return primary;
-    if (showSpeltakNav.value) return dolfijnenNavItem.route;
-    const secondary = tailNavItems.value[0]?.route;
-    if (secondary) return secondary;
     return 'profile.edit';
 });
 
@@ -195,16 +216,9 @@ function activeNavClass() {
 }
 
 const activeMobileLabel = computed(() => {
-    if (showSpeltakNav.value && navItemIsActive(dolfijnenNavItem)) {
-        return dolfijnenNavItem.label;
-    }
-    const inMain = mainNavItems.value.find((item) => navItemIsActive(item));
-    if (inMain) {
-        return inMain.label;
-    }
-    const inTail = tailNavItems.value.find((item) => navItemIsActive(item));
-    if (inTail) {
-        return inTail.label;
+    const inNav = flatNavItems.value.find((item) => navItemIsActive(item));
+    if (inNav) {
+        return inNav.label;
     }
     if (route().current('profile.edit')) {
         return 'Profiel';
@@ -279,55 +293,27 @@ onUnmounted(() => {
                         class="mt-6 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]"
                         aria-label="Hoofdnavigatie"
                     >
-                        <Link
-                            v-for="item in mainNavItems"
-                            :key="`main-${item.label}-${item.href || item.route}`"
-                            :href="route(item.route)"
-                            class="block shrink-0 rounded-lg px-3 py-2 text-sm font-medium transition"
-                            :class="
-                                navItemIsActive(item)
-                                    ? activeNavClass()
-                                    : 'text-slate-800 hover:bg-brand-blue/10 dark:text-slate-100 dark:hover:bg-brand-blue/15'
-                            "
-                        >
-                            <span class="inline-flex items-center gap-2">
-                                <component :is="item.icon" class="h-5 w-5 shrink-0 stroke-2" />
-                                <span>{{ item.label }}</span>
-                            </span>
-                        </Link>
-
-                        <Link
-                            v-if="showSpeltakNav"
-                            :href="route(dolfijnenNavItem.route)"
-                            class="block shrink-0 rounded-lg px-3 py-2 text-sm font-medium transition"
-                            :class="
-                                navItemIsActive(dolfijnenNavItem)
-                                    ? activeNavClass()
-                                    : 'text-slate-800 hover:bg-brand-blue/10 dark:text-slate-100 dark:hover:bg-brand-blue/15'
-                            "
-                        >
-                            <span class="inline-flex items-center gap-2">
-                                <component :is="dolfijnenNavItem.icon" class="h-5 w-5 shrink-0 stroke-2" />
-                                <span>{{ dolfijnenNavItem.label }}</span>
-                            </span>
-                        </Link>
-
-                        <Link
-                            v-for="item in tailNavItems"
-                            :key="item.route"
-                            :href="route(item.route)"
-                            class="block shrink-0 rounded-lg px-3 py-2 text-sm font-medium transition"
-                            :class="
-                                navItemIsActive(item)
-                                    ? activeNavClass()
-                                    : 'text-slate-800 hover:bg-brand-blue/10 dark:text-slate-100 dark:hover:bg-brand-blue/15'
-                            "
-                        >
-                            <span class="inline-flex items-center gap-2">
-                                <component :is="item.icon" class="h-5 w-5 shrink-0 stroke-2" />
-                                <span>{{ item.label }}</span>
-                            </span>
-                        </Link>
+                        <div v-for="section in navSections" :key="`desktop-nav-${section.key}`" class="space-y-1">
+                            <p class="px-3 pt-2 text-[11px] font-semibold uppercase tracking-[0.15em] text-slate-400 dark:text-slate-500">
+                                {{ section.label }}
+                            </p>
+                            <Link
+                                v-for="item in section.items"
+                                :key="`desktop-item-${section.key}-${item.route}`"
+                                :href="route(item.route)"
+                                class="block shrink-0 rounded-lg px-3 py-2 text-sm font-medium transition"
+                                :class="
+                                    navItemIsActive(item)
+                                        ? activeNavClass()
+                                        : 'text-slate-800 hover:bg-brand-blue/10 dark:text-slate-100 dark:hover:bg-brand-blue/15'
+                                "
+                            >
+                                <span class="inline-flex items-center gap-2">
+                                    <component :is="item.icon" class="h-5 w-5 shrink-0 stroke-2" />
+                                    <span>{{ item.label }}</span>
+                                </span>
+                            </Link>
+                        </div>
                     </nav>
 
                     <div class="mt-auto shrink-0 border-t border-slate-200 pt-4">
@@ -405,50 +391,26 @@ onUnmounted(() => {
                 aria-label="Mobiel menu"
             >
                 <div class="space-y-1 px-3 py-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
-                    <Link
-                        v-for="item in mainNavItems"
-                        :key="`mobile-${item.label}-${item.href || item.route}`"
-                        :href="route(item.route)"
-                        class="flex min-h-12 items-center rounded-xl px-4 text-base font-medium transition touch-manipulation active:scale-[0.99]"
-                        :class="
-                            navItemIsActive(item)
-                                ? activeNavClass()
-                                : 'text-slate-800 hover:bg-brand-blue/10 active:bg-brand-blue/15 dark:text-slate-100 dark:hover:bg-brand-blue/15'
-                        "
-                        @click="closeMobileMenu"
-                    >
-                        <component :is="item.icon" class="me-2 h-6 w-6 shrink-0 stroke-2" />
-                        <span>{{ item.label }}</span>
-                    </Link>
-                    <Link
-                        v-if="showSpeltakNav"
-                        :href="route(dolfijnenNavItem.route)"
-                        class="flex min-h-12 items-center rounded-xl px-4 text-base font-medium transition touch-manipulation active:scale-[0.99]"
-                        :class="
-                            navItemIsActive(dolfijnenNavItem)
-                                ? activeNavClass()
-                                : 'text-slate-800 hover:bg-brand-blue/10 active:bg-brand-blue/15 dark:text-slate-100 dark:hover:bg-brand-blue/15'
-                        "
-                        @click="closeMobileMenu"
-                    >
-                        <component :is="dolfijnenNavItem.icon" class="me-2 h-6 w-6 shrink-0 stroke-2" />
-                        <span>{{ dolfijnenNavItem.label }}</span>
-                    </Link>
-                    <Link
-                        v-for="item in tailNavItems"
-                        :key="`mobile-${item.route}`"
-                        :href="route(item.route)"
-                        class="flex min-h-12 items-center rounded-xl px-4 text-base font-medium transition touch-manipulation active:scale-[0.99]"
-                        :class="
-                            navItemIsActive(item)
-                                ? activeNavClass()
-                                : 'text-slate-800 hover:bg-brand-blue/10 active:bg-brand-blue/15 dark:text-slate-100 dark:hover:bg-brand-blue/15'
-                        "
-                        @click="closeMobileMenu"
-                    >
-                        <component :is="item.icon" class="me-2 h-6 w-6 shrink-0 stroke-2" />
-                        <span>{{ item.label }}</span>
-                    </Link>
+                    <div v-for="section in navSections" :key="`mobile-nav-${section.key}`" class="space-y-1">
+                        <p class="px-4 pt-2 text-[11px] font-semibold uppercase tracking-[0.15em] text-slate-400 dark:text-slate-500">
+                            {{ section.label }}
+                        </p>
+                        <Link
+                            v-for="item in section.items"
+                            :key="`mobile-item-${section.key}-${item.route}`"
+                            :href="route(item.route)"
+                            class="flex min-h-12 items-center rounded-xl px-4 text-base font-medium transition touch-manipulation active:scale-[0.99]"
+                            :class="
+                                navItemIsActive(item)
+                                    ? activeNavClass()
+                                    : 'text-slate-800 hover:bg-brand-blue/10 active:bg-brand-blue/15 dark:text-slate-100 dark:hover:bg-brand-blue/15'
+                            "
+                            @click="closeMobileMenu"
+                        >
+                            <component :is="item.icon" class="me-2 h-6 w-6 shrink-0 stroke-2" />
+                            <span>{{ item.label }}</span>
+                        </Link>
+                    </div>
                     <div class="my-2 border-t border-slate-200 dark:border-slate-700" />
                     <Link
                         :href="route('profile.edit')"
