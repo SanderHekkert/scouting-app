@@ -1,6 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
+import { CheckBadgeIcon } from '@heroicons/vue/24/outline';
 import { computed, reactive } from 'vue';
 
 const props = defineProps({
@@ -105,7 +106,10 @@ function scheduleRoleSave(userId) {
                         :key="`mob-user-${user.id}`"
                         class="surface-brand-top rounded-xl border border-brand-blue/30 bg-app-panel px-4 py-3 text-app-ink shadow-sm dark:bg-app-panel-dark/95 dark:text-app-ink-dark"
                     >
-                        <div class="font-medium">{{ user.name }}</div>
+                        <div class="flex items-center gap-1 font-medium">
+                            <span>{{ user.name }}</span>
+                            <CheckBadgeIcon v-if="user.email_verified" class="h-4 w-4 text-emerald-600" title="E-mail geverifieerd" />
+                        </div>
                         <div class="text-xs text-app-muted dark:text-app-muted-dark">{{ user.email }}</div>
                         <p class="mt-2 text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Speltak</p>
                         <select
@@ -147,7 +151,10 @@ function scheduleRoleSave(userId) {
                     <tbody class="divide-y divide-brand-blue/25">
                         <tr v-for="user in users" :key="user.id" class="bg-brand-blue/5">
                             <td class="px-3 py-2 align-top">
-                                <div class="font-medium text-app-ink dark:text-app-ink-dark">{{ user.name }}</div>
+                                <div class="flex items-center gap-1 font-medium text-app-ink dark:text-app-ink-dark">
+                                    <span>{{ user.name }}</span>
+                                    <CheckBadgeIcon v-if="user.email_verified" class="h-4 w-4 text-emerald-600" title="E-mail geverifieerd" />
+                                </div>
                                 <div class="text-xs text-app-muted dark:text-app-muted-dark">{{ user.email }}</div>
                             </td>
                             <td class="px-3 py-2 align-top">

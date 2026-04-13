@@ -1,7 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { PencilSquareIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import { CheckBadgeIcon, PencilSquareIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     users: { type: Array, default: () => [] },
@@ -83,7 +83,10 @@ function roleEntries(user) {
                     class="rounded-xl border border-brand-blue/25 bg-brand-blue/5 p-3 dark:bg-app-panel-dark/50 cursor-pointer"
                     @click="openUser(user)"
                 >
-                    <div class="text-sm font-semibold text-black">{{ user.name }}</div>
+                    <div class="flex items-center gap-1 text-sm font-semibold text-black">
+                        <span>{{ user.name }}</span>
+                        <CheckBadgeIcon v-if="user.email_verified" class="h-4 w-4 text-emerald-600" title="E-mail geverifieerd" />
+                    </div>
                     <div class="text-xs text-black">{{ user.email }}</div>
                     <div class="mt-2 flex flex-wrap gap-1.5">
                         <span
@@ -122,7 +125,12 @@ function roleEntries(user) {
                             class="bg-brand-blue/5 dark:bg-app-panel-dark/50 cursor-pointer hover:bg-brand-blue/10"
                             @click="openUser(user)"
                         >
-                            <td class="px-3 py-2.5">{{ user.name }}</td>
+                            <td class="px-3 py-2.5">
+                                <div class="flex items-center gap-1">
+                                    <span>{{ user.name }}</span>
+                                    <CheckBadgeIcon v-if="user.email_verified" class="h-4 w-4 text-emerald-600" title="E-mail geverifieerd" />
+                                </div>
+                            </td>
                             <td class="px-3 py-2.5">{{ user.email }}</td>
                             <td class="px-3 py-2.5">
                                 <div class="flex flex-wrap gap-1.5">
@@ -161,7 +169,10 @@ function roleEntries(user) {
                     class="rounded-xl border border-brand-blue/25 bg-brand-blue/5 p-3 dark:bg-app-panel-dark/50 cursor-pointer"
                     @click="openUser(user)"
                 >
-                    <div class="text-sm font-semibold text-black">{{ user.name }}</div>
+                    <div class="flex items-center gap-1 text-sm font-semibold text-black">
+                        <span>{{ user.name }}</span>
+                        <CheckBadgeIcon v-if="user.email_verified" class="h-4 w-4 text-emerald-600" title="E-mail geverifieerd" />
+                    </div>
                     <div class="text-xs text-black">{{ user.email }}</div>
                     <div class="mt-2 flex flex-wrap gap-1.5">
                         <span
@@ -201,7 +212,10 @@ function roleEntries(user) {
                             @click="openUser(user)"
                         >
                             <td class="px-3 py-2.5">
-                                {{ user.name }}
+                                <div class="flex items-center gap-1">
+                                    <span>{{ user.name }}</span>
+                                    <CheckBadgeIcon v-if="user.email_verified" class="h-4 w-4 text-emerald-600" title="E-mail geverifieerd" />
+                                </div>
                             </td>
                             <td class="px-3 py-2.5">
                                 {{ user.email }}

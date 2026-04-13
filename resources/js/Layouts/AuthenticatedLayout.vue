@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import AppShellBackground from '@/Components/AppShellBackground.vue';
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
+import BoatIcon from '@/Components/BoatIcon.vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
 import {
     Bars3Icon,
@@ -35,37 +36,37 @@ const sectionLabels = {
 const allSections = ['bevers', 'dolfijnen', 'zeeverkenners', 'wilde_vaart', 'loodsen', 'bestuur'];
 const sectionButtonClass = {
     dolfijnen: {
-        active: 'bg-emerald-600/20 text-emerald-700',
-        inactive: 'bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20',
+        active: 'bg-emerald-600/20 text-emerald-700 dark:bg-emerald-500/25 dark:text-emerald-200',
+        inactive: 'bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 dark:bg-emerald-500/15 dark:text-emerald-200 dark:hover:bg-emerald-500/25',
     },
     zeeverkenners: {
-        active: 'bg-yellow-400/35 text-yellow-900',
-        inactive: 'bg-yellow-300/25 text-yellow-900 hover:bg-yellow-300/40',
+        active: 'bg-yellow-400/35 text-yellow-900 dark:bg-yellow-400/25 dark:text-yellow-200',
+        inactive: 'bg-yellow-300/25 text-yellow-900 hover:bg-yellow-300/40 dark:bg-yellow-300/20 dark:text-yellow-200 dark:hover:bg-yellow-300/30',
     },
     loodsen: {
-        active: 'bg-purple-600/25 text-purple-800',
-        inactive: 'bg-purple-500/15 text-purple-800 hover:bg-purple-500/25',
+        active: 'bg-purple-600/25 text-purple-800 dark:bg-purple-500/30 dark:text-purple-200',
+        inactive: 'bg-purple-500/15 text-purple-800 hover:bg-purple-500/25 dark:bg-purple-500/20 dark:text-purple-200 dark:hover:bg-purple-500/30',
     },
     bevers: {
-        active: 'bg-red-600/20 text-red-700',
-        inactive: 'bg-red-500/10 text-red-700 hover:bg-red-500/20',
+        active: 'bg-red-600/20 text-red-700 dark:bg-red-500/25 dark:text-red-200',
+        inactive: 'bg-red-500/10 text-red-700 hover:bg-red-500/20 dark:bg-red-500/15 dark:text-red-200 dark:hover:bg-red-500/25',
     },
     wilde_vaart: {
-        active: 'bg-blue-600/20 text-blue-700',
-        inactive: 'bg-blue-500/10 text-blue-700 hover:bg-blue-500/20',
+        active: 'bg-blue-600/20 text-blue-700 dark:bg-blue-500/25 dark:text-blue-200',
+        inactive: 'bg-blue-500/10 text-blue-700 hover:bg-blue-500/20 dark:bg-blue-500/15 dark:text-blue-200 dark:hover:bg-blue-500/25',
     },
     bestuur: {
-        active: 'bg-slate-600/20 text-slate-700',
-        inactive: 'bg-slate-500/10 text-slate-700 hover:bg-slate-500/20',
+        active: 'bg-slate-600/20 text-slate-700 dark:bg-slate-500/25 dark:text-slate-200',
+        inactive: 'bg-slate-500/10 text-slate-700 hover:bg-slate-500/20 dark:bg-slate-500/15 dark:text-slate-200 dark:hover:bg-slate-500/25',
     },
 };
 const sectionNavActiveClass = {
-    dolfijnen: 'bg-emerald-600/15 text-emerald-800 ring-1 ring-emerald-600/25',
-    zeeverkenners: 'bg-yellow-400/25 text-yellow-900 ring-1 ring-yellow-500/35',
-    loodsen: 'bg-purple-600/15 text-purple-800 ring-1 ring-purple-600/25',
-    bevers: 'bg-red-600/15 text-red-700 ring-1 ring-red-600/25',
-    wilde_vaart: 'bg-blue-600/15 text-blue-700 ring-1 ring-blue-600/25',
-    bestuur: 'bg-slate-600/15 text-slate-700 ring-1 ring-slate-600/25',
+    dolfijnen: 'bg-emerald-600/15 text-emerald-800 ring-1 ring-emerald-600/25 dark:bg-emerald-500/20 dark:text-emerald-100 dark:ring-emerald-400/30',
+    zeeverkenners: 'bg-yellow-400/25 text-yellow-900 ring-1 ring-yellow-500/35 dark:bg-yellow-400/20 dark:text-yellow-100 dark:ring-yellow-300/35',
+    loodsen: 'bg-purple-600/15 text-purple-800 ring-1 ring-purple-600/25 dark:bg-purple-500/20 dark:text-purple-100 dark:ring-purple-400/35',
+    bevers: 'bg-red-600/15 text-red-700 ring-1 ring-red-600/25 dark:bg-red-500/20 dark:text-red-100 dark:ring-red-400/35',
+    wilde_vaart: 'bg-blue-600/15 text-blue-700 ring-1 ring-blue-600/25 dark:bg-blue-500/20 dark:text-blue-100 dark:ring-blue-400/35',
+    bestuur: 'bg-slate-600/15 text-slate-700 ring-1 ring-slate-600/25 dark:bg-slate-500/20 dark:text-slate-100 dark:ring-slate-400/35',
 };
 
 const activeSection = computed(() => page.props.auth?.active_section || 'dolfijnen');
@@ -126,7 +127,7 @@ const userInitials = computed(() => {
 const mainNavItems = computed(() => ([
     { label: 'Dashboard', route: 'dashboard', module: 'dashboard', icon: HomeIcon },
     { label: 'Agenda', route: 'agenda.index', matchRoutes: ['agenda.*'], module: 'events', icon: CalendarDaysIcon },
-    { label: 'Opkomsten', route: 'opkomsten.index', matchRoutes: ['opkomsten.*', 'jaar-thema'], module: 'events', icon: FlagIcon, hideForBestuur: true },
+    { label: 'Opkomsten', route: 'opkomsten.index', matchRoutes: ['opkomsten.*', 'jaar-thema'], module: 'events', icon: BoatIcon, hideForBestuur: true },
     { label: 'Potjes', route: 'finance.pots.index', matchRoutes: ['finance.pots.*'], module: 'financien', icon: CircleStackIcon },
     { label: 'Declaraties', route: 'finance.declarations.index', matchRoutes: ['finance.declarations.*'], module: 'financien', icon: CurrencyEuroIcon },
 ]).filter((item) => canView(item.module) && !(item.hideForBestuur && activeSection.value === 'bestuur')));
@@ -247,7 +248,7 @@ onUnmounted(() => {
     <AppShellBackground>
         <div class="relative min-h-screen">
             <aside
-                class="fixed inset-y-0 start-0 z-30 hidden h-screen flex-row border-e border-slate-200 bg-white shadow-xl xl:flex xl:w-72 dark:border-slate-200 dark:bg-white"
+                class="fixed inset-y-0 start-0 z-30 hidden h-screen flex-row border-e border-slate-200 bg-white shadow-xl xl:flex xl:w-72 dark:border-slate-700 dark:bg-slate-950"
             >
                 <div class="flex h-full min-h-0 min-w-0 flex-1 flex-col p-5">
                     <div class="shrink-0">
@@ -257,7 +258,7 @@ onUnmounted(() => {
                         >
                             <ApplicationLogo class="max-h-14 max-w-[13rem]" />
                         </Link>
-                        <p class="text-lg font-bold leading-tight text-brand-blue-dark">
+                        <p class="text-lg font-bold leading-tight text-brand-blue-dark dark:text-slate-100">
                             Fridtjof Nansen Groep 12
                         </p>
                         <div class="mt-3 flex flex-wrap gap-2">
@@ -288,7 +289,7 @@ onUnmounted(() => {
                             :class="
                                 navItemIsActive(item)
                                     ? activeNavClass()
-                                    : 'text-slate-800 hover:bg-brand-blue/10'
+                                    : 'text-slate-800 hover:bg-brand-blue/10 dark:text-slate-100 dark:hover:bg-brand-blue/15'
                             "
                         >
                             <span class="inline-flex items-center gap-2">
@@ -304,7 +305,7 @@ onUnmounted(() => {
                             :class="
                                 navItemIsActive(dolfijnenNavItem)
                                     ? activeNavClass()
-                                    : 'text-slate-800 hover:bg-brand-blue/10'
+                                    : 'text-slate-800 hover:bg-brand-blue/10 dark:text-slate-100 dark:hover:bg-brand-blue/15'
                             "
                         >
                             <span class="inline-flex items-center gap-2">
@@ -321,7 +322,7 @@ onUnmounted(() => {
                             :class="
                                 navItemIsActive(item)
                                     ? activeNavClass()
-                                    : 'text-slate-800 hover:bg-brand-blue/10'
+                                    : 'text-slate-800 hover:bg-brand-blue/10 dark:text-slate-100 dark:hover:bg-brand-blue/15'
                             "
                         >
                             <span class="inline-flex items-center gap-2">
@@ -334,7 +335,7 @@ onUnmounted(() => {
                     <div class="mt-auto shrink-0 border-t border-slate-200 pt-4">
                         <Link
                             :href="route('profile.edit')"
-                            class="flex items-center gap-3 rounded-lg p-2 transition hover:bg-brand-blue/10"
+                            class="flex items-center gap-3 rounded-lg p-2 transition hover:bg-brand-blue/10 dark:border-slate-700 dark:hover:bg-brand-blue/15"
                         >
                             <span
                                 class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-blue text-sm font-semibold text-white"
@@ -343,10 +344,10 @@ onUnmounted(() => {
                                 {{ userInitials }}
                             </span>
                             <span class="min-w-0 flex-1 text-left">
-                                <span class="block truncate text-sm font-medium text-slate-900">{{
+                                <span class="block truncate text-sm font-medium text-slate-900 dark:text-slate-100">{{
                                     $page.props.auth.user.name
                                 }}</span>
-                                <span class="block truncate text-xs text-app-muted">{{
+                                <span class="block truncate text-xs text-app-muted dark:text-slate-400">{{
                                     $page.props.auth.user.email
                                 }}</span>
                             </span>

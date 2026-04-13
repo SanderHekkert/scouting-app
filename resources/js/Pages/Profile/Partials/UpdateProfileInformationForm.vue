@@ -3,7 +3,6 @@ import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
-import { DocumentCheckIcon } from '@heroicons/vue/24/outline';
 import { Link, useForm, usePage } from '@inertiajs/vue3';
 
 defineProps({
@@ -92,8 +91,8 @@ const form = useForm({
             </div>
 
             <div class="flex items-center gap-4">
-                <PrimaryButton :disabled="form.processing" class="h-10 w-10 !rounded-full !px-0 !py-0" title="Opslaan" aria-label="Opslaan">
-                    <DocumentCheckIcon class="h-4 w-4" />
+                <PrimaryButton :disabled="form.processing">
+                    Opslaan
                 </PrimaryButton>
 
                 <Transition

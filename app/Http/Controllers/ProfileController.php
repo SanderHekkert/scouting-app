@@ -27,6 +27,7 @@ class ProfileController extends Controller
                 'vapidPublicKey' => (string) config('services.webpush.vapid_public_key'),
                 'isSubscribed' => $user->pushSubscriptions()->exists(),
             ],
+            'currentTheme' => (string) ($user->theme_preference ?: 'light'),
         ]);
     }
 
@@ -65,5 +66,18 @@ class ProfileController extends Controller
         $request->session()->regenerateToken();
 
         return Redirect::to('/');
+    }
+
+    public function updateTheme(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'theme_preference' => ['required', 'string', 'in:light,dark'],
+        ]);
+
+        $request->user()->forceFill([
+            'theme_preference' => $data['theme_preference'],
+        ])->save();
+
+        return back();
     }
 }

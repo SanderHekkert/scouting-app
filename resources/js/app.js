@@ -26,6 +26,17 @@ function applySharedCsrf(page) {
     syncAxiosCsrfFromMeta();
 }
 
+function applyThemePreference(page) {
+    const pref = page?.props?.auth?.user?.theme_preference;
+    if (typeof document === 'undefined') return;
+    const root = document.documentElement;
+    if (pref === 'dark') {
+        root.classList.add('dark');
+    } else {
+        root.classList.remove('dark');
+    }
+}
+
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
     resolve: (name) =>
@@ -35,9 +46,11 @@ createInertiaApp({
         ),
     setup({ el, App, props, plugin }) {
         applySharedCsrf(props.initialPage);
+        applyThemePreference(props.initialPage);
 
         router.on('success', (event) => {
             applySharedCsrf(event.detail.page);
+            applyThemePreference(event.detail.page);
         });
 
         return createApp({ render: () => h(App, props) })

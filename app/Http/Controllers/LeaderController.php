@@ -45,6 +45,7 @@ class LeaderController extends Controller
                     $role = $leader->sectionRoles->pluck('role')->first();
 
                     return array_merge($leader->toArray(), [
+                        'email_verified' => $leader->email_verified_at !== null,
                         'section_role_label' => match ($role) {
                             UserSectionRole::ROLE_TEAMLEIDER => 'Teamleider',
                             UserSectionRole::ROLE_OUDERCONTACT => 'Oudercontact',

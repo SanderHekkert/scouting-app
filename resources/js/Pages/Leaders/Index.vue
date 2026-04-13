@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, useForm, router, usePage } from '@inertiajs/vue3';
-import { ChevronRightIcon, DocumentCheckIcon, MagnifyingGlassIcon, PencilSquareIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import { CheckBadgeIcon, ChevronRightIcon, DocumentCheckIcon, MagnifyingGlassIcon, PencilSquareIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     leaders: {
@@ -371,7 +371,10 @@ function leaderAge(value) {
                                         class="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-brand-red"
                                         title="Heeft bijzonderheden"
                                     />
-                                    <span class="min-w-0 font-medium leading-snug">{{ leaderListName(leader) }}</span>
+                                    <span class="flex min-w-0 items-center gap-1">
+                                        <span class="min-w-0 truncate font-medium leading-snug">{{ leaderListName(leader) }}</span>
+                                        <CheckBadgeIcon v-if="leader.email_verified" class="h-4 w-4 shrink-0 text-emerald-600" title="E-mail geverifieerd" />
+                                    </span>
                                 </span>
                                 <ChevronRightIcon class="mt-0.5 h-5 w-5 shrink-0 text-app-muted dark:text-app-muted-dark" aria-hidden="true" />
                             </Link>
@@ -425,7 +428,10 @@ function leaderAge(value) {
                                 class="bg-brand-blue/5 transition-colors hover:bg-brand-blue/12 dark:bg-app-panel-dark/50 dark:hover:bg-brand-blue/15"
                             >
                                 <td class="max-w-[12rem] px-3 py-2.5 align-top">
-                                    {{ leaderListName(leader) }}
+                                    <div class="flex items-center gap-1">
+                                        <span class="truncate">{{ leaderListName(leader) }}</span>
+                                        <CheckBadgeIcon v-if="leader.email_verified" class="h-4 w-4 shrink-0 text-emerald-600" title="E-mail geverifieerd" />
+                                    </div>
                                 </td>
                                 <td class="whitespace-nowrap px-3 py-2.5 align-top">{{ yesNo(leader.installed) }}</td>
                                 <td v-if="!isBestuurSection" class="whitespace-nowrap px-3 py-2.5 align-top">{{ yesNo(leader.gedoopt) }}</td>

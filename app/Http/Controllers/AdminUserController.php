@@ -27,6 +27,7 @@ class AdminUserController extends Controller
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
+                    'email_verified' => $user->email_verified_at !== null,
                     'section_roles' => $roles,
                     'created_at' => optional($user->created_at)->toIso8601String(),
                 ];
@@ -72,6 +73,7 @@ class AdminUserController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'email_verified' => $user->email_verified_at !== null,
                 'first_name' => $user->first_name,
                 'last_name' => $user->last_name,
                 'roles' => $roles,

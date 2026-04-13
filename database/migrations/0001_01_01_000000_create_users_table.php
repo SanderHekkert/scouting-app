@@ -26,6 +26,7 @@ return new class extends Migration
             $table->string('phone_number')->nullable();
             $table->string('emergency_contact')->nullable();
             $table->text('bijzonderheden')->nullable();
+            $table->string('theme_preference', 10)->default('light');
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');

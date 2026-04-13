@@ -26,6 +26,7 @@ use Illuminate\Notifications\Notifiable;
     'phone_number',
     'emergency_contact',
     'bijzonderheden',
+    'theme_preference',
 ])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail
