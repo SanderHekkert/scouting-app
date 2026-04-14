@@ -167,12 +167,18 @@ function ensureExpenseRowsForLocation() {
         upsertExpenseRow('Geschatte vaaruren');
         upsertExpenseRow('Geschatte aggregaaturen');
         upsertExpenseRow('Reservering NaWaKa');
+        upsertExpenseRow('Proviand');
+        upsertExpenseRow('Groepsafdracht');
         reorderExpenseRowsForFram();
+        reorderExpenseRowsForLocation();
         return;
     }
 
     upsertExpenseRow('Kosten uitje');
     upsertExpenseRow('Clubhuis');
+    upsertExpenseRow('Proviand');
+    upsertExpenseRow('Groepsafdracht');
+    reorderExpenseRowsForLocation();
 }
 
 function normalizeWholeNumber(value) {
@@ -303,7 +309,8 @@ function isAutoContributionRow(sectionTitle, label) {
         return rowLabel.includes('vaar')
             || rowLabel.includes('aggreg')
             || rowLabel.includes('huur fram')
-            || rowLabel.includes('proviand');
+            || rowLabel.includes('proviand')
+            || rowLabel.includes('groepsafdracht');
     }
     return false;
 }
@@ -320,11 +327,30 @@ function isFramRentFormulaRow(sectionTitle, label) {
     return section === 'uitgaven' && rowLabel.includes('huur fram');
 }
 
+function isGroepsafdrachtFormulaRow(sectionTitle, label) {
+    const section = String(sectionTitle || '').trim().toLowerCase();
+    const rowLabel = String(label || '').trim().toLowerCase();
+    return section === 'uitgaven' && rowLabel.includes('groepsafdracht');
+}
+
 function isEstimatedHoursRow(sectionTitle, label) {
     const section = String(sectionTitle || '').trim().toLowerCase();
     const rowLabel = String(label || '').trim().toLowerCase();
     if (section !== 'uitgaven') return false;
     return rowLabel.includes('vaar') || rowLabel.includes('aggreg');
+}
+
+function jeugdledenCountFromBudgetSections() {
+    const contributions = (form.budget_sections || []).find((section) => String(section?.title || '').trim().toLowerCase() === 'bijdragen');
+    if (!contributions) return 0;
+
+    return (contributions.rows || []).reduce((sum, row) => {
+        const label = String(row?.label || '').trim().toLowerCase();
+        if (label.includes('jeugdleden') || label.includes('jeugdlid')) {
+            return sum + normalizeWholeNumber(row?.quantity);
+        }
+        return sum;
+    }, 0);
 }
 
 function participantCountFromBudgetSections() {
@@ -353,6 +379,12 @@ function rowComputedTotal(row, sectionTitle) {
         const days = normalizedCampDays(form.camp_days);
         return participants * framPppd * days;
     }
+    if (isGroepsafdrachtFormulaRow(sectionTitle, row?.label)) {
+        const jeugdleden = jeugdledenCountFromBudgetSections();
+        const days = normalizedCampDays(form.camp_days);
+        const groepsafdrachtPjpd = Number(form.standard_values.groepsafdracht_pjpd) || 0;
+        return jeugdleden * groepsafdrachtPjpd * days;
+    }
 
     const quantity = normalizeWholeNumber(row?.quantity);
     const amount = effectiveAmount(row, sectionTitle);
@@ -367,6 +399,9 @@ function rowAmountDisplayValue(row, sectionTitle) {
         if (isFramRentFormulaRow(sectionTitle, row?.label)) {
             return formatMoney(rowComputedTotal(row, sectionTitle));
         }
+        if (isGroepsafdrachtFormulaRow(sectionTitle, row?.label)) {
+            return formatMoney(rowComputedTotal(row, sectionTitle));
+        }
         if (isEstimatedHoursRow(sectionTitle, row?.label)) {
             return formatMoney(rowComputedTotal(row, sectionTitle));
         }
@@ -378,6 +413,23 @@ function rowAmountDisplayValue(row, sectionTitle) {
         return formatMoney(effectiveAmount(row, sectionTitle));
     }
     return moneyInputPreview(row?.amount, { fallback: '' });
+}
+
+function reorderExpenseRowsForLocation() {
+    const expensesSection = (form.budget_sections || []).find((section) => String(section?.title || '').trim().toLowerCase() === 'uitgaven');
+    if (!expensesSection) return;
+
+    const rows = Array.isArray(expensesSection.rows) ? [...expensesSection.rows] : [];
+    const proviandIndex = rows.findIndex((row) => String(row?.label || '').trim().toLowerCase().includes('proviand'));
+    const groepsafdrachtIndex = rows.findIndex((row) => String(row?.label || '').trim().toLowerCase().includes('groepsafdracht'));
+    if (proviandIndex === -1 || groepsafdrachtIndex === -1 || groepsafdrachtIndex === proviandIndex + 1) {
+        return;
+    }
+
+    const [groepsafdrachtRow] = rows.splice(groepsafdrachtIndex, 1);
+    const targetProviandIndex = rows.findIndex((row) => String(row?.label || '').trim().toLowerCase().includes('proviand'));
+    rows.splice(Math.max(0, targetProviandIndex + 1), 0, groepsafdrachtRow);
+    expensesSection.rows = rows;
 }
 
 function rowAmountInputValue(row, sectionTitle, sectionIndex, rowIndex) {

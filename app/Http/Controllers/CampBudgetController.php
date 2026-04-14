@@ -416,7 +416,7 @@ class CampBudgetController extends Controller
     {
         return [
             ['title' => 'Bijdragen', 'rows' => [['label' => 'Leiding', 'quantity' => 0, 'amount' => 0, 'note' => ''], ['label' => 'Jeugdleden', 'quantity' => 0, 'amount' => 0, 'note' => ''], ['label' => 'Vaarbemanning', 'quantity' => 0, 'amount' => 0, 'note' => '']]],
-            ['title' => 'Uitgaven', 'rows' => [['label' => 'Geschatte vaaruren', 'quantity' => 0, 'amount' => 0, 'note' => ''], ['label' => 'Geschatte aggregaaturen', 'quantity' => 0, 'amount' => 0, 'note' => ''], ['label' => 'Proviand', 'quantity' => 0, 'amount' => 0, 'note' => ''], ['label' => 'Thema en spel', 'quantity' => 0, 'amount' => 0, 'note' => '']]],
+            ['title' => 'Uitgaven', 'rows' => [['label' => 'Geschatte vaaruren', 'quantity' => 0, 'amount' => 0, 'note' => ''], ['label' => 'Geschatte aggregaaturen', 'quantity' => 0, 'amount' => 0, 'note' => ''], ['label' => 'Proviand', 'quantity' => 0, 'amount' => 0, 'note' => ''], ['label' => 'Groepsafdracht', 'quantity' => 0, 'amount' => 0, 'note' => ''], ['label' => 'Thema en spel', 'quantity' => 0, 'amount' => 0, 'note' => '']]],
             ['title' => 'Overige bijdragen', 'rows' => []],
             ['title' => 'Overige uitgaven', 'rows' => []],
         ];
@@ -571,6 +571,12 @@ class CampBudgetController extends Controller
 
             return $participants * $proviandPerDay * $campDays;
         }
+        if ($section === 'uitgaven' && str_contains($label, 'groepsafdracht')) {
+            $jeugdleden = $this->jeugdledenCountFromSections($sections);
+            $groepsafdrachtPjpd = (float) ($standardValues['groepsafdracht_pjpd'] ?? 0);
+
+            return $jeugdleden * $groepsafdrachtPjpd * $campDays;
+        }
         if ($section === 'uitgaven' && str_contains($label, 'huur fram')) {
             $participants = $this->participantCountFromSections($sections);
             $framPppd = (float) ($standardValues['huur_fram_pppd'] ?? 0);
@@ -602,6 +608,28 @@ class CampBudgetController extends Controller
 
                 return str_contains($label, 'leiding')
                     || str_contains($label, 'jeugdleden')
+                    || str_contains($label, 'jeugdlid');
+            })
+            ->sum(fn (array $row): float => max(0, (float) ($row['quantity'] ?? 0)));
+    }
+
+    /**
+     * @param  array<int,array{title:string,rows:array<int,array{label:string,quantity:float,amount:float,note:string}>}>  $sections
+     */
+    private function jeugdledenCountFromSections(array $sections): float
+    {
+        $contributions = collect($sections)->first(function (array $section): bool {
+            return mb_strtolower(trim((string) ($section['title'] ?? ''))) === 'bijdragen';
+        });
+        if (! is_array($contributions)) {
+            return 0.0;
+        }
+
+        return (float) collect((array) ($contributions['rows'] ?? []))
+            ->filter(function (array $row): bool {
+                $label = mb_strtolower(trim((string) ($row['label'] ?? '')));
+
+                return str_contains($label, 'jeugdleden')
                     || str_contains($label, 'jeugdlid');
             })
             ->sum(fn (array $row): float => max(0, (float) ($row['quantity'] ?? 0)));
