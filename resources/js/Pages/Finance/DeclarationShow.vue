@@ -1,5 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import { moneyDisplayValue, sanitizeMoneyInput } from '@/utils/money';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { ArrowUturnLeftIcon, DocumentCheckIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
 import { computed, ref, watch } from 'vue';
@@ -66,14 +67,10 @@ function parseNumber(value) {
     return Number.parseFloat(String(value).replace(',', '.')) || 0;
 }
 
-function sanitizeMoneyInput(value) {
-    const cleaned = String(value ?? '')
-        .replace(',', '.')
-        .replace(/[^0-9.]/g, '');
-    const [intPartRaw, ...decimalParts] = cleaned.split('.');
-    const intPart = intPartRaw || '0';
-    const decimalPart = decimalParts.join('').slice(0, 2);
-    return decimalPart.length > 0 ? `${intPart}.${decimalPart}` : intPart;
+function parseQuantity(value) {
+    const parsed = Number.parseInt(String(value ?? '').replace(/[^\d-]/g, ''), 10);
+    if (Number.isNaN(parsed)) return 0;
+    return Math.max(0, parsed);
 }
 
 function onRowAmountInput(row, event) {
@@ -81,7 +78,7 @@ function onRowAmountInput(row, event) {
 }
 
 const receiptRowsTotal = computed(() => receiptRows.value.reduce((sum, row) => {
-    const qty = parseNumber(row.quantity || 1) || 1;
+    const qty = parseQuantity(row.quantity);
     const amount = parseNumber(row.amount);
     return sum + (qty * amount);
 }, 0));
@@ -174,7 +171,7 @@ watch(receiptRows, () => {
                     <label class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Bedrag (op basis van bonregels)</label>
                     <div class="relative w-full sm:max-w-[12rem]">
                         <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-app-muted dark:text-app-muted-dark">€</span>
-                        <input v-model="form.amount" type="number" step="0.01" min="0.01" class="w-full rounded border border-app-border bg-slate-100 pl-8 pr-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" required readonly />
+                        <input :value="moneyDisplayValue(form.amount, { fallback: '0,00' })" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-slate-100 pl-8 pr-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" required readonly />
                     </div>
                 </div>
 
@@ -212,12 +209,12 @@ watch(receiptRows, () => {
                             <tbody class="divide-y divide-app-border bg-white dark:bg-app-canvas-dark">
                                 <tr v-for="(row, index) in receiptRows" :key="`receipt-row-${index}`">
                                     <td class="px-2 py-2"><input v-model="row.name" type="text" class="w-full rounded border border-app-border px-2 py-1.5 text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" /></td>
-                                    <td class="px-2 py-2"><input v-model="row.quantity" type="number" min="0" step="0.01" class="w-24 rounded border border-app-border px-2 py-1.5 text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" /></td>
+                                    <td class="px-2 py-2"><input v-model="row.quantity" type="number" min="0" step="1" inputmode="numeric" class="w-24 rounded border border-app-border px-2 py-1.5 text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" @input="row.quantity = String(parseQuantity(row.quantity))" /></td>
                                     <td class="px-2 py-2">
                                         <div class="relative w-28">
                                             <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2 text-app-muted dark:text-app-muted-dark">€</span>
                                             <input
-                                                :value="row.amount"
+                                                :value="moneyDisplayValue(row.amount, { fallback: '' })"
                                                 type="text"
                                                 inputmode="decimal"
                                                 class="w-28 rounded border border-app-border pl-6 pr-2 py-1.5 text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark"

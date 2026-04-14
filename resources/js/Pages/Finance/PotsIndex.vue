@@ -1,5 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import { formatMoney } from '@/utils/money';
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import { BanknotesIcon, PlusIcon } from '@heroicons/vue/24/outline';
 import { computed } from 'vue';
@@ -22,8 +23,7 @@ const sectionLabelMap = {
 const speltakLabel = computed(() => sectionLabelMap[page.props.auth?.active_section] || 'Dolfijnen');
 
 function formatCurrency(value) {
-    const amount = Number(value || 0);
-    return new Intl.NumberFormat('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
+    return formatMoney(value);
 }
 </script>
 

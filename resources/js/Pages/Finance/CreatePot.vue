@@ -1,5 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import { moneyDisplayValue, sanitizeMoneyInput } from '@/utils/money';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 
 const page = usePage();
@@ -19,6 +20,10 @@ const form = useForm({
     active: true,
 });
 
+function onStartingAmountInput(event) {
+    form.starting_amount = sanitizeMoneyInput(event?.target?.value ?? form.starting_amount, { allowEmpty: false });
+}
+
 function submit() {
     form.post(route('finance.pots.store'));
 }
@@ -37,7 +42,7 @@ function submit() {
         <form class="surface-brand-top space-y-4 rounded-xl border border-app-border bg-app-panel p-5" @submit.prevent="submit">
             <div class="grid gap-3 sm:grid-cols-2">
                 <input v-model="form.name" type="text" placeholder="Naam potje" class="rounded border border-app-border px-3 py-2" required />
-                <input v-model="form.starting_amount" type="number" step="0.01" min="0" placeholder="Startbudget" class="rounded border border-app-border px-3 py-2" required />
+                <input :value="moneyDisplayValue(form.starting_amount, { fallback: '0,00' })" type="text" inputmode="decimal" placeholder="Startbudget" class="rounded border border-app-border px-3 py-2" required @input="onStartingAmountInput" />
                 <label class="inline-flex items-center gap-2 rounded border border-app-border px-3 py-2 text-sm">
                     <input v-model="form.active" type="checkbox" />
                     Direct actief

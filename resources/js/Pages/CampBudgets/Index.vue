@@ -46,6 +46,7 @@ function rejectItem(item) {
 }
 
 function statusLabel(status) {
+    if (status === 'draft') return 'Concept';
     if (status === 'submitted') return 'Wacht op goedkeuring';
     if (status === 'approved') return 'Goedgekeurd';
     if (status === 'needs_changes') return 'Aanpassen nodig';
@@ -53,9 +54,10 @@ function statusLabel(status) {
 }
 
 function statusClass(status) {
+    if (status === 'draft') return 'bg-slate-100 text-slate-700';
     if (status === 'approved') return 'bg-emerald-100 text-emerald-800';
     if (status === 'needs_changes') return 'bg-amber-100 text-amber-800';
-    return 'bg-slate-100 text-slate-700';
+    return 'bg-sky-100 text-sky-800';
 }
 </script>
 

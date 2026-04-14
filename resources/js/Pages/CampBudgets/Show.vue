@@ -1,8 +1,9 @@
 <script setup>
 import { computed, ref } from 'vue';
+import { formatMoney, moneyDisplayValue, sanitizeMoneyInput } from '@/utils/money';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
-import { ArrowDownTrayIcon, ArrowUturnLeftIcon, DocumentArrowDownIcon, DocumentCheckIcon, DocumentDuplicateIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import { ArrowDownTrayIcon, ArrowUturnLeftIcon, DocumentArrowDownIcon, DocumentCheckIcon, DocumentDuplicateIcon, PaperAirplaneIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     mode: { type: String, default: 'create' },
@@ -29,6 +30,7 @@ const sectionLabels = {
 const speltakLabel = computed(() => sectionLabels[page.props.auth?.active_section] || 'Dolfijnen');
 
 const source = props.item || props.copyItem || {};
+const currentStatus = computed(() => String(source.status || 'draft'));
 const initialSections = source.budget_sections || props.defaultSections || [];
 const initialStandardValues = source.standard_values || props.defaultStandardValues || {};
 const form = useForm({
@@ -48,14 +50,40 @@ const form = useForm({
 });
 const activeSectionIndex = ref(0);
 
-function submit() {
+function statusLabel(status) {
+    if (status === 'submitted') return 'Wacht op goedkeuring';
+    if (status === 'approved') return 'Goedgekeurd';
+    if (status === 'needs_changes') return 'Aanpassen nodig';
+    return 'Concept';
+}
+
+function statusClass(status) {
+    if (status === 'approved') return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300';
+    if (status === 'submitted') return 'bg-sky-100 text-sky-800 dark:bg-sky-500/20 dark:text-sky-300';
+    if (status === 'needs_changes') return 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300';
+    return 'bg-slate-100 text-slate-700 dark:bg-slate-700/40 dark:text-slate-200';
+}
+
+function submit(action = 'save') {
     if (isEdit.value) {
         if (!canUpdate.value) return;
-        form.patch(route('camp-budgets.update', props.item.id));
+        form
+            .transform((data) => ({ ...data, action }))
+            .patch(route('camp-budgets.update', props.item.id), {
+                onFinish: () => form.transform((data) => data),
+            });
         return;
     }
     if (!canCreate.value) return;
-    form.post(route('camp-budgets.store'));
+    form
+        .transform((data) => ({ ...data, action }))
+        .post(route('camp-budgets.store'), {
+            onFinish: () => form.transform((data) => data),
+        });
+}
+
+function submitForReview() {
+    submit('submit');
 }
 
 function destroyItem() {
@@ -86,13 +114,19 @@ function addRow(sectionIndex) {
     form.budget_sections[sectionIndex].rows.push({ label: '', quantity: 0, amount: 0, note: '' });
 }
 
+function normalizeWholeNumber(value) {
+    const parsed = Number.parseInt(String(value ?? '').replace(/[^\d-]/g, ''), 10);
+    if (Number.isNaN(parsed)) return 0;
+    return Math.max(0, parsed);
+}
+
 function removeRow(sectionIndex, rowIndex) {
     form.budget_sections[sectionIndex].rows.splice(rowIndex, 1);
 }
 
 function sectionTotal(section) {
     return (section?.rows || []).reduce((sum, row) => {
-        const quantity = Number(row.quantity ?? 1) || 0;
+        const quantity = normalizeWholeNumber(row.quantity);
         const amount = effectiveAmount(row, section?.title);
         return sum + (quantity * amount);
     }, 0);
@@ -115,6 +149,14 @@ function effectiveAmount(row, sectionTitle) {
     return manualAmount;
 }
 
+function onStandardMoneyInput(field, event) {
+    form.standard_values[field] = sanitizeMoneyInput(event?.target?.value ?? form.standard_values[field], { allowEmpty: false });
+}
+
+function onRowAmountInput(row, event) {
+    row.amount = sanitizeMoneyInput(event?.target?.value ?? row.amount);
+}
+
 const totals = computed(() => {
     const incomeTitles = ['bijdragen', 'overige bijdragen'];
     const expenseTitles = ['uitgaven', 'overige uitgaven'];
@@ -126,11 +168,7 @@ const totals = computed(() => {
         if (incomeTitles.includes(title)) income += sum;
         if (expenseTitles.includes(title)) expenses += sum;
     }
-    return {
-        income: income.toFixed(2),
-        expenses: expenses.toFixed(2),
-        difference: (income - expenses).toFixed(2),
-    };
+    return { income, expenses, difference: income - expenses };
 });
 
 function generatePdf() {
@@ -152,6 +190,14 @@ function generatePdf() {
         </template>
 
         <form class="surface-brand-top space-y-4 rounded-xl border border-app-border bg-app-panel p-5 shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark" @submit.prevent="submit">
+            <div class="flex items-center gap-2">
+                <span :class="['rounded-full px-2 py-0.5 text-xs', statusClass(currentStatus)]">
+                    {{ statusLabel(currentStatus) }}
+                </span>
+                <p v-if="source.review_note" class="text-xs text-amber-700 dark:text-amber-300">
+                    Opmerking bestuur: {{ source.review_note }}
+                </p>
+            </div>
             <div class="grid gap-3 sm:grid-cols-2">
                 <div class="space-y-1">
                     <label class="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-app-muted-dark">Jaar</label>
@@ -170,13 +216,13 @@ function generatePdf() {
             <div class="rounded-xl border border-app-border bg-white p-3 dark:border-app-border-dark dark:bg-app-canvas-dark">
                 <h3 class="mb-2 text-sm font-semibold text-app-ink dark:text-app-ink-dark">Standaardwaarden</h3>
                 <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                    <label class="text-xs text-app-ink dark:text-app-ink-dark">Prijs per dag leiding <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input v-model.number="form.standard_values.prijs_per_dag_leiding" type="number" step="0.01" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" /></div></label>
-                    <label class="text-xs text-app-ink dark:text-app-ink-dark">Kosten vaart pu <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input v-model.number="form.standard_values.kosten_vaart_pu" type="number" step="0.01" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" /></div></label>
-                    <label class="text-xs text-app-ink dark:text-app-ink-dark">Kosten aggregaat pu <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input v-model.number="form.standard_values.kosten_aggregaat_pu" type="number" step="0.01" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" /></div></label>
-                    <label class="text-xs text-app-ink dark:text-app-ink-dark">Huur Fram pppd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input v-model.number="form.standard_values.huur_fram_pppd" type="number" step="0.01" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" /></div></label>
-                    <label class="text-xs text-app-ink dark:text-app-ink-dark">Proviand pppd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input v-model.number="form.standard_values.proviand_pppd" type="number" step="0.01" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" /></div></label>
-                    <label class="text-xs text-app-ink dark:text-app-ink-dark">Groepsafdracht pjpd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input v-model.number="form.standard_values.groepsafdracht_pjpd" type="number" step="0.01" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" /></div></label>
-                    <label class="text-xs text-app-ink dark:text-app-ink-dark">Reservering NaWaKa pjpd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input v-model.number="form.standard_values.reservering_nawaka_pjpd" type="number" step="0.01" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" /></div></label>
+                    <label class="text-xs text-app-ink dark:text-app-ink-dark">Prijs per dag leiding <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="moneyDisplayValue(form.standard_values.prijs_per_dag_leiding, { fallback: '0,00' })" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @input="onStandardMoneyInput('prijs_per_dag_leiding', $event)" /></div></label>
+                    <label class="text-xs text-app-ink dark:text-app-ink-dark">Kosten vaart pu <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="moneyDisplayValue(form.standard_values.kosten_vaart_pu, { fallback: '0,00' })" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @input="onStandardMoneyInput('kosten_vaart_pu', $event)" /></div></label>
+                    <label class="text-xs text-app-ink dark:text-app-ink-dark">Kosten aggregaat pu <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="moneyDisplayValue(form.standard_values.kosten_aggregaat_pu, { fallback: '0,00' })" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @input="onStandardMoneyInput('kosten_aggregaat_pu', $event)" /></div></label>
+                    <label class="text-xs text-app-ink dark:text-app-ink-dark">Huur Fram pppd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="moneyDisplayValue(form.standard_values.huur_fram_pppd, { fallback: '0,00' })" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @input="onStandardMoneyInput('huur_fram_pppd', $event)" /></div></label>
+                    <label class="text-xs text-app-ink dark:text-app-ink-dark">Proviand pppd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="moneyDisplayValue(form.standard_values.proviand_pppd, { fallback: '0,00' })" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @input="onStandardMoneyInput('proviand_pppd', $event)" /></div></label>
+                    <label class="text-xs text-app-ink dark:text-app-ink-dark">Groepsafdracht pjpd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="moneyDisplayValue(form.standard_values.groepsafdracht_pjpd, { fallback: '0,00' })" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @input="onStandardMoneyInput('groepsafdracht_pjpd', $event)" /></div></label>
+                    <label class="text-xs text-app-ink dark:text-app-ink-dark">Reservering NaWaKa pjpd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="moneyDisplayValue(form.standard_values.reservering_nawaka_pjpd, { fallback: '0,00' })" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @input="onStandardMoneyInput('reservering_nawaka_pjpd', $event)" /></div></label>
                 </div>
             </div>
 
@@ -228,19 +274,19 @@ function generatePdf() {
                                         <input v-model="row.label" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-slate-900 dark:text-app-ink-dark" />
                                     </td>
                                     <td class="px-2 py-2">
-                                        <input v-model.number="row.quantity" type="number" min="0" step="0.01" class="w-24 rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-slate-900 dark:text-app-ink-dark" />
+                                        <input v-model.number="row.quantity" type="number" min="0" step="1" inputmode="numeric" class="w-24 rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-slate-900 dark:text-app-ink-dark" @input="row.quantity = normalizeWholeNumber(row.quantity)" />
                                     </td>
                                     <td class="px-2 py-2">
                                         <div class="relative w-36">
                                             <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span>
-                                            <input v-model.number="row.amount" type="number" step="0.01" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-slate-900 dark:text-app-ink-dark" />
+                                            <input :value="moneyDisplayValue(row.amount, { fallback: '' })" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-slate-900 dark:text-app-ink-dark" @input="onRowAmountInput(row, $event)" />
                                         </div>
                                     </td>
                                     <td class="px-2 py-2">
                                         <input v-model="row.note" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-slate-900 dark:text-app-ink-dark" />
                                     </td>
                                     <td class="px-2 py-2">
-                                        <span class="text-xs text-app-ink dark:text-app-ink-dark">€ {{ (Number(row.quantity || 0) * effectiveAmount(row, form.budget_sections[activeSectionIndex].title)).toFixed(2) }}</span>
+                                        <span class="text-xs text-app-ink dark:text-app-ink-dark">€ {{ formatMoney(normalizeWholeNumber(row.quantity) * effectiveAmount(row, form.budget_sections[activeSectionIndex].title)) }}</span>
                                     </td>
                                     <td class="px-2 py-2">
                                         <button type="button" class="btn-action-delete" title="Regel verwijderen" @click="removeRow(activeSectionIndex, rowIdx)">
@@ -255,19 +301,22 @@ function generatePdf() {
                         <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-700 text-white" title="Regel toevoegen" @click="addRow(activeSectionIndex)">
                             <PlusIcon class="h-4 w-4" />
                         </button>
-                        <p class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">Sectietotaal: € {{ sectionTotal(form.budget_sections[activeSectionIndex]).toFixed(2) }}</p>
+                        <p class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">Sectietotaal: € {{ formatMoney(sectionTotal(form.budget_sections[activeSectionIndex])) }}</p>
                     </div>
                 </div>
             </div>
 
             <div class="grid gap-2 rounded-xl border border-app-border bg-white p-3 sm:grid-cols-3 dark:border-app-border-dark dark:bg-app-canvas-dark">
-                <p class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">Totaal bijdragen: € {{ totals.income }}</p>
-                <p class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">Totaal uitgaven: € {{ totals.expenses }}</p>
-                <p class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">Verschil: € {{ totals.difference }}</p>
+                <p class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">Totaal bijdragen: € {{ formatMoney(totals.income) }}</p>
+                <p class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">Totaal uitgaven: € {{ formatMoney(totals.expenses) }}</p>
+                <p class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">Verschil: € {{ formatMoney(totals.difference) }}</p>
             </div>
             <div class="flex flex-wrap items-center gap-2 border-t border-app-border pt-3">
                 <button type="submit" class="btn-action-save" :disabled="form.processing" title="Opslaan" aria-label="Opslaan">
                     <DocumentCheckIcon class="h-5 w-5" />
+                </button>
+                <button type="button" class="btn-action-save" :disabled="form.processing" title="Begroting inleveren" aria-label="Begroting inleveren" @click="submitForReview">
+                    <PaperAirplaneIcon class="h-5 w-5" />
                 </button>
                 <button v-if="isEdit" type="button" class="btn-action-save" title="PDF maken en opslaan" aria-label="PDF maken en opslaan" @click="generatePdf">
                     <DocumentArrowDownIcon class="h-5 w-5" />

@@ -1,5 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import { moneyDisplayValue, sanitizeMoneyInput } from '@/utils/money';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { ArrowUturnLeftIcon, DocumentCheckIcon } from '@heroicons/vue/24/outline';
 
@@ -21,13 +22,7 @@ const form = useForm({
 });
 
 function onStartingAmountInput(event) {
-    const cleaned = String(event?.target?.value ?? '')
-        .replace(',', '.')
-        .replace(/[^0-9.]/g, '');
-    const [intPartRaw, ...decimalParts] = cleaned.split('.');
-    const intPart = intPartRaw || '0';
-    const decimalPart = decimalParts.join('').slice(0, 2);
-    form.starting_amount = decimalPart.length > 0 ? `${intPart}.${decimalPart}` : intPart;
+    form.starting_amount = sanitizeMoneyInput(event?.target?.value ?? form.starting_amount, { allowEmpty: false });
 }
 
 function submit() {
@@ -58,7 +53,7 @@ function submit() {
                     <div class="relative">
                         <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-app-muted dark:text-app-muted-dark">€</span>
                         <input
-                            :value="form.starting_amount"
+                            :value="moneyDisplayValue(form.starting_amount, { fallback: '0,00' })"
                             type="text"
                             inputmode="decimal"
                             class="w-full rounded border border-app-border bg-white py-2 pl-8 pr-3 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"

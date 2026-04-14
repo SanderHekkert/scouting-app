@@ -38,7 +38,7 @@ class CampBudgetController extends Controller
                     'title' => (string) $item->title,
                     'content' => (string) ($item->content ?? ''),
                     'pdf_path' => (string) data_get($item->meta, 'pdf_path', ''),
-                    'status' => (string) ($item->status ?: CampBudget::STATUS_SUBMITTED),
+                    'status' => (string) ($item->status ?: CampBudget::STATUS_DRAFT),
                     'review_note' => (string) ($item->review_note ?? ''),
                     'created_by_name' => (string) optional($item->createdBy)->name,
                     'can_review' => $canReview && in_array((string) $item->status, [CampBudget::STATUS_SUBMITTED], true),
@@ -88,6 +88,8 @@ class CampBudgetController extends Controller
                 'content' => (string) ($campBudget->content ?? ''),
                 'budget_sections' => $this->normalizeSections(data_get($campBudget->meta, 'sections', [])),
                 'pdf_path' => (string) data_get($campBudget->meta, 'pdf_path', ''),
+                'status' => (string) ($campBudget->status ?: CampBudget::STATUS_DRAFT),
+                'review_note' => (string) ($campBudget->review_note ?? ''),
                 'standard_values' => $this->normalizeStandardValues(data_get($campBudget->meta, 'standard_values', [])),
             ],
             'copyItem' => null,
@@ -104,17 +106,19 @@ class CampBudgetController extends Controller
             'content' => ['nullable', 'string'],
             'budget_sections' => ['nullable', 'array'],
             'standard_values' => ['nullable', 'array'],
+            'action' => ['nullable', 'string'],
         ]);
         $sections = $this->normalizeSections((array) ($data['budget_sections'] ?? []));
         $standardValues = $this->normalizeStandardValues((array) ($data['standard_values'] ?? []));
 
+        $status = $this->statusFromAction((string) ($data['action'] ?? 'save'));
         $userId = $request->user()?->id;
         CampBudget::create([
             'camp_year' => (int) $data['camp_year'],
             'title' => (string) $data['title'],
             'content' => (string) ($data['content'] ?? ''),
             'meta' => ['sections' => $sections, 'standard_values' => $standardValues],
-            'status' => CampBudget::STATUS_SUBMITTED,
+            'status' => $status,
             'created_by_user_id' => $userId,
             'updated_by_user_id' => $userId,
         ]);
@@ -132,10 +136,12 @@ class CampBudgetController extends Controller
             'content' => ['nullable', 'string'],
             'budget_sections' => ['nullable', 'array'],
             'standard_values' => ['nullable', 'array'],
+            'action' => ['nullable', 'string'],
         ]);
         $sections = $this->normalizeSections((array) ($data['budget_sections'] ?? []));
         $standardValues = $this->normalizeStandardValues((array) ($data['standard_values'] ?? []));
 
+        $status = $this->statusFromAction((string) ($data['action'] ?? 'save'));
         $meta = (array) ($campBudget->meta ?? []);
         $meta['sections'] = $sections;
         $meta['standard_values'] = $standardValues;
@@ -144,7 +150,7 @@ class CampBudgetController extends Controller
             'title' => (string) $data['title'],
             'content' => (string) ($data['content'] ?? ''),
             'meta' => $meta,
-            'status' => CampBudget::STATUS_SUBMITTED,
+            'status' => $status,
             'review_note' => null,
             'processed_by_user_id' => null,
             'processed_at' => null,
@@ -234,6 +240,21 @@ class CampBudgetController extends Controller
         ]);
 
         return back();
+    }
+
+    public function submit(Request $request, CampBudget $campBudget)
+    {
+        abort_unless((string) $campBudget->section === (string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN), 403);
+
+        $campBudget->update([
+            'status' => CampBudget::STATUS_SUBMITTED,
+            'review_note' => null,
+            'processed_by_user_id' => null,
+            'processed_at' => null,
+            'updated_by_user_id' => $request->user()?->id,
+        ]);
+
+        return to_route('camp-budgets.index');
     }
 
     public function reject(Request $request, int $campBudget)
@@ -438,6 +459,13 @@ class CampBudgetController extends Controller
                 ->where('section', UserSectionRole::SECTION_BESTUUR)
                 ->whereIn('role', UserSectionRole::BESTUUR_ROLES)
                 ->exists();
+    }
+
+    private function statusFromAction(string $action): string
+    {
+        return $action === 'submit'
+            ? CampBudget::STATUS_SUBMITTED
+            : CampBudget::STATUS_DRAFT;
     }
 
     private function buildAndStorePdf(CampBudget $campBudget): string

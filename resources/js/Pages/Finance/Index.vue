@@ -1,5 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import { formatMoney, moneyDisplayValue, sanitizeMoneyInput } from '@/utils/money';
 import { Head, Link, useForm, usePage, router } from '@inertiajs/vue3';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 
@@ -61,6 +62,10 @@ function formatCurrency(value) {
     return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(amount);
 }
 
+function formattedAmount(value) {
+    return formatMoney(value);
+}
+
 function syncHashFromLocation() {
     if (typeof window === 'undefined') return;
     currentHash.value = window.location.hash || '';
@@ -96,13 +101,31 @@ function addReceiptRow() {
     receiptRows.value.push({ name: '', quantity: '1', amount: '', vat: '21' });
 }
 
+function onPotStartingAmountInput(event) {
+    potForm.starting_amount = sanitizeMoneyInput(event?.target?.value ?? potForm.starting_amount, { allowEmpty: false });
+}
+
+function onPotCurrentAmountInput(pot, event) {
+    pot.current_amount = sanitizeMoneyInput(event?.target?.value ?? pot.current_amount, { allowEmpty: false });
+}
+
+function onReceiptAmountInput(row, event) {
+    row.amount = sanitizeMoneyInput(event?.target?.value ?? row.amount);
+}
+
 function parseNumber(value) {
     if (value === null || value === undefined || value === '') return 0;
     return Number.parseFloat(String(value).replace(',', '.')) || 0;
 }
 
+function parseQuantity(value) {
+    const parsed = Number.parseInt(String(value ?? '').replace(/[^\d-]/g, ''), 10);
+    if (Number.isNaN(parsed)) return 0;
+    return Math.max(0, parsed);
+}
+
 const receiptRowsTotal = computed(() => receiptRows.value.reduce((sum, row) => {
-    const qty = parseNumber(row.quantity || 1) || 1;
+    const qty = parseQuantity(row.quantity);
     const amount = parseNumber(row.amount);
     return sum + (qty * amount);
 }, 0));
@@ -255,7 +278,7 @@ watch(receiptRows, () => {
                     </div>
                     <div class="space-y-1">
                         <label class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Startbudget</label>
-                        <input v-model="potForm.starting_amount" type="number" step="0.01" min="0" placeholder="0,00" class="w-full rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" required />
+                        <input :value="moneyDisplayValue(potForm.starting_amount, { fallback: '0,00' })" type="text" inputmode="decimal" placeholder="0,00" class="w-full rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" required @input="onPotStartingAmountInput" />
                         <p v-if="potForm.errors.starting_amount" class="text-xs text-red-600">{{ potForm.errors.starting_amount }}</p>
                     </div>
                     <label class="inline-flex items-center gap-2 self-end rounded border border-app-border bg-slate-50 px-3 py-2.5 text-sm font-medium text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">
@@ -273,8 +296,8 @@ watch(receiptRows, () => {
                     </p>
                     <div v-for="pot in props.pots" :key="`pot-${pot.id}`" class="grid gap-2 rounded-lg border border-app-border bg-white p-3 sm:grid-cols-[1fr_10rem_10rem_auto] dark:border-app-border-dark dark:bg-app-canvas-dark">
                         <input v-model="pot.name" class="rounded border border-app-border px-2 py-1.5 text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" :disabled="!canManage" />
-                        <input :value="pot.starting_amount" class="rounded border border-app-border bg-slate-100 px-2 py-1.5 text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" disabled />
-                        <input v-model="pot.current_amount" type="number" step="0.01" class="rounded border border-app-border px-2 py-1.5 text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" :disabled="!canManage" />
+                        <input :value="moneyDisplayValue(pot.starting_amount, { fallback: '0,00' })" class="rounded border border-app-border bg-slate-100 px-2 py-1.5 text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" disabled />
+                        <input :value="moneyDisplayValue(pot.current_amount, { fallback: '0,00' })" type="text" inputmode="decimal" class="rounded border border-app-border px-2 py-1.5 text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" :disabled="!canManage" @input="onPotCurrentAmountInput(pot, $event)" />
                         <button v-if="canManage" type="button" class="rounded bg-brand-blue px-3 py-1.5 text-sm text-white hover:bg-brand-blue-dark" @click="updatePot(pot)">Opslaan</button>
                     </div>
                 </div>
@@ -308,7 +331,7 @@ watch(receiptRows, () => {
 
                     <div class="order-8 space-y-1">
                         <label class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Bedrag (op basis van bonregels)</label>
-                        <input v-model="declarationForm.amount" type="number" step="0.01" min="0.01" placeholder="0,00" class="w-full rounded border border-app-border bg-slate-100 px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" required readonly />
+                        <input :value="moneyDisplayValue(declarationForm.amount, { fallback: '0,00' })" type="text" inputmode="decimal" placeholder="0,00" class="w-full rounded border border-app-border bg-slate-100 px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" required readonly />
                         <p class="text-xs text-app-muted dark:text-app-muted-dark">Automatisch berekend uit de bonregels.</p>
                         <p v-if="declarationForm.errors.amount" class="text-xs text-red-600">{{ declarationForm.errors.amount }}</p>
                     </div>
@@ -377,10 +400,10 @@ watch(receiptRows, () => {
                                             <input v-model="row.name" type="text" class="w-full rounded border border-app-border px-2 py-1.5 text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" placeholder="Bijv. Broodjes" />
                                         </td>
                                         <td class="px-2 py-2">
-                                            <input v-model="row.quantity" type="number" min="0" step="0.01" class="w-24 rounded border border-app-border px-2 py-1.5 text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" />
+                                            <input v-model="row.quantity" type="number" min="0" step="1" inputmode="numeric" class="w-24 rounded border border-app-border px-2 py-1.5 text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" @input="row.quantity = String(parseQuantity(row.quantity))" />
                                         </td>
                                         <td class="px-2 py-2">
-                                            <input v-model="row.amount" type="number" min="0" step="0.01" class="w-28 rounded border border-app-border px-2 py-1.5 text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" placeholder="0,00" />
+                                            <input :value="moneyDisplayValue(row.amount, { fallback: '' })" type="text" inputmode="decimal" class="w-28 rounded border border-app-border px-2 py-1.5 text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" placeholder="0,00" @input="onReceiptAmountInput(row, $event)" />
                                         </td>
                                         <td class="px-2 py-2">
                                             <input v-model="row.vat" type="number" min="0" step="0.01" class="w-20 rounded border border-app-border px-2 py-1.5 text-app-ink dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" placeholder="21" />
@@ -422,7 +445,7 @@ watch(receiptRows, () => {
                             class="rounded-lg border border-app-border bg-white p-3 dark:border-app-border-dark dark:bg-app-canvas-dark"
                         >
                             <div class="flex flex-wrap items-center justify-between gap-2">
-                                <p class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">{{ row.pot_name || 'Onbekend potje' }} - EUR {{ row.amount }}</p>
+                                <p class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">{{ row.pot_name || 'Onbekend potje' }} - € {{ formattedAmount(row.amount) }}</p>
                                 <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-700 dark:bg-slate-700/40 dark:text-slate-200">{{ row.status }}</span>
                             </div>
                             <p class="mt-1 text-xs text-app-muted dark:text-app-muted-dark">{{ row.description_total }}</p>

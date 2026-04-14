@@ -35,11 +35,13 @@ class CampModulesTest extends TestCase
                 'camp_year' => 2026,
                 'title' => 'Pinksterkamp begroting',
                 'content' => 'Inkomsten en uitgaven.',
+                'action' => 'save',
             ])
             ->assertRedirect(route('camp-budgets.index'));
 
         $budget = CampBudget::query()->firstOrFail();
         $this->assertSame(UserSectionRole::SECTION_DOLFIJNEN, $budget->section);
+        $this->assertSame(CampBudget::STATUS_DRAFT, $budget->status);
 
         $this->actingAs($admin)
             ->withSession(['active_section' => UserSectionRole::SECTION_DOLFIJNEN])
@@ -47,6 +49,7 @@ class CampModulesTest extends TestCase
                 'camp_year' => 2026,
                 'title' => 'Pinksterkamp begroting v2',
                 'content' => 'Bijgewerkte begroting.',
+                'action' => 'save',
             ])
             ->assertRedirect(route('camp-budgets.index'));
 
@@ -54,6 +57,17 @@ class CampModulesTest extends TestCase
             'id' => $budget->id,
             'title' => 'Pinksterkamp begroting v2',
             'section' => UserSectionRole::SECTION_DOLFIJNEN,
+            'status' => CampBudget::STATUS_DRAFT,
+        ]);
+
+        $this->actingAs($admin)
+            ->withSession(['active_section' => UserSectionRole::SECTION_DOLFIJNEN])
+            ->patch(route('camp-budgets.submit', $budget))
+            ->assertRedirect(route('camp-budgets.index'));
+
+        $this->assertDatabaseHas('camp_budgets', [
+            'id' => $budget->id,
+            'status' => CampBudget::STATUS_SUBMITTED,
         ]);
 
         $this->actingAs($admin)

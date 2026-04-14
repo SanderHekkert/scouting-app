@@ -1,5 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import { moneyDisplayValue, sanitizeMoneyInput } from '@/utils/money';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 
 const props = defineProps({
@@ -32,6 +33,10 @@ function onReceiptChange(event) {
     form.receipt_file = event?.target?.files?.[0] || null;
 }
 
+function onAmountInput(event) {
+    form.amount = sanitizeMoneyInput(event?.target?.value ?? form.amount, { allowEmpty: false });
+}
+
 function submit() {
     form.post(route('finance.declarations.store'), { forceFormData: true });
 }
@@ -56,7 +61,7 @@ function submit() {
                 <input v-model="form.iban" type="text" placeholder="IBAN" class="rounded border border-app-border px-3 py-2" required />
                 <input v-model="form.account_name" type="text" placeholder="Rekeninghouder" class="rounded border border-app-border px-3 py-2" required />
                 <input v-model="form.declared_at" type="date" class="rounded border border-app-border px-3 py-2" required />
-                <input v-model="form.amount" type="number" step="0.01" min="0.01" placeholder="Bedrag" class="rounded border border-app-border px-3 py-2" required />
+                <input :value="moneyDisplayValue(form.amount, { fallback: '0,00' })" type="text" inputmode="decimal" placeholder="Bedrag" class="rounded border border-app-border px-3 py-2" required @input="onAmountInput" />
                 <input type="file" accept="image/*,.pdf,.heic,.heif" class="rounded border border-app-border px-3 py-2" required @change="onReceiptChange" />
                 <input v-model="form.description_total" type="text" placeholder="Omschrijving totaal" class="rounded border border-app-border px-3 py-2 sm:col-span-2" required />
                 <textarea v-model="form.description_lines" rows="5" placeholder="Bonregels" class="rounded border border-app-border px-3 py-2 sm:col-span-2" required />
