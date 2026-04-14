@@ -227,6 +227,7 @@
                 $isVinindeling = mb_strtolower(trim((string) ($section['title'] ?? ''))) === 'vinindeling';
                 $isPlanning = mb_strtolower(trim((string) ($section['title'] ?? ''))) === 'planning per dag';
                 $isVaarschema = mb_strtolower(trim((string) ($section['title'] ?? ''))) === 'vaarschema';
+                $isFramCamp = (string) data_get($playbook->meta, 'camp_location', 'fram') === 'fram';
                 $hasSectionContent = trim((string) ($section['content'] ?? '')) !== '';
                 $hasTaakverdelingContent = $isTaakverdeling && collect((array) ($taskDistributionRows ?? []))
                     ->contains(fn ($row): bool => trim((string) data_get($row, 'task', '')) !== '' || trim((string) data_get($row, 'description', '')) !== '' || trim((string) data_get($row, 'responsible', '')) !== '');
@@ -276,7 +277,7 @@
                     ->flatten(1)
                     ->filter(fn ($value): bool => trim((string) $value) !== '')
                     ->isNotEmpty();
-                $hasVaarschemaContent = $isVaarschema && collect((array) ($vaarschemaRows ?? []))
+                $hasVaarschemaContent = $isVaarschema && $isFramCamp && collect((array) ($vaarschemaRows ?? []))
                     ->contains(fn ($row): bool => trim((string) data_get($row, 'date', '')) !== '' || trim((string) data_get($row, 'from', '')) !== '' || trim((string) data_get($row, 'to', '')) !== '' || trim((string) data_get($row, 'depart_at', '')) !== '' || trim((string) data_get($row, 'arrive_at', '')) !== '' || trim((string) data_get($row, 'tide_margin_minutes', '')) !== '');
                 $hasPlanningContent = $isPlanning && collect((array) ($dayPlans ?? []))
                     ->filter(function ($day): bool {
@@ -503,8 +504,8 @@
                             <div class="vaarschema-info">
                                 <p><strong>Website getij</strong></p>
                                 <p>
-                                    <a class="vaarschema-link" href="https://waterinfo.rws.nl/#/publiek/astronomische-getij/Goidschalxoord%28GOIDSOD%29/details?parameters=Waterhoogte___20berekend___20Oppervlaktewater___20t.o.v.___20Normaal___20Amsterdams___20Peil___20in___20cm">
-                                        https://waterinfo.rws.nl/#/publiek/astronomische-getij/Goidschalxoord%28GOIDSOD%29/details?parameters=Waterhoogte___20berekend___20Oppervlaktewater___20t.o.v.___20Normaal___20Amsterdams___20Peil___20in___20cm
+                                    <a class="vaarschema-link" href="https://waterinfo.rws.nl/publiek/astronomische-getij/heinenoord.goidschalxoord/details">
+                                        https://waterinfo.rws.nl/publiek/astronomische-getij/heinenoord.goidschalxoord/details
                                     </a>
                                 </p>
                                 <p style="margin-top:4px;">Note: We kunnen met 60 NAP net wel naar binnen in de Koedood. Voor de veiligheid 75 NAP aanhouden.</p>

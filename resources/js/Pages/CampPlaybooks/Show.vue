@@ -1,9 +1,9 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import AppConfirmModal from '@/Components/AppConfirmModal.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
-import { ArrowUturnLeftIcon, BellAlertIcon, DocumentCheckIcon, DocumentDuplicateIcon, PaperAirplaneIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import { ArrowUturnLeftIcon, BellAlertIcon, DocumentCheckIcon, PaperAirplaneIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     mode: { type: String, default: 'create' },
@@ -262,9 +262,81 @@ const form = useForm({
     vaarschema_rows: normalizeVaarschemaRows(source.vaarschema_rows),
     playbook_sections: JSON.parse(JSON.stringify(initialSections)),
 });
+const VAARSCHEMA_SECTION_TITLE = 'Vaarschema';
+const PLANNING_SECTION_TITLE = 'Planning per dag';
+
+function syncTaskDistributionRowsWithTaskExplanationTitles() {
+    const titles = (form.task_explanation_items || [])
+        .map((item) => String(item?.title ?? '').trim())
+        .filter((title) => title !== '');
+
+    const existingRows = Array.isArray(form.task_distribution_rows) ? form.task_distribution_rows : [];
+    const existingByTask = new Map(
+        existingRows
+            .map((row) => [String(row?.task ?? '').trim().toLowerCase(), row])
+            .filter(([task]) => task !== '')
+    );
+
+    form.task_distribution_rows = titles.map((title, index) => {
+        const existingByIndex = existingRows[index];
+        const existing = existingByIndex && String(existingByIndex?.task ?? '').trim() !== ''
+            ? existingByIndex
+            : existingByTask.get(title.toLowerCase());
+
+        return {
+            task: title,
+            description: String(existing?.description ?? ''),
+            responsible: String(existing?.responsible ?? ''),
+        };
+    });
+}
+
+watch(
+    () => (form.task_explanation_items || []).map((item) => String(item?.title ?? '').trim()),
+    () => syncTaskDistributionRowsWithTaskExplanationTitles(),
+    { deep: true, immediate: true }
+);
+
 const activeSectionIndex = ref(0);
 const activeSection = computed(() => form.playbook_sections[activeSectionIndex.value] || null);
 const deleteModalOpen = ref(false);
+
+function sectionTitleKey(section) {
+    return String(section?.title || '').trim().toLowerCase();
+}
+
+function findSectionIndexByTitle(title) {
+    const key = String(title || '').trim().toLowerCase();
+    return form.playbook_sections.findIndex((section) => sectionTitleKey(section) === key);
+}
+
+function ensureVaarschemaSectionForLocation() {
+    const vaarschemaIndex = findSectionIndexByTitle(VAARSCHEMA_SECTION_TITLE);
+
+    if (form.camp_location === 'fram') {
+        if (vaarschemaIndex === -1) {
+            const planningIndex = findSectionIndexByTitle(PLANNING_SECTION_TITLE);
+            const insertIndex = planningIndex >= 0 ? planningIndex : form.playbook_sections.length;
+            form.playbook_sections.splice(insertIndex, 0, { title: VAARSCHEMA_SECTION_TITLE, content: '' });
+            if (activeSectionIndex.value >= insertIndex) {
+                activeSectionIndex.value += 1;
+            }
+        }
+    } else if (vaarschemaIndex !== -1) {
+        form.playbook_sections.splice(vaarschemaIndex, 1);
+        if (activeSectionIndex.value === vaarschemaIndex) {
+            activeSectionIndex.value = 0;
+        } else if (activeSectionIndex.value > vaarschemaIndex) {
+            activeSectionIndex.value -= 1;
+        }
+    }
+
+    if (activeSectionIndex.value >= form.playbook_sections.length) {
+        activeSectionIndex.value = Math.max(form.playbook_sections.length - 1, 0);
+    }
+}
+
+ensureVaarschemaSectionForLocation();
 
 function submit(action = 'save') {
     const normalizedAction = action === 'submit' ? 'submit' : 'save';
@@ -293,13 +365,9 @@ function destroyItem() {
     router.delete(route('camp-playbooks.destroy', props.item.id));
 }
 
-function copyItem() {
-    if (!isEdit.value || !canCreate.value) return;
-    router.post(route('camp-playbooks.copy', props.item.id));
-}
-
 function setCampLocation(location) {
     form.camp_location = location === 'clubhuis' ? 'clubhuis' : 'fram';
+    ensureVaarschemaSectionForLocation();
 }
 
 function isAlgemeenSection(section) {
@@ -419,15 +487,6 @@ function removeMonsterrolRow(type, index) {
     if (!['staff', 'vaarbemanning'].includes(type)) return;
     if (!Array.isArray(form.monsterrol_rows[type]) || form.monsterrol_rows[type].length <= 1) return;
     form.monsterrol_rows[type].splice(index, 1);
-}
-
-function addTaskDistributionRow() {
-    form.task_distribution_rows.push({ task: '', description: '', responsible: '' });
-}
-
-function removeTaskDistributionRow(index) {
-    if (!Array.isArray(form.task_distribution_rows) || form.task_distribution_rows.length <= 1) return;
-    form.task_distribution_rows.splice(index, 1);
 }
 
 function addTaskExplanationItem() {
@@ -634,21 +693,23 @@ function statusClass(status) {
                                 placeholder="Bijv. Zwolle"
                             />
                         </div>
-                        <div class="space-y-1">
-                            <label class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Datum (van)</label>
-                            <input
-                                v-model="form.camp_date_start"
-                                type="date"
-                                class="w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-slate-900 dark:text-app-ink-dark"
-                            />
-                        </div>
-                        <div class="space-y-1">
-                            <label class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Datum (tot)</label>
-                            <input
-                                v-model="form.camp_date_end"
-                                type="date"
-                                class="w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-slate-900 dark:text-app-ink-dark"
-                            />
+                        <div class="space-y-1 sm:col-span-2">
+                            <label class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Datum (daterange)</label>
+                            <div class="flex items-center gap-2 rounded border border-app-border bg-white px-2 py-2 dark:border-app-border-dark dark:bg-slate-900">
+                                <input
+                                    v-model="form.camp_date_start"
+                                    type="date"
+                                    :max="form.camp_date_end || undefined"
+                                    class="w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
+                                />
+                                <span class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">t/m</span>
+                                <input
+                                    v-model="form.camp_date_end"
+                                    type="date"
+                                    :min="form.camp_date_start || undefined"
+                                    class="w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
+                                />
+                            </div>
                         </div>
                     </div>
 
@@ -656,8 +717,8 @@ function statusClass(status) {
                         <div class="space-y-2 rounded-lg border border-app-border bg-white p-3 dark:border-app-border-dark dark:bg-slate-900">
                             <div class="flex items-center justify-between">
                                 <h4 class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">Staf</h4>
-                                <button type="button" class="rounded bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800" @click="addMonsterrolRow('staff')">
-                                    Rij toevoegen
+                                <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-700 text-white" title="Rij toevoegen" aria-label="Rij toevoegen" @click="addMonsterrolRow('staff')">
+                                    <PlusIcon class="h-4 w-4" />
                                 </button>
                             </div>
                             <div class="overflow-x-auto rounded border border-app-border dark:border-app-border-dark">
@@ -696,8 +757,8 @@ function statusClass(status) {
                                     <h4 class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">Vaarbemanning</h4>
                                     <p class="text-xs text-app-muted dark:text-app-muted-dark">Speltak: {{ speltakLabel }}</p>
                                 </div>
-                                <button type="button" class="rounded bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800" @click="addMonsterrolRow('vaarbemanning')">
-                                    Rij toevoegen
+                                <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-700 text-white" title="Rij toevoegen" aria-label="Rij toevoegen" @click="addMonsterrolRow('vaarbemanning')">
+                                    <PlusIcon class="h-4 w-4" />
                                 </button>
                             </div>
                             <div class="overflow-x-auto rounded border border-app-border dark:border-app-border-dark">
@@ -734,9 +795,6 @@ function statusClass(status) {
                     <div v-if="isTaakverdelingSection(activeSection)" class="space-y-3">
                         <div class="flex items-center justify-between">
                             <h4 class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">Taakverdeling</h4>
-                            <button type="button" class="rounded bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800" @click="addTaskDistributionRow">
-                                Rij toevoegen
-                            </button>
                         </div>
                         <div class="overflow-x-auto rounded border border-app-border dark:border-app-border-dark">
                             <table class="w-full min-w-[840px] text-sm">
@@ -745,19 +803,13 @@ function statusClass(status) {
                                         <th class="px-2 py-2 text-left">Taak</th>
                                         <th class="px-2 py-2 text-left">Beschrijving</th>
                                         <th class="px-2 py-2 text-left">Verantwoordelijke</th>
-                                        <th class="px-2 py-2 text-left">Actie</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-app-border dark:divide-app-border-dark">
                                     <tr v-for="(row, rowIdx) in form.task_distribution_rows" :key="`task-distribution-row-${rowIdx}`">
-                                        <td class="px-2 py-2"><input v-model="row.task" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Taak" /></td>
+                                        <td class="px-2 py-2"><input v-model="row.task" type="text" readonly class="w-full rounded border border-app-border bg-slate-100 px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" placeholder="Taak" /></td>
                                         <td class="px-2 py-2"><input v-model="row.description" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Beschrijving" /></td>
                                         <td class="px-2 py-2"><input v-model="row.responsible" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Verantwoordelijke" /></td>
-                                        <td class="px-2 py-2">
-                                            <button type="button" class="btn-action-delete" title="Rij verwijderen" @click="removeTaskDistributionRow(rowIdx)">
-                                                <TrashIcon class="h-5 w-5" />
-                                            </button>
-                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -865,8 +917,8 @@ function statusClass(status) {
                     <div v-if="isCorveeroosterSection(activeSection)" class="space-y-3">
                         <div class="flex items-center justify-between">
                             <h4 class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">Corveerooster</h4>
-                            <button type="button" class="rounded bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800" @click="addCorveeRow">
-                                Rij toevoegen
+                            <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-700 text-white" title="Rij toevoegen" aria-label="Rij toevoegen" @click="addCorveeRow">
+                                <PlusIcon class="h-4 w-4" />
                             </button>
                         </div>
                         <div class="overflow-x-auto rounded border border-app-border dark:border-app-border-dark">
@@ -906,8 +958,8 @@ function statusClass(status) {
                     <div v-if="isVinindelingSection(activeSection)" class="space-y-3">
                         <div class="flex items-center justify-between">
                             <h4 class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">Vinindeling</h4>
-                            <button type="button" class="rounded bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800" @click="addVinindelingRow">
-                                Rij toevoegen
+                            <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-700 text-white" title="Rij toevoegen" aria-label="Rij toevoegen" @click="addVinindelingRow">
+                                <PlusIcon class="h-4 w-4" />
                             </button>
                         </div>
 
@@ -967,12 +1019,12 @@ function statusClass(status) {
                         <div class="rounded-lg border border-brand-blue/25 bg-brand-blue/5 p-3 text-sm text-app-ink dark:border-brand-blue/40 dark:bg-brand-blue/10 dark:text-app-ink-dark">
                             <p class="font-semibold">Website getij</p>
                             <a
-                                href="https://waterinfo.rws.nl/#/publiek/astronomische-getij/Goidschalxoord%28GOIDSOD%29/details?parameters=Waterhoogte___20berekend___20Oppervlaktewater___20t.o.v.___20Normaal___20Amsterdams___20Peil___20in___20cm"
+                                href="https://waterinfo.rws.nl/publiek/astronomische-getij/heinenoord.goidschalxoord/details"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 class="mt-1 inline-block break-all text-brand-blue underline"
                             >
-                                https://waterinfo.rws.nl/#/publiek/astronomische-getij/Goidschalxoord%28GOIDSOD%29/details?parameters=Waterhoogte___20berekend___20Oppervlaktewater___20t.o.v.___20Normaal___20Amsterdams___20Peil___20in___20cm
+                                https://waterinfo.rws.nl/publiek/astronomische-getij/heinenoord.goidschalxoord/details
                             </a>
                             <p class="mt-2 text-xs">
                                 Note: We kunnen met 60 NAP net wel naar binnen in de Koedood. Voor de veiligheid 75 NAP aanhouden.
@@ -1010,8 +1062,8 @@ function statusClass(status) {
                             </table>
                         </div>
                         <div>
-                            <button type="button" class="rounded bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800" @click="addVaarschemaRow">
-                                Rij toevoegen
+                            <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-700 text-white" title="Rij toevoegen" aria-label="Rij toevoegen" @click="addVaarschemaRow">
+                                <PlusIcon class="h-4 w-4" />
                             </button>
                         </div>
                     </div>
@@ -1087,8 +1139,8 @@ function statusClass(status) {
                                 </table>
                             </div>
                             <div class="mt-2">
-                                <button type="button" class="rounded bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800" @click="addPlanningRow(dayIdx)">
-                                    Rij toevoegen
+                                <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-700 text-white" title="Rij toevoegen" aria-label="Rij toevoegen" @click="addPlanningRow(dayIdx)">
+                                    <PlusIcon class="h-4 w-4" />
                                 </button>
                             </div>
 
@@ -1133,9 +1185,6 @@ function statusClass(status) {
                 </button>
                 <button type="button" class="btn-action-save" :disabled="form.processing" title="Draaiboek inleveren" aria-label="Draaiboek inleveren" @click="submit('submit')">
                     <PaperAirplaneIcon class="h-5 w-5" />
-                </button>
-                <button v-if="isEdit && canCreate" type="button" class="btn-action-save" title="Kopie maken" aria-label="Kopie maken" @click="copyItem">
-                    <DocumentDuplicateIcon class="h-5 w-5" />
                 </button>
                 <button v-if="isEdit && canUpdate" type="button" class="btn-action-delete" title="Verwijderen" aria-label="Verwijderen" @click="openDeleteModal">
                     <TrashIcon class="h-5 w-5" />

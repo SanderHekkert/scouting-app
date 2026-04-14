@@ -121,7 +121,7 @@ class CampPlaybookController extends Controller
             'copyItem' => $copyItem,
             'leaderTeam' => $this->leaderTeamOptions(),
             'defaultSections' => $this->defaultPlaybookSections((string) session('active_section', 'dolfijnen')),
-            'defaultTaskDistributionRows' => $this->defaultTaskDistributionRows(),
+            'defaultTaskDistributionRows' => $this->defaultTaskDistributionRows((string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN)),
             'defaultTaskExplanationItems' => $this->defaultTaskExplanationItems((string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN)),
             'defaultGeneralAgreementsItems' => $this->defaultGeneralAgreementsItems((string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN)),
             'defaultVinindelingRows' => $this->defaultVinindelingRows(),
@@ -178,7 +178,7 @@ class CampPlaybookController extends Controller
             'copyItem' => null,
             'leaderTeam' => $this->leaderTeamOptions(),
             'defaultSections' => $this->defaultPlaybookSections((string) session('active_section', 'dolfijnen')),
-            'defaultTaskDistributionRows' => $this->defaultTaskDistributionRows(),
+            'defaultTaskDistributionRows' => $this->defaultTaskDistributionRows((string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN)),
             'defaultTaskExplanationItems' => $this->defaultTaskExplanationItems((string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN)),
             'defaultGeneralAgreementsItems' => $this->defaultGeneralAgreementsItems((string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN)),
             'defaultVinindelingRows' => $this->defaultVinindelingRows(),
@@ -520,6 +520,7 @@ class CampPlaybookController extends Controller
      */
     private function normalizePlaybookSections(array $rawSections, string $fallbackContent = ''): array
     {
+        $defaults = $this->defaultPlaybookSections((string) session('active_section', 'dolfijnen'));
         $normalized = collect($rawSections)
             ->map(function ($section): array {
                 return [
@@ -532,10 +533,38 @@ class CampPlaybookController extends Controller
             ->all();
 
         if ($normalized !== []) {
-            return $normalized;
+            $normalizedByTitle = collect($normalized)
+                ->mapWithKeys(fn (array $section): array => [mb_strtolower(trim((string) ($section['title'] ?? ''))) => $section]);
+
+            $orderedDefaults = collect($defaults)
+                ->map(function (array $defaultSection) use ($normalizedByTitle): array {
+                    $titleKey = mb_strtolower(trim((string) ($defaultSection['title'] ?? '')));
+                    $matched = $normalizedByTitle->get($titleKey);
+
+                    return $matched ?? $defaultSection;
+                })
+                ->values();
+
+            $defaultKeys = collect($defaults)
+                ->map(fn (array $section): string => mb_strtolower(trim((string) ($section['title'] ?? ''))))
+                ->filter(fn (string $key): bool => $key !== '')
+                ->values()
+                ->all();
+
+            $extras = collect($normalized)
+                ->filter(function (array $section) use ($defaultKeys): bool {
+                    $key = mb_strtolower(trim((string) ($section['title'] ?? '')));
+
+                    return $key !== '' && ! in_array($key, $defaultKeys, true);
+                })
+                ->values();
+
+            return $orderedDefaults
+                ->concat($extras)
+                ->values()
+                ->all();
         }
 
-        $defaults = $this->defaultPlaybookSections((string) session('active_section', 'dolfijnen'));
         $content = trim($fallbackContent);
         if ($content !== '') {
             $defaults[0]['content'] = $content;
@@ -552,8 +581,8 @@ class CampPlaybookController extends Controller
         $sections = [
             ['title' => 'Algemeen', 'content' => ''],
             ['title' => 'Monsterrol', 'content' => ''],
-            ['title' => 'Taakverdeling', 'content' => ''],
             ['title' => 'Taak uitleg', 'content' => ''],
+            ['title' => 'Taakverdeling', 'content' => ''],
             ['title' => 'Algemene afspraken', 'content' => ''],
             ['title' => 'Speltak afspraken', 'content' => ''],
             ['title' => 'Corveerooster', 'content' => ''],
@@ -610,13 +639,29 @@ class CampPlaybookController extends Controller
     /**
      * @return array<int,array{task:string,description:string,responsible:string}>
      */
-    private function defaultTaskDistributionRows(): array
+    private function defaultTaskDistributionRows(string $activeSection): array
     {
-        return [[
-            'task' => '',
-            'description' => '',
-            'responsible' => '',
-        ]];
+        $titles = collect($this->defaultTaskExplanationItems($activeSection))
+            ->map(fn (array $item): string => trim((string) ($item['title'] ?? '')))
+            ->filter(fn (string $title): bool => $title !== '')
+            ->values();
+
+        if ($titles->isEmpty()) {
+            return [[
+                'task' => '',
+                'description' => '',
+                'responsible' => '',
+            ]];
+        }
+
+        return $titles
+            ->map(fn (string $title): array => [
+                'task' => $title,
+                'description' => '',
+                'responsible' => '',
+            ])
+            ->values()
+            ->all();
     }
 
     /**
@@ -638,7 +683,7 @@ class CampPlaybookController extends Controller
             ->values()
             ->all();
 
-        return $rows !== [] ? $rows : $this->defaultTaskDistributionRows();
+        return $rows !== [] ? $rows : $this->defaultTaskDistributionRows((string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN));
     }
 
     /**
