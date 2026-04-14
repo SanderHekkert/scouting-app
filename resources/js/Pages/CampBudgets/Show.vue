@@ -136,6 +136,25 @@ function addRow(sectionIndex) {
     form.budget_sections[sectionIndex].rows.push({ label: '', quantity: 0, amount: 0, note: '' });
 }
 
+function upsertExpenseRow(label) {
+    const expensesSection = (form.budget_sections || []).find((section) => String(section?.title || '').trim().toLowerCase() === 'uitgaven');
+    if (!expensesSection) return;
+    const existing = (expensesSection.rows || []).some((row) => String(row?.label || '').trim().toLowerCase() === label.toLowerCase());
+    if (existing) return;
+    expensesSection.rows.push({ label, quantity: 0, amount: 0, note: '' });
+}
+
+function ensureExpenseRowsForLocation() {
+    if (campLocation.value === 'fram') {
+        upsertExpenseRow('Geschatte vaaruren');
+        upsertExpenseRow('Geschatte aggregaaturen');
+        return;
+    }
+
+    upsertExpenseRow('Kosten uitje');
+    upsertExpenseRow('Clubhuis');
+}
+
 function normalizeWholeNumber(value) {
     const parsed = Number.parseInt(String(value ?? '').replace(/[^\d-]/g, ''), 10);
     if (Number.isNaN(parsed)) return 0;
@@ -191,13 +210,23 @@ function moneyInputPreview(value, { fallback = '' } = {}) {
 
 function setCampLocation(location) {
     form.camp_location = location === 'clubhuis' ? 'clubhuis' : 'fram';
+    ensureExpenseRowsForLocation();
 }
+
+ensureExpenseRowsForLocation();
 
 function isAutoContributionRow(sectionTitle, label) {
     const section = String(sectionTitle || '').trim().toLowerCase();
     const rowLabel = String(label || '').trim().toLowerCase();
-    if (section !== 'bijdragen') return false;
-    return rowLabel.includes('leiding') || rowLabel.includes('jeugdleden') || rowLabel.includes('jeugdlid');
+    if (section === 'bijdragen') {
+        return rowLabel.includes('leiding') || rowLabel.includes('jeugdleden') || rowLabel.includes('jeugdlid');
+    }
+    if (section === 'uitgaven') {
+        return rowLabel.includes('geschatte vaaruren')
+            || rowLabel.includes('geschatte aggregaaturen')
+            || rowLabel.includes('geschatte aggregraaturen');
+    }
+    return false;
 }
 
 function rowAmountDisplayValue(row, sectionTitle) {

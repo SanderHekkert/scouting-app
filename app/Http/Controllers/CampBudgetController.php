@@ -406,7 +406,7 @@ class CampBudgetController extends Controller
     {
         return [
             ['title' => 'Bijdragen', 'rows' => [['label' => 'Leiding', 'quantity' => 0, 'amount' => 0, 'note' => ''], ['label' => 'Jeugdleden', 'quantity' => 0, 'amount' => 0, 'note' => ''], ['label' => 'Vaarbemanning', 'quantity' => 0, 'amount' => 0, 'note' => '']]],
-            ['title' => 'Uitgaven', 'rows' => [['label' => 'Fram', 'quantity' => 0, 'amount' => 0, 'note' => ''], ['label' => 'Proviand', 'quantity' => 0, 'amount' => 0, 'note' => ''], ['label' => 'Thema en spel', 'quantity' => 0, 'amount' => 0, 'note' => '']]],
+            ['title' => 'Uitgaven', 'rows' => [['label' => 'Geschatte vaaruren', 'quantity' => 0, 'amount' => 0, 'note' => ''], ['label' => 'Geschatte aggregaaturen', 'quantity' => 0, 'amount' => 0, 'note' => ''], ['label' => 'Proviand', 'quantity' => 0, 'amount' => 0, 'note' => ''], ['label' => 'Thema en spel', 'quantity' => 0, 'amount' => 0, 'note' => '']]],
             ['title' => 'Overige bijdragen', 'rows' => []],
             ['title' => 'Overige uitgaven', 'rows' => []],
             ['title' => 'Bemanning en deelnemers', 'rows' => []],
