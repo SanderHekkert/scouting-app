@@ -131,6 +131,54 @@ function normalizeEmergencyContacts(raw) {
     }
     return defaults;
 }
+
+function planningSpeltakLabels() {
+    const plural = String(speltakLabel.value || 'Dolfijnen').trim() || 'Dolfijnen';
+    const singularByPlural = {
+        Bevers: 'Bever',
+        Dolfijnen: 'Dolfijn',
+        Zeeverkenners: 'Zeeverkenner',
+        'Wilde Vaart': 'Wilde Vaarder',
+        Loodsen: 'Loods',
+        Bestuur: 'Bestuurslid',
+    };
+    const singular = singularByPlural[plural] || plural;
+    return {
+        pluralLower: plural.toLocaleLowerCase('nl-NL'),
+        singularLower: singular.toLocaleLowerCase('nl-NL'),
+    };
+}
+
+function defaultPlanningRows() {
+    const { pluralLower, singularLower } = planningSpeltakLabels();
+    const fallbackRows = [
+        { time: '7:30', program: 'Opstaan dagwacht en dienstvin', game: '', needs: '' },
+        { time: '8:00', program: `Opstaan ${pluralLower}`, game: '', needs: '' },
+        { time: '8:30', program: 'Ontbijt en corvee', game: '', needs: '' },
+        { time: '10:00', program: 'Ochtendprogramma', game: '', needs: '' },
+        { time: '12:00', program: 'Einde ochtendprogramma', game: '', needs: '' },
+        { time: '12:30', program: 'Lunch en corvee', game: '', needs: '' },
+        { time: '14:00', program: 'Middagprogramma', game: '', needs: '' },
+        { time: '16:00', program: 'Einde middagprogramma', game: '', needs: '' },
+        { time: '17:30', program: 'Avondmaaltijd en corvee', game: '', needs: '' },
+        { time: '19:00', program: 'Avondprogramma', game: '', needs: '' },
+        { time: '20:30', program: `Einde avondprogramma / ${singularLower} naar bed`, game: '', needs: '' },
+        { time: '21:00', program: `${pluralLower} stil`, game: '', needs: '' },
+        { time: '22:00', program: 'Stafoverleg', game: '', needs: '' },
+    ];
+
+    const candidate = Array.isArray(props.defaultDayPlans?.[0]?.planning_rows) && props.defaultDayPlans[0].planning_rows.length
+        ? props.defaultDayPlans[0].planning_rows
+        : fallbackRows;
+
+    return candidate.map((row) => ({
+        time: String(row?.time ?? ''),
+        program: String(row?.program ?? ''),
+        game: String(row?.game ?? ''),
+        needs: String(row?.needs ?? ''),
+    }));
+}
+
 function normalizeDayPlans(raw) {
     const incoming = Array.isArray(raw) ? raw : [];
     if (!incoming.length) {
@@ -147,7 +195,7 @@ function normalizeDayPlans(raw) {
                 game: String(row?.game ?? ''),
                 needs: String(row?.needs ?? ''),
             }))
-            : [{ time: '', program: '', game: '', needs: '' }],
+            : defaultPlanningRows(),
         game_explanation: String(day?.game_explanation ?? ''),
     }));
 }
@@ -405,7 +453,7 @@ const responsibleOptions = computed(() => {
     return ['n.v.t.', ...Array.from(new Set(crewNames))];
 });
 const VAARSCHEMA_SECTION_TITLE = 'Vaarschema';
-const PLANNING_SECTION_TITLE = 'Planning per dag';
+const HULPDIENSTEN_SECTION_TITLE = 'Hulpdiensten';
 
 function isDagverloopTask(taskTitle) {
     return String(taskTitle ?? '').trim().toLowerCase() === 'dagverloop';
@@ -451,6 +499,8 @@ watch(
         const [, previousStart, previousEnd] = Array.isArray(previousValues) ? previousValues : [];
         syncMonsterrolBoardingDates(String(previousStart || ''), String(previousEnd || ''));
         syncCorveeRowsWithCampDates();
+        syncDayPlansWithCampDates();
+        syncVaarschemaRowsWithCampDates(String(previousStart || ''), String(previousEnd || ''));
         if (String(currentStart || '') !== String(previousStart || '') || String(currentEnd || '') !== String(previousEnd || '')) {
             form.camp_dates = composeCampDateRange(currentStart, currentEnd);
         }
@@ -534,6 +584,103 @@ function syncCorveeRowsWithCampDates() {
     });
 }
 
+function dayLabelFromDateEntry(entry, index) {
+    return `Dag ${index + 1} - ${entry.dayLabel} (${entry.dateLabel})`;
+}
+
+function isoDateFromDayLabel(dayLabel) {
+    const text = String(dayLabel ?? '').trim();
+    if (!text) return '';
+    const isoMatch = text.match(/(\d{4}-\d{2}-\d{2})/);
+    if (isoMatch) {
+        return toIsoDate(isoMatch[1]);
+    }
+    const nlMatch = text.match(/(\d{2}-\d{2}-\d{4})/);
+    if (nlMatch) {
+        return toIsoDate(nlMatch[1]);
+    }
+    return '';
+}
+
+function syncDayPlansWithCampDates() {
+    const dateEntries = isoDateEntriesBetween(form.camp_date_start, form.camp_date_end);
+    if (!dateEntries.length) {
+        return;
+    }
+
+    const existingPlans = Array.isArray(form.day_plans) ? form.day_plans : [];
+    const existingByIsoDate = new Map(
+        existingPlans
+            .map((day) => [isoDateFromDayLabel(day?.day_label), day])
+            .filter(([iso]) => iso !== '')
+    );
+
+    form.day_plans = dateEntries.map((entry, index) => {
+        const existingByDate = existingByIsoDate.get(entry.iso);
+        const existingByIndex = existingPlans[index];
+        const existing = existingByDate || existingByIndex || {};
+
+        return {
+            day_label: dayLabelFromDateEntry(entry, index),
+            daywatch_ids: Array.isArray(existing?.daywatch_ids)
+                ? existing.daywatch_ids.map((id) => Number(id)).filter((id) => Number.isFinite(id) && id > 0)
+                : [],
+            planning_rows: Array.isArray(existing?.planning_rows) && existing.planning_rows.length
+                ? existing.planning_rows.map((row) => ({
+                    time: String(row?.time ?? ''),
+                    program: String(row?.program ?? ''),
+                    game: String(row?.game ?? ''),
+                    needs: String(row?.needs ?? ''),
+                }))
+                : defaultPlanningRows(),
+            game_explanation: String(existing?.game_explanation ?? ''),
+        };
+    });
+}
+
+function emptyVaarschemaRow() {
+    return {
+        date: '',
+        from: '',
+        to: '',
+        depart_at: '',
+        arrive_at: '',
+        tide_margin_minutes: '',
+    };
+}
+
+function syncVaarschemaRowsWithCampDates(previousStart = '', previousEnd = '') {
+    if (!Array.isArray(form.vaarschema_rows)) {
+        form.vaarschema_rows = [];
+    }
+
+    while (form.vaarschema_rows.length < 2) {
+        form.vaarschema_rows.push(emptyVaarschemaRow());
+    }
+
+    const start = String(form.camp_date_start || '');
+    const end = String(form.camp_date_end || '');
+    const rowOne = form.vaarschema_rows[0] || emptyVaarschemaRow();
+    const rowTwo = form.vaarschema_rows[1] || emptyVaarschemaRow();
+
+    if (String(rowOne.date || '') === '' || String(rowOne.date || '') === String(previousStart || '')) {
+        rowOne.date = start;
+    }
+    if (String(rowTwo.date || '') === '' || String(rowTwo.date || '') === String(previousEnd || '')) {
+        rowTwo.date = end;
+    }
+
+    if (String(rowOne.from || '').trim() === '') {
+        rowOne.from = 'Koedood';
+    }
+    if (String(rowTwo.to || '').trim() === '') {
+        rowTwo.to = 'Koedood';
+    }
+
+    form.vaarschema_rows[0] = rowOne;
+    form.vaarschema_rows[1] = rowTwo;
+}
+
 function sectionTitleKey(section) {
     return String(section?.title || '').trim().toLowerCase();
 }
@@ -548,8 +695,8 @@ function ensureVaarschemaSectionForLocation() {
 
     if (form.camp_location === 'fram') {
         if (vaarschemaIndex === -1) {
-            const planningIndex = findSectionIndexByTitle(PLANNING_SECTION_TITLE);
-            const insertIndex = planningIndex >= 0 ? planningIndex : form.playbook_sections.length;
+            const hulpdienstenIndex = findSectionIndexByTitle(HULPDIENSTEN_SECTION_TITLE);
+            const insertIndex = hulpdienstenIndex >= 0 ? hulpdienstenIndex : form.playbook_sections.length;
             form.playbook_sections.splice(insertIndex, 0, { title: VAARSCHEMA_SECTION_TITLE, content: '' });
             if (activeSectionIndex.value >= insertIndex) {
                 activeSectionIndex.value += 1;
@@ -668,7 +815,7 @@ function addPlanningDay() {
     form.day_plans.push({
         day_label: `Dag ${form.day_plans.length + 1}`,
         daywatch_ids: [],
-        planning_rows: [{ time: '', program: '', game: '', needs: '' }],
+        planning_rows: defaultPlanningRows(),
         game_explanation: '',
     });
 }
@@ -690,28 +837,36 @@ function removePlanningRow(dayIndex, rowIndex) {
     day.planning_rows.splice(rowIndex, 1);
 }
 
-function toggleDaywatch(day, leaderId) {
-    const id = Number(leaderId);
-    if (!Array.isArray(day.daywatch_ids)) {
-        day.daywatch_ids = [];
+function normalizedDaywatchIds(day) {
+    if (!Array.isArray(day?.daywatch_ids)) {
+        return [];
     }
-    const idx = day.daywatch_ids.findIndex((entry) => Number(entry) === id);
-    if (idx >= 0) {
-        day.daywatch_ids.splice(idx, 1);
-    } else {
-        day.daywatch_ids.push(id);
-    }
+    return Array.from(new Set(day.daywatch_ids.map((id) => Number(id)).filter((id) => Number.isFinite(id) && id > 0)));
+}
+
+function daywatchNameById(leaderId) {
+    return (props.leaderTeam || []).find((leader) => Number(leader?.id) === Number(leaderId))?.name || `Leiding #${leaderId}`;
+}
+
+function availableDaywatchOptions(day) {
+    const selected = new Set(normalizedDaywatchIds(day));
+    return (props.leaderTeam || []).filter((leader) => !selected.has(Number(leader?.id)));
+}
+
+function addDaywatchFromSelect(day, event) {
+    const selectedId = Number(event?.target?.value);
+    if (!Number.isFinite(selectedId) || selectedId <= 0) return;
+    day.daywatch_ids = [...normalizedDaywatchIds(day), selectedId];
+    event.target.value = '';
+}
+
+function removeDaywatch(day, leaderId) {
+    const target = Number(leaderId);
+    day.daywatch_ids = normalizedDaywatchIds(day).filter((id) => id !== target);
 }
 
 function addVaarschemaRow() {
-    form.vaarschema_rows.push({
-        date: '',
-        from: '',
-        to: '',
-        depart_at: '',
-        arrive_at: '',
-        tide_margin_minutes: '',
-    });
+    form.vaarschema_rows.push(emptyVaarschemaRow());
 }
 
 function removeVaarschemaRow(index) {
@@ -1494,7 +1649,7 @@ function statusClass(status) {
                                 </thead>
                                 <tbody class="divide-y divide-app-border dark:divide-app-border-dark">
                                     <tr v-for="(row, rowIdx) in form.vaarschema_rows" :key="`vaarschema-row-${rowIdx}`">
-                                        <td class="px-2 py-2"><input v-model="row.date" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Bijv. 18-05-2026" /></td>
+                                        <td class="px-2 py-2"><input v-model="row.date" type="date" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" /></td>
                                         <td class="px-2 py-2"><input v-model="row.from" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Van" /></td>
                                         <td class="px-2 py-2"><input v-model="row.to" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Naar" /></td>
                                         <td class="px-2 py-2"><input v-model="row.depart_at" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Wegvaren" /></td>
@@ -1543,19 +1698,25 @@ function statusClass(status) {
 
                             <div class="mt-3 space-y-2">
                                 <p class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Dagwacht (leidingteam)</p>
-                                <div class="flex flex-wrap gap-2">
-                                    <label
-                                        v-for="leader in props.leaderTeam"
-                                        :key="`daywatch-${dayIdx}-${leader.id}`"
-                                        class="inline-flex items-center gap-1 rounded border border-app-border px-2 py-1 text-xs text-app-ink dark:border-app-border-dark dark:text-app-ink-dark"
-                                    >
-                                        <input
-                                            :checked="day.daywatch_ids?.includes(leader.id)"
-                                            type="checkbox"
-                                            @change="toggleDaywatch(day, leader.id)"
-                                        />
-                                        {{ leader.name }}
-                                    </label>
+                                <div class="space-y-2">
+                                    <div class="flex flex-wrap gap-1.5">
+                                        <span
+                                            v-for="leaderId in normalizedDaywatchIds(day)"
+                                            :key="`daywatch-chip-${dayIdx}-${leaderId}`"
+                                            class="inline-flex items-center gap-1 rounded-full bg-brand-blue/15 px-2 py-0.5 text-xs text-app-ink dark:text-app-ink-dark"
+                                        >
+                                            {{ daywatchNameById(leaderId) }}
+                                            <button type="button" class="rounded p-0.5 hover:bg-brand-blue/25" @click="removeDaywatch(day, leaderId)">
+                                                <XMarkIcon class="h-3.5 w-3.5" />
+                                            </button>
+                                        </span>
+                                    </div>
+                                    <select class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @change="addDaywatchFromSelect(day, $event)">
+                                        <option value="">Dagwacht toevoegen...</option>
+                                        <option v-for="leader in availableDaywatchOptions(day)" :key="`daywatch-option-${dayIdx}-${leader.id}`" :value="leader.id">
+                                            {{ leader.name }}
+                                        </option>
+                                    </select>
                                     <span v-if="!(props.leaderTeam || []).length" class="text-xs text-app-muted dark:text-app-muted-dark">Geen leidingteam gevonden in deze speltak.</span>
                                 </div>
                             </div>

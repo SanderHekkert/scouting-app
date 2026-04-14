@@ -10,6 +10,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -556,9 +557,26 @@ class CampPlaybookController extends Controller
             'coverPhotoDataUri' => $this->coverPhotoDataUri((string) data_get($campPlaybook->meta, 'cover_photo_path', '')),
         ])->setPaper('a4');
 
-        $filename = sprintf('draaiboek-%d-%s.pdf', (int) $campPlaybook->id, now()->format('Ymd-His'));
+        $filename = $this->playbookPdfFilename($campPlaybook);
 
         return $pdf->download($filename);
+    }
+
+    private function playbookPdfFilename(CampPlaybook $campPlaybook): string
+    {
+        $sectionSlug = Str::slug(str_replace('_', ' ', (string) $campPlaybook->section), '-');
+        $titleSlug = Str::slug((string) $campPlaybook->title, '-');
+        if ($titleSlug === '') {
+            $titleSlug = 'zonder-titel';
+        }
+
+        return sprintf(
+            'draaiboek-%s-%d-%s-%s.pdf',
+            $sectionSlug !== '' ? $sectionSlug : 'speltak',
+            (int) $campPlaybook->camp_year,
+            $titleSlug,
+            now()->format('Ymd-His')
+        );
     }
 
     private function logoDataUri(): string
@@ -702,6 +720,7 @@ class CampPlaybookController extends Controller
             ['title' => 'Taakverdeling', 'content' => ''],
             ['title' => 'Algemene afspraken', 'content' => ''],
             ['title' => 'Speltak afspraken', 'content' => ''],
+            ['title' => 'Planning per dag', 'content' => ''],
             ['title' => 'Corveerooster', 'content' => ''],
         ];
 
@@ -714,7 +733,6 @@ class CampPlaybookController extends Controller
         $sections = [
             ...$sections,
             ['title' => 'Vaarschema', 'content' => ''],
-            ['title' => 'Planning per dag', 'content' => ''],
             ['title' => 'Hulpdiensten', 'content' => ''],
         ];
 
@@ -1370,9 +1388,11 @@ class CampPlaybookController extends Controller
      */
     private function normalizeDayPlans(array $raw): array
     {
+        $defaultPlanningRows = $this->defaultPlanningRows();
         $normalized = collect($raw)
             ->filter(fn ($entry): bool => is_array($entry))
             ->map(function (array $entry): array {
+                $defaultPlanningRows = $this->defaultPlanningRows();
                 $rows = collect((array) ($entry['planning_rows'] ?? []))
                     ->filter(fn ($row): bool => is_array($row))
                     ->map(function (array $row): array {
@@ -1396,11 +1416,11 @@ class CampPlaybookController extends Controller
                 return [
                     'day_label' => trim((string) ($entry['day_label'] ?? '')),
                     'daywatch_ids' => $daywatchIds,
-                    'planning_rows' => $rows !== [] ? $rows : [['time' => '', 'program' => '', 'game' => '', 'needs' => '']],
+                    'planning_rows' => $rows !== [] ? $rows : $defaultPlanningRows,
                     'game_explanation' => trim((string) ($entry['game_explanation'] ?? '')),
                 ];
             })
-            ->filter(fn (array $day): bool => $day['day_label'] !== '' || $day['game_explanation'] !== '' || $day['planning_rows'] !== [['time' => '', 'program' => '', 'game' => '', 'needs' => '']] || $day['daywatch_ids'] !== [])
+            ->filter(fn (array $day): bool => $day['day_label'] !== '' || $day['game_explanation'] !== '' || $day['planning_rows'] !== $defaultPlanningRows || $day['daywatch_ids'] !== [])
             ->values()
             ->all();
 
@@ -1415,9 +1435,31 @@ class CampPlaybookController extends Controller
         return [[
             'day_label' => 'Dag 1',
             'daywatch_ids' => [],
-            'planning_rows' => [['time' => '', 'program' => '', 'game' => '', 'needs' => '']],
+            'planning_rows' => $this->defaultPlanningRows(),
             'game_explanation' => '',
         ]];
+    }
+
+    /**
+     * @return array<int,array{time:string,program:string,game:string,needs:string}>
+     */
+    private function defaultPlanningRows(): array
+    {
+        return [
+            ['time' => '7:30', 'program' => 'Opstaan dagwacht en dienstvin', 'game' => '', 'needs' => ''],
+            ['time' => '8:00', 'program' => 'Opstaan dolfijnen', 'game' => '', 'needs' => ''],
+            ['time' => '8:30', 'program' => 'Ontbijt en corvee', 'game' => '', 'needs' => ''],
+            ['time' => '10:00', 'program' => 'Ochtendprogramma', 'game' => '', 'needs' => ''],
+            ['time' => '12:00', 'program' => 'Einde ochtendprogramma', 'game' => '', 'needs' => ''],
+            ['time' => '12:30', 'program' => 'Lunch en corvee', 'game' => '', 'needs' => ''],
+            ['time' => '14:00', 'program' => 'Middagprogramma', 'game' => '', 'needs' => ''],
+            ['time' => '16:00', 'program' => 'Einde middagprogramma', 'game' => '', 'needs' => ''],
+            ['time' => '17:30', 'program' => 'Avondmaaltijd en corvee', 'game' => '', 'needs' => ''],
+            ['time' => '19:00', 'program' => 'Avondprogramma', 'game' => '', 'needs' => ''],
+            ['time' => '20:30', 'program' => 'Einde avondprogramma / Dolfijn naar bed', 'game' => '', 'needs' => ''],
+            ['time' => '21:00', 'program' => 'Dolfijnen stil', 'game' => '', 'needs' => ''],
+            ['time' => '22:00', 'program' => 'Stafoverleg', 'game' => '', 'needs' => ''],
+        ];
     }
 
     /**
@@ -1571,13 +1613,23 @@ class CampPlaybookController extends Controller
      */
     private function defaultVaarschemaRows(): array
     {
-        return [[
-            'date' => '',
-            'from' => '',
-            'to' => '',
-            'depart_at' => '',
-            'arrive_at' => '',
-            'tide_margin_minutes' => '',
-        ]];
+        return [
+            [
+                'date' => '',
+                'from' => 'Koedood',
+                'to' => '',
+                'depart_at' => '',
+                'arrive_at' => '',
+                'tide_margin_minutes' => '',
+            ],
+            [
+                'date' => '',
+                'from' => '',
+                'to' => 'Koedood',
+                'depart_at' => '',
+                'arrive_at' => '',
+                'tide_margin_minutes' => '',
+            ],
+        ];
     }
 }

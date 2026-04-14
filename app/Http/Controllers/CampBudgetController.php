@@ -8,6 +8,7 @@ use App\Models\UserSectionRole;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -271,7 +272,7 @@ class CampBudgetController extends Controller
             'logoDataUri' => $this->logoDataUri(),
         ])->setPaper('a4');
 
-        $filename = sprintf('begroting-%d-%s.pdf', (int) $campBudget->id, now()->format('Ymd-His'));
+        $filename = $this->budgetPdfFilename($campBudget);
         $path = 'camp-budgets/'.$filename;
         Storage::disk('local')->put($path, $pdf->output());
 
@@ -872,10 +873,27 @@ class CampBudgetController extends Controller
             'logoDataUri' => $this->logoDataUri(),
         ])->setPaper('a4');
 
-        $filename = sprintf('begroting-%d-%s.pdf', (int) $campBudget->id, now()->format('Ymd-His'));
+        $filename = $this->budgetPdfFilename($campBudget);
         $path = 'camp-budgets/'.$filename;
         Storage::disk('local')->put($path, $pdf->output());
 
         return $path;
+    }
+
+    private function budgetPdfFilename(CampBudget $campBudget): string
+    {
+        $sectionSlug = Str::slug(str_replace('_', ' ', (string) $campBudget->section), '-');
+        $titleSlug = Str::slug((string) $campBudget->title, '-');
+        if ($titleSlug === '') {
+            $titleSlug = 'zonder-titel';
+        }
+
+        return sprintf(
+            'begroting-%s-%d-%s-%s.pdf',
+            $sectionSlug !== '' ? $sectionSlug : 'speltak',
+            (int) $campBudget->camp_year,
+            $titleSlug,
+            now()->format('Ymd-His')
+        );
     }
 }
