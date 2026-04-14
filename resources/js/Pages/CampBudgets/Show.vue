@@ -65,21 +65,27 @@ function statusClass(status) {
 }
 
 function submit(action = 'save') {
+    const options = {
+        preserveScroll: true,
+        onSuccess: () => {
+            if (action === 'save') {
+                router.get(route('camp-budgets.index'));
+            }
+        },
+        onFinish: () => form.transform((data) => data),
+    };
+
     if (isEdit.value) {
         if (!canUpdate.value) return;
         form
             .transform((data) => ({ ...data, action }))
-            .patch(route('camp-budgets.update', props.item.id), {
-                onFinish: () => form.transform((data) => data),
-            });
+            .patch(route('camp-budgets.update', props.item.id), options);
         return;
     }
     if (!canCreate.value) return;
     form
         .transform((data) => ({ ...data, action }))
-        .post(route('camp-budgets.store'), {
-            onFinish: () => form.transform((data) => data),
-        });
+        .post(route('camp-budgets.store'), options);
 }
 
 function submitForReview() {

@@ -24,6 +24,19 @@ const sectionLabels = {
 };
 const speltakLabel = computed(() => sectionLabels[page.props.auth?.active_section] || 'Dolfijnen');
 
+function formattedUpdatedAt(value) {
+    if (!value) return 'Onbekend';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return 'Onbekend';
+    return new Intl.DateTimeFormat('nl-NL', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    }).format(date);
+}
+
 function copyItem(item) {
     if (!canCreate.value) return;
     router.post(route('camp-budgets.copy', item.id), {}, { preserveScroll: true });
@@ -85,16 +98,17 @@ function statusClass(status) {
                     Nog geen begroting toegevoegd.
                 </div>
                 <div v-for="item in props.items" :key="`budget-${item.id}`" class="rounded-lg border border-app-border bg-white p-3 dark:bg-app-canvas-dark">
-                    <div class="flex items-start justify-between gap-3">
-                        <div>
-                            <p class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">{{ item.camp_year }} - {{ item.title }}</p>
-                            <p class="mt-1 text-xs text-slate-500">{{ sectionLabels[item.section] || item.section }} | {{ item.created_by_name || 'Onbekend' }}</p>
-                            <p class="mt-1 line-clamp-4 whitespace-pre-wrap text-sm text-app-ink dark:text-app-ink-dark">{{ item.content }}</p>
-                            <p v-if="item.review_note" class="mt-2 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-900">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="truncate text-sm font-semibold text-app-ink dark:text-app-ink-dark">{{ item.camp_year }} - {{ item.title }}</p>
+                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-300">
+                                {{ sectionLabels[item.section] || item.section }} | Door {{ item.created_by_name || 'Onbekend' }} | Gewijzigd {{ formattedUpdatedAt(item.updated_at) }}
+                            </p>
+                            <p v-if="item.review_note" class="mt-1 text-xs text-amber-700 dark:text-amber-300">
                                 Opmerking bestuur: {{ item.review_note }}
                             </p>
                         </div>
-                        <div class="flex items-center gap-1">
+                        <div class="flex items-center gap-1 shrink-0">
                             <span :class="['rounded-full px-2 py-0.5 text-xs', statusClass(item.status)]">{{ statusLabel(item.status) }}</span>
                             <Link v-if="canUpdate" :href="route('camp-budgets.show', item.id)" class="btn-action-save" title="Bewerken" aria-label="Bewerken">
                                 <PencilSquareIcon class="h-5 w-5" />

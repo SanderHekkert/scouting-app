@@ -36,11 +36,11 @@ class CampBudgetController extends Controller
                     'section' => (string) $item->section,
                     'camp_year' => (int) $item->camp_year,
                     'title' => (string) $item->title,
-                    'content' => (string) ($item->content ?? ''),
                     'pdf_path' => (string) data_get($item->meta, 'pdf_path', ''),
                     'status' => (string) ($item->status ?: CampBudget::STATUS_DRAFT),
                     'review_note' => (string) ($item->review_note ?? ''),
                     'created_by_name' => (string) optional($item->createdBy)->name,
+                    'updated_at' => optional($item->updated_at)?->toIso8601String(),
                     'can_review' => $canReview && in_array((string) $item->status, [CampBudget::STATUS_SUBMITTED], true),
                 ])
                 ->values()
