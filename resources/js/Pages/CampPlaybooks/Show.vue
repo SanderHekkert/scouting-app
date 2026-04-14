@@ -542,6 +542,16 @@ const activeSection = computed(() => form.playbook_sections[activeSectionIndex.v
 const deleteModalOpen = ref(false);
 const draggedPlanningRow = ref(null);
 
+watch(
+    () => activeSection.value?.title,
+    (title) => {
+        if (String(title ?? '').trim().toLowerCase() !== 'planning per dag') {
+            return;
+        }
+        nextTick(() => autosizeSpeluitlegTextareas());
+    }
+);
+
 function onCoverPhotoSelected(event) {
     const [file] = event?.target?.files || [];
     form.cover_photo = file ?? null;
