@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { DocumentDuplicateIcon, PencilSquareIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import { ArrowDownTrayIcon, DocumentDuplicateIcon, PencilSquareIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     items: { type: Array, default: () => [] },
@@ -68,6 +68,9 @@ function deleteItem(item) {
                             <Link v-if="canUpdate" :href="route('camp-playbooks.show', item.id)" class="btn-action-save" title="Bewerken" aria-label="Bewerken">
                                 <PencilSquareIcon class="h-5 w-5" />
                             </Link>
+                            <a v-if="canUpdate" :href="route('camp-playbooks.pdf.download', item.id)" class="btn-action-save" title="PDF downloaden" aria-label="PDF downloaden">
+                                <ArrowDownTrayIcon class="h-5 w-5" />
+                            </a>
                             <button v-if="canCreate" type="button" class="btn-action-save" title="Kopie maken" aria-label="Kopie maken" @click="copyItem(item)">
                                 <DocumentDuplicateIcon class="h-5 w-5" />
                             </button>
