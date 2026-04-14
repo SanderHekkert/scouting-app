@@ -24,6 +24,10 @@ function onStartingAmountInput(event) {
     form.starting_amount = sanitizeMoneyInput(event?.target?.value ?? form.starting_amount, { allowEmpty: false });
 }
 
+function setActiveStatus(isActive) {
+    form.active = !!isActive;
+}
+
 function submit() {
     form.post(route('finance.pots.store'));
 }
@@ -43,10 +47,23 @@ function submit() {
             <div class="grid gap-3 sm:grid-cols-2">
                 <input v-model="form.name" type="text" placeholder="Naam potje" class="rounded border border-app-border px-3 py-2" required />
                 <input :value="moneyDisplayValue(form.starting_amount, { fallback: '0,00' })" type="text" inputmode="decimal" placeholder="Startbudget" class="rounded border border-app-border px-3 py-2" required @input="onStartingAmountInput" />
-                <label class="inline-flex items-center gap-2 rounded border border-app-border px-3 py-2 text-sm">
-                    <input v-model="form.active" type="checkbox" />
-                    Direct actief
-                </label>
+                <div class="sm:col-span-2 flex items-center gap-3">
+                    <label class="text-xs font-semibold uppercase tracking-wide text-app-muted">Actief</label>
+                    <button
+                        type="button"
+                        class="relative inline-flex h-7 w-14 items-center rounded-full border transition"
+                        :class="form.active ? 'border-brand-blue bg-brand-blue' : 'border-app-border bg-slate-300'"
+                        :aria-pressed="form.active"
+                        aria-label="Potje actief"
+                        @click="setActiveStatus(!form.active)"
+                    >
+                        <span class="sr-only">Actief</span>
+                        <span
+                            class="inline-block h-5 w-5 transform rounded-full bg-white shadow transition"
+                            :class="form.active ? 'translate-x-8' : 'translate-x-1'"
+                        />
+                    </button>
+                </div>
             </div>
             <button type="submit" class="rounded bg-emerald-700 px-4 py-2 text-white">Opslaan</button>
         </form>

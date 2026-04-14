@@ -25,6 +25,10 @@ function onStartingAmountInput(event) {
     form.starting_amount = sanitizeMoneyInput(event?.target?.value ?? form.starting_amount, { allowEmpty: false });
 }
 
+function setActiveStatus(isActive) {
+    form.active = !!isActive;
+}
+
 function submit() {
     form.post(route('finance.pots.store'));
 }
@@ -62,12 +66,22 @@ function submit() {
                         />
                     </div>
                 </div>
-                <div class="space-y-1 sm:col-span-2">
-                    <label class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Status</label>
-                    <label class="inline-flex items-center gap-2 rounded border border-app-border bg-white px-3 py-2 text-sm text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark">
-                        <input v-model="form.active" type="checkbox" />
-                        Direct actief
-                    </label>
+                <div class="sm:col-span-2 flex items-center gap-3">
+                    <label class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Actief</label>
+                    <button
+                        type="button"
+                        class="relative inline-flex h-7 w-14 items-center rounded-full border transition"
+                        :class="form.active ? 'border-brand-blue bg-brand-blue' : 'border-app-border bg-slate-300 dark:border-app-border-dark dark:bg-slate-700'"
+                        :aria-pressed="form.active"
+                        aria-label="Potje actief"
+                        @click="setActiveStatus(!form.active)"
+                    >
+                        <span class="sr-only">Actief</span>
+                        <span
+                            class="inline-block h-5 w-5 transform rounded-full bg-white shadow transition"
+                            :class="form.active ? 'translate-x-8' : 'translate-x-1'"
+                        />
+                    </button>
                 </div>
             </div>
             <button type="submit" class="btn-action-save" :disabled="form.processing" title="Opslaan" aria-label="Opslaan">
