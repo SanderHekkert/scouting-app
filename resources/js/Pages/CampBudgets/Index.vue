@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import { formatMoney } from '@/utils/money';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { DocumentDuplicateIcon, PencilSquareIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
 
@@ -103,6 +104,11 @@ function statusClass(status) {
                             <p class="truncate text-sm font-semibold text-app-ink dark:text-app-ink-dark">{{ item.camp_year }} - {{ item.title }}</p>
                             <p class="mt-1 text-xs text-slate-500 dark:text-slate-300">
                                 {{ sectionLabels[item.section] || item.section }} | Door {{ item.created_by_name || 'Onbekend' }} | Gewijzigd {{ formattedUpdatedAt(item.updated_at) }}
+                            </p>
+                            <p class="mt-1 text-xs text-app-ink dark:text-app-ink-dark">
+                                Bijdragen: € {{ formatMoney(item.totals?.income || 0) }}
+                                | Uitgaven: € {{ formatMoney(item.totals?.expenses || 0) }}
+                                | Verschil: € {{ formatMoney(item.totals?.difference || 0) }}
                             </p>
                             <p v-if="item.review_note" class="mt-1 text-xs text-amber-700 dark:text-amber-300">
                                 Opmerking bestuur: {{ item.review_note }}

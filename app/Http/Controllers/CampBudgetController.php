@@ -32,21 +32,50 @@ class CampBudgetController extends Controller
                 ->latest('id')
                 ->get()
                 ->map(fn (CampBudget $item): array => [
-                    'id' => (int) $item->id,
-                    'section' => (string) $item->section,
-                    'camp_year' => (int) $item->camp_year,
-                    'title' => (string) $item->title,
-                    'pdf_path' => (string) data_get($item->meta, 'pdf_path', ''),
-                    'status' => (string) ($item->status ?: CampBudget::STATUS_DRAFT),
-                    'review_note' => (string) ($item->review_note ?? ''),
-                    'created_by_name' => (string) optional($item->createdBy)->name,
-                    'updated_at' => optional($item->updated_at)?->toIso8601String(),
-                    'can_review' => $canReview && in_array((string) $item->status, [CampBudget::STATUS_SUBMITTED], true),
+                    ...$this->indexItemPayload($item, $canReview),
                 ])
                 ->values()
                 ->all(),
             'canReview' => $canReview,
         ]);
+    }
+
+    /**
+     * @return array{
+     *   id:int,
+     *   section:string,
+     *   camp_year:int,
+     *   title:string,
+     *   pdf_path:string,
+     *   status:string,
+     *   review_note:string,
+     *   created_by_name:string,
+     *   updated_at:?string,
+     *   can_review:bool,
+     *   totals:array{income:float,expenses:float,difference:float}
+     * }
+     */
+    private function indexItemPayload(CampBudget $item, bool $canReview): array
+    {
+        $sections = $this->normalizeSections(data_get($item->meta, 'sections', []));
+        $standardValues = $this->normalizeStandardValues(data_get($item->meta, 'standard_values', []));
+        $campDays = $this->normalizeCampDays((int) data_get($item->meta, 'camp_days', 1));
+        $campLocation = $this->normalizeCampLocation((string) data_get($item->meta, 'camp_location', 'fram'));
+        $totals = $this->totalsForSections($sections, $standardValues, $campDays, $campLocation);
+
+        return [
+            'id' => (int) $item->id,
+            'section' => (string) $item->section,
+            'camp_year' => (int) $item->camp_year,
+            'title' => (string) $item->title,
+            'pdf_path' => (string) data_get($item->meta, 'pdf_path', ''),
+            'status' => (string) ($item->status ?: CampBudget::STATUS_DRAFT),
+            'review_note' => (string) ($item->review_note ?? ''),
+            'created_by_name' => (string) optional($item->createdBy)->name,
+            'updated_at' => optional($item->updated_at)?->toIso8601String(),
+            'can_review' => $canReview && in_array((string) $item->status, [CampBudget::STATUS_SUBMITTED], true),
+            'totals' => $totals,
+        ];
     }
 
     public function create(Request $request): Response
@@ -60,6 +89,8 @@ class CampBudgetController extends Controller
                     'camp_year' => (int) $source->camp_year,
                     'title' => (string) $source->title,
                     'content' => (string) ($source->content ?? ''),
+                    'camp_days' => $this->normalizeCampDays((int) data_get($source->meta, 'camp_days', 1)),
+                    'camp_location' => $this->normalizeCampLocation((string) data_get($source->meta, 'camp_location', 'fram')),
                     'budget_sections' => $this->normalizeSections(data_get($source->meta, 'sections', [])),
                     'standard_values' => $this->normalizeStandardValues(data_get($source->meta, 'standard_values', [])),
                 ];
@@ -86,6 +117,8 @@ class CampBudgetController extends Controller
                 'camp_year' => (int) $campBudget->camp_year,
                 'title' => (string) $campBudget->title,
                 'content' => (string) ($campBudget->content ?? ''),
+                'camp_days' => $this->normalizeCampDays((int) data_get($campBudget->meta, 'camp_days', 1)),
+                'camp_location' => $this->normalizeCampLocation((string) data_get($campBudget->meta, 'camp_location', 'fram')),
                 'budget_sections' => $this->normalizeSections(data_get($campBudget->meta, 'sections', [])),
                 'pdf_path' => (string) data_get($campBudget->meta, 'pdf_path', ''),
                 'status' => (string) ($campBudget->status ?: CampBudget::STATUS_DRAFT),
@@ -104,12 +137,16 @@ class CampBudgetController extends Controller
             'camp_year' => ['required', 'integer', 'min:2020', 'max:2100'],
             'title' => ['required', 'string', 'max:255'],
             'content' => ['nullable', 'string'],
+            'camp_days' => ['nullable', 'integer', 'min:1', 'max:60'],
+            'camp_location' => ['nullable', 'string', 'in:clubhuis,fram'],
             'budget_sections' => ['nullable', 'array'],
             'standard_values' => ['nullable', 'array'],
             'action' => ['nullable', 'string'],
         ]);
         $sections = $this->normalizeSections((array) ($data['budget_sections'] ?? []));
         $standardValues = $this->normalizeStandardValues((array) ($data['standard_values'] ?? []));
+        $campDays = $this->normalizeCampDays((int) ($data['camp_days'] ?? 1));
+        $campLocation = $this->normalizeCampLocation((string) ($data['camp_location'] ?? 'fram'));
 
         $status = $this->statusFromAction((string) ($data['action'] ?? 'save'));
         $userId = $request->user()?->id;
@@ -117,7 +154,7 @@ class CampBudgetController extends Controller
             'camp_year' => (int) $data['camp_year'],
             'title' => (string) $data['title'],
             'content' => (string) ($data['content'] ?? ''),
-            'meta' => ['sections' => $sections, 'standard_values' => $standardValues],
+            'meta' => ['sections' => $sections, 'standard_values' => $standardValues, 'camp_days' => $campDays, 'camp_location' => $campLocation],
             'status' => $status,
             'created_by_user_id' => $userId,
             'updated_by_user_id' => $userId,
@@ -134,17 +171,23 @@ class CampBudgetController extends Controller
             'camp_year' => ['required', 'integer', 'min:2020', 'max:2100'],
             'title' => ['required', 'string', 'max:255'],
             'content' => ['nullable', 'string'],
+            'camp_days' => ['nullable', 'integer', 'min:1', 'max:60'],
+            'camp_location' => ['nullable', 'string', 'in:clubhuis,fram'],
             'budget_sections' => ['nullable', 'array'],
             'standard_values' => ['nullable', 'array'],
             'action' => ['nullable', 'string'],
         ]);
         $sections = $this->normalizeSections((array) ($data['budget_sections'] ?? []));
         $standardValues = $this->normalizeStandardValues((array) ($data['standard_values'] ?? []));
+        $campDays = $this->normalizeCampDays((int) ($data['camp_days'] ?? 1));
+        $campLocation = $this->normalizeCampLocation((string) ($data['camp_location'] ?? 'fram'));
 
         $status = $this->statusFromAction((string) ($data['action'] ?? 'save'));
         $meta = (array) ($campBudget->meta ?? []);
         $meta['sections'] = $sections;
         $meta['standard_values'] = $standardValues;
+        $meta['camp_days'] = $campDays;
+        $meta['camp_location'] = $campLocation;
         $campBudget->update([
             'camp_year' => (int) $data['camp_year'],
             'title' => (string) $data['title'],
@@ -191,7 +234,9 @@ class CampBudgetController extends Controller
         abort_unless((string) $campBudget->section === (string) session('active_section', 'dolfijnen'), 403);
         $sections = $this->normalizeSections(data_get($campBudget->meta, 'sections', []));
         $standardValues = $this->normalizeStandardValues(data_get($campBudget->meta, 'standard_values', []));
-        $totals = $this->totalsForSections($sections, $standardValues);
+        $campDays = $this->normalizeCampDays((int) data_get($campBudget->meta, 'camp_days', 1));
+        $campLocation = $this->normalizeCampLocation((string) data_get($campBudget->meta, 'camp_location', 'fram'));
+        $totals = $this->totalsForSections($sections, $standardValues, $campDays, $campLocation);
 
         $pdf = Pdf::loadView('pdf.camp-budget', [
             'budget' => $campBudget,
@@ -345,16 +390,18 @@ class CampBudgetController extends Controller
      * @param  array<string,float>  $standardValues
      * @return array{income:float,expenses:float,difference:float}
      */
-    private function totalsForSections(array $sections, array $standardValues): array
+    private function totalsForSections(array $sections, array $standardValues, int $campDays, string $campLocation): array
     {
+        $campDays = $this->normalizeCampDays($campDays);
+        $campLocation = $this->normalizeCampLocation($campLocation);
         $incomeTitles = ['bijdragen', 'overige bijdragen'];
         $expenseTitles = ['uitgaven', 'overige uitgaven'];
         $income = 0.0;
         $expenses = 0.0;
         foreach ($sections as $section) {
-            $sum = collect($section['rows'])->sum(function (array $row) use ($section, $standardValues): float {
+            $sum = collect($section['rows'])->sum(function (array $row) use ($section, $standardValues, $campDays, $campLocation): float {
                 $quantity = (float) ($row['quantity'] ?? 0);
-                $price = $this->effectiveAmount($row, (string) ($section['title'] ?? ''), $standardValues);
+                $price = $this->effectiveAmount($row, (string) ($section['title'] ?? ''), $standardValues, $campDays, $campLocation);
 
                 return $quantity * $price;
             });
@@ -393,6 +440,7 @@ class CampBudgetController extends Controller
     private function defaultStandardValues(): array
     {
         return [
+            'prijs_per_dag_clubhuis' => 0.00,
             'prijs_per_dag_leiding' => 0.00,
             'kosten_vaart_pu' => 0.00,
             'kosten_aggregaat_pu' => 0.00,
@@ -407,8 +455,9 @@ class CampBudgetController extends Controller
      * @param  array{label:string,quantity:float,amount:float,note:string}  $row
      * @param  array<string,float>  $standardValues
      */
-    private function effectiveAmount(array $row, string $sectionTitle, array $standardValues): float
+    private function effectiveAmount(array $row, string $sectionTitle, array $standardValues, int $campDays, string $campLocation): float
     {
+        $campDays = $this->normalizeCampDays($campDays);
         $label = mb_strtolower(trim((string) ($row['label'] ?? '')));
         $section = mb_strtolower(trim($sectionTitle));
         $manualAmount = (float) ($row['amount'] ?? 0);
@@ -420,7 +469,7 @@ class CampBudgetController extends Controller
         }
 
         if ($section === 'bijdragen' && str_contains($label, 'leiding')) {
-            return (float) ($standardValues['prijs_per_dag_leiding'] ?? 0);
+            return (float) ($standardValues['prijs_per_dag_leiding'] ?? 0) * $campDays;
         }
         if (str_contains($label, 'vaart')) {
             return (float) ($standardValues['kosten_vaart_pu'] ?? 0);
@@ -428,20 +477,41 @@ class CampBudgetController extends Controller
         if (str_contains($label, 'aggregaat')) {
             return (float) ($standardValues['kosten_aggregaat_pu'] ?? 0);
         }
+        if (str_contains($label, 'clubhuis')) {
+            return (float) ($standardValues['prijs_per_dag_clubhuis'] ?? 0) * $campDays;
+        }
         if (str_contains($label, 'fram')) {
-            return (float) ($standardValues['huur_fram_pppd'] ?? 0);
+            if ($campLocation === 'clubhuis') {
+                return (float) ($standardValues['prijs_per_dag_clubhuis'] ?? 0) * $campDays;
+            }
+
+            return (float) ($standardValues['huur_fram_pppd'] ?? 0) * $campDays;
         }
         if (str_contains($label, 'proviand')) {
-            return (float) ($standardValues['proviand_pppd'] ?? 0);
+            return (float) ($standardValues['proviand_pppd'] ?? 0) * $campDays;
         }
         if (str_contains($label, 'groepsafdracht')) {
-            return (float) ($standardValues['groepsafdracht_pjpd'] ?? 0);
+            return (float) ($standardValues['groepsafdracht_pjpd'] ?? 0) * $campDays;
         }
         if (str_contains($label, 'nawaka')) {
-            return (float) ($standardValues['reservering_nawaka_pjpd'] ?? 0);
+            return (float) ($standardValues['reservering_nawaka_pjpd'] ?? 0) * $campDays;
         }
 
         return $manualAmount;
+    }
+
+    private function normalizeCampLocation(string $campLocation): string
+    {
+        return in_array($campLocation, ['clubhuis', 'fram'], true) ? $campLocation : 'fram';
+    }
+
+    private function normalizeCampDays(int $campDays): int
+    {
+        if ($campDays < 1) {
+            return 1;
+        }
+
+        return min($campDays, 60);
     }
 
     private function canReviewBudgets(User $user, string $activeSection): bool
@@ -472,7 +542,9 @@ class CampBudgetController extends Controller
     {
         $sections = $this->normalizeSections(data_get($campBudget->meta, 'sections', []));
         $standardValues = $this->normalizeStandardValues(data_get($campBudget->meta, 'standard_values', []));
-        $totals = $this->totalsForSections($sections, $standardValues);
+        $campDays = $this->normalizeCampDays((int) data_get($campBudget->meta, 'camp_days', 1));
+        $campLocation = $this->normalizeCampLocation((string) data_get($campBudget->meta, 'camp_location', 'fram'));
+        $totals = $this->totalsForSections($sections, $standardValues, $campDays, $campLocation);
 
         $pdf = Pdf::loadView('pdf.camp-budget', [
             'budget' => $campBudget,
