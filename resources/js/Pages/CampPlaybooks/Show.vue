@@ -500,6 +500,7 @@ watch(
         syncMonsterrolBoardingDates(String(previousStart || ''), String(previousEnd || ''));
         syncCorveeRowsWithCampDates();
         syncDayPlansWithCampDates();
+        syncCorveeDaywatchFromPlanning();
         syncVaarschemaRowsWithCampDates(String(previousStart || ''), String(previousEnd || ''));
         if (String(currentStart || '') !== String(previousStart || '') || String(currentEnd || '') !== String(previousEnd || '')) {
             form.camp_dates = composeCampDateRange(currentStart, currentEnd);
@@ -508,9 +509,19 @@ watch(
     { immediate: true }
 );
 
+watch(
+    () => (form.day_plans || []).map((day) => ({
+        day_label: String(day?.day_label ?? ''),
+        daywatch_ids: normalizedDaywatchIds(day),
+    })),
+    () => syncCorveeDaywatchFromPlanning(),
+    { deep: true }
+);
+
 const activeSectionIndex = ref(0);
 const activeSection = computed(() => form.playbook_sections[activeSectionIndex.value] || null);
 const deleteModalOpen = ref(false);
+const draggedPlanningRow = ref(null);
 
 function onCoverPhotoSelected(event) {
     const [file] = event?.target?.files || [];
@@ -634,6 +645,28 @@ function syncDayPlansWithCampDates() {
                 }))
                 : defaultPlanningRows(),
             game_explanation: String(existing?.game_explanation ?? ''),
+        };
+    });
+}
+
+function syncCorveeDaywatchFromPlanning() {
+    const daywatchByIsoDate = new Map(
+        (Array.isArray(form.day_plans) ? form.day_plans : [])
+            .map((day) => {
+                const isoDate = isoDateFromDayLabel(day?.day_label);
+                const names = normalizedDaywatchIds(day)
+                    .map((id) => daywatchNameById(id))
+                    .filter((name) => String(name).trim() !== '');
+                return [isoDate, names.join(', ')];
+            })
+            .filter(([isoDate]) => isoDate !== '')
+    );
+
+    form.corvee_rows = (Array.isArray(form.corvee_rows) ? form.corvee_rows : []).map((row) => {
+        const isoDate = toIsoDate(row?.date);
+        return {
+            ...row,
+            daywatch: daywatchByIsoDate.get(isoDate) || '',
         };
     });
 }
@@ -835,6 +868,51 @@ function removePlanningRow(dayIndex, rowIndex) {
     const day = form.day_plans?.[dayIndex];
     if (!day || day.planning_rows.length <= 1) return;
     day.planning_rows.splice(rowIndex, 1);
+}
+
+function startPlanningRowDrag(dayIndex, rowIndex, event) {
+    draggedPlanningRow.value = { dayIndex, rowIndex };
+    if (event?.dataTransfer) {
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', `${dayIndex}:${rowIndex}`);
+    }
+}
+
+function allowPlanningRowDrop(event) {
+    event?.preventDefault();
+    if (event?.dataTransfer) {
+        event.dataTransfer.dropEffect = 'move';
+    }
+}
+
+function dropPlanningRow(dayIndex, rowIndex, event) {
+    allowPlanningRowDrop(event);
+    const source = draggedPlanningRow.value;
+    if (!source || source.dayIndex !== dayIndex) {
+        draggedPlanningRow.value = null;
+        return;
+    }
+
+    const rows = form.day_plans?.[dayIndex]?.planning_rows;
+    if (!Array.isArray(rows)) {
+        draggedPlanningRow.value = null;
+        return;
+    }
+
+    const from = Number(source.rowIndex);
+    const to = Number(rowIndex);
+    if (!Number.isInteger(from) || !Number.isInteger(to) || from < 0 || to < 0 || from >= rows.length || to >= rows.length || from === to) {
+        draggedPlanningRow.value = null;
+        return;
+    }
+
+    const [moved] = rows.splice(from, 1);
+    rows.splice(to, 0, moved);
+    draggedPlanningRow.value = { dayIndex, rowIndex: to };
+}
+
+function endPlanningRowDrag() {
+    draggedPlanningRow.value = null;
 }
 
 function normalizedDaywatchIds(day) {
@@ -1535,7 +1613,7 @@ function statusClass(status) {
                                     <tr v-for="(row, rowIdx) in form.corvee_rows" :key="`corvee-row-${rowIdx}`">
                                         <td class="px-2 py-2"><input v-model="row.day" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Dag" /></td>
                                         <td class="px-2 py-2"><input v-model="row.date" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Datum" /></td>
-                                        <td class="px-2 py-2"><input v-model="row.daywatch" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Dagwacht" /></td>
+                                        <td class="px-2 py-2"><input v-model="row.daywatch" type="text" readonly class="w-full rounded border border-app-border bg-slate-100 px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" placeholder="Dagwacht" /></td>
                                         <td class="px-2 py-2"><input v-model="row.dienstvin" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Dienstvin" /></td>
                                         <td class="px-2 py-2"><input v-model="row.dekhuis" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Dekhuis" /></td>
                                         <td class="px-2 py-2"><input v-model="row.achteronder_en_dekken" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Achteronder &amp; Dekken" /></td>
@@ -1672,11 +1750,8 @@ function statusClass(status) {
                     </div>
 
                     <div v-if="isPlanningPerDagSection(activeSection)" class="space-y-3">
-                        <div class="flex items-center justify-between">
+                        <div class="flex items-center">
                             <h4 class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">Dagen</h4>
-                            <button type="button" class="rounded bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800" @click="addPlanningDay">
-                                Dag toevoegen
-                            </button>
                         </div>
 
                         <div
@@ -1733,7 +1808,16 @@ function statusClass(status) {
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-app-border dark:divide-app-border-dark">
-                                        <tr v-for="(row, rowIdx) in day.planning_rows" :key="`planning-row-${dayIdx}-${rowIdx}`">
+                                        <tr
+                                            v-for="(row, rowIdx) in day.planning_rows"
+                                            :key="`planning-row-${dayIdx}-${rowIdx}`"
+                                            draggable="true"
+                                            class="cursor-move"
+                                            @dragstart="startPlanningRowDrag(dayIdx, rowIdx, $event)"
+                                            @dragover="allowPlanningRowDrop($event)"
+                                            @drop="dropPlanningRow(dayIdx, rowIdx, $event)"
+                                            @dragend="endPlanningRowDrag"
+                                        >
                                             <td class="px-2 py-2"><input v-model="row.time" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="08:00 - 09:00" /></td>
                                             <td class="px-2 py-2"><input v-model="row.program" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Programma" /></td>
                                             <td class="px-2 py-2"><input v-model="row.game" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Spel" /></td>
@@ -1757,6 +1841,12 @@ function statusClass(status) {
                                 <label class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Speluitleg</label>
                                 <textarea v-model="day.game_explanation" rows="4" class="w-full rounded border border-app-border bg-white px-3 py-2 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Leg spelregels, doelen en aandachtspunten uit..." />
                             </div>
+                        </div>
+
+                        <div>
+                            <button type="button" class="rounded bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800" @click="addPlanningDay">
+                                Dag toevoegen
+                            </button>
                         </div>
                     </div>
 
