@@ -56,6 +56,7 @@ const form = useForm({
 const campLocation = computed(() => (form.camp_location === 'clubhuis' ? 'clubhuis' : 'fram'));
 const activeSectionIndex = ref(0);
 const showDeleteModal = ref(false);
+const moneyDrafts = ref({});
 
 function normalizedCampDays(value) {
     const parsed = Number.parseInt(String(value ?? '').replace(/[^\d-]/g, ''), 10);
@@ -195,12 +196,71 @@ function effectiveAmount(row, sectionTitle) {
     return manualAmount;
 }
 
-function onStandardMoneyInput(field, event) {
-    form.standard_values[field] = sanitizeMoneyInput(event?.target?.value ?? form.standard_values[field], { allowEmpty: false });
+function standardMoneyKey(field) {
+    return `standard:${field}`;
 }
 
-function onRowAmountInput(row, event) {
-    row.amount = sanitizeMoneyInput(event?.target?.value ?? row.amount);
+function rowMoneyKey(sectionIndex, rowIndex) {
+    return `row:${sectionIndex}:${rowIndex}`;
+}
+
+function hasMoneyDraft(key) {
+    return Object.prototype.hasOwnProperty.call(moneyDrafts.value, key);
+}
+
+function setMoneyDraft(key, value) {
+    moneyDrafts.value[key] = String(value ?? '');
+}
+
+function clearMoneyDraft(key) {
+    if (!hasMoneyDraft(key)) return;
+    const nextDrafts = { ...moneyDrafts.value };
+    delete nextDrafts[key];
+    moneyDrafts.value = nextDrafts;
+}
+
+function onStandardMoneyFocus(field) {
+    const key = standardMoneyKey(field);
+    setMoneyDraft(key, moneyInputPreview(form.standard_values[field], { fallback: '' }));
+}
+
+function onStandardMoneyInput(field, event) {
+    const key = standardMoneyKey(field);
+    const raw = String(event?.target?.value ?? '');
+    setMoneyDraft(key, raw);
+    const sanitized = sanitizeMoneyInput(raw, { allowEmpty: true });
+    form.standard_values[field] = sanitized === '' ? '' : sanitized;
+}
+
+function onStandardMoneyBlur(field) {
+    const key = standardMoneyKey(field);
+    const raw = hasMoneyDraft(key) ? moneyDrafts.value[key] : form.standard_values[field];
+    const sanitized = sanitizeMoneyInput(raw, { allowEmpty: false });
+    const numeric = Number.parseFloat(sanitized || '0');
+    form.standard_values[field] = Number.isFinite(numeric) ? numeric.toFixed(2) : '0.00';
+    clearMoneyDraft(key);
+}
+
+function onRowAmountFocus(row, sectionIndex, rowIndex) {
+    const key = rowMoneyKey(sectionIndex, rowIndex);
+    setMoneyDraft(key, moneyInputPreview(row?.amount, { fallback: '' }));
+}
+
+function onRowAmountInput(row, event, sectionIndex, rowIndex) {
+    const key = rowMoneyKey(sectionIndex, rowIndex);
+    const raw = String(event?.target?.value ?? '');
+    setMoneyDraft(key, raw);
+    const sanitized = sanitizeMoneyInput(raw, { allowEmpty: true });
+    row.amount = sanitized === '' ? '' : sanitized;
+}
+
+function onRowAmountBlur(row, sectionIndex, rowIndex) {
+    const key = rowMoneyKey(sectionIndex, rowIndex);
+    const raw = hasMoneyDraft(key) ? moneyDrafts.value[key] : row?.amount;
+    const sanitized = sanitizeMoneyInput(raw, { allowEmpty: false });
+    const numeric = Number.parseFloat(sanitized || '0');
+    row.amount = Number.isFinite(numeric) ? numeric.toFixed(2) : '0.00';
+    clearMoneyDraft(key);
 }
 
 function moneyInputPreview(value, { fallback = '' } = {}) {
@@ -234,6 +294,18 @@ function rowAmountDisplayValue(row, sectionTitle) {
         return moneyInputPreview(effectiveAmount(row, sectionTitle), { fallback: '0,00' });
     }
     return moneyInputPreview(row?.amount, { fallback: '' });
+}
+
+function rowAmountInputValue(row, sectionTitle, sectionIndex, rowIndex) {
+    const key = rowMoneyKey(sectionIndex, rowIndex);
+    if (hasMoneyDraft(key)) return moneyDrafts.value[key];
+    return rowAmountDisplayValue(row, sectionTitle);
+}
+
+function standardAmountInputValue(field, fallback = '0,00') {
+    const key = standardMoneyKey(field);
+    if (hasMoneyDraft(key)) return moneyDrafts.value[key];
+    return moneyInputPreview(form.standard_values[field], { fallback });
 }
 
 const totals = computed(() => {
@@ -319,15 +391,15 @@ function generatePdf() {
                     </div>
                 </div>
                 <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                    <label v-if="campLocation === 'clubhuis'" class="text-xs text-app-ink dark:text-app-ink-dark">Prijs per dag clubhuis <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="moneyInputPreview(form.standard_values.prijs_per_dag_clubhuis, { fallback: '0,00' })" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @input="onStandardMoneyInput('prijs_per_dag_clubhuis', $event)" /></div></label>
-                    <label v-if="campLocation === 'fram'" class="text-xs text-app-ink dark:text-app-ink-dark">Kosten vaart p/u <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="moneyInputPreview(form.standard_values.kosten_vaart_pu, { fallback: '0,00' })" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @input="onStandardMoneyInput('kosten_vaart_pu', $event)" /></div></label>
-                    <label v-if="campLocation === 'fram'" class="text-xs text-app-ink dark:text-app-ink-dark">Kosten aggregaat p/u <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="moneyInputPreview(form.standard_values.kosten_aggregaat_pu, { fallback: '0,00' })" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @input="onStandardMoneyInput('kosten_aggregaat_pu', $event)" /></div></label>
-                    <label v-if="campLocation === 'fram'" class="text-xs text-app-ink dark:text-app-ink-dark">Huur Fram pppd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="moneyInputPreview(form.standard_values.huur_fram_pppd, { fallback: '0,00' })" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @input="onStandardMoneyInput('huur_fram_pppd', $event)" /></div></label>
-                    <label class="text-xs text-app-ink dark:text-app-ink-dark">Prijs per dag leiding <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="moneyInputPreview(form.standard_values.prijs_per_dag_leiding, { fallback: '0,00' })" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @input="onStandardMoneyInput('prijs_per_dag_leiding', $event)" /></div></label>
-                    <label class="text-xs text-app-ink dark:text-app-ink-dark">Prijs per dag jeugdlid <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="moneyInputPreview(form.standard_values.prijs_per_dag_jeugdlid, { fallback: '0,00' })" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @input="onStandardMoneyInput('prijs_per_dag_jeugdlid', $event)" /></div></label>
-                    <label class="text-xs text-app-ink dark:text-app-ink-dark">Proviand pppd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="moneyInputPreview(form.standard_values.proviand_pppd, { fallback: '0,00' })" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @input="onStandardMoneyInput('proviand_pppd', $event)" /></div></label>
-                    <label class="text-xs text-app-ink dark:text-app-ink-dark">Groepsafdracht pjpd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="moneyInputPreview(form.standard_values.groepsafdracht_pjpd, { fallback: '0,00' })" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @input="onStandardMoneyInput('groepsafdracht_pjpd', $event)" /></div></label>
-                    <label class="text-xs text-app-ink dark:text-app-ink-dark">Reservering NaWaKa pjpd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="moneyInputPreview(form.standard_values.reservering_nawaka_pjpd, { fallback: '0,00' })" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @input="onStandardMoneyInput('reservering_nawaka_pjpd', $event)" /></div></label>
+                    <label v-if="campLocation === 'clubhuis'" class="text-xs text-app-ink dark:text-app-ink-dark">Prijs per dag clubhuis <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="standardAmountInputValue('prijs_per_dag_clubhuis')" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @focus="onStandardMoneyFocus('prijs_per_dag_clubhuis')" @input="onStandardMoneyInput('prijs_per_dag_clubhuis', $event)" @blur="onStandardMoneyBlur('prijs_per_dag_clubhuis')" /></div></label>
+                    <label v-if="campLocation === 'fram'" class="text-xs text-app-ink dark:text-app-ink-dark">Kosten vaart p/u <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="standardAmountInputValue('kosten_vaart_pu')" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @focus="onStandardMoneyFocus('kosten_vaart_pu')" @input="onStandardMoneyInput('kosten_vaart_pu', $event)" @blur="onStandardMoneyBlur('kosten_vaart_pu')" /></div></label>
+                    <label v-if="campLocation === 'fram'" class="text-xs text-app-ink dark:text-app-ink-dark">Kosten aggregaat p/u <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="standardAmountInputValue('kosten_aggregaat_pu')" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @focus="onStandardMoneyFocus('kosten_aggregaat_pu')" @input="onStandardMoneyInput('kosten_aggregaat_pu', $event)" @blur="onStandardMoneyBlur('kosten_aggregaat_pu')" /></div></label>
+                    <label v-if="campLocation === 'fram'" class="text-xs text-app-ink dark:text-app-ink-dark">Huur Fram pppd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="standardAmountInputValue('huur_fram_pppd')" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @focus="onStandardMoneyFocus('huur_fram_pppd')" @input="onStandardMoneyInput('huur_fram_pppd', $event)" @blur="onStandardMoneyBlur('huur_fram_pppd')" /></div></label>
+                    <label class="text-xs text-app-ink dark:text-app-ink-dark">Prijs per dag leiding <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="standardAmountInputValue('prijs_per_dag_leiding')" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @focus="onStandardMoneyFocus('prijs_per_dag_leiding')" @input="onStandardMoneyInput('prijs_per_dag_leiding', $event)" @blur="onStandardMoneyBlur('prijs_per_dag_leiding')" /></div></label>
+                    <label class="text-xs text-app-ink dark:text-app-ink-dark">Prijs per dag jeugdlid <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="standardAmountInputValue('prijs_per_dag_jeugdlid')" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @focus="onStandardMoneyFocus('prijs_per_dag_jeugdlid')" @input="onStandardMoneyInput('prijs_per_dag_jeugdlid', $event)" @blur="onStandardMoneyBlur('prijs_per_dag_jeugdlid')" /></div></label>
+                    <label class="text-xs text-app-ink dark:text-app-ink-dark">Proviand pppd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="standardAmountInputValue('proviand_pppd')" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @focus="onStandardMoneyFocus('proviand_pppd')" @input="onStandardMoneyInput('proviand_pppd', $event)" @blur="onStandardMoneyBlur('proviand_pppd')" /></div></label>
+                    <label class="text-xs text-app-ink dark:text-app-ink-dark">Groepsafdracht pjpd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="standardAmountInputValue('groepsafdracht_pjpd')" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @focus="onStandardMoneyFocus('groepsafdracht_pjpd')" @input="onStandardMoneyInput('groepsafdracht_pjpd', $event)" @blur="onStandardMoneyBlur('groepsafdracht_pjpd')" /></div></label>
+                    <label class="text-xs text-app-ink dark:text-app-ink-dark">Reservering NaWaKa pjpd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="standardAmountInputValue('reservering_nawaka_pjpd')" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @focus="onStandardMoneyFocus('reservering_nawaka_pjpd')" @input="onStandardMoneyInput('reservering_nawaka_pjpd', $event)" @blur="onStandardMoneyBlur('reservering_nawaka_pjpd')" /></div></label>
                 </div>
             </div>
 
@@ -384,7 +456,7 @@ function generatePdf() {
                                     <td class="px-2 py-2">
                                         <div class="relative w-36">
                                             <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span>
-                                            <input :value="rowAmountDisplayValue(row, form.budget_sections[activeSectionIndex].title)" type="text" inputmode="decimal" :readonly="isAutoContributionRow(form.budget_sections[activeSectionIndex].title, row.label)" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-slate-900 dark:text-app-ink-dark readonly:bg-slate-100 readonly:text-slate-700 dark:readonly:bg-slate-800 dark:readonly:text-app-ink-dark" @input="onRowAmountInput(row, $event)" />
+                                            <input :value="rowAmountInputValue(row, form.budget_sections[activeSectionIndex].title, activeSectionIndex, rowIdx)" type="text" inputmode="decimal" :readonly="isAutoContributionRow(form.budget_sections[activeSectionIndex].title, row.label)" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-slate-900 dark:text-app-ink-dark readonly:bg-slate-100 readonly:text-slate-700 dark:readonly:bg-slate-800 dark:readonly:text-app-ink-dark" @focus="onRowAmountFocus(row, activeSectionIndex, rowIdx)" @input="onRowAmountInput(row, $event, activeSectionIndex, rowIdx)" @blur="onRowAmountBlur(row, activeSectionIndex, rowIdx)" />
                                         </div>
                                     </td>
                                     <td class="px-2 py-2">
