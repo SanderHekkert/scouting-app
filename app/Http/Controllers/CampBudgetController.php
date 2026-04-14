@@ -49,6 +49,7 @@ class CampBudgetController extends Controller
      *   pdf_path:string,
      *   status:string,
      *   review_note:string,
+     *   review_notes:array<int,array{note:string,user_name:string,at:string}>,
      *   created_by_name:string,
      *   updated_at:?string,
      *   can_review:bool,
@@ -71,6 +72,7 @@ class CampBudgetController extends Controller
             'pdf_path' => (string) data_get($item->meta, 'pdf_path', ''),
             'status' => (string) ($item->status ?: CampBudget::STATUS_DRAFT),
             'review_note' => (string) ($item->review_note ?? ''),
+            'review_notes' => $this->reviewNotesForPayload((array) data_get($item->meta, 'review_notes', [])),
             'created_by_name' => (string) optional($item->createdBy)->name,
             'updated_by_name' => (string) optional($item->updatedBy)->name,
             'updated_at' => optional($item->updated_at)?->toIso8601String(),
@@ -346,11 +348,13 @@ class CampBudgetController extends Controller
 
         $meta = (array) ($campBudget->meta ?? []);
         $meta = $this->appendChangeLog($meta, 'needs_changes', $user);
+        $reviewNote = trim((string) $data['review_note']);
+        $meta = $this->appendReviewNote($meta, $reviewNote, $user);
 
         $campBudget->update([
             'meta' => $meta,
             'status' => CampBudget::STATUS_NEEDS_CHANGES,
-            'review_note' => trim((string) $data['review_note']),
+            'review_note' => $reviewNote,
             'processed_by_user_id' => (int) $user->id,
             'processed_at' => now(),
             'updated_by_user_id' => (int) $user->id,
@@ -362,9 +366,14 @@ class CampBudgetController extends Controller
     public function downloadPdf(CampBudget $campBudget)
     {
         abort_unless((string) $campBudget->section === (string) session('active_section', 'dolfijnen'), 403);
-        $path = (string) data_get($campBudget->meta, 'pdf_path', '');
-        abort_unless($path !== '' && str_starts_with($path, 'camp-budgets/'), 404);
-        abort_unless(Storage::disk('local')->exists($path), 404);
+        $path = $this->buildAndStorePdf($campBudget);
+        $meta = (array) ($campBudget->meta ?? []);
+        $meta['pdf_path'] = $path;
+        $meta['pdf_generated_at'] = now()->toIso8601String();
+        $campBudget->update([
+            'meta' => $meta,
+            'updated_by_user_id' => request()->user()?->id,
+        ]);
 
         return response()->download(
             Storage::disk('local')->path($path),
@@ -740,6 +749,49 @@ class CampBudgetController extends Controller
         $meta['change_log'] = $history->take(-200)->values()->all();
 
         return $meta;
+    }
+
+    /**
+     * @param  array<string,mixed>  $meta
+     * @return array<string,mixed>
+     */
+    private function appendReviewNote(array $meta, string $note, User $actor): array
+    {
+        $history = collect((array) data_get($meta, 'review_notes', []))
+            ->filter(fn ($entry): bool => is_array($entry))
+            ->values();
+
+        $history->push([
+            'note' => $note,
+            'user_name' => (string) $actor->name,
+            'user_id' => (int) $actor->id,
+            'at' => now()->toIso8601String(),
+        ]);
+
+        $meta['review_notes'] = $history->take(-100)->values()->all();
+
+        return $meta;
+    }
+
+    /**
+     * @param  array<int,mixed>  $rawNotes
+     * @return array<int,array{note:string,user_name:string,at:string}>
+     */
+    private function reviewNotesForPayload(array $rawNotes): array
+    {
+        return collect($rawNotes)
+            ->filter(fn ($entry): bool => is_array($entry))
+            ->map(function (array $entry): array {
+                return [
+                    'note' => trim((string) ($entry['note'] ?? '')),
+                    'user_name' => trim((string) ($entry['user_name'] ?? 'Onbekend')),
+                    'at' => trim((string) ($entry['at'] ?? '')),
+                ];
+            })
+            ->filter(fn (array $entry): bool => $entry['note'] !== '')
+            ->sortByDesc('at')
+            ->values()
+            ->all();
     }
 
     /**

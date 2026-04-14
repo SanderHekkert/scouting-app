@@ -4,7 +4,7 @@ import { formatMoney, sanitizeMoneyInput } from '@/utils/money';
 import AppConfirmModal from '@/Components/AppConfirmModal.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
-import { ArrowDownTrayIcon, ArrowUturnLeftIcon, DocumentArrowDownIcon, DocumentCheckIcon, DocumentDuplicateIcon, PaperAirplaneIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import { ArrowUturnLeftIcon, DocumentCheckIcon, PaperAirplaneIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     mode: { type: String, default: 'create' },
@@ -16,7 +16,6 @@ const props = defineProps({
 
 const page = usePage();
 const perms = computed(() => page.props.auth?.permissions?.camp_budgets ?? {});
-const canCreate = computed(() => !!perms.value.create);
 const canUpdate = computed(() => !!perms.value.update);
 const isEdit = computed(() => props.mode === 'edit' && !!props.item?.id);
 
@@ -68,7 +67,7 @@ function normalizedCampDays(value) {
 function statusLabel(status) {
     if (status === 'submitted') return 'Wacht op goedkeuring';
     if (status === 'approved') return 'Goedgekeurd';
-    if (status === 'needs_changes') return 'Aanpassen nodig';
+    if (status === 'needs_changes') return 'Aanpassing(en) nodig';
     return 'Concept';
 }
 
@@ -115,11 +114,6 @@ function confirmDeleteItem() {
     if (!isEdit.value || !props.item?.id) return;
     router.delete(route('camp-budgets.destroy', props.item.id));
     closeDeleteModal();
-}
-
-function copyItem() {
-    if (!isEdit.value || !canCreate.value) return;
-    router.post(route('camp-budgets.copy', props.item.id));
 }
 
 function addSection() {
@@ -565,10 +559,6 @@ const totals = computed(() => {
     return { income, expenses, difference: income - expenses };
 });
 
-function generatePdf() {
-    if (!isEdit.value) return;
-    router.post(route('camp-budgets.pdf', props.item.id), {}, { preserveScroll: true });
-}
 </script>
 
 <template>
@@ -743,21 +733,6 @@ function generatePdf() {
                 </button>
                 <button type="button" class="btn-action-save" :disabled="form.processing" title="Begroting inleveren" aria-label="Begroting inleveren" @click="submitForReview">
                     <PaperAirplaneIcon class="h-5 w-5" />
-                </button>
-                <button v-if="isEdit" type="button" class="btn-action-save" title="PDF maken en opslaan" aria-label="PDF maken en opslaan" @click="generatePdf">
-                    <DocumentArrowDownIcon class="h-5 w-5" />
-                </button>
-                <a
-                    v-if="isEdit && item?.pdf_path"
-                    :href="route('camp-budgets.pdf.download', item.id)"
-                    class="btn-action-save"
-                    title="PDF downloaden"
-                    aria-label="PDF downloaden"
-                >
-                    <ArrowDownTrayIcon class="h-5 w-5" />
-                </a>
-                <button v-if="isEdit && canCreate" type="button" class="btn-action-save" title="Kopie maken" aria-label="Kopie maken" @click="copyItem">
-                    <DocumentDuplicateIcon class="h-5 w-5" />
                 </button>
                 <button v-if="isEdit && canUpdate" type="button" class="btn-action-delete" title="Verwijderen" aria-label="Verwijderen" @click="destroyItem">
                     <TrashIcon class="h-5 w-5" />
