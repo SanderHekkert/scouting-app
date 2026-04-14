@@ -395,6 +395,7 @@ class CampBudgetController extends Controller
             })
             ->reject(function (array $section): bool {
                 $title = mb_strtolower(trim((string) ($section['title'] ?? '')));
+
                 return $title === 'bemanning en deelnemers';
             })
             ->filter(fn (array $section): bool => $section['title'] !== '' || $section['rows'] !== [])
