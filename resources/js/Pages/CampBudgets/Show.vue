@@ -65,26 +65,20 @@ function statusClass(status) {
 }
 
 function submit(action = 'save') {
+    const normalizedAction = typeof action === 'string' && action.length > 0 ? action : 'save';
     const options = {
         preserveScroll: true,
-        onSuccess: () => {
-            if (action === 'save') {
-                router.get(route('camp-budgets.index'));
-            }
-        },
         onFinish: () => form.transform((data) => data),
     };
 
     if (isEdit.value) {
-        if (!canUpdate.value) return;
         form
-            .transform((data) => ({ ...data, action }))
+            .transform((data) => ({ ...data, action: normalizedAction }))
             .patch(route('camp-budgets.update', props.item.id), options);
         return;
     }
-    if (!canCreate.value) return;
     form
-        .transform((data) => ({ ...data, action }))
+        .transform((data) => ({ ...data, action: normalizedAction }))
         .post(route('camp-budgets.store'), options);
 }
 
@@ -200,7 +194,7 @@ function generatePdf() {
             </div>
         </template>
 
-        <form class="surface-brand-top space-y-4 rounded-xl border border-app-border bg-app-panel p-5 shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark" @submit.prevent="submit">
+        <form class="surface-brand-top space-y-4 rounded-xl border border-app-border bg-app-panel p-5 shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark" @submit.prevent="submit('save')">
             <div class="flex items-center gap-2">
                 <span :class="['rounded-full px-2 py-0.5 text-xs', statusClass(currentStatus)]">
                     {{ statusLabel(currentStatus) }}
@@ -347,6 +341,14 @@ function generatePdf() {
                 <button v-if="isEdit && canUpdate" type="button" class="btn-action-delete" title="Verwijderen" aria-label="Verwijderen" @click="destroyItem">
                     <TrashIcon class="h-5 w-5" />
                 </button>
+            </div>
+            <div v-if="Object.keys(form.errors).length" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-200">
+                <p class="font-semibold">Opslaan mislukt:</p>
+                <ul class="mt-1 list-disc pl-4">
+                    <li v-for="(message, key) in form.errors" :key="`budget-error-${key}`">
+                        {{ message }}
+                    </li>
+                </ul>
             </div>
         </form>
     </AuthenticatedLayout>
