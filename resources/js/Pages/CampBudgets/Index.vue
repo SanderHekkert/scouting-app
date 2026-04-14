@@ -116,13 +116,19 @@ function statusClass(status) {
                             <p class="truncate text-sm font-semibold text-app-ink dark:text-app-ink-dark">{{ item.camp_year }} - {{ item.title }}</p>
                             <p class="mt-1 text-xs text-slate-500 dark:text-slate-300">
                                 {{ sectionLabels[item.section] || item.section }} | Door {{ item.created_by_name || 'Onbekend' }} | Gewijzigd {{ formattedUpdatedAt(item.updated_at) }}
-                                | Bijdragen € {{ formatMoney(item.totals?.income || 0) }}
-                                | Uitgaven € {{ formatMoney(item.totals?.expenses || 0) }}
-                                | Verschil € {{ formatMoney(item.totals?.difference || 0) }}
+                                | Laatst gewijzigd door {{ item.updated_by_name || 'Onbekend' }}
                             </p>
-                            <p v-if="item.review_note" class="mt-1 text-xs text-amber-700 dark:text-amber-300">
-                                Opmerking bestuur: {{ item.review_note }}
-                            </p>
+                            <div class="mt-2 flex flex-wrap items-center gap-2">
+                                <span class="inline-flex items-center rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-800 dark:border-emerald-500/40 dark:bg-emerald-500/15 dark:text-emerald-300">
+                                    Bijdragen € {{ formatMoney(item.totals?.income || 0) }}
+                                </span>
+                                <span class="inline-flex items-center rounded-md border border-rose-200 bg-rose-50 px-2 py-1 text-xs font-semibold text-rose-800 dark:border-rose-500/40 dark:bg-rose-500/15 dark:text-rose-300">
+                                    Uitgaven € {{ formatMoney(item.totals?.expenses || 0) }}
+                                </span>
+                                <span class="inline-flex items-center rounded-md border border-brand-blue/35 bg-brand-blue/10 px-2 py-1 text-xs font-semibold text-brand-blue-dark dark:border-brand-blue/40 dark:bg-brand-blue/20 dark:text-brand-blue-light">
+                                    Verschil € {{ formatMoney(item.totals?.difference || 0) }}
+                                </span>
+                            </div>
                         </div>
                         <div class="flex items-center gap-1 shrink-0">
                             <span :class="['rounded-full px-2 py-0.5 text-xs', statusClass(item.status)]">{{ statusLabel(item.status) }}</span>

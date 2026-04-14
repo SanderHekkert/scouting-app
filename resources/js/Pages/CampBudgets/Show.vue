@@ -295,7 +295,7 @@ function rowAmountDisplayValue(row, sectionTitle) {
         if (quantity < 1) {
             return '0,00';
         }
-        return moneyInputPreview(effectiveAmount(row, sectionTitle), { fallback: '0,00' });
+        return formatMoney(effectiveAmount(row, sectionTitle));
     }
     return moneyInputPreview(row?.amount, { fallback: '' });
 }
@@ -349,9 +349,6 @@ function generatePdf() {
                 <span :class="['rounded-full px-2 py-0.5 text-xs', statusClass(currentStatus)]">
                     {{ statusLabel(currentStatus) }}
                 </span>
-                <p v-if="source.review_note" class="text-xs text-amber-700 dark:text-amber-300">
-                    Opmerking bestuur: {{ source.review_note }}
-                </p>
             </div>
             <div class="grid gap-3 sm:grid-cols-3">
                 <div class="space-y-1">
@@ -365,10 +362,6 @@ function generatePdf() {
                 <div class="space-y-1">
                     <label class="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-app-muted-dark">Titel</label>
                     <input v-model="form.title" type="text" class="w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" required />
-                </div>
-                <div class="space-y-1 sm:col-span-3">
-                    <label class="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-app-muted-dark">Notitie</label>
-                    <textarea v-model="form.content" rows="3" class="w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Korte toelichting..." />
                 </div>
             </div>
 
@@ -438,38 +431,41 @@ function generatePdf() {
                     </div>
 
                     <div class="overflow-x-auto rounded border border-app-border">
-                        <table class="min-w-full text-sm">
+                        <table class="w-full table-fixed text-sm">
+                            <colgroup>
+                                <col class="w-[42%]" />
+                                <col class="w-24" />
+                                <col class="w-36" />
+                                <col class="w-36" />
+                                <col class="w-16" />
+                            </colgroup>
                             <thead class="bg-slate-50 text-app-ink dark:bg-slate-900 dark:text-app-ink-dark">
                                 <tr>
-                                    <th class="px-2 py-2 text-left">Post</th>
-                                    <th class="px-2 py-2 text-left">Aantal</th>
-                                    <th class="px-2 py-2 text-left">Bedrag</th>
-                                    <th class="px-2 py-2 text-left">Notitie</th>
-                                    <th class="px-2 py-2 text-left">Totaal</th>
-                                    <th class="px-2 py-2 text-left">Actie</th>
+                                    <th class="px-1.5 py-2 text-left">Post</th>
+                                    <th class="px-1.5 py-2 text-left">Aantal</th>
+                                    <th class="px-1.5 py-2 text-left">Bedrag</th>
+                                    <th class="px-1.5 py-2 text-left">Totaal</th>
+                                    <th class="px-1.5 py-2 text-left">Actie</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-app-border bg-white dark:divide-app-border-dark dark:bg-app-canvas-dark">
                                 <tr v-for="(row, rowIdx) in form.budget_sections[activeSectionIndex].rows" :key="`row-${rowIdx}`">
-                                    <td class="px-2 py-2">
-                                        <input v-model="row.label" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-slate-900 dark:text-app-ink-dark" />
+                                    <td class="px-1.5 py-2">
+                                        <input v-model="row.label" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-slate-900 dark:text-app-ink-dark" />
                                     </td>
-                                    <td class="px-2 py-2">
+                                    <td class="px-1.5 py-2">
                                         <input v-model.number="row.quantity" type="number" min="0" step="1" inputmode="numeric" class="w-24 rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-slate-900 dark:text-app-ink-dark" @input="row.quantity = normalizeWholeNumber(row.quantity)" />
                                     </td>
-                                    <td class="px-2 py-2">
+                                    <td class="px-1.5 py-2">
                                         <div class="relative w-36">
                                             <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span>
                                             <input :value="rowAmountInputValue(row, form.budget_sections[activeSectionIndex].title, activeSectionIndex, rowIdx)" type="text" inputmode="decimal" :readonly="isAutoContributionRow(form.budget_sections[activeSectionIndex].title, row.label)" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-slate-900 dark:text-app-ink-dark readonly:bg-slate-100 readonly:text-slate-700 dark:readonly:bg-slate-800 dark:readonly:text-app-ink-dark" @focus="onRowAmountFocus(row, activeSectionIndex, rowIdx)" @input="onRowAmountInput(row, $event, activeSectionIndex, rowIdx)" @blur="onRowAmountBlur(row, activeSectionIndex, rowIdx)" />
                                         </div>
                                     </td>
-                                    <td class="px-2 py-2">
-                                        <input v-model="row.note" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-slate-900 dark:text-app-ink-dark" />
+                                    <td class="px-1.5 py-2 whitespace-nowrap">
+                                        <span class="text-base font-bold text-brand-blue-dark dark:text-brand-blue-light">€ {{ formatMoney(normalizeWholeNumber(row.quantity) * effectiveAmount(row, form.budget_sections[activeSectionIndex].title)) }}</span>
                                     </td>
-                                    <td class="px-2 py-2">
-                                        <span class="text-xs text-app-ink dark:text-app-ink-dark">€ {{ formatMoney(normalizeWholeNumber(row.quantity) * effectiveAmount(row, form.budget_sections[activeSectionIndex].title)) }}</span>
-                                    </td>
-                                    <td class="px-2 py-2">
+                                    <td class="px-1.5 py-2">
                                         <button type="button" class="btn-action-delete" title="Regel verwijderen" @click="removeRow(activeSectionIndex, rowIdx)">
                                             <TrashIcon class="h-5 w-5" />
                                         </button>

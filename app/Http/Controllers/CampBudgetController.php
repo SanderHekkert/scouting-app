@@ -72,6 +72,7 @@ class CampBudgetController extends Controller
             'status' => (string) ($item->status ?: CampBudget::STATUS_DRAFT),
             'review_note' => (string) ($item->review_note ?? ''),
             'created_by_name' => (string) optional($item->createdBy)->name,
+                    'updated_by_name' => (string) optional($item->updatedBy)->name,
             'updated_at' => optional($item->updated_at)?->toIso8601String(),
             'can_review' => $canReview && in_array((string) $item->status, [CampBudget::STATUS_SUBMITTED], true),
             'totals' => $totals,
@@ -409,7 +410,6 @@ class CampBudgetController extends Controller
             ['title' => 'Uitgaven', 'rows' => [['label' => 'Geschatte vaaruren', 'quantity' => 0, 'amount' => 0, 'note' => ''], ['label' => 'Geschatte aggregaaturen', 'quantity' => 0, 'amount' => 0, 'note' => ''], ['label' => 'Proviand', 'quantity' => 0, 'amount' => 0, 'note' => ''], ['label' => 'Thema en spel', 'quantity' => 0, 'amount' => 0, 'note' => '']]],
             ['title' => 'Overige bijdragen', 'rows' => []],
             ['title' => 'Overige uitgaven', 'rows' => []],
-            ['title' => 'Bemanning en deelnemers', 'rows' => []],
         ];
     }
 
