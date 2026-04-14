@@ -1598,7 +1598,7 @@ class CampPlaybookController extends Controller
                     'to' => trim((string) ($entry['to'] ?? '')),
                     'depart_at' => trim((string) ($entry['depart_at'] ?? '')),
                     'arrive_at' => trim((string) ($entry['arrive_at'] ?? '')),
-                    'tide_margin_minutes' => trim((string) ($entry['tide_margin_minutes'] ?? '')),
+                    'tide_margin_minutes' => (string) $this->normalizeTideMarginMinutes((string) ($entry['tide_margin_minutes'] ?? '0')),
                 ];
             })
             ->filter(fn (array $row): bool => $row['date'] !== '' || $row['from'] !== '' || $row['to'] !== '' || $row['depart_at'] !== '' || $row['arrive_at'] !== '' || $row['tide_margin_minutes'] !== '')
@@ -1620,7 +1620,7 @@ class CampPlaybookController extends Controller
                 'to' => '',
                 'depart_at' => '',
                 'arrive_at' => '',
-                'tide_margin_minutes' => '',
+                'tide_margin_minutes' => '0',
             ],
             [
                 'date' => '',
@@ -1628,8 +1628,20 @@ class CampPlaybookController extends Controller
                 'to' => 'Koedood',
                 'depart_at' => '',
                 'arrive_at' => '',
-                'tide_margin_minutes' => '',
+                'tide_margin_minutes' => '0',
             ],
         ];
+    }
+
+    private function normalizeTideMarginMinutes(string $value): int
+    {
+        $normalized = preg_replace('/[^\d-]/', '', trim($value));
+        if ($normalized === null || $normalized === '') {
+            return 0;
+        }
+
+        $minutes = (int) $normalized;
+
+        return max(0, $minutes);
     }
 }

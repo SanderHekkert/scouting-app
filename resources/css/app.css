@@ -181,4 +181,26 @@
     .dark [class*='text-black/70'] {
         color: rgb(148 163 184 / 0.9) !important;
     }
+
+    /*
+     * Native date/time picker icons are dark by default (browser UI),
+     * which becomes unreadable on dark inputs. Force a light icon tint.
+     */
+    .dark input[type='date'],
+    .dark input[type='time'],
+    .dark input[type='datetime-local'],
+    .dark input[type='month'],
+    .dark input[type='week'] {
+        color-scheme: dark;
+    }
+
+    .dark input[type='date']::-webkit-calendar-picker-indicator,
+    .dark input[type='time']::-webkit-calendar-picker-indicator,
+    .dark input[type='datetime-local']::-webkit-calendar-picker-indicator,
+    .dark input[type='month']::-webkit-calendar-picker-indicator,
+    .dark input[type='week']::-webkit-calendar-picker-indicator {
+        -webkit-filter: brightness(0) invert(1) !important;
+        filter: brightness(0) invert(1) !important;
+        opacity: 1 !important;
+    }
 }
