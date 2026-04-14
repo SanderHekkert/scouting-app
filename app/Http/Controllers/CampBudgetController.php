@@ -255,12 +255,16 @@ class CampBudgetController extends Controller
         $campDays = $this->normalizeCampDays((int) data_get($campBudget->meta, 'camp_days', 1));
         $campLocation = $this->normalizeCampLocation((string) data_get($campBudget->meta, 'camp_location', 'fram'));
         $totals = $this->totalsForSections($sections, $standardValues, $campDays, $campLocation);
+        $sectionsForPdf = $this->sectionsForPdf($sections, $standardValues, $campDays, $campLocation);
 
         $pdf = Pdf::loadView('pdf.camp-budget', [
             'budget' => $campBudget,
-            'sections' => $sections,
+            'sections' => $sectionsForPdf,
             'standardValues' => $standardValues,
             'totals' => $totals,
+            'campDays' => $campDays,
+            'campLocation' => $campLocation,
+            'logoDataUri' => $this->logoDataUri(),
         ])->setPaper('a4');
 
         $filename = sprintf('begroting-%d-%s.pdf', (int) $campBudget->id, now()->format('Ymd-His'));
@@ -508,6 +512,9 @@ class CampBudgetController extends Controller
         if ($section === 'uitgaven' && str_contains($label, 'aggreg')) {
             return (float) ($standardValues['kosten_aggregaat_pu'] ?? 0);
         }
+        if ($section === 'uitgaven' && str_contains($label, 'huur fram')) {
+            return (float) ($standardValues['huur_fram_pppd'] ?? 0);
+        }
         if (str_contains($label, 'clubhuis')) {
             return (float) ($standardValues['prijs_per_dag_clubhuis'] ?? 0) * $campDays;
         }
@@ -563,6 +570,12 @@ class CampBudgetController extends Controller
             $proviandPerDay = (float) ($standardValues['proviand_pppd'] ?? 0);
 
             return $participants * $proviandPerDay * $campDays;
+        }
+        if ($section === 'uitgaven' && str_contains($label, 'huur fram')) {
+            $participants = $this->participantCountFromSections($sections);
+            $framPppd = (float) ($standardValues['huur_fram_pppd'] ?? 0);
+
+            return $participants * $framPppd * $campDays;
         }
 
         $quantity = (float) ($row['quantity'] ?? 0);
@@ -640,6 +653,62 @@ class CampBudgetController extends Controller
         return $meta;
     }
 
+    /**
+     * @param  array<int,array{title:string,rows:array<int,array{label:string,quantity:float,amount:float,note:string}>}>  $sections
+     * @param  array<string,float>  $standardValues
+     * @return array<int,array{title:string,rows:array<int,array{label:string,quantity:float,amount:float,effective_amount:float,computed_total:float,note:string}>}>
+     */
+    private function sectionsForPdf(array $sections, array $standardValues, int $campDays, string $campLocation): array
+    {
+        return collect($sections)
+            ->map(function (array $section) use ($sections, $standardValues, $campDays, $campLocation): array {
+                $sectionTitle = (string) ($section['title'] ?? '');
+                $rows = collect((array) ($section['rows'] ?? []))
+                    ->map(function (array $row) use ($sectionTitle, $sections, $standardValues, $campDays, $campLocation): array {
+                        $quantity = max(0, (float) ($row['quantity'] ?? 0));
+                        $effectiveAmount = $this->effectiveAmount($row, $sectionTitle, $standardValues, $campDays, $campLocation);
+                        $computedTotal = $this->rowTotalForCalculation($row, $sectionTitle, $sections, $standardValues, $campDays, $campLocation);
+
+                        return [
+                            'label' => (string) ($row['label'] ?? ''),
+                            'quantity' => $quantity,
+                            'amount' => (float) ($row['amount'] ?? 0),
+                            'effective_amount' => round($effectiveAmount, 2),
+                            'computed_total' => round($computedTotal, 2),
+                            'note' => (string) ($row['note'] ?? ''),
+                        ];
+                    })
+                    ->values()
+                    ->all();
+
+                return [
+                    'title' => $sectionTitle,
+                    'rows' => $rows,
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    private function logoDataUri(): string
+    {
+        $path = public_path('images/logo.png');
+        if (! is_file($path)) {
+            return '';
+        }
+
+        $binary = file_get_contents($path);
+        if ($binary === false) {
+            return '';
+        }
+
+        $mime = function_exists('mime_content_type')
+            ? (mime_content_type($path) ?: 'image/png')
+            : 'image/png';
+
+        return 'data:'.$mime.';base64,'.base64_encode($binary);
+    }
+
     private function buildAndStorePdf(CampBudget $campBudget): string
     {
         $sections = $this->normalizeSections(data_get($campBudget->meta, 'sections', []));
@@ -647,12 +716,16 @@ class CampBudgetController extends Controller
         $campDays = $this->normalizeCampDays((int) data_get($campBudget->meta, 'camp_days', 1));
         $campLocation = $this->normalizeCampLocation((string) data_get($campBudget->meta, 'camp_location', 'fram'));
         $totals = $this->totalsForSections($sections, $standardValues, $campDays, $campLocation);
+        $sectionsForPdf = $this->sectionsForPdf($sections, $standardValues, $campDays, $campLocation);
 
         $pdf = Pdf::loadView('pdf.camp-budget', [
             'budget' => $campBudget,
-            'sections' => $sections,
+            'sections' => $sectionsForPdf,
             'standardValues' => $standardValues,
             'totals' => $totals,
+            'campDays' => $campDays,
+            'campLocation' => $campLocation,
+            'logoDataUri' => $this->logoDataUri(),
         ])->setPaper('a4');
 
         $filename = sprintf('begroting-%d-%s.pdf', (int) $campBudget->id, now()->format('Ymd-His'));

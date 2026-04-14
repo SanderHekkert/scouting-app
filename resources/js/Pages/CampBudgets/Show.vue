@@ -145,10 +145,29 @@ function upsertExpenseRow(label) {
     expensesSection.rows.push({ label, quantity: 0, amount: 0, note: '' });
 }
 
+function reorderExpenseRowsForFram() {
+    const expensesSection = (form.budget_sections || []).find((section) => String(section?.title || '').trim().toLowerCase() === 'uitgaven');
+    if (!expensesSection) return;
+
+    const rows = Array.isArray(expensesSection.rows) ? [...expensesSection.rows] : [];
+    const sortWeight = (label) => {
+        const key = String(label || '').trim().toLowerCase();
+        if (key === 'huur fram') return 0;
+        if (key.includes('geschatte vaaruren')) return 1;
+        return 2;
+    };
+
+    rows.sort((a, b) => sortWeight(a?.label) - sortWeight(b?.label));
+    expensesSection.rows = rows;
+}
+
 function ensureExpenseRowsForLocation() {
     if (campLocation.value === 'fram') {
+        upsertExpenseRow('Huur Fram');
         upsertExpenseRow('Geschatte vaaruren');
         upsertExpenseRow('Geschatte aggregaaturen');
+        upsertExpenseRow('Reservering NaWaKa');
+        reorderExpenseRowsForFram();
         return;
     }
 
@@ -283,6 +302,7 @@ function isAutoContributionRow(sectionTitle, label) {
     if (section === 'uitgaven') {
         return rowLabel.includes('vaar')
             || rowLabel.includes('aggreg')
+            || rowLabel.includes('huur fram')
             || rowLabel.includes('proviand');
     }
     return false;
@@ -292,6 +312,12 @@ function isProviandFormulaRow(sectionTitle, label) {
     const section = String(sectionTitle || '').trim().toLowerCase();
     const rowLabel = String(label || '').trim().toLowerCase();
     return section === 'uitgaven' && rowLabel.includes('proviand');
+}
+
+function isFramRentFormulaRow(sectionTitle, label) {
+    const section = String(sectionTitle || '').trim().toLowerCase();
+    const rowLabel = String(label || '').trim().toLowerCase();
+    return section === 'uitgaven' && rowLabel.includes('huur fram');
 }
 
 function isEstimatedHoursRow(sectionTitle, label) {
@@ -321,6 +347,12 @@ function rowComputedTotal(row, sectionTitle) {
         const proviandPerDay = Number(form.standard_values.proviand_pppd) || 0;
         return participants * proviandPerDay * days;
     }
+    if (isFramRentFormulaRow(sectionTitle, row?.label)) {
+        const participants = participantCountFromBudgetSections();
+        const framPppd = Number(form.standard_values.huur_fram_pppd) || 0;
+        const days = normalizedCampDays(form.camp_days);
+        return participants * framPppd * days;
+    }
 
     const quantity = normalizeWholeNumber(row?.quantity);
     const amount = effectiveAmount(row, sectionTitle);
@@ -330,6 +362,9 @@ function rowComputedTotal(row, sectionTitle) {
 function rowAmountDisplayValue(row, sectionTitle) {
     if (isAutoContributionRow(sectionTitle, row?.label)) {
         if (isProviandFormulaRow(sectionTitle, row?.label)) {
+            return formatMoney(rowComputedTotal(row, sectionTitle));
+        }
+        if (isFramRentFormulaRow(sectionTitle, row?.label)) {
             return formatMoney(rowComputedTotal(row, sectionTitle));
         }
         if (isEstimatedHoursRow(sectionTitle, row?.label)) {
