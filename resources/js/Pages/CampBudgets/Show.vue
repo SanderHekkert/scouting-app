@@ -291,6 +291,10 @@ function isAutoContributionRow(sectionTitle, label) {
 
 function rowAmountDisplayValue(row, sectionTitle) {
     if (isAutoContributionRow(sectionTitle, row?.label)) {
+        const quantity = normalizeWholeNumber(row?.quantity);
+        if (quantity < 1) {
+            return '0,00';
+        }
         return moneyInputPreview(effectiveAmount(row, sectionTitle), { fallback: '0,00' });
     }
     return moneyInputPreview(row?.amount, { fallback: '' });
