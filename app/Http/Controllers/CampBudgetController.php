@@ -492,9 +492,6 @@ class CampBudgetController extends Controller
         $label = mb_strtolower(trim((string) ($row['label'] ?? '')));
         $section = mb_strtolower(trim($sectionTitle));
         $manualAmount = (float) ($row['amount'] ?? 0);
-        if ($manualAmount > 0) {
-            return $manualAmount;
-        }
         if ($label === '') {
             return $manualAmount;
         }
@@ -505,10 +502,10 @@ class CampBudgetController extends Controller
         if ($section === 'bijdragen' && (str_contains($label, 'jeugdleden') || str_contains($label, 'jeugdlid'))) {
             return (float) ($standardValues['prijs_per_dag_jeugdlid'] ?? 0);
         }
-        if ($section === 'uitgaven' && str_contains($label, 'vaart')) {
+        if ($section === 'uitgaven' && str_contains($label, 'vaar')) {
             return (float) ($standardValues['kosten_vaart_pu'] ?? 0);
         }
-        if ($section === 'uitgaven' && str_contains($label, 'aggregaat')) {
+        if ($section === 'uitgaven' && str_contains($label, 'aggreg')) {
             return (float) ($standardValues['kosten_aggregaat_pu'] ?? 0);
         }
         if (str_contains($label, 'clubhuis')) {
@@ -529,6 +526,10 @@ class CampBudgetController extends Controller
         }
         if (str_contains($label, 'nawaka')) {
             return (float) ($standardValues['reservering_nawaka_pjpd'] ?? 0) * $campDays;
+        }
+
+        if ($manualAmount > 0) {
+            return $manualAmount;
         }
 
         return $manualAmount;

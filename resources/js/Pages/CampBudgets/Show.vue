@@ -176,15 +176,14 @@ function effectiveAmount(row, sectionTitle) {
     const label = String(row?.label || '').trim().toLowerCase();
     const section = String(sectionTitle || '').trim().toLowerCase();
     const manualAmount = Number(row?.amount || 0) || 0;
-    if (manualAmount > 0) return manualAmount;
     if (!label) return manualAmount;
     const days = normalizedCampDays(form.camp_days);
 
     if (section === 'bijdragen' && label.includes('leiding')) return (Number(form.standard_values.prijs_per_dag_leiding) || 0) * days;
     if (section === 'bijdragen' && (label.includes('jeugdleden') || label.includes('jeugdlid'))) return Number(form.standard_values.prijs_per_dag_jeugdlid) || 0;
     if (label.includes('clubhuis')) return (Number(form.standard_values.prijs_per_dag_clubhuis) || 0) * days;
-    if (section === 'uitgaven' && label.includes('vaart')) return Number(form.standard_values.kosten_vaart_pu) || 0;
-    if (section === 'uitgaven' && label.includes('aggregaat')) return Number(form.standard_values.kosten_aggregaat_pu) || 0;
+    if (section === 'uitgaven' && label.includes('vaar')) return Number(form.standard_values.kosten_vaart_pu) || 0;
+    if (section === 'uitgaven' && label.includes('aggreg')) return Number(form.standard_values.kosten_aggregaat_pu) || 0;
     if (label.includes('fram')) {
         if (campLocation.value === 'clubhuis') return (Number(form.standard_values.prijs_per_dag_clubhuis) || 0) * days;
         return (Number(form.standard_values.huur_fram_pppd) || 0) * days;
@@ -192,6 +191,7 @@ function effectiveAmount(row, sectionTitle) {
     if (label.includes('proviand')) return (Number(form.standard_values.proviand_pppd) || 0) * days;
     if (label.includes('groepsafdracht')) return (Number(form.standard_values.groepsafdracht_pjpd) || 0) * days;
     if (label.includes('nawaka')) return (Number(form.standard_values.reservering_nawaka_pjpd) || 0) * days;
+    if (manualAmount > 0) return manualAmount;
     return manualAmount;
 }
 
@@ -281,9 +281,8 @@ function isAutoContributionRow(sectionTitle, label) {
         return rowLabel.includes('leiding') || rowLabel.includes('jeugdleden') || rowLabel.includes('jeugdlid');
     }
     if (section === 'uitgaven') {
-        return rowLabel.includes('geschatte vaaruren')
-            || rowLabel.includes('geschatte aggregaaturen')
-            || rowLabel.includes('geschatte aggregraaturen')
+        return rowLabel.includes('vaar')
+            || rowLabel.includes('aggreg')
             || rowLabel.includes('proviand');
     }
     return false;
@@ -299,9 +298,7 @@ function isEstimatedHoursRow(sectionTitle, label) {
     const section = String(sectionTitle || '').trim().toLowerCase();
     const rowLabel = String(label || '').trim().toLowerCase();
     if (section !== 'uitgaven') return false;
-    return rowLabel.includes('geschatte vaaruren')
-        || rowLabel.includes('geschatte aggregaaturen')
-        || rowLabel.includes('geschatte aggregraaturen');
+    return rowLabel.includes('vaar') || rowLabel.includes('aggreg');
 }
 
 function participantCountFromBudgetSections() {
