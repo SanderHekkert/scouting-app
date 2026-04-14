@@ -235,6 +235,7 @@ class CampBudgetController extends Controller
         $actor = request()->user();
         $userId = $actor?->id;
         $meta = (array) ($campBudget->meta ?? []);
+        unset($meta['review_notes']);
         $meta = $this->appendChangeLog($meta, 'copied', $actor);
         CampBudget::create([
             'section' => (string) $campBudget->section,
@@ -242,6 +243,7 @@ class CampBudgetController extends Controller
             'title' => (string) $campBudget->title.' (kopie)',
             'content' => (string) ($campBudget->content ?? ''),
             'meta' => $meta,
+            'review_note' => null,
             'created_by_user_id' => $userId,
             'updated_by_user_id' => $userId,
         ]);
