@@ -152,11 +152,13 @@ class CampModulesTest extends TestCase
                 'camp_year' => 2026,
                 'title' => 'Pinksterkamp draaiboek',
                 'content' => 'Planning en taken.',
+                'action' => 'save',
             ])
             ->assertRedirect(route('camp-playbooks.index'));
 
         $playbook = CampPlaybook::query()->firstOrFail();
         $this->assertSame(UserSectionRole::SECTION_DOLFIJNEN, $playbook->section);
+        $this->assertSame(CampPlaybook::STATUS_DRAFT, $playbook->status);
 
         $this->actingAs($admin)
             ->withSession(['active_section' => UserSectionRole::SECTION_DOLFIJNEN])
@@ -164,6 +166,7 @@ class CampModulesTest extends TestCase
                 'camp_year' => 2026,
                 'title' => 'Pinksterkamp draaiboek v2',
                 'content' => 'Bijgewerkte planning.',
+                'action' => 'save',
             ])
             ->assertRedirect(route('camp-playbooks.index'));
 
@@ -171,6 +174,18 @@ class CampModulesTest extends TestCase
             'id' => $playbook->id,
             'title' => 'Pinksterkamp draaiboek v2',
             'section' => UserSectionRole::SECTION_DOLFIJNEN,
+            'status' => CampPlaybook::STATUS_DRAFT,
+        ]);
+
+        $this->actingAs($admin)
+            ->withSession(['active_section' => UserSectionRole::SECTION_DOLFIJNEN])
+            ->patch(route('camp-playbooks.submit', $playbook))
+            ->assertRedirect(route('camp-playbooks.index'));
+
+        $this->assertDatabaseHas('camp_playbooks', [
+            'id' => $playbook->id,
+            'status' => CampPlaybook::STATUS_SUBMITTED,
+            'submitted_by_user_id' => $admin->id,
         ]);
 
         $this->actingAs($admin)
@@ -181,6 +196,7 @@ class CampModulesTest extends TestCase
         $this->assertDatabaseHas('camp_playbooks', [
             'title' => 'Pinksterkamp draaiboek v2 (kopie)',
             'section' => UserSectionRole::SECTION_DOLFIJNEN,
+            'status' => CampPlaybook::STATUS_DRAFT,
         ]);
 
         $this->actingAs($admin)
@@ -190,6 +206,55 @@ class CampModulesTest extends TestCase
 
         $this->assertDatabaseMissing('camp_playbooks', [
             'id' => $playbook->id,
+        ]);
+    }
+
+    public function test_bestuur_can_review_submitted_playbook(): void
+    {
+        $board = $this->userWithRole(UserSectionRole::SECTION_ALL, UserSectionRole::ROLE_BESTUURSLID);
+        $submitter = $this->userWithRole(UserSectionRole::SECTION_DOLFIJNEN, UserSectionRole::ROLE_TEAMLEIDER);
+
+        $playbook = CampPlaybook::query()->create([
+            'section' => UserSectionRole::SECTION_DOLFIJNEN,
+            'camp_year' => 2026,
+            'title' => 'Ingeleverd draaiboek',
+            'content' => 'Test',
+            'status' => CampPlaybook::STATUS_SUBMITTED,
+            'created_by_user_id' => $submitter->id,
+            'updated_by_user_id' => $submitter->id,
+            'meta' => ['sections' => []],
+        ]);
+
+        $this->actingAs($board)
+            ->withSession(['active_section' => UserSectionRole::SECTION_BESTUUR])
+            ->patch(route('camp-playbooks.reject', $playbook), ['review_note' => 'Werk planning dag 2 bij'])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('camp_playbooks', [
+            'id' => $playbook->id,
+            'status' => CampPlaybook::STATUS_NEEDS_CHANGES,
+            'review_note' => 'Werk planning dag 2 bij',
+        ]);
+
+        $playbookForApproval = CampPlaybook::query()->create([
+            'section' => UserSectionRole::SECTION_DOLFIJNEN,
+            'camp_year' => 2026,
+            'title' => 'Ingeleverd draaiboek 2',
+            'content' => 'Test',
+            'status' => CampPlaybook::STATUS_SUBMITTED,
+            'created_by_user_id' => $submitter->id,
+            'updated_by_user_id' => $submitter->id,
+            'meta' => ['sections' => []],
+        ]);
+
+        $this->actingAs($board)
+            ->withSession(['active_section' => UserSectionRole::SECTION_BESTUUR])
+            ->patch(route('camp-playbooks.approve', $playbookForApproval))
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('camp_playbooks', [
+            'id' => $playbookForApproval->id,
+            'status' => CampPlaybook::STATUS_APPROVED,
         ]);
     }
 }

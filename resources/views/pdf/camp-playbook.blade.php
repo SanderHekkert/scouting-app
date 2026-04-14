@@ -138,6 +138,20 @@
             color: #0f172a;
             white-space: pre-wrap;
         }
+        .vaarschema-info {
+            border: 1px solid #bfd5ff;
+            background: #eaf2ff;
+            border-radius: 8px;
+            padding: 8px;
+            margin-bottom: 8px;
+            font-size: 10px;
+            color: #1e3a8a;
+        }
+        .vaarschema-link {
+            color: #1d4ed8;
+            text-decoration: underline;
+            word-break: break-all;
+        }
         .service-grid {
             padding: 10px;
         }
@@ -205,12 +219,65 @@
         @foreach($sections as $section)
             @php
                 $isHulpdiensten = mb_strtolower(trim((string) ($section['title'] ?? ''))) === 'hulpdiensten';
+                $isMonsterrol = mb_strtolower(trim((string) ($section['title'] ?? ''))) === 'monsterrol';
+                $isTaakverdeling = mb_strtolower(trim((string) ($section['title'] ?? ''))) === 'taakverdeling';
+                $isTaakUitleg = mb_strtolower(trim((string) ($section['title'] ?? ''))) === 'taak uitleg';
+                $isAlgemeneAfspraken = mb_strtolower(trim((string) ($section['title'] ?? ''))) === 'algemene afspraken';
+                $isCorveerooster = mb_strtolower(trim((string) ($section['title'] ?? ''))) === 'corveerooster';
+                $isVinindeling = mb_strtolower(trim((string) ($section['title'] ?? ''))) === 'vinindeling';
                 $isPlanning = mb_strtolower(trim((string) ($section['title'] ?? ''))) === 'planning per dag';
+                $isVaarschema = mb_strtolower(trim((string) ($section['title'] ?? ''))) === 'vaarschema';
                 $hasSectionContent = trim((string) ($section['content'] ?? '')) !== '';
+                $hasTaakverdelingContent = $isTaakverdeling && collect((array) ($taskDistributionRows ?? []))
+                    ->contains(fn ($row): bool => trim((string) data_get($row, 'task', '')) !== '' || trim((string) data_get($row, 'description', '')) !== '' || trim((string) data_get($row, 'responsible', '')) !== '');
+                $hasTaakUitlegContent = $isTaakUitleg && collect((array) ($taskExplanationItems ?? []))
+                    ->contains(function ($item): bool {
+                        if (!is_array($item)) {
+                            return false;
+                        }
+                        $bulletsFilled = collect((array) ($item['bullets'] ?? []))
+                            ->contains(fn ($bullet): bool => trim((string) $bullet) !== '');
+                        return trim((string) ($item['title'] ?? '')) !== '' || $bulletsFilled;
+                    });
+                $hasAlgemeneAfsprakenContent = $isAlgemeneAfspraken && collect((array) ($generalAgreementsItems ?? []))
+                    ->contains(function ($item): bool {
+                        if (!is_array($item)) {
+                            return false;
+                        }
+                        $bulletsFilled = collect((array) ($item['bullets'] ?? []))
+                            ->contains(fn ($bullet): bool => trim((string) $bullet) !== '');
+                        return trim((string) ($item['title'] ?? '')) !== '' || $bulletsFilled;
+                    });
+                $hasCorveeContent = $isCorveerooster && collect((array) ($corveeRows ?? []))
+                    ->contains(fn ($row): bool => trim((string) data_get($row, 'day', '')) !== '' || trim((string) data_get($row, 'date', '')) !== '' || trim((string) data_get($row, 'daywatch', '')) !== '' || trim((string) data_get($row, 'dienstvin', '')) !== '' || trim((string) data_get($row, 'dekhuis', '')) !== '' || trim((string) data_get($row, 'achteronder_en_dekken', '')) !== '' || trim((string) data_get($row, 'wc_en_klusjes', '')) !== '');
+                $hasVinindelingContent = $isVinindeling && collect((array) ($vinindelingRows ?? []))
+                    ->contains(function ($row): bool {
+                        if (!is_array($row)) {
+                            return false;
+                        }
+                        $hasVinNames = collect((array) ($row['fin_names'] ?? []))
+                            ->contains(fn ($name): bool => trim((string) $name) !== '');
+                        return trim((string) ($row['role'] ?? '')) !== '' || $hasVinNames;
+                    });
+                $hasMonsterrolContent = $isMonsterrol && collect((array) ($monsterrolRows ?? []))
+                    ->flatten(1)
+                    ->contains(function ($row): bool {
+                        if (!is_array($row)) {
+                            return false;
+                        }
+
+                        return trim((string) ($row['first_name'] ?? '')) !== ''
+                            || trim((string) ($row['last_name'] ?? '')) !== ''
+                            || trim((string) ($row['functie'] ?? '')) !== ''
+                            || trim((string) ($row['on_board'] ?? '')) !== ''
+                            || trim((string) ($row['off_board'] ?? '')) !== '';
+                    });
                 $hasEmergencyContent = $isHulpdiensten && collect((array) ($emergencyContacts ?? []))
                     ->flatten(1)
                     ->filter(fn ($value): bool => trim((string) $value) !== '')
                     ->isNotEmpty();
+                $hasVaarschemaContent = $isVaarschema && collect((array) ($vaarschemaRows ?? []))
+                    ->contains(fn ($row): bool => trim((string) data_get($row, 'date', '')) !== '' || trim((string) data_get($row, 'from', '')) !== '' || trim((string) data_get($row, 'to', '')) !== '' || trim((string) data_get($row, 'depart_at', '')) !== '' || trim((string) data_get($row, 'arrive_at', '')) !== '' || trim((string) data_get($row, 'tide_margin_minutes', '')) !== '');
                 $hasPlanningContent = $isPlanning && collect((array) ($dayPlans ?? []))
                     ->filter(function ($day): bool {
                         if (!is_array($day)) return false;
@@ -224,10 +291,198 @@
                     })
                     ->isNotEmpty();
             @endphp
-            @if($hasSectionContent || $hasEmergencyContent || $hasPlanningContent)
+            @if($hasSectionContent || $hasTaakverdelingContent || $hasTaakUitlegContent || $hasAlgemeneAfsprakenContent || $hasCorveeContent || $hasVinindelingContent || $hasMonsterrolContent || $hasEmergencyContent || $hasPlanningContent || $hasVaarschemaContent)
                 <div class="section">
                     <h3 class="section-title">{{ (string) ($section['title'] ?? 'Sectie') }}</h3>
-                    @if($isHulpdiensten)
+                    @if($isTaakverdeling)
+                        <div class="service-grid">
+                            <table class="planning-table">
+                                <thead>
+                                    <tr>
+                                        <th>Taak</th>
+                                        <th>Beschrijving</th>
+                                        <th>Verantwoordelijke</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach((array) ($taskDistributionRows ?? []) as $row)
+                                        @if(trim((string) ($row['task'] ?? '')) !== '' || trim((string) ($row['description'] ?? '')) !== '' || trim((string) ($row['responsible'] ?? '')) !== '')
+                                            <tr>
+                                                <td>{{ (string) ($row['task'] ?? '') }}</td>
+                                                <td>{{ (string) ($row['description'] ?? '') }}</td>
+                                                <td>{{ (string) ($row['responsible'] ?? '') }}</td>
+                                            </tr>
+                                        @endif
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @elseif($isTaakUitleg)
+                        <div class="service-grid">
+                            @foreach((array) ($taskExplanationItems ?? []) as $item)
+                                @php
+                                    $filledBullets = collect((array) ($item['bullets'] ?? []))
+                                        ->map(fn ($bullet): string => trim((string) $bullet))
+                                        ->filter(fn (string $bullet): bool => $bullet !== '')
+                                        ->values()
+                                        ->all();
+                                @endphp
+                                @if(trim((string) ($item['title'] ?? '')) !== '' || $filledBullets !== [])
+                                    <div class="day-block">
+                                        <p class="day-title">{{ (string) ($item['title'] ?? 'Taak') }}</p>
+                                        @if($filledBullets !== [])
+                                            <ul style="margin: 0; padding-left: 16px;">
+                                                @foreach($filledBullets as $bullet)
+                                                    <li style="margin-bottom: 3px; font-size: 11px; color: #0f172a;">{{ $bullet }}</li>
+                                                @endforeach
+                                            </ul>
+                                        @endif
+                                    </div>
+                                @endif
+                            @endforeach
+                        </div>
+                    @elseif($isAlgemeneAfspraken)
+                        <div class="service-grid">
+                            @foreach((array) ($generalAgreementsItems ?? []) as $item)
+                                @php
+                                    $filledBullets = collect((array) ($item['bullets'] ?? []))
+                                        ->map(fn ($bullet): string => trim((string) $bullet))
+                                        ->filter(fn (string $bullet): bool => $bullet !== '')
+                                        ->values()
+                                        ->all();
+                                @endphp
+                                @if(trim((string) ($item['title'] ?? '')) !== '' || $filledBullets !== [])
+                                    <div class="day-block">
+                                        <p class="day-title">{{ (string) ($item['title'] ?? 'Afspraken') }}</p>
+                                        @if($filledBullets !== [])
+                                            <ul style="margin: 0; padding-left: 16px;">
+                                                @foreach($filledBullets as $bullet)
+                                                    <li style="margin-bottom: 3px; font-size: 11px; color: #0f172a;">{{ $bullet }}</li>
+                                                @endforeach
+                                            </ul>
+                                        @endif
+                                    </div>
+                                @endif
+                            @endforeach
+                        </div>
+                    @elseif($isCorveerooster)
+                        <div class="service-grid">
+                            <table class="planning-table">
+                                <thead>
+                                    <tr>
+                                        <th>Dag</th>
+                                        <th>Datum</th>
+                                        <th>Dagwacht</th>
+                                        <th>Dienstvin</th>
+                                        <th>Dekhuis</th>
+                                        <th>Achteronder &amp; Dekken</th>
+                                        <th>WC &amp; klusjes</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach((array) ($corveeRows ?? []) as $row)
+                                        @if(trim((string) ($row['day'] ?? '')) !== '' || trim((string) ($row['date'] ?? '')) !== '' || trim((string) ($row['daywatch'] ?? '')) !== '' || trim((string) ($row['dienstvin'] ?? '')) !== '' || trim((string) ($row['dekhuis'] ?? '')) !== '' || trim((string) ($row['achteronder_en_dekken'] ?? '')) !== '' || trim((string) ($row['wc_en_klusjes'] ?? '')) !== '')
+                                            <tr>
+                                                <td>{{ (string) ($row['day'] ?? '') }}</td>
+                                                <td>{{ (string) ($row['date'] ?? '') }}</td>
+                                                <td>{{ (string) ($row['daywatch'] ?? '') }}</td>
+                                                <td>{{ (string) ($row['dienstvin'] ?? '') }}</td>
+                                                <td>{{ (string) ($row['dekhuis'] ?? '') }}</td>
+                                                <td>{{ (string) ($row['achteronder_en_dekken'] ?? '') }}</td>
+                                                <td>{{ (string) ($row['wc_en_klusjes'] ?? '') }}</td>
+                                            </tr>
+                                        @endif
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @elseif($isVinindeling)
+                        <div class="service-grid">
+                            <table class="planning-table">
+                                <thead>
+                                    <tr>
+                                        <th>Rol</th>
+                                        <th>Vinnamen</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach((array) ($vinindelingRows ?? []) as $row)
+                                        @php
+                                            $filledVinNames = collect((array) ($row['fin_names'] ?? []))
+                                                ->map(fn ($name): string => trim((string) $name))
+                                                ->filter(fn (string $name): bool => $name !== '')
+                                                ->values()
+                                                ->all();
+                                        @endphp
+                                        @if(trim((string) ($row['role'] ?? '')) !== '' || $filledVinNames !== [])
+                                            <tr>
+                                                <td>{{ (string) ($row['role'] ?? '') }}</td>
+                                                <td>{{ $filledVinNames !== [] ? implode(', ', $filledVinNames) : '' }}</td>
+                                            </tr>
+                                        @endif
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @elseif($isMonsterrol)
+                        <div class="service-grid">
+                            <div class="day-block">
+                                <p class="day-title">Staf</p>
+                                <table class="planning-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Voornaam</th>
+                                            <th>Achternaam</th>
+                                            <th>Functie</th>
+                                            <th>Aan boord</th>
+                                            <th>Van boord</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach((array) data_get($monsterrolRows ?? [], 'staff', []) as $row)
+                                            @if(trim((string) ($row['first_name'] ?? '')) !== '' || trim((string) ($row['last_name'] ?? '')) !== '' || trim((string) ($row['functie'] ?? '')) !== '' || trim((string) ($row['on_board'] ?? '')) !== '' || trim((string) ($row['off_board'] ?? '')) !== '')
+                                                <tr>
+                                                    <td>{{ (string) ($row['first_name'] ?? '') }}</td>
+                                                    <td>{{ (string) ($row['last_name'] ?? '') }}</td>
+                                                    <td>{{ (string) ($row['functie'] ?? '') }}</td>
+                                                    <td>{{ (string) ($row['on_board'] ?? '') }}</td>
+                                                    <td>{{ (string) ($row['off_board'] ?? '') }}</td>
+                                                </tr>
+                                            @endif
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="day-block">
+                                <p class="day-title">Vaarbemanning</p>
+                                <p class="daywatch"><strong>Speltak:</strong> {{ ucfirst(str_replace('_', ' ', (string) $playbook->section)) }}</p>
+                                <table class="planning-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Voornaam</th>
+                                            <th>Achternaam</th>
+                                            <th>Functie</th>
+                                            <th>Aan boord</th>
+                                            <th>Van boord</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach((array) data_get($monsterrolRows ?? [], 'vaarbemanning', []) as $row)
+                                            @if(trim((string) ($row['first_name'] ?? '')) !== '' || trim((string) ($row['last_name'] ?? '')) !== '' || trim((string) ($row['functie'] ?? '')) !== '' || trim((string) ($row['on_board'] ?? '')) !== '' || trim((string) ($row['off_board'] ?? '')) !== '')
+                                                <tr>
+                                                    <td>{{ (string) ($row['first_name'] ?? '') }}</td>
+                                                    <td>{{ (string) ($row['last_name'] ?? '') }}</td>
+                                                    <td>{{ (string) ($row['functie'] ?? '') }}</td>
+                                                    <td>{{ (string) ($row['on_board'] ?? '') }}</td>
+                                                    <td>{{ (string) ($row['off_board'] ?? '') }}</td>
+                                                </tr>
+                                            @endif
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    @elseif($isHulpdiensten)
                         <div class="service-grid">
                             @foreach(['huisartsen' => 'Huisartsen', 'ziekenhuizen' => 'Ziekenhuizen', 'tandartsen' => 'Tandartsen'] as $key => $label)
                                 @php $entry = (array) data_get($emergencyContacts ?? [], $key, []); @endphp
@@ -242,6 +497,44 @@
                                     <p class="service-line"><strong>Extra informatie:</strong> {{ (string) ($entry['extra_info'] ?? '—') ?: '—' }}</p>
                                 </div>
                             @endforeach
+                        </div>
+                    @elseif($isVaarschema)
+                        <div class="service-grid">
+                            <div class="vaarschema-info">
+                                <p><strong>Website getij</strong></p>
+                                <p>
+                                    <a class="vaarschema-link" href="https://waterinfo.rws.nl/#/publiek/astronomische-getij/Goidschalxoord%28GOIDSOD%29/details?parameters=Waterhoogte___20berekend___20Oppervlaktewater___20t.o.v.___20Normaal___20Amsterdams___20Peil___20in___20cm">
+                                        https://waterinfo.rws.nl/#/publiek/astronomische-getij/Goidschalxoord%28GOIDSOD%29/details?parameters=Waterhoogte___20berekend___20Oppervlaktewater___20t.o.v.___20Normaal___20Amsterdams___20Peil___20in___20cm
+                                    </a>
+                                </p>
+                                <p style="margin-top:4px;">Note: We kunnen met 60 NAP net wel naar binnen in de Koedood. Voor de veiligheid 75 NAP aanhouden.</p>
+                            </div>
+                            <table class="planning-table">
+                                <thead>
+                                    <tr>
+                                        <th>Datum</th>
+                                        <th>Van</th>
+                                        <th>Naar</th>
+                                        <th>Wegvaren</th>
+                                        <th>Aankomen</th>
+                                        <th>Speling (minuten)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach((array) ($vaarschemaRows ?? []) as $row)
+                                        @if(trim((string) ($row['date'] ?? '')) !== '' || trim((string) ($row['from'] ?? '')) !== '' || trim((string) ($row['to'] ?? '')) !== '' || trim((string) ($row['depart_at'] ?? '')) !== '' || trim((string) ($row['arrive_at'] ?? '')) !== '' || trim((string) ($row['tide_margin_minutes'] ?? '')) !== '')
+                                            <tr>
+                                                <td>{{ (string) ($row['date'] ?? '') }}</td>
+                                                <td>{{ (string) ($row['from'] ?? '') }}</td>
+                                                <td>{{ (string) ($row['to'] ?? '') }}</td>
+                                                <td>{{ (string) ($row['depart_at'] ?? '') }}</td>
+                                                <td>{{ (string) ($row['arrive_at'] ?? '') }}</td>
+                                                <td>{{ (string) ($row['tide_margin_minutes'] ?? '') }}</td>
+                                            </tr>
+                                        @endif
+                                    @endforeach
+                                </tbody>
+                            </table>
                         </div>
                     @elseif($isPlanning)
                         <div class="service-grid">

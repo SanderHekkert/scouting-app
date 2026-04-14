@@ -10,12 +10,26 @@ class CampPlaybook extends Model
 {
     use BelongsToSection;
 
+    public const STATUS_DRAFT = 'draft';
+
+    public const STATUS_SUBMITTED = 'submitted';
+
+    public const STATUS_APPROVED = 'approved';
+
+    public const STATUS_NEEDS_CHANGES = 'needs_changes';
+
     protected $fillable = [
         'section',
         'camp_year',
         'title',
         'content',
         'meta',
+        'status',
+        'review_note',
+        'submitted_by_user_id',
+        'submitted_at',
+        'processed_by_user_id',
+        'processed_at',
         'created_by_user_id',
         'updated_by_user_id',
     ];
@@ -23,6 +37,8 @@ class CampPlaybook extends Model
     protected $casts = [
         'camp_year' => 'integer',
         'meta' => 'array',
+        'submitted_at' => 'datetime',
+        'processed_at' => 'datetime',
     ];
 
     public function createdBy(): BelongsTo
@@ -33,5 +49,15 @@ class CampPlaybook extends Model
     public function updatedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'updated_by_user_id');
+    }
+
+    public function submittedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'submitted_by_user_id');
+    }
+
+    public function processedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'processed_by_user_id');
     }
 }

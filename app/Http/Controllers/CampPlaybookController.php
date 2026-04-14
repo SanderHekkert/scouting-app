@@ -14,27 +14,67 @@ class CampPlaybookController extends Controller
 {
     public function index(): Response
     {
+        $user = request()->user();
+        abort_unless($user instanceof User, 403);
+        $activeSection = (string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN);
+        $canReview = $this->canReviewPlaybooks($user, $activeSection);
+
+        $query = CampPlaybook::query();
+        if ($canReview && $activeSection === UserSectionRole::SECTION_BESTUUR) {
+            $query = CampPlaybook::withoutGlobalScope('section')
+                ->where('section', '!=', UserSectionRole::SECTION_BESTUUR);
+        }
+
         return Inertia::render('CampPlaybooks/Index', [
-            'items' => CampPlaybook::query()
+            'items' => $query
+                ->with(['createdBy:id,name', 'updatedBy:id,name'])
                 ->latest('camp_year')
                 ->latest('id')
                 ->get()
-                ->map(function (CampPlaybook $item): array {
-                    $sections = $this->normalizePlaybookSections(
-                        (array) data_get($item->meta, 'sections', []),
-                        (string) ($item->content ?? '')
-                    );
-
-                    return [
-                        'id' => (int) $item->id,
-                        'camp_year' => (int) $item->camp_year,
-                        'title' => (string) $item->title,
-                        'content' => $this->flattenSectionsToContent($sections),
-                    ];
-                })
+                ->map(fn (CampPlaybook $item): array => $this->indexItemPayload($item, $canReview))
                 ->values()
                 ->all(),
+            'canReview' => $canReview,
         ]);
+    }
+
+    /**
+     * @return array{
+     *   id:int,
+     *   section:string,
+     *   camp_year:int,
+     *   title:string,
+     *   content:string,
+     *   status:string,
+     *   review_note:string,
+     *   review_notes:array<int,array{note:string,user_name:string,at:string}>,
+     *   created_by_name:string,
+     *   updated_by_name:string,
+     *   updated_at:?string,
+     *   can_review:bool
+     * }
+     */
+    private function indexItemPayload(CampPlaybook $item, bool $canReview): array
+    {
+        $sections = $this->normalizePlaybookSections(
+            (array) data_get($item->meta, 'sections', []),
+            (string) ($item->content ?? '')
+        );
+
+        return [
+            'id' => (int) $item->id,
+            'section' => (string) $item->section,
+            'camp_year' => (int) $item->camp_year,
+            'title' => (string) $item->title,
+            'content' => $this->flattenSectionsToContent($sections),
+            'status' => (string) ($item->status ?: CampPlaybook::STATUS_DRAFT),
+            'review_note' => (string) ($item->review_note ?? ''),
+            'review_notes' => $this->reviewNotesForPayload((array) data_get($item->meta, 'review_notes', [])),
+            'created_by_name' => (string) optional($item->createdBy)->name,
+            'updated_by_name' => (string) optional($item->updatedBy)->name,
+            'updated_at' => optional($item->updated_at)?->toIso8601String(),
+            'can_review' => $canReview && in_array((string) $item->status, [CampPlaybook::STATUS_SUBMITTED], true),
+        ];
     }
 
     public function create(Request $request): Response
@@ -55,6 +95,18 @@ class CampPlaybookController extends Controller
                     'camp_location' => $this->normalizeCampLocation((string) data_get($source->meta, 'camp_location', 'fram')),
                     'camp_place' => (string) data_get($source->meta, 'camp_place', ''),
                     'camp_dates' => (string) data_get($source->meta, 'camp_dates', ''),
+                    'task_distribution_rows' => $this->normalizeTaskDistributionRows((array) data_get($source->meta, 'task_distribution_rows', [])),
+                    'task_explanation_items' => $this->normalizeTaskExplanationItems(
+                        (array) data_get($source->meta, 'task_explanation_items', []),
+                        (string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN),
+                    ),
+                    'general_agreements_items' => $this->normalizeGeneralAgreementsItems(
+                        (array) data_get($source->meta, 'general_agreements_items', []),
+                        (string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN),
+                    ),
+                    'vinindeling_rows' => $this->normalizeVinindelingRows((array) data_get($source->meta, 'vinindeling_rows', [])),
+                    'corvee_rows' => $this->normalizeCorveeRows((array) data_get($source->meta, 'corvee_rows', [])),
+                    'monsterrol_rows' => $this->normalizeMonsterrolRows((array) data_get($source->meta, 'monsterrol_rows', [])),
                     'emergency_contacts' => $this->normalizeEmergencyContacts((array) data_get($source->meta, 'emergency_contacts', [])),
                     'day_plans' => $this->normalizeDayPlans((array) data_get($source->meta, 'day_plans', [])),
                     'vaarschema_rows' => $this->normalizeVaarschemaRows((array) data_get($source->meta, 'vaarschema_rows', [])),
@@ -69,6 +121,12 @@ class CampPlaybookController extends Controller
             'copyItem' => $copyItem,
             'leaderTeam' => $this->leaderTeamOptions(),
             'defaultSections' => $this->defaultPlaybookSections((string) session('active_section', 'dolfijnen')),
+            'defaultTaskDistributionRows' => $this->defaultTaskDistributionRows(),
+            'defaultTaskExplanationItems' => $this->defaultTaskExplanationItems((string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN)),
+            'defaultGeneralAgreementsItems' => $this->defaultGeneralAgreementsItems((string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN)),
+            'defaultVinindelingRows' => $this->defaultVinindelingRows(),
+            'defaultCorveeRows' => $this->defaultCorveeRows(),
+            'defaultMonsterrolRows' => $this->defaultMonsterrolRows(),
             'defaultDayPlans' => $this->defaultDayPlans(),
             'defaultVaarschemaRows' => $this->defaultVaarschemaRows(),
         ]);
@@ -76,7 +134,15 @@ class CampPlaybookController extends Controller
 
     public function show(CampPlaybook $campPlaybook): Response
     {
-        abort_unless((string) $campPlaybook->section === (string) session('active_section', 'dolfijnen'), 403);
+        $user = request()->user();
+        abort_unless($user instanceof User, 403);
+        $activeSection = (string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN);
+        $isOwnSection = (string) $campPlaybook->section === $activeSection;
+        $canReview = $this->canReviewPlaybooks($user, $activeSection);
+        $isBestuurReview = $canReview
+            && $activeSection === UserSectionRole::SECTION_BESTUUR
+            && (string) $campPlaybook->section !== UserSectionRole::SECTION_BESTUUR;
+        abort_unless($isOwnSection || $isBestuurReview, 403);
 
         return Inertia::render('CampPlaybooks/Show', [
             'mode' => 'edit',
@@ -87,6 +153,20 @@ class CampPlaybookController extends Controller
                 'camp_location' => $this->normalizeCampLocation((string) data_get($campPlaybook->meta, 'camp_location', 'fram')),
                 'camp_place' => (string) data_get($campPlaybook->meta, 'camp_place', ''),
                 'camp_dates' => (string) data_get($campPlaybook->meta, 'camp_dates', ''),
+                'status' => (string) ($campPlaybook->status ?: CampPlaybook::STATUS_DRAFT),
+                'review_note' => (string) ($campPlaybook->review_note ?? ''),
+                'task_distribution_rows' => $this->normalizeTaskDistributionRows((array) data_get($campPlaybook->meta, 'task_distribution_rows', [])),
+                'task_explanation_items' => $this->normalizeTaskExplanationItems(
+                    (array) data_get($campPlaybook->meta, 'task_explanation_items', []),
+                    (string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN),
+                ),
+                'general_agreements_items' => $this->normalizeGeneralAgreementsItems(
+                    (array) data_get($campPlaybook->meta, 'general_agreements_items', []),
+                    (string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN),
+                ),
+                'vinindeling_rows' => $this->normalizeVinindelingRows((array) data_get($campPlaybook->meta, 'vinindeling_rows', [])),
+                'corvee_rows' => $this->normalizeCorveeRows((array) data_get($campPlaybook->meta, 'corvee_rows', [])),
+                'monsterrol_rows' => $this->normalizeMonsterrolRows((array) data_get($campPlaybook->meta, 'monsterrol_rows', [])),
                 'emergency_contacts' => $this->normalizeEmergencyContacts((array) data_get($campPlaybook->meta, 'emergency_contacts', [])),
                 'day_plans' => $this->normalizeDayPlans((array) data_get($campPlaybook->meta, 'day_plans', [])),
                 'vaarschema_rows' => $this->normalizeVaarschemaRows((array) data_get($campPlaybook->meta, 'vaarschema_rows', [])),
@@ -98,6 +178,12 @@ class CampPlaybookController extends Controller
             'copyItem' => null,
             'leaderTeam' => $this->leaderTeamOptions(),
             'defaultSections' => $this->defaultPlaybookSections((string) session('active_section', 'dolfijnen')),
+            'defaultTaskDistributionRows' => $this->defaultTaskDistributionRows(),
+            'defaultTaskExplanationItems' => $this->defaultTaskExplanationItems((string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN)),
+            'defaultGeneralAgreementsItems' => $this->defaultGeneralAgreementsItems((string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN)),
+            'defaultVinindelingRows' => $this->defaultVinindelingRows(),
+            'defaultCorveeRows' => $this->defaultCorveeRows(),
+            'defaultMonsterrolRows' => $this->defaultMonsterrolRows(),
             'defaultDayPlans' => $this->defaultDayPlans(),
             'defaultVaarschemaRows' => $this->defaultVaarschemaRows(),
         ]);
@@ -112,10 +198,17 @@ class CampPlaybookController extends Controller
             'camp_location' => ['nullable', 'string', 'in:clubhuis,fram'],
             'camp_place' => ['nullable', 'string', 'max:255'],
             'camp_dates' => ['nullable', 'string', 'max:255'],
+            'task_distribution_rows' => ['nullable', 'array'],
+            'task_explanation_items' => ['nullable', 'array'],
+            'general_agreements_items' => ['nullable', 'array'],
+            'vinindeling_rows' => ['nullable', 'array'],
+            'corvee_rows' => ['nullable', 'array'],
+            'monsterrol_rows' => ['nullable', 'array'],
             'emergency_contacts' => ['nullable', 'array'],
             'day_plans' => ['nullable', 'array'],
             'vaarschema_rows' => ['nullable', 'array'],
             'playbook_sections' => ['nullable', 'array'],
+            'action' => ['nullable', 'string'],
         ]);
 
         $userId = $request->user()?->id;
@@ -123,6 +216,7 @@ class CampPlaybookController extends Controller
         $content = $this->flattenSectionsToContent($sections);
         $dayPlans = $this->normalizeDayPlans((array) ($data['day_plans'] ?? []));
         $vaarschemaRows = $this->normalizeVaarschemaRows((array) ($data['vaarschema_rows'] ?? []));
+        $status = $this->statusFromAction((string) ($data['action'] ?? 'save'));
         CampPlaybook::create([
             'camp_year' => (int) $data['camp_year'],
             'title' => (string) $data['title'],
@@ -132,10 +226,26 @@ class CampPlaybookController extends Controller
                 'camp_location' => $this->normalizeCampLocation((string) ($data['camp_location'] ?? 'fram')),
                 'camp_place' => trim((string) ($data['camp_place'] ?? '')),
                 'camp_dates' => trim((string) ($data['camp_dates'] ?? '')),
+                'task_distribution_rows' => $this->normalizeTaskDistributionRows((array) ($data['task_distribution_rows'] ?? [])),
+                'task_explanation_items' => $this->normalizeTaskExplanationItems(
+                    (array) ($data['task_explanation_items'] ?? []),
+                    (string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN),
+                ),
+                'general_agreements_items' => $this->normalizeGeneralAgreementsItems(
+                    (array) ($data['general_agreements_items'] ?? []),
+                    (string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN),
+                ),
+                'vinindeling_rows' => $this->normalizeVinindelingRows((array) ($data['vinindeling_rows'] ?? [])),
+                'corvee_rows' => $this->normalizeCorveeRows((array) ($data['corvee_rows'] ?? [])),
+                'monsterrol_rows' => $this->normalizeMonsterrolRows((array) ($data['monsterrol_rows'] ?? [])),
                 'emergency_contacts' => $this->normalizeEmergencyContacts((array) ($data['emergency_contacts'] ?? [])),
                 'day_plans' => $dayPlans,
                 'vaarschema_rows' => $vaarschemaRows,
             ],
+            'status' => $status,
+            'submitted_by_user_id' => $status === CampPlaybook::STATUS_SUBMITTED ? $userId : null,
+            'submitted_at' => $status === CampPlaybook::STATUS_SUBMITTED ? now() : null,
+            'review_note' => null,
             'created_by_user_id' => $userId,
             'updated_by_user_id' => $userId,
         ]);
@@ -154,10 +264,17 @@ class CampPlaybookController extends Controller
             'camp_location' => ['nullable', 'string', 'in:clubhuis,fram'],
             'camp_place' => ['nullable', 'string', 'max:255'],
             'camp_dates' => ['nullable', 'string', 'max:255'],
+            'task_distribution_rows' => ['nullable', 'array'],
+            'task_explanation_items' => ['nullable', 'array'],
+            'general_agreements_items' => ['nullable', 'array'],
+            'vinindeling_rows' => ['nullable', 'array'],
+            'corvee_rows' => ['nullable', 'array'],
+            'monsterrol_rows' => ['nullable', 'array'],
             'emergency_contacts' => ['nullable', 'array'],
             'day_plans' => ['nullable', 'array'],
             'vaarschema_rows' => ['nullable', 'array'],
             'playbook_sections' => ['nullable', 'array'],
+            'action' => ['nullable', 'string'],
         ]);
 
         $sections = $this->normalizePlaybookSections((array) ($data['playbook_sections'] ?? []), (string) ($data['content'] ?? ''));
@@ -167,16 +284,42 @@ class CampPlaybookController extends Controller
         $meta['camp_location'] = $this->normalizeCampLocation((string) ($data['camp_location'] ?? 'fram'));
         $meta['camp_place'] = trim((string) ($data['camp_place'] ?? ''));
         $meta['camp_dates'] = trim((string) ($data['camp_dates'] ?? ''));
+        $meta['task_distribution_rows'] = $this->normalizeTaskDistributionRows((array) ($data['task_distribution_rows'] ?? []));
+        $meta['task_explanation_items'] = $this->normalizeTaskExplanationItems(
+            (array) ($data['task_explanation_items'] ?? []),
+            (string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN),
+        );
+        $meta['general_agreements_items'] = $this->normalizeGeneralAgreementsItems(
+            (array) ($data['general_agreements_items'] ?? []),
+            (string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN),
+        );
+        $meta['vinindeling_rows'] = $this->normalizeVinindelingRows((array) ($data['vinindeling_rows'] ?? []));
+        $meta['corvee_rows'] = $this->normalizeCorveeRows((array) ($data['corvee_rows'] ?? []));
+        $meta['monsterrol_rows'] = $this->normalizeMonsterrolRows((array) ($data['monsterrol_rows'] ?? []));
         $meta['emergency_contacts'] = $this->normalizeEmergencyContacts((array) ($data['emergency_contacts'] ?? []));
         $meta['day_plans'] = $this->normalizeDayPlans((array) ($data['day_plans'] ?? []));
         $meta['vaarschema_rows'] = $this->normalizeVaarschemaRows((array) ($data['vaarschema_rows'] ?? []));
+        $status = $this->statusFromAction((string) ($data['action'] ?? 'save'));
+        $actorId = $request->user()?->id;
+        $submittedById = $campPlaybook->submitted_by_user_id;
+        $submittedAt = $campPlaybook->submitted_at;
+        if ($status === CampPlaybook::STATUS_SUBMITTED) {
+            $submittedById = $actorId;
+            $submittedAt = now();
+        }
 
         $campPlaybook->update([
             'camp_year' => (int) $data['camp_year'],
             'title' => (string) $data['title'],
             'content' => $content,
             'meta' => $meta,
-            'updated_by_user_id' => $request->user()?->id,
+            'status' => $status,
+            'review_note' => null,
+            'submitted_by_user_id' => $submittedById,
+            'submitted_at' => $submittedAt,
+            'processed_by_user_id' => null,
+            'processed_at' => null,
+            'updated_by_user_id' => $actorId,
         ]);
 
         return to_route('camp-playbooks.index');
@@ -199,20 +342,41 @@ class CampPlaybookController extends Controller
             (array) data_get($campPlaybook->meta, 'sections', []),
             (string) ($campPlaybook->content ?? '')
         );
+        $meta = [
+            'sections' => $sections,
+            'camp_location' => $this->normalizeCampLocation((string) data_get($campPlaybook->meta, 'camp_location', 'fram')),
+            'camp_place' => (string) data_get($campPlaybook->meta, 'camp_place', ''),
+            'camp_dates' => (string) data_get($campPlaybook->meta, 'camp_dates', ''),
+            'task_distribution_rows' => $this->normalizeTaskDistributionRows((array) data_get($campPlaybook->meta, 'task_distribution_rows', [])),
+            'task_explanation_items' => $this->normalizeTaskExplanationItems(
+                (array) data_get($campPlaybook->meta, 'task_explanation_items', []),
+                (string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN),
+            ),
+            'general_agreements_items' => $this->normalizeGeneralAgreementsItems(
+                (array) data_get($campPlaybook->meta, 'general_agreements_items', []),
+                (string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN),
+            ),
+            'vinindeling_rows' => $this->normalizeVinindelingRows((array) data_get($campPlaybook->meta, 'vinindeling_rows', [])),
+            'corvee_rows' => $this->normalizeCorveeRows((array) data_get($campPlaybook->meta, 'corvee_rows', [])),
+            'monsterrol_rows' => $this->normalizeMonsterrolRows((array) data_get($campPlaybook->meta, 'monsterrol_rows', [])),
+            'emergency_contacts' => $this->normalizeEmergencyContacts((array) data_get($campPlaybook->meta, 'emergency_contacts', [])),
+            'day_plans' => $this->normalizeDayPlans((array) data_get($campPlaybook->meta, 'day_plans', [])),
+            'vaarschema_rows' => $this->normalizeVaarschemaRows((array) data_get($campPlaybook->meta, 'vaarschema_rows', [])),
+            'review_notes' => [],
+        ];
+
         CampPlaybook::create([
             'section' => (string) $campPlaybook->section,
             'camp_year' => (int) $campPlaybook->camp_year,
             'title' => (string) $campPlaybook->title.' (kopie)',
             'content' => $this->flattenSectionsToContent($sections),
-            'meta' => [
-                'sections' => $sections,
-                'camp_location' => $this->normalizeCampLocation((string) data_get($campPlaybook->meta, 'camp_location', 'fram')),
-                'camp_place' => (string) data_get($campPlaybook->meta, 'camp_place', ''),
-                'camp_dates' => (string) data_get($campPlaybook->meta, 'camp_dates', ''),
-                'emergency_contacts' => $this->normalizeEmergencyContacts((array) data_get($campPlaybook->meta, 'emergency_contacts', [])),
-                'day_plans' => $this->normalizeDayPlans((array) data_get($campPlaybook->meta, 'day_plans', [])),
-                'vaarschema_rows' => $this->normalizeVaarschemaRows((array) data_get($campPlaybook->meta, 'vaarschema_rows', [])),
-            ],
+            'meta' => $meta,
+            'status' => CampPlaybook::STATUS_DRAFT,
+            'review_note' => null,
+            'submitted_by_user_id' => null,
+            'submitted_at' => null,
+            'processed_by_user_id' => null,
+            'processed_at' => null,
             'created_by_user_id' => $userId,
             'updated_by_user_id' => $userId,
         ]);
@@ -220,9 +384,85 @@ class CampPlaybookController extends Controller
         return to_route('camp-playbooks.index');
     }
 
+    public function submit(Request $request, CampPlaybook $campPlaybook)
+    {
+        abort_unless((string) $campPlaybook->section === (string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN), 403);
+
+        $actor = $request->user();
+        $campPlaybook->update([
+            'status' => CampPlaybook::STATUS_SUBMITTED,
+            'review_note' => null,
+            'submitted_by_user_id' => $actor?->id,
+            'submitted_at' => now(),
+            'processed_by_user_id' => null,
+            'processed_at' => null,
+            'updated_by_user_id' => $actor?->id,
+        ]);
+
+        return to_route('camp-playbooks.index');
+    }
+
+    public function approve(Request $request, int $campPlaybook)
+    {
+        $user = $request->user();
+        abort_unless($user instanceof User, 403);
+        abort_unless($this->canReviewPlaybooks($user, (string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN)), 403);
+        $campPlaybook = CampPlaybook::withoutGlobalScope('section')->findOrFail($campPlaybook);
+        abort_unless((string) $campPlaybook->section !== UserSectionRole::SECTION_BESTUUR, 403);
+        abort_unless((string) $campPlaybook->status === CampPlaybook::STATUS_SUBMITTED, 422);
+
+        $campPlaybook->update([
+            'status' => CampPlaybook::STATUS_APPROVED,
+            'review_note' => null,
+            'processed_by_user_id' => (int) $user->id,
+            'processed_at' => now(),
+            'updated_by_user_id' => (int) $user->id,
+        ]);
+
+        return back();
+    }
+
+    public function reject(Request $request, int $campPlaybook)
+    {
+        $user = $request->user();
+        abort_unless($user instanceof User, 403);
+        abort_unless($this->canReviewPlaybooks($user, (string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN)), 403);
+        $campPlaybook = CampPlaybook::withoutGlobalScope('section')->findOrFail($campPlaybook);
+        abort_unless((string) $campPlaybook->section !== UserSectionRole::SECTION_BESTUUR, 403);
+        abort_unless((string) $campPlaybook->status === CampPlaybook::STATUS_SUBMITTED, 422);
+
+        $data = $request->validate([
+            'review_note' => ['required', 'string', 'max:1000'],
+        ]);
+
+        $meta = (array) ($campPlaybook->meta ?? []);
+        $reviewNote = trim((string) $data['review_note']);
+        $meta = $this->appendReviewNote($meta, $reviewNote, $user);
+
+        $campPlaybook->update([
+            'meta' => $meta,
+            'status' => CampPlaybook::STATUS_NEEDS_CHANGES,
+            'review_note' => $reviewNote,
+            'processed_by_user_id' => (int) $user->id,
+            'processed_at' => now(),
+            'updated_by_user_id' => (int) $user->id,
+        ]);
+
+        return back();
+    }
+
     public function downloadPdf(CampPlaybook $campPlaybook)
     {
-        abort_unless((string) $campPlaybook->section === (string) session('active_section', 'dolfijnen'), 403);
+        $user = request()->user();
+        abort_unless($user instanceof User, 403);
+        $activeSection = (string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN);
+        $isOwnSection = (string) $campPlaybook->section === $activeSection;
+        $canReview = $this->canReviewPlaybooks($user, $activeSection);
+        $isBestuurReview = $canReview
+            && $activeSection === UserSectionRole::SECTION_BESTUUR
+            && (string) $campPlaybook->section !== UserSectionRole::SECTION_BESTUUR;
+        abort_unless($isOwnSection || $isBestuurReview, 403);
+
         $sections = $this->normalizePlaybookSections(
             (array) data_get($campPlaybook->meta, 'sections', []),
             (string) ($campPlaybook->content ?? '')
@@ -231,6 +471,18 @@ class CampPlaybookController extends Controller
         $pdf = Pdf::loadView('pdf.camp-playbook', [
             'playbook' => $campPlaybook,
             'sections' => $sections,
+            'taskDistributionRows' => $this->normalizeTaskDistributionRows((array) data_get($campPlaybook->meta, 'task_distribution_rows', [])),
+            'taskExplanationItems' => $this->normalizeTaskExplanationItems(
+                (array) data_get($campPlaybook->meta, 'task_explanation_items', []),
+                (string) $campPlaybook->section,
+            ),
+            'generalAgreementsItems' => $this->normalizeGeneralAgreementsItems(
+                (array) data_get($campPlaybook->meta, 'general_agreements_items', []),
+                (string) $campPlaybook->section,
+            ),
+            'vinindelingRows' => $this->normalizeVinindelingRows((array) data_get($campPlaybook->meta, 'vinindeling_rows', [])),
+            'corveeRows' => $this->normalizeCorveeRows((array) data_get($campPlaybook->meta, 'corvee_rows', [])),
+            'monsterrolRows' => $this->normalizeMonsterrolRows((array) data_get($campPlaybook->meta, 'monsterrol_rows', [])),
             'emergencyContacts' => $this->normalizeEmergencyContacts((array) data_get($campPlaybook->meta, 'emergency_contacts', [])),
             'dayPlans' => $this->normalizeDayPlans((array) data_get($campPlaybook->meta, 'day_plans', [])),
             'vaarschemaRows' => $this->normalizeVaarschemaRows((array) data_get($campPlaybook->meta, 'vaarschema_rows', [])),
@@ -353,6 +605,407 @@ class CampPlaybookController extends Controller
     private function normalizeCampLocation(string $campLocation): string
     {
         return in_array($campLocation, ['clubhuis', 'fram'], true) ? $campLocation : 'fram';
+    }
+
+    /**
+     * @return array<int,array{task:string,description:string,responsible:string}>
+     */
+    private function defaultTaskDistributionRows(): array
+    {
+        return [[
+            'task' => '',
+            'description' => '',
+            'responsible' => '',
+        ]];
+    }
+
+    /**
+     * @param  array<int,mixed>  $raw
+     * @return array<int,array{task:string,description:string,responsible:string}>
+     */
+    private function normalizeTaskDistributionRows(array $raw): array
+    {
+        $rows = collect($raw)
+            ->filter(fn ($entry): bool => is_array($entry))
+            ->map(function (array $entry): array {
+                return [
+                    'task' => trim((string) ($entry['task'] ?? '')),
+                    'description' => trim((string) ($entry['description'] ?? '')),
+                    'responsible' => trim((string) ($entry['responsible'] ?? '')),
+                ];
+            })
+            ->filter(fn (array $row): bool => $row['task'] !== '' || $row['description'] !== '' || $row['responsible'] !== '')
+            ->values()
+            ->all();
+
+        return $rows !== [] ? $rows : $this->defaultTaskDistributionRows();
+    }
+
+    /**
+     * @return array<int,array{title:string,bullets:array<int,string>}>
+     */
+    private function defaultTaskExplanationItems(string $activeSection): array
+    {
+        $speltak = $this->sectionLabel($activeSection);
+
+        return [
+            ['title' => 'Eindverantwoording', 'bullets' => [
+                'Heeft de algemene eindverantwoording voor alles wat er op het kamp gebeurt.',
+                'Houdt de voorbereiding in de gaten en corrigeert waar nodig.',
+                'Organiseert een reflectiemoment na het kamp.',
+                'Beslist of er eventueel met ouders contact opgenomen dient te worden.',
+                'Is bij calamiteiten het aanspreekpunt voor de andere leiding.',
+            ]],
+            ['title' => 'Draaiboek', 'bullets' => [
+                'Maakt het draaiboek tijdens de voorbereiding.',
+                'Is verantwoordelijk voor het aanwezig zijn van het draaiboek tijdens het kamp.',
+            ]],
+            ['title' => 'Contactpersoon ouders', 'bullets' => [
+                'Is verantwoordelijk dat ouders tijdig op de hoogte zijn van de benodigde informatie over het kamp.',
+                'Is het aanspreekpunt voor ouders wanneer zij vragen of opmerkingen hebben over het kamp.',
+                'Organiseert de ouderavond indien deze gehouden wordt.',
+                'Houdt de inschrijvingen en betalingen bij.',
+            ]],
+            ['title' => 'EHBO', 'bullets' => [
+                "Aanspreekpunt voor {$speltak} en stafleden bij verwondingen en ziekten.",
+                'Verzorgt zo mogelijk verwondingen of zieke.',
+                'Begeleidt een jeugdlid of staf naar EHBO-post, dokter of ziekenhuis.',
+                'Zoekt uit waar huisartsen en ziekenhuizen zitten op de route gedurende het kamp.',
+                'Verzamelt gezondheidsformulieren en is verantwoordelijk voor de aanwezigheid hiervan.',
+                'Let op de veiligheid tijdens activiteiten.',
+            ]],
+            ['title' => 'Medicijnen', 'bullets' => [
+                'Neemt de medicijnen van de kinderen in bewaring.',
+                'Zorgt ervoor dat iedereen zijn/haar medicijnen op tijd inneemt.',
+            ]],
+            ['title' => "Algemene verzorging {$speltak}", 'bullets' => [
+                "Houdt toezicht op het welzijn van de {$speltak}.",
+                "Houdt in de gaten of de {$speltak} zich voldoende verschonen op het gebied van wassen en schone kleding.",
+                'Let op de kleding in het dekhuis en aan de waslijn.',
+            ]],
+            ['title' => 'Beheer kasgeld', 'bullets' => [
+                'Heeft verantwoording over de inkomsten en uitgaven en de balans hiertussen.',
+                'Maakt een begroting voor het kamp.',
+                'Heeft een beslissende stem over de uitgaven.',
+                'Zorgt voor uitwisseling van de begroting met de penningmeester.',
+            ]],
+            ['title' => 'Beheer zakgeld', 'bullets' => [
+                'Neemt het zakgeld van de kinderen in bewaring.',
+                'Zorgt ervoor dat het zakgeld bijgehouden wordt bij inleggen, opnemen en uitgeven aan de toko.',
+            ]],
+            ['title' => 'Proviand', 'bullets' => [
+                'Zorgt ervoor dat er boodschappen gedaan worden.',
+                'Zorgt ervoor dat bij dagtochten en meerdaagse hikes genoeg eten en drinken aan boord van de vletten is.',
+            ]],
+            ['title' => 'Koken', 'bullets' => [
+                'Zorgt ervoor dat tijdig gegeten kan worden.',
+                'Houdt in de gaten of iedereen voldoende eet.',
+                'Beoordeelt de keuken na het corvee.',
+            ]],
+            ['title' => 'Toko', 'bullets' => [
+                'Zorgt ervoor dat er snoep aan boord is voor de toko.',
+                'Zet de toko klaar en ruimt hem weer op.',
+            ]],
+            ['title' => 'Sleep', 'bullets' => [
+                'Organiseert de sleep.',
+                'Houdt tijdens de sleep contact met schipper en kader in de vletten.',
+                'Blijft in principe bij de sleep op het achterdek van de Fram of op de Viking.',
+            ]],
+            ['title' => 'ms Viking', 'bullets' => [
+                'Is verantwoordelijk voor de bevaarbaarheid van de Viking (technisch, opgeruimd, uitrusting compleet).',
+                'Is verantwoordelijk voor wie er met de Viking varen tijdens het kamp.',
+            ]],
+            ['title' => 'Vletten', 'bullets' => [
+                'Draagt zorg voor het correct afmeren van de vletten.',
+                'Controleert regelmatig de bakskisten.',
+                'Controleert de kookkisten en vult ze zo nodig aan.',
+                'Controleert de vletten op mankementen.',
+            ]],
+            ['title' => 'Dagverloop', 'bullets' => [
+                'Is verantwoordelijk voor het nalopen van het programma dat in het draaiboek beschreven staat.',
+                'Is verantwoordelijk voor het op tijd opstaan van iedereen.',
+                'Is verantwoordelijk voor het controleren van het corvee.',
+                'Bespreekt de dag aan het einde met de rest van de staf.',
+                'Past zo nodig het dagprogramma aan in overleg met de andere staf.',
+            ]],
+            ['title' => 'Algemene spel coördinator', 'bullets' => [
+                'Zorgt ervoor dat alle benodigde spullen voor de spellen aan boord zijn.',
+                'Is verantwoordelijk voor het inventariseren van het benodigde spelmateriaal bij de andere staf.',
+            ]],
+        ];
+    }
+
+    /**
+     * @param  array<int,mixed>  $raw
+     * @return array<int,array{title:string,bullets:array<int,string>}>
+     */
+    private function normalizeTaskExplanationItems(array $raw, string $activeSection): array
+    {
+        $items = collect($raw)
+            ->filter(fn ($entry): bool => is_array($entry))
+            ->map(function (array $entry): array {
+                $bullets = collect((array) ($entry['bullets'] ?? []))
+                    ->map(fn ($bullet): string => trim((string) $bullet))
+                    ->filter(fn (string $bullet): bool => $bullet !== '')
+                    ->values()
+                    ->all();
+
+                return [
+                    'title' => trim((string) ($entry['title'] ?? '')),
+                    'bullets' => $bullets !== [] ? $bullets : [''],
+                ];
+            })
+            ->filter(fn (array $item): bool => $item['title'] !== '' || collect($item['bullets'])->filter(fn (string $bullet): bool => trim($bullet) !== '')->isNotEmpty())
+            ->values()
+            ->all();
+
+        return $items !== [] ? $items : $this->defaultTaskExplanationItems($activeSection);
+    }
+
+    /**
+     * @return array<int,array{title:string,bullets:array<int,string>}>
+     */
+    private function defaultGeneralAgreementsItems(string $activeSection): array
+    {
+        $speltak = $this->sectionLabel($activeSection);
+
+        return [
+            ['title' => 'Algemeen', 'bullets' => [
+                'Mocht je iets dwars zitten, vertel dit dan.',
+                'Houd de Fram en de vletten schoon. Gooi rommel in de prullenbak.',
+            ]],
+            ['title' => 'Leiding - Eten en drinken', 'bullets' => [
+                "Tijdens het eten zit de leiding verspreid tussen de {$speltak}.",
+                "Er wordt niet gerookt in het zicht van de {$speltak}.",
+                "Er mag, nadat de {$speltak} op bed liggen, beperkt gedronken worden. Dit gaat op eigen inzicht. Vuistregel is dat je de volgende dag normaal moet kunnen functioneren. Er is altijd 1 persoon die 's nachts functioneel moet zijn.",
+                'Drugs zijn verboden.',
+                'Onder de 18 wordt er niet gedronken.',
+            ]],
+            ['title' => 'Dagverloop', 'bullets' => [
+                "De dagwacht staat 's ochtends eerder op en is verantwoordelijk voor het opstarten van de dag.",
+                'Iedereen is aanwezig bij het ontbijt.',
+                "Als de {$speltak} op bed liggen, wordt door alle leiding het programma van de volgende dag doorgesproken.",
+            ]],
+            ['title' => 'Plaatsen op de Fram', 'bullets' => [
+                "Ga nooit zonder reden het achteronder in. Dit is het privegebied van de {$speltak}.",
+                'Ga nooit in je eentje het achteronder in, maar zorg ervoor dat een ander persoon van de staf je kan zien.',
+            ]],
+            ['title' => 'Materiaal', 'bullets' => [
+                'Laat het draaiboek nooit rondslingeren.',
+                'Materialen die tijdens het programma worden gebruikt, moeten door de personen die dat spel leiden weer ordelijk opgeruimd worden op de plaats waar het hoort.',
+            ]],
+            ['title' => 'Omgang', 'bullets' => [
+                'Er bemoeit zich maar een leiding met een jeugdlid dat heimwee heeft. Deze leiding zondert zich niet alleen met het kind af.',
+                'Het kamp is in de eerste plaats voor de kinderen. Relaties of onenigheden mogen geen invloed hebben op het programma.',
+            ]],
+        ];
+    }
+
+    /**
+     * @param  array<int,mixed>  $raw
+     * @return array<int,array{title:string,bullets:array<int,string>}>
+     */
+    private function normalizeGeneralAgreementsItems(array $raw, string $activeSection): array
+    {
+        $items = collect($raw)
+            ->filter(fn ($entry): bool => is_array($entry))
+            ->map(function (array $entry): array {
+                $bullets = collect((array) ($entry['bullets'] ?? []))
+                    ->map(fn ($bullet): string => trim((string) $bullet))
+                    ->filter(fn (string $bullet): bool => $bullet !== '')
+                    ->values()
+                    ->all();
+
+                return [
+                    'title' => trim((string) ($entry['title'] ?? '')),
+                    'bullets' => $bullets !== [] ? $bullets : [''],
+                ];
+            })
+            ->filter(fn (array $item): bool => $item['title'] !== '' || collect($item['bullets'])->filter(fn (string $bullet): bool => trim($bullet) !== '')->isNotEmpty())
+            ->values()
+            ->all();
+
+        return $items !== [] ? $items : $this->defaultGeneralAgreementsItems($activeSection);
+    }
+
+    /**
+     * @return array<int,array{role:string,fin_names:array<int,string>}>
+     */
+    private function defaultVinindelingRows(): array
+    {
+        return [[
+            'role' => '',
+            'fin_names' => [''],
+        ]];
+    }
+
+    /**
+     * @param  array<int,mixed>  $raw
+     * @return array<int,array{role:string,fin_names:array<int,string>}>
+     */
+    private function normalizeVinindelingRows(array $raw): array
+    {
+        $rows = collect($raw)
+            ->filter(fn ($entry): bool => is_array($entry))
+            ->map(function (array $entry): array {
+                $finNames = collect((array) ($entry['fin_names'] ?? []))
+                    ->map(fn ($name): string => trim((string) $name))
+                    ->filter(fn (string $name): bool => $name !== '')
+                    ->values()
+                    ->all();
+
+                return [
+                    'role' => trim((string) ($entry['role'] ?? '')),
+                    'fin_names' => $finNames !== [] ? $finNames : [''],
+                ];
+            })
+            ->filter(fn (array $row): bool => $row['role'] !== '' || collect($row['fin_names'])->filter(fn (string $name): bool => trim($name) !== '')->isNotEmpty())
+            ->values()
+            ->all();
+
+        return $rows !== [] ? $rows : $this->defaultVinindelingRows();
+    }
+
+    /**
+     * @return array<int,array{
+     *   day:string,
+     *   date:string,
+     *   daywatch:string,
+     *   dienstvin:string,
+     *   dekhuis:string,
+     *   achteronder_en_dekken:string,
+     *   wc_en_klusjes:string
+     * }>
+     */
+    private function defaultCorveeRows(): array
+    {
+        return [[
+            'day' => '',
+            'date' => '',
+            'daywatch' => '',
+            'dienstvin' => '',
+            'dekhuis' => '',
+            'achteronder_en_dekken' => '',
+            'wc_en_klusjes' => '',
+        ]];
+    }
+
+    /**
+     * @param  array<int,mixed>  $raw
+     * @return array<int,array{
+     *   day:string,
+     *   date:string,
+     *   daywatch:string,
+     *   dienstvin:string,
+     *   dekhuis:string,
+     *   achteronder_en_dekken:string,
+     *   wc_en_klusjes:string
+     * }>
+     */
+    private function normalizeCorveeRows(array $raw): array
+    {
+        $rows = collect($raw)
+            ->filter(fn ($entry): bool => is_array($entry))
+            ->map(function (array $entry): array {
+                return [
+                    'day' => trim((string) ($entry['day'] ?? '')),
+                    'date' => trim((string) ($entry['date'] ?? '')),
+                    'daywatch' => trim((string) ($entry['daywatch'] ?? '')),
+                    'dienstvin' => trim((string) ($entry['dienstvin'] ?? '')),
+                    'dekhuis' => trim((string) ($entry['dekhuis'] ?? '')),
+                    'achteronder_en_dekken' => trim((string) ($entry['achteronder_en_dekken'] ?? '')),
+                    'wc_en_klusjes' => trim((string) ($entry['wc_en_klusjes'] ?? '')),
+                ];
+            })
+            ->filter(function (array $row): bool {
+                return $row['day'] !== ''
+                    || $row['date'] !== ''
+                    || $row['daywatch'] !== ''
+                    || $row['dienstvin'] !== ''
+                    || $row['dekhuis'] !== ''
+                    || $row['achteronder_en_dekken'] !== ''
+                    || $row['wc_en_klusjes'] !== '';
+            })
+            ->values()
+            ->all();
+
+        return $rows !== [] ? $rows : $this->defaultCorveeRows();
+    }
+
+    private function sectionLabel(string $section): string
+    {
+        return match ($section) {
+            UserSectionRole::SECTION_BEVERS => 'Bevers',
+            UserSectionRole::SECTION_DOLFIJNEN => 'Dolfijnen',
+            UserSectionRole::SECTION_ZEEVERKENNERS => 'Zeeverkenners',
+            UserSectionRole::SECTION_WILDE_VAART => 'Wilde Vaart',
+            UserSectionRole::SECTION_LOODSEN => 'Loodsen',
+            UserSectionRole::SECTION_BESTUUR => 'Bestuur',
+            default => ucfirst(str_replace('_', ' ', $section)),
+        };
+    }
+
+    /**
+     * @return array{
+     *   staff:array<int,array{first_name:string,last_name:string,functie:string,on_board:string,off_board:string}>,
+     *   vaarbemanning:array<int,array{first_name:string,last_name:string,functie:string,on_board:string,off_board:string}>
+     * }
+     */
+    private function defaultMonsterrolRows(): array
+    {
+        $emptyRow = [
+            'first_name' => '',
+            'last_name' => '',
+            'functie' => '',
+            'on_board' => '',
+            'off_board' => '',
+        ];
+
+        return [
+            'staff' => [$emptyRow],
+            'vaarbemanning' => [$emptyRow],
+        ];
+    }
+
+    /**
+     * @param  array<string,mixed>  $raw
+     * @return array{
+     *   staff:array<int,array{first_name:string,last_name:string,functie:string,on_board:string,off_board:string}>,
+     *   vaarbemanning:array<int,array{first_name:string,last_name:string,functie:string,on_board:string,off_board:string}>
+     * }
+     */
+    private function normalizeMonsterrolRows(array $raw): array
+    {
+        $defaults = $this->defaultMonsterrolRows();
+
+        foreach (['staff', 'vaarbemanning'] as $category) {
+            $rows = collect((array) ($raw[$category] ?? []))
+                ->filter(fn ($row): bool => is_array($row))
+                ->map(function (array $row): array {
+                    return [
+                        'first_name' => trim((string) ($row['first_name'] ?? '')),
+                        'last_name' => trim((string) ($row['last_name'] ?? '')),
+                        'functie' => trim((string) ($row['functie'] ?? '')),
+                        'on_board' => trim((string) ($row['on_board'] ?? '')),
+                        'off_board' => trim((string) ($row['off_board'] ?? '')),
+                    ];
+                })
+                ->filter(fn (array $row): bool => $row['first_name'] !== '' || $row['last_name'] !== '' || $row['functie'] !== '' || $row['on_board'] !== '' || $row['off_board'] !== '')
+                ->values()
+                ->all();
+
+            $defaults[$category] = $rows !== []
+                ? $rows
+                : [[
+                    'first_name' => '',
+                    'last_name' => '',
+                    'functie' => '',
+                    'on_board' => '',
+                    'off_board' => '',
+                ]];
+        }
+
+        return $defaults;
     }
 
     /**
@@ -495,6 +1148,73 @@ class CampPlaybookController extends Controller
     {
         return collect($this->leaderTeamOptions())
             ->mapWithKeys(fn (array $leader): array => [(int) ($leader['id'] ?? 0) => (string) ($leader['name'] ?? 'Onbekend')])
+            ->all();
+    }
+
+    private function canReviewPlaybooks(User $user, string $activeSection): bool
+    {
+        if ($user->isGlobalAdmin()) {
+            return true;
+        }
+
+        if ($activeSection !== UserSectionRole::SECTION_BESTUUR) {
+            return false;
+        }
+
+        return $user->isGlobalBoardMember()
+            || $user->sectionRoles()
+                ->where('section', UserSectionRole::SECTION_BESTUUR)
+                ->whereIn('role', UserSectionRole::BESTUUR_ROLES)
+                ->exists();
+    }
+
+    private function statusFromAction(string $action): string
+    {
+        return $action === 'submit'
+            ? CampPlaybook::STATUS_SUBMITTED
+            : CampPlaybook::STATUS_DRAFT;
+    }
+
+    /**
+     * @param  array<string,mixed>  $meta
+     * @return array<string,mixed>
+     */
+    private function appendReviewNote(array $meta, string $note, User $actor): array
+    {
+        $history = collect((array) data_get($meta, 'review_notes', []))
+            ->filter(fn ($entry): bool => is_array($entry))
+            ->values();
+
+        $history->push([
+            'note' => $note,
+            'user_name' => (string) $actor->name,
+            'user_id' => (int) $actor->id,
+            'at' => now()->toIso8601String(),
+        ]);
+
+        $meta['review_notes'] = $history->take(-100)->values()->all();
+
+        return $meta;
+    }
+
+    /**
+     * @param  array<int,mixed>  $rawNotes
+     * @return array<int,array{note:string,user_name:string,at:string}>
+     */
+    private function reviewNotesForPayload(array $rawNotes): array
+    {
+        return collect($rawNotes)
+            ->filter(fn ($entry): bool => is_array($entry))
+            ->map(function (array $entry): array {
+                return [
+                    'note' => trim((string) ($entry['note'] ?? '')),
+                    'user_name' => trim((string) ($entry['user_name'] ?? 'Onbekend')),
+                    'at' => trim((string) ($entry['at'] ?? '')),
+                ];
+            })
+            ->filter(fn (array $entry): bool => $entry['note'] !== '')
+            ->sortByDesc('at')
+            ->values()
             ->all();
     }
 

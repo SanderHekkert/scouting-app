@@ -1,8 +1,9 @@
 <script setup>
 import { computed, ref } from 'vue';
+import AppConfirmModal from '@/Components/AppConfirmModal.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
-import { ArrowUturnLeftIcon, DocumentCheckIcon, DocumentDuplicateIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import { ArrowUturnLeftIcon, BellAlertIcon, DocumentCheckIcon, DocumentDuplicateIcon, PaperAirplaneIcon, TrashIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     mode: { type: String, default: 'create' },
@@ -10,7 +11,14 @@ const props = defineProps({
     copyItem: { type: Object, default: null },
     leaderTeam: { type: Array, default: () => [] },
     defaultSections: { type: Array, default: () => [] },
+    defaultTaskDistributionRows: { type: Array, default: () => [] },
+    defaultTaskExplanationItems: { type: Array, default: () => [] },
+    defaultGeneralAgreementsItems: { type: Array, default: () => [] },
+    defaultVinindelingRows: { type: Array, default: () => [] },
+    defaultCorveeRows: { type: Array, default: () => [] },
+    defaultMonsterrolRows: { type: Object, default: () => ({}) },
     defaultDayPlans: { type: Array, default: () => [] },
+    defaultVaarschemaRows: { type: Array, default: () => [] },
 });
 
 const page = usePage();
@@ -31,6 +39,45 @@ const speltakLabel = computed(() => sectionLabels[page.props.auth?.active_sectio
 
 const source = props.item || props.copyItem || {};
 const initialSections = source.playbook_sections || props.defaultSections || [];
+function toIsoDate(value) {
+    const trimmed = String(value ?? '').trim();
+    if (!trimmed) return '';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+    const match = trimmed.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+    if (match) {
+        const [, day, month, year] = match;
+        return `${year}-${month}-${day}`;
+    }
+    return '';
+}
+function formatIsoToNlDate(value) {
+    const iso = String(value ?? '').trim();
+    const match = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) return '';
+    const [, year, month, day] = match;
+    return `${day}-${month}-${year}`;
+}
+function parseCampDateRange(raw) {
+    const text = String(raw ?? '').trim();
+    if (!text) return { start: '', end: '' };
+    if (text.includes('t/m')) {
+        const [left, right] = text.split('t/m').map((part) => part.trim());
+        return {
+            start: toIsoDate(left),
+            end: toIsoDate(right),
+        };
+    }
+
+    const single = toIsoDate(text);
+    return { start: single, end: '' };
+}
+function composeCampDateRange(start, end) {
+    const startNl = formatIsoToNlDate(start);
+    const endNl = formatIsoToNlDate(end);
+    if (startNl && endNl) return `${startNl} t/m ${endNl}`;
+    return startNl || endNl || '';
+}
+const initialDateRange = parseCampDateRange(source.camp_dates || '');
 const defaultEmergencyContacts = () => ({
     huisartsen: { name: '', address: '', postal_code: '', city: '', phone_010: '', website: '', extra_info: '' },
     ziekenhuizen: { name: '', address: '', postal_code: '', city: '', phone_010: '', website: '', extra_info: '' },
@@ -73,32 +120,176 @@ function normalizeDayPlans(raw) {
         game_explanation: String(day?.game_explanation ?? ''),
     }));
 }
+function normalizeTaskDistributionRows(raw) {
+    const incoming = Array.isArray(raw) ? raw : [];
+    if (!incoming.length) {
+        return JSON.parse(JSON.stringify(props.defaultTaskDistributionRows || [{ task: '', description: '', responsible: '' }]));
+    }
+
+    return incoming.map((row) => ({
+        task: String(row?.task ?? ''),
+        description: String(row?.description ?? ''),
+        responsible: String(row?.responsible ?? ''),
+    }));
+}
+function normalizeTaskExplanationItems(raw) {
+    const incoming = Array.isArray(raw) ? raw : [];
+    if (!incoming.length) {
+        return JSON.parse(JSON.stringify(props.defaultTaskExplanationItems || []));
+    }
+
+    return incoming.map((item) => ({
+        title: String(item?.title ?? ''),
+        bullets: Array.isArray(item?.bullets) && item.bullets.length
+            ? item.bullets.map((bullet) => String(bullet ?? ''))
+            : [''],
+    }));
+}
+function normalizeGeneralAgreementsItems(raw) {
+    const incoming = Array.isArray(raw) ? raw : [];
+    if (!incoming.length) {
+        return JSON.parse(JSON.stringify(props.defaultGeneralAgreementsItems || []));
+    }
+
+    return incoming.map((item) => ({
+        title: String(item?.title ?? ''),
+        bullets: Array.isArray(item?.bullets) && item.bullets.length
+            ? item.bullets.map((bullet) => String(bullet ?? ''))
+            : [''],
+    }));
+}
+function normalizeVinindelingRows(raw) {
+    const incoming = Array.isArray(raw) ? raw : [];
+    if (!incoming.length) {
+        return JSON.parse(JSON.stringify(props.defaultVinindelingRows || [{ role: '', fin_names: [''] }]));
+    }
+
+    return incoming.map((row) => ({
+        role: String(row?.role ?? ''),
+        fin_names: Array.isArray(row?.fin_names) && row.fin_names.length
+            ? row.fin_names.map((name) => String(name ?? ''))
+            : [''],
+    }));
+}
+function normalizeCorveeRows(raw) {
+    const incoming = Array.isArray(raw) ? raw : [];
+    if (!incoming.length) {
+        return JSON.parse(JSON.stringify(props.defaultCorveeRows || [{
+            day: '',
+            date: '',
+            daywatch: '',
+            dienstvin: '',
+            dekhuis: '',
+            achteronder_en_dekken: '',
+            wc_en_klusjes: '',
+        }]));
+    }
+
+    return incoming.map((row) => ({
+        day: String(row?.day ?? ''),
+        date: String(row?.date ?? ''),
+        daywatch: String(row?.daywatch ?? ''),
+        dienstvin: String(row?.dienstvin ?? ''),
+        dekhuis: String(row?.dekhuis ?? ''),
+        achteronder_en_dekken: String(row?.achteronder_en_dekken ?? ''),
+        wc_en_klusjes: String(row?.wc_en_klusjes ?? ''),
+    }));
+}
+function defaultMonsterrolRows() {
+    return {
+        staff: [{ first_name: '', last_name: '', functie: '', on_board: '', off_board: '' }],
+        vaarbemanning: [{ first_name: '', last_name: '', functie: '', on_board: '', off_board: '' }],
+    };
+}
+function normalizeMonsterrolRows(raw) {
+    const defaults = defaultMonsterrolRows();
+    const fallback = props.defaultMonsterrolRows && typeof props.defaultMonsterrolRows === 'object'
+        ? props.defaultMonsterrolRows
+        : defaults;
+    const value = raw && typeof raw === 'object' ? raw : fallback;
+
+    const normalizeRows = (rows) => {
+        const incoming = Array.isArray(rows) ? rows : [];
+        if (!incoming.length) {
+            return [{ first_name: '', last_name: '', functie: '', on_board: '', off_board: '' }];
+        }
+
+        return incoming.map((row) => ({
+            first_name: String(row?.first_name ?? ''),
+            last_name: String(row?.last_name ?? ''),
+            functie: String(row?.functie ?? ''),
+            on_board: String(row?.on_board ?? ''),
+            off_board: String(row?.off_board ?? ''),
+        }));
+    };
+
+    return {
+        staff: normalizeRows(value.staff),
+        vaarbemanning: normalizeRows(value.vaarbemanning),
+    };
+}
+function normalizeVaarschemaRows(raw) {
+    const incoming = Array.isArray(raw) ? raw : [];
+    if (!incoming.length) {
+        return JSON.parse(JSON.stringify(props.defaultVaarschemaRows || []));
+    }
+
+    return incoming.map((row) => ({
+        date: String(row?.date ?? ''),
+        from: String(row?.from ?? ''),
+        to: String(row?.to ?? ''),
+        depart_at: String(row?.depart_at ?? ''),
+        arrive_at: String(row?.arrive_at ?? ''),
+        tide_margin_minutes: String(row?.tide_margin_minutes ?? ''),
+    }));
+}
 const form = useForm({
     camp_year: source.camp_year || new Date().getFullYear(),
     title: source.title || '',
     camp_location: source.camp_location === 'clubhuis' ? 'clubhuis' : 'fram',
     camp_place: source.camp_place || '',
-    camp_dates: source.camp_dates || '',
+    camp_dates: composeCampDateRange(initialDateRange.start, initialDateRange.end),
+    camp_date_start: initialDateRange.start,
+    camp_date_end: initialDateRange.end,
+    task_distribution_rows: normalizeTaskDistributionRows(source.task_distribution_rows),
+    task_explanation_items: normalizeTaskExplanationItems(source.task_explanation_items),
+    general_agreements_items: normalizeGeneralAgreementsItems(source.general_agreements_items),
+    vinindeling_rows: normalizeVinindelingRows(source.vinindeling_rows),
+    corvee_rows: normalizeCorveeRows(source.corvee_rows),
+    monsterrol_rows: normalizeMonsterrolRows(source.monsterrol_rows),
     emergency_contacts: normalizeEmergencyContacts(source.emergency_contacts),
     day_plans: normalizeDayPlans(source.day_plans),
+    vaarschema_rows: normalizeVaarschemaRows(source.vaarschema_rows),
     playbook_sections: JSON.parse(JSON.stringify(initialSections)),
 });
 const activeSectionIndex = ref(0);
 const activeSection = computed(() => form.playbook_sections[activeSectionIndex.value] || null);
+const deleteModalOpen = ref(false);
 
-function submit() {
+function submit(action = 'save') {
+    const normalizedAction = action === 'submit' ? 'submit' : 'save';
+    form.transform((data) => ({
+        ...data,
+        camp_dates: composeCampDateRange(data.camp_date_start, data.camp_date_end),
+        action: normalizedAction,
+    }));
+
     if (isEdit.value) {
         if (!canUpdate.value) return;
-        form.patch(route('camp-playbooks.update', props.item.id));
+        form.patch(route('camp-playbooks.update', props.item.id), {
+            onFinish: () => form.transform((data) => data),
+        });
         return;
     }
     if (!canCreate.value) return;
-    form.post(route('camp-playbooks.store'));
+    form.post(route('camp-playbooks.store'), {
+        onFinish: () => form.transform((data) => data),
+    });
 }
 
 function destroyItem() {
     if (!isEdit.value || !canUpdate.value) return;
-    if (!confirm(`Draaiboek "${props.item.title}" verwijderen?`)) return;
+    deleteModalOpen.value = false;
     router.delete(route('camp-playbooks.destroy', props.item.id));
 }
 
@@ -119,8 +310,49 @@ function isHulpdienstenSection(section) {
     return String(section?.title || '').trim().toLowerCase() === 'hulpdiensten';
 }
 
+function isTaakverdelingSection(section) {
+    return String(section?.title || '').trim().toLowerCase() === 'taakverdeling';
+}
+
+function isTaakUitlegSection(section) {
+    return String(section?.title || '').trim().toLowerCase() === 'taak uitleg';
+}
+
+function isAlgemeneAfsprakenSection(section) {
+    return String(section?.title || '').trim().toLowerCase() === 'algemene afspraken';
+}
+
+function isCorveeroosterSection(section) {
+    return String(section?.title || '').trim().toLowerCase() === 'corveerooster';
+}
+
+function isVinindelingSection(section) {
+    return String(section?.title || '').trim().toLowerCase() === 'vinindeling';
+}
+
+function isMonsterrolSection(section) {
+    return String(section?.title || '').trim().toLowerCase() === 'monsterrol';
+}
+
 function isPlanningPerDagSection(section) {
     return String(section?.title || '').trim().toLowerCase() === 'planning per dag';
+}
+
+function isVaarschemaSection(section) {
+    return String(section?.title || '').trim().toLowerCase() === 'vaarschema';
+}
+
+function isStructuredSection(section) {
+    return isAlgemeenSection(section)
+        || isTaakverdelingSection(section)
+        || isTaakUitlegSection(section)
+        || isAlgemeneAfsprakenSection(section)
+        || isVinindelingSection(section)
+        || isCorveeroosterSection(section)
+        || isMonsterrolSection(section)
+        || isVaarschemaSection(section)
+        || isPlanningPerDagSection(section)
+        || isHulpdienstenSection(section);
 }
 
 function addPlanningDay() {
@@ -161,6 +393,164 @@ function toggleDaywatch(day, leaderId) {
         day.daywatch_ids.push(id);
     }
 }
+
+function addVaarschemaRow() {
+    form.vaarschema_rows.push({
+        date: '',
+        from: '',
+        to: '',
+        depart_at: '',
+        arrive_at: '',
+        tide_margin_minutes: '',
+    });
+}
+
+function removeVaarschemaRow(index) {
+    if (!Array.isArray(form.vaarschema_rows) || form.vaarschema_rows.length <= 1) return;
+    form.vaarschema_rows.splice(index, 1);
+}
+
+function addMonsterrolRow(type) {
+    if (!['staff', 'vaarbemanning'].includes(type)) return;
+    form.monsterrol_rows[type].push({ first_name: '', last_name: '', functie: '', on_board: '', off_board: '' });
+}
+
+function removeMonsterrolRow(type, index) {
+    if (!['staff', 'vaarbemanning'].includes(type)) return;
+    if (!Array.isArray(form.monsterrol_rows[type]) || form.monsterrol_rows[type].length <= 1) return;
+    form.monsterrol_rows[type].splice(index, 1);
+}
+
+function addTaskDistributionRow() {
+    form.task_distribution_rows.push({ task: '', description: '', responsible: '' });
+}
+
+function removeTaskDistributionRow(index) {
+    if (!Array.isArray(form.task_distribution_rows) || form.task_distribution_rows.length <= 1) return;
+    form.task_distribution_rows.splice(index, 1);
+}
+
+function addTaskExplanationItem() {
+    form.task_explanation_items.push({
+        title: '',
+        bullets: [''],
+    });
+}
+
+function removeTaskExplanationItem(index) {
+    if (!Array.isArray(form.task_explanation_items) || form.task_explanation_items.length <= 1) return;
+    form.task_explanation_items.splice(index, 1);
+}
+
+function addTaskBullet(taskIndex) {
+    const item = form.task_explanation_items?.[taskIndex];
+    if (!item) return;
+    if (!Array.isArray(item.bullets)) {
+        item.bullets = [];
+    }
+    item.bullets.push('');
+}
+
+function removeTaskBullet(taskIndex, bulletIndex) {
+    const item = form.task_explanation_items?.[taskIndex];
+    if (!item || !Array.isArray(item.bullets) || item.bullets.length <= 1) return;
+    item.bullets.splice(bulletIndex, 1);
+}
+
+function addGeneralAgreementItem() {
+    form.general_agreements_items.push({
+        title: '',
+        bullets: [''],
+    });
+}
+
+function removeGeneralAgreementItem(index) {
+    if (!Array.isArray(form.general_agreements_items) || form.general_agreements_items.length <= 1) return;
+    form.general_agreements_items.splice(index, 1);
+}
+
+function addGeneralAgreementBullet(itemIndex) {
+    const item = form.general_agreements_items?.[itemIndex];
+    if (!item) return;
+    if (!Array.isArray(item.bullets)) {
+        item.bullets = [];
+    }
+    item.bullets.push('');
+}
+
+function removeGeneralAgreementBullet(itemIndex, bulletIndex) {
+    const item = form.general_agreements_items?.[itemIndex];
+    if (!item || !Array.isArray(item.bullets) || item.bullets.length <= 1) return;
+    item.bullets.splice(bulletIndex, 1);
+}
+
+function addVinindelingRow() {
+    form.vinindeling_rows.push({
+        role: '',
+        fin_names: [''],
+    });
+}
+
+function removeVinindelingRow(index) {
+    if (!Array.isArray(form.vinindeling_rows) || form.vinindeling_rows.length <= 1) return;
+    form.vinindeling_rows.splice(index, 1);
+}
+
+function addVinName(rowIndex) {
+    const row = form.vinindeling_rows?.[rowIndex];
+    if (!row) return;
+    if (!Array.isArray(row.fin_names)) {
+        row.fin_names = [];
+    }
+    row.fin_names.push('');
+}
+
+function removeVinName(rowIndex, vinIndex) {
+    const row = form.vinindeling_rows?.[rowIndex];
+    if (!row || !Array.isArray(row.fin_names) || row.fin_names.length <= 1) return;
+    row.fin_names.splice(vinIndex, 1);
+}
+
+function addCorveeRow() {
+    form.corvee_rows.push({
+        day: '',
+        date: '',
+        daywatch: '',
+        dienstvin: '',
+        dekhuis: '',
+        achteronder_en_dekken: '',
+        wc_en_klusjes: '',
+    });
+}
+
+function removeCorveeRow(index) {
+    if (!Array.isArray(form.corvee_rows) || form.corvee_rows.length <= 1) return;
+    form.corvee_rows.splice(index, 1);
+}
+
+function openDeleteModal() {
+    if (!isEdit.value || !canUpdate.value) return;
+    deleteModalOpen.value = true;
+}
+
+function closeDeleteModal() {
+    deleteModalOpen.value = false;
+}
+
+function statusLabel(status) {
+    if (status === 'draft') return 'Concept';
+    if (status === 'submitted') return 'Wacht op goedkeuring';
+    if (status === 'approved') return 'Goedgekeurd';
+    if (status === 'needs_changes') return 'Aanpassing(en) nodig';
+    return status || 'Concept';
+}
+
+function statusClass(status) {
+    if (status === 'draft') return 'bg-slate-100 text-slate-700';
+    if (status === 'approved') return 'bg-emerald-100 text-emerald-800';
+    if (status === 'needs_changes') return 'bg-amber-100 text-amber-800';
+    return 'bg-sky-100 text-sky-800';
+}
 </script>
 
 <template>
@@ -169,9 +559,15 @@ function toggleDaywatch(day, leaderId) {
         <template #header>
             <div class="flex items-center justify-between gap-3">
                 <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">{{ speltakLabel }} - {{ isEdit ? 'Draaiboek bewerken' : 'Draaiboek toevoegen' }}</h2>
-                <Link :href="route('camp-playbooks.index')" class="btn-action-back" title="Terug" aria-label="Terug">
-                    <ArrowUturnLeftIcon class="h-5 w-5" />
-                </Link>
+                <div class="flex items-center gap-2">
+                    <span v-if="isEdit" :class="['inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs', statusClass(props.item?.status)]">
+                        {{ statusLabel(props.item?.status) }}
+                        <BellAlertIcon class="h-3.5 w-3.5" />
+                    </span>
+                    <Link :href="route('camp-playbooks.index')" class="btn-action-back" title="Terug" aria-label="Terug">
+                        <ArrowUturnLeftIcon class="h-5 w-5" />
+                    </Link>
+                </div>
             </div>
         </template>
 
@@ -239,13 +635,384 @@ function toggleDaywatch(day, leaderId) {
                             />
                         </div>
                         <div class="space-y-1">
-                            <label class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Datum</label>
+                            <label class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Datum (van)</label>
                             <input
-                                v-model="form.camp_dates"
-                                type="text"
+                                v-model="form.camp_date_start"
+                                type="date"
                                 class="w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-slate-900 dark:text-app-ink-dark"
-                                placeholder="Bijv. 17-05-2026 t/m 20-05-2026"
                             />
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Datum (tot)</label>
+                            <input
+                                v-model="form.camp_date_end"
+                                type="date"
+                                class="w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-slate-900 dark:text-app-ink-dark"
+                            />
+                        </div>
+                    </div>
+
+                    <div v-if="isMonsterrolSection(activeSection)" class="space-y-4">
+                        <div class="space-y-2 rounded-lg border border-app-border bg-white p-3 dark:border-app-border-dark dark:bg-slate-900">
+                            <div class="flex items-center justify-between">
+                                <h4 class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">Staf</h4>
+                                <button type="button" class="rounded bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800" @click="addMonsterrolRow('staff')">
+                                    Rij toevoegen
+                                </button>
+                            </div>
+                            <div class="overflow-x-auto rounded border border-app-border dark:border-app-border-dark">
+                                <table class="w-full min-w-[920px] text-sm">
+                                    <thead class="bg-slate-50 dark:bg-slate-800/70">
+                                        <tr>
+                                            <th class="px-2 py-2 text-left">Voornaam</th>
+                                            <th class="px-2 py-2 text-left">Achternaam</th>
+                                            <th class="px-2 py-2 text-left">Functie</th>
+                                            <th class="px-2 py-2 text-left">Aan boord</th>
+                                            <th class="px-2 py-2 text-left">Van boord</th>
+                                            <th class="px-2 py-2 text-left">Actie</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-app-border dark:divide-app-border-dark">
+                                        <tr v-for="(row, rowIdx) in form.monsterrol_rows.staff" :key="`monsterrol-staff-${rowIdx}`">
+                                            <td class="px-2 py-2"><input v-model="row.first_name" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Voornaam" /></td>
+                                            <td class="px-2 py-2"><input v-model="row.last_name" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Achternaam" /></td>
+                                            <td class="px-2 py-2"><input v-model="row.functie" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Functie" /></td>
+                                            <td class="px-2 py-2"><input v-model="row.on_board" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Aan boord" /></td>
+                                            <td class="px-2 py-2"><input v-model="row.off_board" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Van boord" /></td>
+                                            <td class="px-2 py-2">
+                                                <button type="button" class="btn-action-delete" title="Rij verwijderen" @click="removeMonsterrolRow('staff', rowIdx)">
+                                                    <TrashIcon class="h-5 w-5" />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2 rounded-lg border border-app-border bg-white p-3 dark:border-app-border-dark dark:bg-slate-900">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <div>
+                                    <h4 class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">Vaarbemanning</h4>
+                                    <p class="text-xs text-app-muted dark:text-app-muted-dark">Speltak: {{ speltakLabel }}</p>
+                                </div>
+                                <button type="button" class="rounded bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800" @click="addMonsterrolRow('vaarbemanning')">
+                                    Rij toevoegen
+                                </button>
+                            </div>
+                            <div class="overflow-x-auto rounded border border-app-border dark:border-app-border-dark">
+                                <table class="w-full min-w-[920px] text-sm">
+                                    <thead class="bg-slate-50 dark:bg-slate-800/70">
+                                        <tr>
+                                            <th class="px-2 py-2 text-left">Voornaam</th>
+                                            <th class="px-2 py-2 text-left">Achternaam</th>
+                                            <th class="px-2 py-2 text-left">Functie</th>
+                                            <th class="px-2 py-2 text-left">Aan boord</th>
+                                            <th class="px-2 py-2 text-left">Van boord</th>
+                                            <th class="px-2 py-2 text-left">Actie</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-app-border dark:divide-app-border-dark">
+                                        <tr v-for="(row, rowIdx) in form.monsterrol_rows.vaarbemanning" :key="`monsterrol-vaarbemanning-${rowIdx}`">
+                                            <td class="px-2 py-2"><input v-model="row.first_name" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Voornaam" /></td>
+                                            <td class="px-2 py-2"><input v-model="row.last_name" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Achternaam" /></td>
+                                            <td class="px-2 py-2"><input v-model="row.functie" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Functie" /></td>
+                                            <td class="px-2 py-2"><input v-model="row.on_board" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Aan boord" /></td>
+                                            <td class="px-2 py-2"><input v-model="row.off_board" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Van boord" /></td>
+                                            <td class="px-2 py-2">
+                                                <button type="button" class="btn-action-delete" title="Rij verwijderen" @click="removeMonsterrolRow('vaarbemanning', rowIdx)">
+                                                    <TrashIcon class="h-5 w-5" />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="isTaakverdelingSection(activeSection)" class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">Taakverdeling</h4>
+                            <button type="button" class="rounded bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800" @click="addTaskDistributionRow">
+                                Rij toevoegen
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto rounded border border-app-border dark:border-app-border-dark">
+                            <table class="w-full min-w-[840px] text-sm">
+                                <thead class="bg-slate-50 dark:bg-slate-800/70">
+                                    <tr>
+                                        <th class="px-2 py-2 text-left">Taak</th>
+                                        <th class="px-2 py-2 text-left">Beschrijving</th>
+                                        <th class="px-2 py-2 text-left">Verantwoordelijke</th>
+                                        <th class="px-2 py-2 text-left">Actie</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-app-border dark:divide-app-border-dark">
+                                    <tr v-for="(row, rowIdx) in form.task_distribution_rows" :key="`task-distribution-row-${rowIdx}`">
+                                        <td class="px-2 py-2"><input v-model="row.task" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Taak" /></td>
+                                        <td class="px-2 py-2"><input v-model="row.description" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Beschrijving" /></td>
+                                        <td class="px-2 py-2"><input v-model="row.responsible" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Verantwoordelijke" /></td>
+                                        <td class="px-2 py-2">
+                                            <button type="button" class="btn-action-delete" title="Rij verwijderen" @click="removeTaskDistributionRow(rowIdx)">
+                                                <TrashIcon class="h-5 w-5" />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div v-if="isTaakUitlegSection(activeSection)" class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">Taak uitleg</h4>
+                            <button type="button" class="rounded bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800" @click="addTaskExplanationItem">
+                                Taak toevoegen
+                            </button>
+                        </div>
+
+                        <div
+                            v-for="(item, itemIdx) in form.task_explanation_items"
+                            :key="`task-explanation-item-${itemIdx}`"
+                            class="rounded-lg border border-app-border bg-white p-3 dark:border-app-border-dark dark:bg-slate-900"
+                        >
+                            <div class="flex items-center justify-between gap-2">
+                                <input
+                                    v-model="item.title"
+                                    type="text"
+                                    class="w-full rounded border border-app-border bg-white px-3 py-2 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
+                                    :placeholder="`Taak ${itemIdx + 1}`"
+                                />
+                                <button type="button" class="btn-action-delete" title="Taak verwijderen" @click="removeTaskExplanationItem(itemIdx)">
+                                    <TrashIcon class="h-5 w-5" />
+                                </button>
+                            </div>
+
+                            <div class="mt-3 space-y-2">
+                                <div
+                                    v-for="(bullet, bulletIdx) in item.bullets"
+                                    :key="`task-bullet-${itemIdx}-${bulletIdx}`"
+                                    class="flex items-center gap-2"
+                                >
+                                    <span class="text-sm text-app-muted dark:text-app-muted-dark">•</span>
+                                    <input
+                                        v-model="item.bullets[bulletIdx]"
+                                        type="text"
+                                        class="w-full rounded border border-app-border bg-white px-3 py-2 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
+                                        placeholder="Bulletpoint"
+                                    />
+                                    <button type="button" class="btn-action-delete" title="Bulletpoint verwijderen" @click="removeTaskBullet(itemIdx, bulletIdx)">
+                                        <TrashIcon class="h-5 w-5" />
+                                    </button>
+                                </div>
+                                <button type="button" class="rounded bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800" @click="addTaskBullet(itemIdx)">
+                                    Bulletpoint toevoegen
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="isAlgemeneAfsprakenSection(activeSection)" class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">Algemene afspraken</h4>
+                            <button type="button" class="rounded bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800" @click="addGeneralAgreementItem">
+                                Blok toevoegen
+                            </button>
+                        </div>
+
+                        <div
+                            v-for="(item, itemIdx) in form.general_agreements_items"
+                            :key="`general-agreement-item-${itemIdx}`"
+                            class="rounded-lg border border-app-border bg-white p-3 dark:border-app-border-dark dark:bg-slate-900"
+                        >
+                            <div class="flex items-center justify-between gap-2">
+                                <input
+                                    v-model="item.title"
+                                    type="text"
+                                    class="w-full rounded border border-app-border bg-white px-3 py-2 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
+                                    :placeholder="`Kop ${itemIdx + 1}`"
+                                />
+                                <button type="button" class="btn-action-delete" title="Blok verwijderen" @click="removeGeneralAgreementItem(itemIdx)">
+                                    <TrashIcon class="h-5 w-5" />
+                                </button>
+                            </div>
+
+                            <div class="mt-3 space-y-2">
+                                <div
+                                    v-for="(bullet, bulletIdx) in item.bullets"
+                                    :key="`general-agreement-bullet-${itemIdx}-${bulletIdx}`"
+                                    class="flex items-center gap-2"
+                                >
+                                    <span class="text-sm text-app-muted dark:text-app-muted-dark">•</span>
+                                    <input
+                                        v-model="item.bullets[bulletIdx]"
+                                        type="text"
+                                        class="w-full rounded border border-app-border bg-white px-3 py-2 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
+                                        placeholder="Bulletpoint"
+                                    />
+                                    <button type="button" class="btn-action-delete" title="Bulletpoint verwijderen" @click="removeGeneralAgreementBullet(itemIdx, bulletIdx)">
+                                        <TrashIcon class="h-5 w-5" />
+                                    </button>
+                                </div>
+                                <button type="button" class="rounded bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800" @click="addGeneralAgreementBullet(itemIdx)">
+                                    Bulletpoint toevoegen
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="isCorveeroosterSection(activeSection)" class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">Corveerooster</h4>
+                            <button type="button" class="rounded bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800" @click="addCorveeRow">
+                                Rij toevoegen
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto rounded border border-app-border dark:border-app-border-dark">
+                            <table class="w-full min-w-[1300px] text-sm">
+                                <thead class="bg-slate-50 dark:bg-slate-800/70">
+                                    <tr>
+                                        <th class="px-2 py-2 text-left">Dag</th>
+                                        <th class="px-2 py-2 text-left">Datum</th>
+                                        <th class="px-2 py-2 text-left">Dagwacht</th>
+                                        <th class="px-2 py-2 text-left">Dienstvin</th>
+                                        <th class="px-2 py-2 text-left">Dekhuis</th>
+                                        <th class="px-2 py-2 text-left">Achteronder &amp; Dekken</th>
+                                        <th class="px-2 py-2 text-left">WC &amp; klusjes</th>
+                                        <th class="px-2 py-2 text-left">Actie</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-app-border dark:divide-app-border-dark">
+                                    <tr v-for="(row, rowIdx) in form.corvee_rows" :key="`corvee-row-${rowIdx}`">
+                                        <td class="px-2 py-2"><input v-model="row.day" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Dag" /></td>
+                                        <td class="px-2 py-2"><input v-model="row.date" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Datum" /></td>
+                                        <td class="px-2 py-2"><input v-model="row.daywatch" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Dagwacht" /></td>
+                                        <td class="px-2 py-2"><input v-model="row.dienstvin" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Dienstvin" /></td>
+                                        <td class="px-2 py-2"><input v-model="row.dekhuis" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Dekhuis" /></td>
+                                        <td class="px-2 py-2"><input v-model="row.achteronder_en_dekken" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Achteronder &amp; Dekken" /></td>
+                                        <td class="px-2 py-2"><input v-model="row.wc_en_klusjes" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="WC &amp; klusjes" /></td>
+                                        <td class="px-2 py-2">
+                                            <button type="button" class="btn-action-delete" title="Rij verwijderen" @click="removeCorveeRow(rowIdx)">
+                                                <TrashIcon class="h-5 w-5" />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div v-if="isVinindelingSection(activeSection)" class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">Vinindeling</h4>
+                            <button type="button" class="rounded bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800" @click="addVinindelingRow">
+                                Rij toevoegen
+                            </button>
+                        </div>
+
+                        <div class="overflow-x-auto rounded border border-app-border dark:border-app-border-dark">
+                            <table class="w-full min-w-[860px] text-sm">
+                                <thead class="bg-slate-50 dark:bg-slate-800/70">
+                                    <tr>
+                                        <th class="px-2 py-2 text-left">Rol</th>
+                                        <th class="px-2 py-2 text-left">Vinnamen</th>
+                                        <th class="px-2 py-2 text-left">Actie</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-app-border dark:divide-app-border-dark">
+                                    <tr v-for="(row, rowIdx) in form.vinindeling_rows" :key="`vinindeling-row-${rowIdx}`">
+                                        <td class="px-2 py-2 align-top">
+                                            <input
+                                                v-model="row.role"
+                                                type="text"
+                                                class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
+                                                placeholder="Rol"
+                                            />
+                                        </td>
+                                        <td class="px-2 py-2">
+                                            <div class="space-y-2">
+                                                <div
+                                                    v-for="(vinName, vinIdx) in row.fin_names"
+                                                    :key="`vinindeling-vin-${rowIdx}-${vinIdx}`"
+                                                    class="flex items-center gap-2"
+                                                >
+                                                    <input
+                                                        v-model="row.fin_names[vinIdx]"
+                                                        type="text"
+                                                        class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
+                                                        placeholder="Vinnaam"
+                                                    />
+                                                    <button type="button" class="btn-action-delete" title="Vinnaam verwijderen" @click="removeVinName(rowIdx, vinIdx)">
+                                                        <TrashIcon class="h-5 w-5" />
+                                                    </button>
+                                                </div>
+                                                <button type="button" class="rounded bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800" @click="addVinName(rowIdx)">
+                                                    Vinnaam toevoegen
+                                                </button>
+                                            </div>
+                                        </td>
+                                        <td class="px-2 py-2 align-top">
+                                            <button type="button" class="btn-action-delete" title="Rij verwijderen" @click="removeVinindelingRow(rowIdx)">
+                                                <TrashIcon class="h-5 w-5" />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div v-if="isVaarschemaSection(activeSection)" class="space-y-3">
+                        <div class="rounded-lg border border-brand-blue/25 bg-brand-blue/5 p-3 text-sm text-app-ink dark:border-brand-blue/40 dark:bg-brand-blue/10 dark:text-app-ink-dark">
+                            <p class="font-semibold">Website getij</p>
+                            <a
+                                href="https://waterinfo.rws.nl/#/publiek/astronomische-getij/Goidschalxoord%28GOIDSOD%29/details?parameters=Waterhoogte___20berekend___20Oppervlaktewater___20t.o.v.___20Normaal___20Amsterdams___20Peil___20in___20cm"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="mt-1 inline-block break-all text-brand-blue underline"
+                            >
+                                https://waterinfo.rws.nl/#/publiek/astronomische-getij/Goidschalxoord%28GOIDSOD%29/details?parameters=Waterhoogte___20berekend___20Oppervlaktewater___20t.o.v.___20Normaal___20Amsterdams___20Peil___20in___20cm
+                            </a>
+                            <p class="mt-2 text-xs">
+                                Note: We kunnen met 60 NAP net wel naar binnen in de Koedood. Voor de veiligheid 75 NAP aanhouden.
+                            </p>
+                        </div>
+
+                        <div class="overflow-x-auto rounded border border-app-border dark:border-app-border-dark">
+                            <table class="w-full min-w-[880px] text-sm">
+                                <thead class="bg-slate-50 dark:bg-slate-800/70">
+                                    <tr>
+                                        <th class="px-2 py-2 text-left">Datum</th>
+                                        <th class="px-2 py-2 text-left">Van</th>
+                                        <th class="px-2 py-2 text-left">Naar</th>
+                                        <th class="px-2 py-2 text-left">Wegvaren</th>
+                                        <th class="px-2 py-2 text-left">Aankomen</th>
+                                        <th class="px-2 py-2 text-left">Speling (minuten)</th>
+                                        <th class="px-2 py-2 text-left">Actie</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-app-border dark:divide-app-border-dark">
+                                    <tr v-for="(row, rowIdx) in form.vaarschema_rows" :key="`vaarschema-row-${rowIdx}`">
+                                        <td class="px-2 py-2"><input v-model="row.date" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Bijv. 18-05-2026" /></td>
+                                        <td class="px-2 py-2"><input v-model="row.from" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Van" /></td>
+                                        <td class="px-2 py-2"><input v-model="row.to" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Naar" /></td>
+                                        <td class="px-2 py-2"><input v-model="row.depart_at" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Wegvaren" /></td>
+                                        <td class="px-2 py-2"><input v-model="row.arrive_at" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Aankomen" /></td>
+                                        <td class="px-2 py-2"><input v-model="row.tide_margin_minutes" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Bijv. 75" /></td>
+                                        <td class="px-2 py-2">
+                                            <button type="button" class="btn-action-delete" title="Rij verwijderen" @click="removeVaarschemaRow(rowIdx)">
+                                                <TrashIcon class="h-5 w-5" />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div>
+                            <button type="button" class="rounded bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800" @click="addVaarschemaRow">
+                                Rij toevoegen
+                            </button>
                         </div>
                     </div>
 
@@ -352,7 +1119,7 @@ function toggleDaywatch(day, leaderId) {
                     </div>
 
                     <textarea
-                        v-else
+                        v-if="!isStructuredSection(activeSection)"
                         v-model="activeSection.content"
                         rows="14"
                         class="w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-slate-900 dark:text-app-ink-dark"
@@ -361,16 +1128,29 @@ function toggleDaywatch(day, leaderId) {
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2 border-t border-app-border pt-3">
-                <button type="submit" class="btn-action-save" :disabled="form.processing" title="Opslaan" aria-label="Opslaan">
+                <button type="button" class="btn-action-save" :disabled="form.processing" title="Opslaan als concept" aria-label="Opslaan als concept" @click="submit('save')">
                     <DocumentCheckIcon class="h-5 w-5" />
+                </button>
+                <button type="button" class="btn-action-save" :disabled="form.processing" title="Draaiboek inleveren" aria-label="Draaiboek inleveren" @click="submit('submit')">
+                    <PaperAirplaneIcon class="h-5 w-5" />
                 </button>
                 <button v-if="isEdit && canCreate" type="button" class="btn-action-save" title="Kopie maken" aria-label="Kopie maken" @click="copyItem">
                     <DocumentDuplicateIcon class="h-5 w-5" />
                 </button>
-                <button v-if="isEdit && canUpdate" type="button" class="btn-action-delete" title="Verwijderen" aria-label="Verwijderen" @click="destroyItem">
+                <button v-if="isEdit && canUpdate" type="button" class="btn-action-delete" title="Verwijderen" aria-label="Verwijderen" @click="openDeleteModal">
                     <TrashIcon class="h-5 w-5" />
                 </button>
             </div>
         </form>
     </AuthenticatedLayout>
+
+    <AppConfirmModal
+        :show="deleteModalOpen"
+        title="Draaiboek verwijderen?"
+        :message="`Weet je zeker dat je draaiboek '${props.item?.title || ''}' wilt verwijderen?`"
+        confirm-text="Ja, verwijderen"
+        cancel-text="Annuleren"
+        @close="closeDeleteModal"
+        @confirm="destroyItem"
+    />
 </template>

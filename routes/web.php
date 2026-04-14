@@ -154,6 +154,9 @@ Route::middleware(['auth', 'verified', 'has.role', 'section.role:admin,bestuursl
     Route::get('/kamp/draaiboek/nieuw', [CampPlaybookController::class, 'create'])->middleware('section.permission:camp_playbooks')->name('camp-playbooks.create');
     Route::get('/kamp/draaiboek/{campPlaybook}', [CampPlaybookController::class, 'show'])->middleware('section.permission:camp_playbooks')->name('camp-playbooks.show');
     Route::get('/kamp/draaiboek/{campPlaybook}/pdf', [CampPlaybookController::class, 'downloadPdf'])->middleware('section.permission:camp_playbooks')->name('camp-playbooks.pdf.download');
+    Route::patch('/kamp/draaiboek/{campPlaybook}/approve', [CampPlaybookController::class, 'approve'])->middleware('section.permission:camp_playbooks')->name('camp-playbooks.approve');
+    Route::patch('/kamp/draaiboek/{campPlaybook}/reject', [CampPlaybookController::class, 'reject'])->middleware('section.permission:camp_playbooks')->name('camp-playbooks.reject');
+    Route::patch('/kamp/draaiboek/{campPlaybook}/submit', [CampPlaybookController::class, 'submit'])->middleware('section.permission:camp_playbooks')->name('camp-playbooks.submit');
     Route::post('/kamp/draaiboek', [CampPlaybookController::class, 'store'])->middleware('section.permission:camp_playbooks')->name('camp-playbooks.store');
     Route::post('/kamp/draaiboek/{campPlaybook}/copy', [CampPlaybookController::class, 'copy'])->middleware('section.permission:camp_playbooks')->name('camp-playbooks.copy');
     Route::patch('/kamp/draaiboek/{campPlaybook}', [CampPlaybookController::class, 'update'])->middleware('section.permission:camp_playbooks')->name('camp-playbooks.update');
