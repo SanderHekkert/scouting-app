@@ -72,7 +72,7 @@ class CampBudgetController extends Controller
             'status' => (string) ($item->status ?: CampBudget::STATUS_DRAFT),
             'review_note' => (string) ($item->review_note ?? ''),
             'created_by_name' => (string) optional($item->createdBy)->name,
-                    'updated_by_name' => (string) optional($item->updatedBy)->name,
+            'updated_by_name' => (string) optional($item->updatedBy)->name,
             'updated_at' => optional($item->updated_at)?->toIso8601String(),
             'can_review' => $canReview && in_array((string) $item->status, [CampBudget::STATUS_SUBMITTED], true),
             'totals' => $totals,
@@ -393,6 +393,10 @@ class CampBudgetController extends Controller
 
                 return ['title' => $title, 'rows' => $rows];
             })
+            ->reject(function (array $section): bool {
+                $title = mb_strtolower(trim((string) ($section['title'] ?? '')));
+                return $title === 'bemanning en deelnemers';
+            })
             ->filter(fn (array $section): bool => $section['title'] !== '' || $section['rows'] !== [])
             ->values()
             ->all();
@@ -427,11 +431,8 @@ class CampBudgetController extends Controller
         $income = 0.0;
         $expenses = 0.0;
         foreach ($sections as $section) {
-            $sum = collect($section['rows'])->sum(function (array $row) use ($section, $standardValues, $campDays, $campLocation): float {
-                $quantity = (float) ($row['quantity'] ?? 0);
-                $price = $this->effectiveAmount($row, (string) ($section['title'] ?? ''), $standardValues, $campDays, $campLocation);
-
-                return $quantity * $price;
+            $sum = collect($section['rows'])->sum(function (array $row) use ($section, $sections, $standardValues, $campDays, $campLocation): float {
+                return $this->rowTotalForCalculation($row, (string) ($section['title'] ?? ''), $sections, $standardValues, $campDays, $campLocation);
             });
             $title = mb_strtolower(trim($section['title']));
             if (in_array($title, $incomeTitles, true)) {
@@ -470,7 +471,7 @@ class CampBudgetController extends Controller
         return [
             'prijs_per_dag_clubhuis' => 0.00,
             'prijs_per_dag_leiding' => 0.00,
-            'prijs_per_dag_jeugdlid' => 0.00,
+            'prijs_per_dag_jeugdlid' => 80.00,
             'kosten_vaart_pu' => 0.00,
             'kosten_aggregaat_pu' => 0.00,
             'huur_fram_pppd' => 0.00,
@@ -501,12 +502,12 @@ class CampBudgetController extends Controller
             return (float) ($standardValues['prijs_per_dag_leiding'] ?? 0) * $campDays;
         }
         if ($section === 'bijdragen' && (str_contains($label, 'jeugdleden') || str_contains($label, 'jeugdlid'))) {
-            return (float) ($standardValues['prijs_per_dag_jeugdlid'] ?? 0) * $campDays;
+            return (float) ($standardValues['prijs_per_dag_jeugdlid'] ?? 0);
         }
-        if (str_contains($label, 'vaart')) {
+        if ($section === 'uitgaven' && str_contains($label, 'vaart')) {
             return (float) ($standardValues['kosten_vaart_pu'] ?? 0);
         }
-        if (str_contains($label, 'aggregaat')) {
+        if ($section === 'uitgaven' && str_contains($label, 'aggregaat')) {
             return (float) ($standardValues['kosten_aggregaat_pu'] ?? 0);
         }
         if (str_contains($label, 'clubhuis')) {
@@ -544,6 +545,51 @@ class CampBudgetController extends Controller
         }
 
         return min($campDays, 60);
+    }
+
+    /**
+     * @param  array{label:string,quantity:float,amount:float,note:string}  $row
+     * @param  array<int,array{title:string,rows:array<int,array{label:string,quantity:float,amount:float,note:string}>}>  $sections
+     * @param  array<string,float>  $standardValues
+     */
+    private function rowTotalForCalculation(array $row, string $sectionTitle, array $sections, array $standardValues, int $campDays, string $campLocation): float
+    {
+        $section = mb_strtolower(trim($sectionTitle));
+        $label = mb_strtolower(trim((string) ($row['label'] ?? '')));
+        if ($section === 'uitgaven' && str_contains($label, 'proviand')) {
+            $participants = $this->participantCountFromSections($sections);
+            $proviandPerDay = (float) ($standardValues['proviand_pppd'] ?? 0);
+
+            return $participants * $proviandPerDay * $campDays;
+        }
+
+        $quantity = (float) ($row['quantity'] ?? 0);
+        $price = $this->effectiveAmount($row, $sectionTitle, $standardValues, $campDays, $campLocation);
+
+        return $quantity * $price;
+    }
+
+    /**
+     * @param  array<int,array{title:string,rows:array<int,array{label:string,quantity:float,amount:float,note:string}>}>  $sections
+     */
+    private function participantCountFromSections(array $sections): float
+    {
+        $contributions = collect($sections)->first(function (array $section): bool {
+            return mb_strtolower(trim((string) ($section['title'] ?? ''))) === 'bijdragen';
+        });
+        if (! is_array($contributions)) {
+            return 0.0;
+        }
+
+        return (float) collect((array) ($contributions['rows'] ?? []))
+            ->filter(function (array $row): bool {
+                $label = mb_strtolower(trim((string) ($row['label'] ?? '')));
+
+                return str_contains($label, 'leiding')
+                    || str_contains($label, 'jeugdleden')
+                    || str_contains($label, 'jeugdlid');
+            })
+            ->sum(fn (array $row): float => max(0, (float) ($row['quantity'] ?? 0)));
     }
 
     private function canReviewBudgets(User $user, string $activeSection): bool

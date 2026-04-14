@@ -168,9 +168,7 @@ function removeRow(sectionIndex, rowIndex) {
 
 function sectionTotal(section) {
     return (section?.rows || []).reduce((sum, row) => {
-        const quantity = normalizeWholeNumber(row.quantity);
-        const amount = effectiveAmount(row, section?.title);
-        return sum + (quantity * amount);
+        return sum + rowComputedTotal(row, section?.title);
     }, 0);
 }
 
@@ -183,9 +181,10 @@ function effectiveAmount(row, sectionTitle) {
     const days = normalizedCampDays(form.camp_days);
 
     if (section === 'bijdragen' && label.includes('leiding')) return (Number(form.standard_values.prijs_per_dag_leiding) || 0) * days;
+    if (section === 'bijdragen' && (label.includes('jeugdleden') || label.includes('jeugdlid'))) return Number(form.standard_values.prijs_per_dag_jeugdlid) || 0;
     if (label.includes('clubhuis')) return (Number(form.standard_values.prijs_per_dag_clubhuis) || 0) * days;
-    if (label.includes('vaart')) return Number(form.standard_values.kosten_vaart_pu) || 0;
-    if (label.includes('aggregaat')) return Number(form.standard_values.kosten_aggregaat_pu) || 0;
+    if (section === 'uitgaven' && label.includes('vaart')) return Number(form.standard_values.kosten_vaart_pu) || 0;
+    if (section === 'uitgaven' && label.includes('aggregaat')) return Number(form.standard_values.kosten_aggregaat_pu) || 0;
     if (label.includes('fram')) {
         if (campLocation.value === 'clubhuis') return (Number(form.standard_values.prijs_per_dag_clubhuis) || 0) * days;
         return (Number(form.standard_values.huur_fram_pppd) || 0) * days;
@@ -284,13 +283,62 @@ function isAutoContributionRow(sectionTitle, label) {
     if (section === 'uitgaven') {
         return rowLabel.includes('geschatte vaaruren')
             || rowLabel.includes('geschatte aggregaaturen')
-            || rowLabel.includes('geschatte aggregraaturen');
+            || rowLabel.includes('geschatte aggregraaturen')
+            || rowLabel.includes('proviand');
     }
     return false;
 }
 
+function isProviandFormulaRow(sectionTitle, label) {
+    const section = String(sectionTitle || '').trim().toLowerCase();
+    const rowLabel = String(label || '').trim().toLowerCase();
+    return section === 'uitgaven' && rowLabel.includes('proviand');
+}
+
+function isEstimatedHoursRow(sectionTitle, label) {
+    const section = String(sectionTitle || '').trim().toLowerCase();
+    const rowLabel = String(label || '').trim().toLowerCase();
+    if (section !== 'uitgaven') return false;
+    return rowLabel.includes('geschatte vaaruren')
+        || rowLabel.includes('geschatte aggregaaturen')
+        || rowLabel.includes('geschatte aggregraaturen');
+}
+
+function participantCountFromBudgetSections() {
+    const contributions = (form.budget_sections || []).find((section) => String(section?.title || '').trim().toLowerCase() === 'bijdragen');
+    if (!contributions) return 0;
+
+    return (contributions.rows || []).reduce((sum, row) => {
+        const label = String(row?.label || '').trim().toLowerCase();
+        if (label.includes('leiding') || label.includes('jeugdleden') || label.includes('jeugdlid')) {
+            return sum + normalizeWholeNumber(row?.quantity);
+        }
+        return sum;
+    }, 0);
+}
+
+function rowComputedTotal(row, sectionTitle) {
+    if (isProviandFormulaRow(sectionTitle, row?.label)) {
+        const participants = participantCountFromBudgetSections();
+        const days = normalizedCampDays(form.camp_days);
+        const proviandPerDay = Number(form.standard_values.proviand_pppd) || 0;
+        return participants * proviandPerDay * days;
+    }
+
+    const quantity = normalizeWholeNumber(row?.quantity);
+    const amount = effectiveAmount(row, sectionTitle);
+    return quantity * amount;
+}
+
 function rowAmountDisplayValue(row, sectionTitle) {
     if (isAutoContributionRow(sectionTitle, row?.label)) {
+        if (isProviandFormulaRow(sectionTitle, row?.label)) {
+            return formatMoney(rowComputedTotal(row, sectionTitle));
+        }
+        if (isEstimatedHoursRow(sectionTitle, row?.label)) {
+            return formatMoney(rowComputedTotal(row, sectionTitle));
+        }
+
         const quantity = normalizeWholeNumber(row?.quantity);
         if (quantity < 1) {
             return '0,00';
@@ -309,7 +357,9 @@ function rowAmountInputValue(row, sectionTitle, sectionIndex, rowIndex) {
 function standardAmountInputValue(field, fallback = '0,00') {
     const key = standardMoneyKey(field);
     if (hasMoneyDraft(key)) return moneyDrafts.value[key];
-    return moneyInputPreview(form.standard_values[field], { fallback });
+    const value = form.standard_values[field];
+    if (value === null || value === undefined || value === '') return fallback;
+    return formatMoney(value);
 }
 
 const totals = computed(() => {
@@ -393,7 +443,7 @@ function generatePdf() {
                     <label v-if="campLocation === 'fram'" class="text-xs text-app-ink dark:text-app-ink-dark">Kosten aggregaat p/u <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="standardAmountInputValue('kosten_aggregaat_pu')" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @focus="onStandardMoneyFocus('kosten_aggregaat_pu')" @input="onStandardMoneyInput('kosten_aggregaat_pu', $event)" @blur="onStandardMoneyBlur('kosten_aggregaat_pu')" /></div></label>
                     <label v-if="campLocation === 'fram'" class="text-xs text-app-ink dark:text-app-ink-dark">Huur Fram pppd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="standardAmountInputValue('huur_fram_pppd')" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @focus="onStandardMoneyFocus('huur_fram_pppd')" @input="onStandardMoneyInput('huur_fram_pppd', $event)" @blur="onStandardMoneyBlur('huur_fram_pppd')" /></div></label>
                     <label class="text-xs text-app-ink dark:text-app-ink-dark">Prijs per dag leiding <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="standardAmountInputValue('prijs_per_dag_leiding')" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @focus="onStandardMoneyFocus('prijs_per_dag_leiding')" @input="onStandardMoneyInput('prijs_per_dag_leiding', $event)" @blur="onStandardMoneyBlur('prijs_per_dag_leiding')" /></div></label>
-                    <label class="text-xs text-app-ink dark:text-app-ink-dark">Prijs per dag jeugdlid <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="standardAmountInputValue('prijs_per_dag_jeugdlid')" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @focus="onStandardMoneyFocus('prijs_per_dag_jeugdlid')" @input="onStandardMoneyInput('prijs_per_dag_jeugdlid', $event)" @blur="onStandardMoneyBlur('prijs_per_dag_jeugdlid')" /></div></label>
+                    <label class="text-xs text-app-ink dark:text-app-ink-dark">Standaard kamp prijs per Jeugdlid <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="standardAmountInputValue('prijs_per_dag_jeugdlid')" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @focus="onStandardMoneyFocus('prijs_per_dag_jeugdlid')" @input="onStandardMoneyInput('prijs_per_dag_jeugdlid', $event)" @blur="onStandardMoneyBlur('prijs_per_dag_jeugdlid')" /></div></label>
                     <label class="text-xs text-app-ink dark:text-app-ink-dark">Proviand pppd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="standardAmountInputValue('proviand_pppd')" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @focus="onStandardMoneyFocus('proviand_pppd')" @input="onStandardMoneyInput('proviand_pppd', $event)" @blur="onStandardMoneyBlur('proviand_pppd')" /></div></label>
                     <label class="text-xs text-app-ink dark:text-app-ink-dark">Groepsafdracht pjpd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="standardAmountInputValue('groepsafdracht_pjpd')" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @focus="onStandardMoneyFocus('groepsafdracht_pjpd')" @input="onStandardMoneyInput('groepsafdracht_pjpd', $event)" @blur="onStandardMoneyBlur('groepsafdracht_pjpd')" /></div></label>
                     <label class="text-xs text-app-ink dark:text-app-ink-dark">Reservering NaWaKa pjpd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="standardAmountInputValue('reservering_nawaka_pjpd')" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @focus="onStandardMoneyFocus('reservering_nawaka_pjpd')" @input="onStandardMoneyInput('reservering_nawaka_pjpd', $event)" @blur="onStandardMoneyBlur('reservering_nawaka_pjpd')" /></div></label>
@@ -463,7 +513,7 @@ function generatePdf() {
                                         </div>
                                     </td>
                                     <td class="px-1.5 py-2 whitespace-nowrap">
-                                        <span class="text-base font-bold text-brand-blue-dark dark:text-brand-blue-light">€ {{ formatMoney(normalizeWholeNumber(row.quantity) * effectiveAmount(row, form.budget_sections[activeSectionIndex].title)) }}</span>
+                                        <span class="text-base font-bold text-brand-blue-dark dark:text-brand-blue-light">€ {{ formatMoney(rowComputedTotal(row, form.budget_sections[activeSectionIndex].title)) }}</span>
                                     </td>
                                     <td class="px-1.5 py-2">
                                         <button type="button" class="btn-action-delete" title="Regel verwijderen" @click="removeRow(activeSectionIndex, rowIdx)">
