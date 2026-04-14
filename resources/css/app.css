@@ -14,6 +14,16 @@
     .surface-brand-top::before {
         content: '';
         @apply pointer-events-none absolute left-0 right-0 top-0 z-[2] h-1 rounded-t-xl bg-gradient-to-r from-brand-red via-brand-yellow to-brand-blue;
+        background-image: linear-gradient(
+            90deg,
+            #cf2a2a 0%,
+            #f4c33f 22%,
+            #2563eb 50%,
+            #f4c33f 78%,
+            #cf2a2a 100%
+        );
+        background-size: 300% 100%;
+        animation: rainbow-shift-x 45s linear infinite;
     }
 
     .surface-brand-top-2xl {
@@ -23,6 +33,16 @@
     .surface-brand-top-2xl::before {
         content: '';
         @apply pointer-events-none absolute left-0 right-0 top-0 z-[2] h-1 rounded-t-2xl bg-gradient-to-r from-brand-red via-brand-yellow to-brand-blue;
+        background-image: linear-gradient(
+            90deg,
+            #cf2a2a 0%,
+            #f4c33f 22%,
+            #2563eb 50%,
+            #f4c33f 78%,
+            #cf2a2a 100%
+        );
+        background-size: 300% 100%;
+        animation: rainbow-shift-x 45s linear infinite;
     }
 
     .surface-brand-top-lg {
@@ -32,6 +52,16 @@
     .surface-brand-top-lg::before {
         content: '';
         @apply pointer-events-none absolute left-0 right-0 top-0 z-[2] h-1 rounded-t-lg bg-gradient-to-r from-brand-red via-brand-yellow to-brand-blue;
+        background-image: linear-gradient(
+            90deg,
+            #cf2a2a 0%,
+            #f4c33f 22%,
+            #2563eb 50%,
+            #f4c33f 78%,
+            #cf2a2a 100%
+        );
+        background-size: 300% 100%;
+        animation: rainbow-shift-x 45s linear infinite;
     }
 
     /** Bewerken: ronde actieknop met gecentreerd icoon. */
@@ -65,6 +95,44 @@
     /** Opslaan: ronde actieknop met gecentreerd icoon. */
     .btn-action-save {
         @apply inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand-blue text-white shadow-sm transition hover:bg-brand-blue-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue disabled:opacity-50;
+    }
+}
+
+@layer utilities {
+    @keyframes rainbow-shift-x {
+        0% { background-position: 0% 50%; }
+        100% { background-position: 200% 50%; }
+    }
+
+    @keyframes rainbow-shift-y {
+        0% { background-position: 50% 0%; }
+        100% { background-position: 50% 200%; }
+    }
+
+    .rainbow-animate {
+        background-image: linear-gradient(
+            90deg,
+            #cf2a2a 0%,
+            #f4c33f 22%,
+            #2563eb 50%,
+            #f4c33f 78%,
+            #cf2a2a 100%
+        );
+        background-size: 300% 100%;
+        animation: rainbow-shift-x 45s linear infinite;
+    }
+
+    .rainbow-animate-vertical {
+        background-image: linear-gradient(
+            180deg,
+            #cf2a2a 0%,
+            #f4c33f 22%,
+            #2563eb 50%,
+            #f4c33f 78%,
+            #cf2a2a 100%
+        );
+        background-size: 100% 300%;
+        animation: rainbow-shift-y 45s linear infinite;
     }
 }
 

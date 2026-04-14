@@ -243,7 +243,7 @@ function toggleYear(year) {
     />
 
     <Modal :show="!!feedbackModalItem" max-width="lg" @close="closeFeedbackModal">
-        <div class="h-1 w-full bg-gradient-to-r from-brand-red via-brand-yellow to-brand-blue" aria-hidden="true" />
+        <div class="rainbow-animate h-1 w-full bg-gradient-to-r from-brand-red via-brand-yellow to-brand-blue" aria-hidden="true" />
         <div class="space-y-4 p-6 sm:p-7">
             <div>
                 <h3 class="text-base font-semibold text-app-ink dark:text-app-ink-dark">Feedback achterlaten</h3>

@@ -15,7 +15,7 @@ const emit = defineEmits(['close', 'confirm']);
 
 <template>
     <Modal :show="show" max-width="md" @close="emit('close')">
-        <div class="h-1 w-full bg-gradient-to-r from-brand-red via-brand-yellow to-brand-blue" aria-hidden="true" />
+        <div class="rainbow-animate h-1 w-full bg-gradient-to-r from-brand-red via-brand-yellow to-brand-blue" aria-hidden="true" />
         <div class="p-6 sm:p-7">
             <div class="flex flex-col items-center gap-3 text-center">
                 <span

@@ -347,7 +347,7 @@ onUnmounted(() => {
                     </div>
                 </div>
                 <div
-                    class="w-1.5 shrink-0 self-stretch bg-gradient-to-b from-brand-red via-brand-yellow to-brand-blue"
+                    class="rainbow-animate-vertical w-1.5 shrink-0 self-stretch bg-gradient-to-b from-brand-red via-brand-yellow to-brand-blue"
                     aria-hidden="true"
                 />
             </aside>
