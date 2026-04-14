@@ -383,10 +383,16 @@ class CampBudgetController extends Controller
             ->map(function ($section): array {
                 $title = trim((string) data_get($section, 'title', ''));
                 $rows = collect((array) data_get($section, 'rows', []))
-                    ->map(function ($row): array {
+                    ->map(function ($row) use ($title): array {
+                        $label = trim((string) data_get($row, 'label', ''));
+                        $quantity = round((float) data_get($row, 'quantity', 0), 2);
+                        if ($this->hasFixedQuantityOne($title, $label)) {
+                            $quantity = 1.0;
+                        }
+
                         return [
-                            'label' => trim((string) data_get($row, 'label', '')),
-                            'quantity' => round((float) data_get($row, 'quantity', 0), 2),
+                            'label' => $label,
+                            'quantity' => $quantity,
                             'amount' => round((float) data_get($row, 'amount', 0), 2),
                             'note' => trim((string) data_get($row, 'note', '')),
                         ];
@@ -416,7 +422,7 @@ class CampBudgetController extends Controller
     {
         return [
             ['title' => 'Bijdragen', 'rows' => [['label' => 'Leiding', 'quantity' => 0, 'amount' => 0, 'note' => ''], ['label' => 'Jeugdleden', 'quantity' => 0, 'amount' => 0, 'note' => ''], ['label' => 'Vaarbemanning', 'quantity' => 0, 'amount' => 0, 'note' => '']]],
-            ['title' => 'Uitgaven', 'rows' => [['label' => 'Geschatte vaaruren', 'quantity' => 0, 'amount' => 0, 'note' => ''], ['label' => 'Geschatte aggregaaturen', 'quantity' => 0, 'amount' => 0, 'note' => ''], ['label' => 'Proviand', 'quantity' => 0, 'amount' => 0, 'note' => ''], ['label' => 'Groepsafdracht', 'quantity' => 0, 'amount' => 0, 'note' => ''], ['label' => 'Thema en spel', 'quantity' => 0, 'amount' => 0, 'note' => '']]],
+            ['title' => 'Uitgaven', 'rows' => [['label' => 'Geschatte vaaruren', 'quantity' => 0, 'amount' => 0, 'note' => ''], ['label' => 'Geschatte aggregaaturen', 'quantity' => 0, 'amount' => 0, 'note' => ''], ['label' => 'Proviand', 'quantity' => 1, 'amount' => 0, 'note' => ''], ['label' => 'Groepsafdracht', 'quantity' => 1, 'amount' => 0, 'note' => ''], ['label' => 'Reservering NaWaKa', 'quantity' => 1, 'amount' => 0, 'note' => ''], ['label' => 'Thema en spel', 'quantity' => 0, 'amount' => 0, 'note' => '']]],
             ['title' => 'Overige bijdragen', 'rows' => []],
             ['title' => 'Overige uitgaven', 'rows' => []],
         ];
@@ -437,6 +443,10 @@ class CampBudgetController extends Controller
         $expenses = 0.0;
         foreach ($sections as $section) {
             $sum = collect($section['rows'])->sum(function (array $row) use ($section, $sections, $standardValues, $campDays, $campLocation): float {
+                if ($this->isRefundableDepositRow((string) ($section['title'] ?? ''), (string) ($row['label'] ?? ''))) {
+                    return 0.0;
+                }
+
                 return $this->rowTotalForCalculation($row, (string) ($section['title'] ?? ''), $sections, $standardValues, $campDays, $campLocation);
             });
             $title = mb_strtolower(trim($section['title']));
@@ -461,6 +471,9 @@ class CampBudgetController extends Controller
     private function normalizeStandardValues(array $raw): array
     {
         $defaults = $this->defaultStandardValues();
+        if (! array_key_exists('clubhuis_bedrag', $raw) && array_key_exists('prijs_per_dag_clubhuis', $raw)) {
+            $raw['clubhuis_bedrag'] = $raw['prijs_per_dag_clubhuis'];
+        }
         foreach ($defaults as $key => $value) {
             $defaults[$key] = round((float) ($raw[$key] ?? $value), 2);
         }
@@ -474,6 +487,8 @@ class CampBudgetController extends Controller
     private function defaultStandardValues(): array
     {
         return [
+            'clubhuis_bedrag' => 0.00,
+            'borg_bedrag' => 0.00,
             'prijs_per_dag_clubhuis' => 0.00,
             'prijs_per_dag_leiding' => 0.00,
             'prijs_per_dag_jeugdlid' => 80.00,
@@ -515,17 +530,24 @@ class CampBudgetController extends Controller
         if ($section === 'uitgaven' && str_contains($label, 'huur fram')) {
             return (float) ($standardValues['huur_fram_pppd'] ?? 0);
         }
+        if ($section === 'uitgaven' && str_contains($label, 'borg')) {
+            return (float) ($standardValues['borg_bedrag'] ?? 0);
+        }
         if (str_contains($label, 'clubhuis')) {
-            return (float) ($standardValues['prijs_per_dag_clubhuis'] ?? 0) * $campDays;
+            return (float) ($standardValues['clubhuis_bedrag'] ?? $standardValues['prijs_per_dag_clubhuis'] ?? 0);
         }
         if (str_contains($label, 'fram')) {
             if ($campLocation === 'clubhuis') {
-                return (float) ($standardValues['prijs_per_dag_clubhuis'] ?? 0) * $campDays;
+                return (float) ($standardValues['clubhuis_bedrag'] ?? $standardValues['prijs_per_dag_clubhuis'] ?? 0);
             }
 
             return (float) ($standardValues['huur_fram_pppd'] ?? 0) * $campDays;
         }
         if (str_contains($label, 'proviand')) {
+            if ($manualAmount > 0) {
+                return $manualAmount;
+            }
+
             return (float) ($standardValues['proviand_pppd'] ?? 0) * $campDays;
         }
         if (str_contains($label, 'groepsafdracht')) {
@@ -540,6 +562,33 @@ class CampBudgetController extends Controller
         }
 
         return $manualAmount;
+    }
+
+    private function hasFixedQuantityOne(string $sectionTitle, string $label): bool
+    {
+        $section = mb_strtolower(trim($sectionTitle));
+        if ($section !== 'uitgaven') {
+            return false;
+        }
+
+        $normalizedLabel = mb_strtolower(trim($label));
+
+        return str_contains($normalizedLabel, 'proviand')
+            || str_contains($normalizedLabel, 'clubhuis')
+            || str_contains($normalizedLabel, 'huur fram')
+            || str_contains($normalizedLabel, 'groepsafdracht')
+            || str_contains($normalizedLabel, 'nawaka')
+            || str_contains($normalizedLabel, 'borg');
+    }
+
+    private function isRefundableDepositRow(string $sectionTitle, string $label): bool
+    {
+        $section = mb_strtolower(trim($sectionTitle));
+        if ($section !== 'uitgaven') {
+            return false;
+        }
+
+        return str_contains(mb_strtolower(trim($label)), 'borg');
     }
 
     private function normalizeCampLocation(string $campLocation): string
@@ -566,6 +615,12 @@ class CampBudgetController extends Controller
         $section = mb_strtolower(trim($sectionTitle));
         $label = mb_strtolower(trim((string) ($row['label'] ?? '')));
         if ($section === 'uitgaven' && str_contains($label, 'proviand')) {
+            $manualAmount = (float) ($row['amount'] ?? 0);
+            if ($manualAmount > 0) {
+                $quantity = (float) ($row['quantity'] ?? 0);
+
+                return max(0.0, $quantity) * $manualAmount;
+            }
             $participants = $this->participantCountFromSections($sections);
             $proviandPerDay = (float) ($standardValues['proviand_pppd'] ?? 0);
 
@@ -576,6 +631,12 @@ class CampBudgetController extends Controller
             $groepsafdrachtPjpd = (float) ($standardValues['groepsafdracht_pjpd'] ?? 0);
 
             return $jeugdleden * $groepsafdrachtPjpd * $campDays;
+        }
+        if ($section === 'uitgaven' && str_contains($label, 'nawaka')) {
+            $jeugdleden = $this->jeugdledenCountFromSections($sections);
+            $reserveringNawakaPjpd = (float) ($standardValues['reservering_nawaka_pjpd'] ?? 0);
+
+            return $jeugdleden * $reserveringNawakaPjpd * $campDays;
         }
         if ($section === 'uitgaven' && str_contains($label, 'huur fram')) {
             $participants = $this->participantCountFromSections($sections);
@@ -706,6 +767,7 @@ class CampBudgetController extends Controller
                             'note' => (string) ($row['note'] ?? ''),
                         ];
                     })
+                    ->filter(fn (array $row): bool => (float) ($row['quantity'] ?? 0) > 0)
                     ->values()
                     ->all();
 

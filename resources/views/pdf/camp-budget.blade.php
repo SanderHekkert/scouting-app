@@ -158,7 +158,6 @@
                         <span class="pill">Locatie: {{ $locationLabel }}</span>
                         <span class="pill">Kampdagen: {{ (int) ($campDays ?? 1) }}</span>
                     </div>
-                    <p class="meta-row">Status: {{ ucfirst(str_replace('_', ' ', (string) ($budget->status ?? 'draft'))) }}</p>
                 </td>
             </tr>
         </table>
