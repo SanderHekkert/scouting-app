@@ -3,17 +3,20 @@ import { computed, ref, watch } from 'vue';
 import AppConfirmModal from '@/Components/AppConfirmModal.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
-import { ArrowUturnLeftIcon, BellAlertIcon, DocumentCheckIcon, PaperAirplaneIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import { ArrowUturnLeftIcon, BellAlertIcon, DocumentCheckIcon, PaperAirplaneIcon, PlusIcon, TrashIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     mode: { type: String, default: 'create' },
     item: { type: Object, default: null },
     copyItem: { type: Object, default: null },
     leaderTeam: { type: Array, default: () => [] },
+    sectionMembers: { type: Array, default: () => [] },
     defaultSections: { type: Array, default: () => [] },
     defaultTaskDistributionRows: { type: Array, default: () => [] },
     defaultTaskExplanationItems: { type: Array, default: () => [] },
     defaultGeneralAgreementsItems: { type: Array, default: () => [] },
+    defaultSpeltakAgreementsItems: { type: Array, default: () => [] },
+    defaultSpeltakHygieneRows: { type: Array, default: () => [] },
     defaultVinindelingRows: { type: Array, default: () => [] },
     defaultCorveeRows: { type: Array, default: () => [] },
     defaultMonsterrolRows: { type: Object, default: () => ({}) },
@@ -77,6 +80,34 @@ function composeCampDateRange(start, end) {
     if (startNl && endNl) return `${startNl} t/m ${endNl}`;
     return startNl || endNl || '';
 }
+
+function isoDateEntriesBetween(startIso, endIso) {
+    const start = toIsoDate(startIso);
+    const end = toIsoDate(endIso);
+    if (!start || !end) return [];
+
+    const startDate = new Date(`${start}T00:00:00Z`);
+    const endDate = new Date(`${end}T00:00:00Z`);
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime()) || startDate > endDate) {
+        return [];
+    }
+
+    const weekdayNames = ['Zondag', 'Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag'];
+    const entries = [];
+    for (let current = new Date(startDate); current <= endDate; current.setUTCDate(current.getUTCDate() + 1)) {
+        const year = current.getUTCFullYear();
+        const month = String(current.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(current.getUTCDate()).padStart(2, '0');
+        const iso = `${year}-${month}-${day}`;
+        entries.push({
+            iso,
+            dateLabel: formatIsoToNlDate(iso),
+            dayLabel: weekdayNames[current.getUTCDay()],
+        });
+    }
+
+    return entries;
+}
 const initialDateRange = parseCampDateRange(source.camp_dates || '');
 const defaultEmergencyContacts = () => ({
     huisartsen: { name: '', address: '', postal_code: '', city: '', phone_010: '', website: '', extra_info: '' },
@@ -123,14 +154,24 @@ function normalizeDayPlans(raw) {
 function normalizeTaskDistributionRows(raw) {
     const incoming = Array.isArray(raw) ? raw : [];
     if (!incoming.length) {
-        return JSON.parse(JSON.stringify(props.defaultTaskDistributionRows || [{ task: '', description: '', responsible: '' }]));
+        return JSON.parse(JSON.stringify(props.defaultTaskDistributionRows || [{ task: '', responsibles: [] }]));
     }
 
     return incoming.map((row) => ({
         task: String(row?.task ?? ''),
-        description: String(row?.description ?? ''),
-        responsible: String(row?.responsible ?? ''),
+        responsibles: normalizeResponsibleNames(row?.responsibles ?? row?.responsible ?? []),
     }));
+}
+
+function normalizeResponsibleNames(value) {
+    const source = Array.isArray(value) ? value : String(value ?? '').split(',');
+    return Array.from(
+        new Set(
+            source
+                .map((name) => String(name ?? '').trim())
+                .filter((name) => name !== '')
+        )
+    );
 }
 function normalizeTaskExplanationItems(raw) {
     const incoming = Array.isArray(raw) ? raw : [];
@@ -156,6 +197,39 @@ function normalizeGeneralAgreementsItems(raw) {
         bullets: Array.isArray(item?.bullets) && item.bullets.length
             ? item.bullets.map((bullet) => String(bullet ?? ''))
             : [''],
+    }));
+}
+function normalizeSpeltakAgreementsItems(raw) {
+    const incoming = Array.isArray(raw) ? raw : [];
+    if (!incoming.length) {
+        return JSON.parse(JSON.stringify(props.defaultSpeltakAgreementsItems || []));
+    }
+
+    return incoming.map((item) => ({
+        title: String(item?.title ?? ''),
+        bullets: Array.isArray(item?.bullets) && item.bullets.length
+            ? item.bullets.map((bullet) => String(bullet ?? ''))
+            : [''],
+    }));
+}
+function normalizeSpeltakHygieneRows(raw) {
+    const incoming = Array.isArray(raw) ? raw : [];
+    if (!incoming.length) {
+        return JSON.parse(JSON.stringify(props.defaultSpeltakHygieneRows || [{
+            topic: '',
+            jerrycans: '',
+            kraanwater: '',
+            buitenboordwater: '',
+            desinfectans: '',
+        }]));
+    }
+
+    return incoming.map((row) => ({
+        topic: String(row?.topic ?? ''),
+        jerrycans: String(row?.jerrycans ?? ''),
+        kraanwater: String(row?.kraanwater ?? ''),
+        buitenboordwater: String(row?.buitenboordwater ?? ''),
+        desinfectans: String(row?.desinfectans ?? ''),
     }));
 }
 function normalizeVinindelingRows(raw) {
@@ -197,8 +271,8 @@ function normalizeCorveeRows(raw) {
 }
 function defaultMonsterrolRows() {
     return {
-        staff: [{ first_name: '', last_name: '', functie: '', on_board: '', off_board: '' }],
-        vaarbemanning: [{ first_name: '', last_name: '', functie: '', on_board: '', off_board: '' }],
+        crew: [{ first_name: '', last_name: '', functie: '', on_board: '', off_board: '' }],
+        speltak: [{ first_name: '', last_name: '', functie: '', on_board: '', off_board: '' }],
     };
 }
 function normalizeMonsterrolRows(raw) {
@@ -224,9 +298,53 @@ function normalizeMonsterrolRows(raw) {
     };
 
     return {
-        staff: normalizeRows(value.staff),
-        vaarbemanning: normalizeRows(value.vaarbemanning),
+        crew: normalizeRows([...(Array.isArray(value.crew) ? value.crew : []), ...(Array.isArray(value.staff) ? value.staff : []), ...(Array.isArray(value.vaarbemanning) ? value.vaarbemanning : [])]),
+        speltak: normalizeRows(value.speltak),
     };
+}
+
+function splitLeaderName(fullName) {
+    const name = String(fullName ?? '').trim();
+    if (!name) {
+        return { first_name: '', last_name: '' };
+    }
+    const parts = name.split(/\s+/).filter(Boolean);
+    if (parts.length <= 1) {
+        return { first_name: parts[0] ?? '', last_name: '' };
+    }
+
+    return {
+        first_name: parts[0],
+        last_name: parts.slice(1).join(' '),
+    };
+}
+
+function leaderTeamRows() {
+    return (props.leaderTeam || [])
+        .map((leader) => splitLeaderName(leader?.name))
+        .filter((entry) => entry.first_name || entry.last_name)
+        .map((entry) => ({
+            first_name: entry.first_name,
+            last_name: entry.last_name,
+            functie: 'Leiding',
+            on_board: '',
+            off_board: '',
+        }));
+}
+function defaultSpeltakFunction() {
+    return page.props.auth?.active_section === 'dolfijnen' ? 'Dolfijn' : '';
+}
+function sectionMemberRows() {
+    return (props.sectionMembers || [])
+        .map((member) => splitLeaderName(member?.name))
+        .filter((entry) => entry.first_name || entry.last_name)
+        .map((entry) => ({
+            first_name: entry.first_name,
+            last_name: entry.last_name,
+            functie: defaultSpeltakFunction(),
+            on_board: '',
+            off_board: '',
+        }));
 }
 function normalizeVaarschemaRows(raw) {
     const incoming = Array.isArray(raw) ? raw : [];
@@ -251,9 +369,14 @@ const form = useForm({
     camp_dates: composeCampDateRange(initialDateRange.start, initialDateRange.end),
     camp_date_start: initialDateRange.start,
     camp_date_end: initialDateRange.end,
+    cover_photo: null,
+    cover_photo_remove: false,
+    existing_cover_photo_url: source.cover_photo_url || '',
     task_distribution_rows: normalizeTaskDistributionRows(source.task_distribution_rows),
     task_explanation_items: normalizeTaskExplanationItems(source.task_explanation_items),
     general_agreements_items: normalizeGeneralAgreementsItems(source.general_agreements_items),
+    speltak_agreements_items: normalizeSpeltakAgreementsItems(source.speltak_agreements_items),
+    speltak_hygiene_rows: normalizeSpeltakHygieneRows(source.speltak_hygiene_rows),
     vinindeling_rows: normalizeVinindelingRows(source.vinindeling_rows),
     corvee_rows: normalizeCorveeRows(source.corvee_rows),
     monsterrol_rows: normalizeMonsterrolRows(source.monsterrol_rows),
@@ -262,8 +385,31 @@ const form = useForm({
     vaarschema_rows: normalizeVaarschemaRows(source.vaarschema_rows),
     playbook_sections: JSON.parse(JSON.stringify(initialSections)),
 });
+const coverPreviewUrl = ref(source.cover_photo_url || '');
+const isFramCamp = computed(() => form.camp_location === 'fram');
+
+if (!source?.monsterrol_rows) {
+    const autoCrew = leaderTeamRows();
+    if (autoCrew.length) {
+        form.monsterrol_rows.crew = autoCrew;
+    }
+    const autoSpeltak = sectionMemberRows();
+    if (autoSpeltak.length) {
+        form.monsterrol_rows.speltak = autoSpeltak;
+    }
+}
+const responsibleOptions = computed(() => {
+    const crewNames = (form.monsterrol_rows?.crew || [])
+        .map((row) => `${String(row?.first_name ?? '').trim()} ${String(row?.last_name ?? '').trim()}`.trim())
+        .filter((name) => name !== '');
+    return ['n.v.t.', ...Array.from(new Set(crewNames))];
+});
 const VAARSCHEMA_SECTION_TITLE = 'Vaarschema';
 const PLANNING_SECTION_TITLE = 'Planning per dag';
+
+function isDagverloopTask(taskTitle) {
+    return String(taskTitle ?? '').trim().toLowerCase() === 'dagverloop';
+}
 
 function syncTaskDistributionRowsWithTaskExplanationTitles() {
     const titles = (form.task_explanation_items || [])
@@ -282,11 +428,13 @@ function syncTaskDistributionRowsWithTaskExplanationTitles() {
         const existing = existingByIndex && String(existingByIndex?.task ?? '').trim() !== ''
             ? existingByIndex
             : existingByTask.get(title.toLowerCase());
+        const isLockedDagverloop = isDagverloopTask(title);
 
         return {
             task: title,
-            description: String(existing?.description ?? ''),
-            responsible: String(existing?.responsible ?? ''),
+            responsibles: isLockedDagverloop
+                ? ['Dagwacht']
+                : normalizeResponsibleNames(existing?.responsibles ?? existing?.responsible ?? []),
         };
     });
 }
@@ -297,9 +445,94 @@ watch(
     { deep: true, immediate: true }
 );
 
+watch(
+    () => [form.camp_location, form.camp_date_start, form.camp_date_end],
+    ([, currentStart, currentEnd], previousValues = []) => {
+        const [, previousStart, previousEnd] = Array.isArray(previousValues) ? previousValues : [];
+        syncMonsterrolBoardingDates(String(previousStart || ''), String(previousEnd || ''));
+        syncCorveeRowsWithCampDates();
+        if (String(currentStart || '') !== String(previousStart || '') || String(currentEnd || '') !== String(previousEnd || '')) {
+            form.camp_dates = composeCampDateRange(currentStart, currentEnd);
+        }
+    },
+    { immediate: true }
+);
+
 const activeSectionIndex = ref(0);
 const activeSection = computed(() => form.playbook_sections[activeSectionIndex.value] || null);
 const deleteModalOpen = ref(false);
+
+function onCoverPhotoSelected(event) {
+    const [file] = event?.target?.files || [];
+    form.cover_photo = file ?? null;
+    if (file) {
+        form.cover_photo_remove = false;
+        form.existing_cover_photo_url = '';
+        const reader = new FileReader();
+        reader.onload = () => {
+            coverPreviewUrl.value = typeof reader.result === 'string' ? reader.result : '';
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+function removeCoverPhoto() {
+    form.cover_photo = null;
+    form.cover_photo_remove = true;
+    form.existing_cover_photo_url = '';
+    coverPreviewUrl.value = '';
+}
+
+function syncMonsterrolBoardingDates(previousStart = '', previousEnd = '') {
+    if (!isFramCamp.value) {
+        return;
+    }
+
+    const nextStart = String(form.camp_date_start || '');
+    const nextEnd = String(form.camp_date_end || '');
+    const sections = ['crew', 'speltak'];
+
+    sections.forEach((section) => {
+        const rows = Array.isArray(form.monsterrol_rows?.[section]) ? form.monsterrol_rows[section] : [];
+        rows.forEach((row) => {
+            const currentOnBoard = String(row?.on_board ?? '');
+            const currentOffBoard = String(row?.off_board ?? '');
+
+            if (currentOnBoard === '' || currentOnBoard === String(previousStart || '')) {
+                row.on_board = nextStart;
+            }
+            if (currentOffBoard === '' || currentOffBoard === String(previousEnd || '')) {
+                row.off_board = nextEnd;
+            }
+        });
+    });
+}
+
+function syncCorveeRowsWithCampDates() {
+    const dateEntries = isoDateEntriesBetween(form.camp_date_start, form.camp_date_end);
+    if (!dateEntries.length) {
+        return;
+    }
+
+    const existingRowsByIsoDate = new Map(
+        (Array.isArray(form.corvee_rows) ? form.corvee_rows : [])
+            .map((row) => [toIsoDate(row?.date), row])
+            .filter(([iso]) => iso !== '')
+    );
+
+    form.corvee_rows = dateEntries.map((entry) => {
+        const existing = existingRowsByIsoDate.get(entry.iso);
+        return {
+            day: String(existing?.day ?? '').trim() || entry.dayLabel,
+            date: String(existing?.date ?? '').trim() || entry.dateLabel,
+            daywatch: String(existing?.daywatch ?? ''),
+            dienstvin: String(existing?.dienstvin ?? ''),
+            dekhuis: String(existing?.dekhuis ?? ''),
+            achteronder_en_dekken: String(existing?.achteronder_en_dekken ?? ''),
+            wc_en_klusjes: String(existing?.wc_en_klusjes ?? ''),
+        };
+    });
+}
 
 function sectionTitleKey(section) {
     return String(section?.title || '').trim().toLowerCase();
@@ -344,17 +577,20 @@ function submit(action = 'save') {
         ...data,
         camp_dates: composeCampDateRange(data.camp_date_start, data.camp_date_end),
         action: normalizedAction,
+        ...(isEdit.value ? { _method: 'patch' } : {}),
     }));
 
     if (isEdit.value) {
         if (!canUpdate.value) return;
-        form.patch(route('camp-playbooks.update', props.item.id), {
+        form.post(route('camp-playbooks.update', props.item.id), {
+            forceFormData: true,
             onFinish: () => form.transform((data) => data),
         });
         return;
     }
     if (!canCreate.value) return;
     form.post(route('camp-playbooks.store'), {
+        forceFormData: true,
         onFinish: () => form.transform((data) => data),
     });
 }
@@ -390,6 +626,10 @@ function isAlgemeneAfsprakenSection(section) {
     return String(section?.title || '').trim().toLowerCase() === 'algemene afspraken';
 }
 
+function isSpeltakAfsprakenSection(section) {
+    return String(section?.title || '').trim().toLowerCase() === 'speltak afspraken';
+}
+
 function isCorveeroosterSection(section) {
     return String(section?.title || '').trim().toLowerCase() === 'corveerooster';
 }
@@ -415,6 +655,7 @@ function isStructuredSection(section) {
         || isTaakverdelingSection(section)
         || isTaakUitlegSection(section)
         || isAlgemeneAfsprakenSection(section)
+        || isSpeltakAfsprakenSection(section)
         || isVinindelingSection(section)
         || isCorveeroosterSection(section)
         || isMonsterrolSection(section)
@@ -479,14 +720,51 @@ function removeVaarschemaRow(index) {
 }
 
 function addMonsterrolRow(type) {
-    if (!['staff', 'vaarbemanning'].includes(type)) return;
-    form.monsterrol_rows[type].push({ first_name: '', last_name: '', functie: '', on_board: '', off_board: '' });
+    if (!['crew', 'speltak'].includes(type)) return;
+    form.monsterrol_rows[type].push({
+        first_name: '',
+        last_name: '',
+        functie: '',
+        on_board: isFramCamp.value ? String(form.camp_date_start || '') : '',
+        off_board: isFramCamp.value ? String(form.camp_date_end || '') : '',
+    });
 }
 
 function removeMonsterrolRow(type, index) {
-    if (!['staff', 'vaarbemanning'].includes(type)) return;
+    if (!['crew', 'speltak'].includes(type)) return;
     if (!Array.isArray(form.monsterrol_rows[type]) || form.monsterrol_rows[type].length <= 1) return;
     form.monsterrol_rows[type].splice(index, 1);
+}
+
+function availableResponsibleOptions(row) {
+    if (isDagverloopTask(row?.task)) {
+        return [];
+    }
+    const selected = new Set(normalizeResponsibleNames(row?.responsibles ?? []));
+    return responsibleOptions.value.filter((name) => !selected.has(name));
+}
+
+function addResponsibleToTask(row, event) {
+    if (isDagverloopTask(row?.task)) {
+        row.responsibles = ['Dagwacht'];
+        if (event?.target) {
+            event.target.value = '';
+        }
+        return;
+    }
+    const selected = String(event?.target?.value ?? '').trim();
+    if (!selected) return;
+    row.responsibles = normalizeResponsibleNames([...(Array.isArray(row?.responsibles) ? row.responsibles : []), selected]);
+    event.target.value = '';
+}
+
+function removeResponsibleFromTask(row, name) {
+    if (isDagverloopTask(row?.task)) {
+        row.responsibles = ['Dagwacht'];
+        return;
+    }
+    const target = String(name ?? '').trim();
+    row.responsibles = normalizeResponsibleNames((row?.responsibles || []).filter((entry) => String(entry).trim() !== target));
 }
 
 function addTaskExplanationItem() {
@@ -541,6 +819,48 @@ function removeGeneralAgreementBullet(itemIndex, bulletIndex) {
     const item = form.general_agreements_items?.[itemIndex];
     if (!item || !Array.isArray(item.bullets) || item.bullets.length <= 1) return;
     item.bullets.splice(bulletIndex, 1);
+}
+
+function addSpeltakAgreementItem() {
+    form.speltak_agreements_items.push({
+        title: '',
+        bullets: [''],
+    });
+}
+
+function removeSpeltakAgreementItem(index) {
+    if (!Array.isArray(form.speltak_agreements_items) || form.speltak_agreements_items.length <= 1) return;
+    form.speltak_agreements_items.splice(index, 1);
+}
+
+function addSpeltakAgreementBullet(itemIndex) {
+    const item = form.speltak_agreements_items?.[itemIndex];
+    if (!item) return;
+    if (!Array.isArray(item.bullets)) {
+        item.bullets = [];
+    }
+    item.bullets.push('');
+}
+
+function removeSpeltakAgreementBullet(itemIndex, bulletIndex) {
+    const item = form.speltak_agreements_items?.[itemIndex];
+    if (!item || !Array.isArray(item.bullets) || item.bullets.length <= 1) return;
+    item.bullets.splice(bulletIndex, 1);
+}
+
+function addSpeltakHygieneRow() {
+    form.speltak_hygiene_rows.push({
+        topic: '',
+        jerrycans: '',
+        kraanwater: '',
+        buitenboordwater: '',
+        desinfectans: '',
+    });
+}
+
+function removeSpeltakHygieneRow(index) {
+    if (!Array.isArray(form.speltak_hygiene_rows) || form.speltak_hygiene_rows.length <= 1) return;
+    form.speltak_hygiene_rows.splice(index, 1);
 }
 
 function addVinindelingRow() {
@@ -659,13 +979,13 @@ function statusClass(status) {
                                 v-model="form.title"
                                 type="text"
                                 class="w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-slate-900 dark:text-app-ink-dark"
-                                placeholder="Titel (bijv. Pinksterkamp 2026)"
+                                placeholder="Titel (bijv. Hollywood Kamp)"
                                 required
                             />
                         </div>
                         <div class="space-y-1 sm:col-span-2">
                             <label class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Kamptype</label>
-                            <div class="inline-flex items-center rounded-full border border-app-border bg-slate-100 p-1 dark:border-app-border-dark dark:bg-slate-800">
+                            <div class="mt-2 inline-flex items-center rounded-full border border-app-border bg-slate-100 p-1 dark:border-app-border-dark dark:bg-slate-800">
                                 <button
                                     type="button"
                                     class="rounded-full px-4 py-1.5 text-xs font-semibold transition"
@@ -690,7 +1010,7 @@ function statusClass(status) {
                                 v-model="form.camp_place"
                                 type="text"
                                 class="w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-slate-900 dark:text-app-ink-dark"
-                                placeholder="Bijv. Zwolle"
+                                placeholder="Bijv. Rotterdam"
                             />
                         </div>
                         <div class="space-y-1 sm:col-span-2">
@@ -711,15 +1031,26 @@ function statusClass(status) {
                                 />
                             </div>
                         </div>
+                        <div class="space-y-2 sm:col-span-2">
+                            <label class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Cover foto (voorpagina PDF)</label>
+                            <div class="rounded border border-app-border bg-white p-3 dark:border-app-border-dark dark:bg-slate-900">
+                                <div v-if="coverPreviewUrl" class="mb-3">
+                                    <img :src="coverPreviewUrl" alt="Cover preview" class="h-44 w-full rounded object-cover" />
+                                </div>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <input type="file" accept="image/*" class="block w-full text-sm text-app-ink file:mr-3 file:rounded file:border-0 file:bg-brand-blue/10 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-brand-blue dark:text-app-ink-dark dark:file:bg-brand-blue/20 dark:file:text-brand-blue" @change="onCoverPhotoSelected" />
+                                    <button v-if="coverPreviewUrl || form.existing_cover_photo_url || form.cover_photo" type="button" class="btn-action-delete" title="Cover foto verwijderen" aria-label="Cover foto verwijderen" @click="removeCoverPhoto">
+                                        <TrashIcon class="h-5 w-5" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div v-if="isMonsterrolSection(activeSection)" class="space-y-4">
                         <div class="space-y-2 rounded-lg border border-app-border bg-white p-3 dark:border-app-border-dark dark:bg-slate-900">
                             <div class="flex items-center justify-between">
-                                <h4 class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">Staf</h4>
-                                <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-700 text-white" title="Rij toevoegen" aria-label="Rij toevoegen" @click="addMonsterrolRow('staff')">
-                                    <PlusIcon class="h-4 w-4" />
-                                </button>
+                                <h4 class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">Staf en vaarbemanning</h4>
                             </div>
                             <div class="overflow-x-auto rounded border border-app-border dark:border-app-border-dark">
                                 <table class="w-full min-w-[920px] text-sm">
@@ -728,38 +1059,39 @@ function statusClass(status) {
                                             <th class="px-2 py-2 text-left">Voornaam</th>
                                             <th class="px-2 py-2 text-left">Achternaam</th>
                                             <th class="px-2 py-2 text-left">Functie</th>
-                                            <th class="px-2 py-2 text-left">Aan boord</th>
-                                            <th class="px-2 py-2 text-left">Van boord</th>
+                                            <th v-if="isFramCamp" class="px-2 py-2 text-left">Aan boord</th>
+                                            <th v-if="isFramCamp" class="px-2 py-2 text-left">Van boord</th>
                                             <th class="px-2 py-2 text-left">Actie</th>
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-app-border dark:divide-app-border-dark">
-                                        <tr v-for="(row, rowIdx) in form.monsterrol_rows.staff" :key="`monsterrol-staff-${rowIdx}`">
+                                        <tr v-for="(row, rowIdx) in form.monsterrol_rows.crew" :key="`monsterrol-crew-${rowIdx}`">
                                             <td class="px-2 py-2"><input v-model="row.first_name" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Voornaam" /></td>
                                             <td class="px-2 py-2"><input v-model="row.last_name" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Achternaam" /></td>
                                             <td class="px-2 py-2"><input v-model="row.functie" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Functie" /></td>
-                                            <td class="px-2 py-2"><input v-model="row.on_board" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Aan boord" /></td>
-                                            <td class="px-2 py-2"><input v-model="row.off_board" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Van boord" /></td>
+                                            <td v-if="isFramCamp" class="px-2 py-2"><input v-model="row.on_board" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Aan boord" /></td>
+                                            <td v-if="isFramCamp" class="px-2 py-2"><input v-model="row.off_board" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Van boord" /></td>
                                             <td class="px-2 py-2">
-                                                <button type="button" class="btn-action-delete" title="Rij verwijderen" @click="removeMonsterrolRow('staff', rowIdx)">
+                                                <button type="button" class="btn-action-delete" title="Rij verwijderen" @click="removeMonsterrolRow('crew', rowIdx)">
                                                     <TrashIcon class="h-5 w-5" />
                                                 </button>
                                             </td>
                                         </tr>
                                     </tbody>
                                 </table>
+                            </div>
+                            <div>
+                                <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-700 text-white" title="Rij toevoegen" aria-label="Rij toevoegen" @click="addMonsterrolRow('crew')">
+                                    <PlusIcon class="h-4 w-4" />
+                                </button>
                             </div>
                         </div>
 
                         <div class="space-y-2 rounded-lg border border-app-border bg-white p-3 dark:border-app-border-dark dark:bg-slate-900">
                             <div class="flex flex-wrap items-center justify-between gap-2">
                                 <div>
-                                    <h4 class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">Vaarbemanning</h4>
-                                    <p class="text-xs text-app-muted dark:text-app-muted-dark">Speltak: {{ speltakLabel }}</p>
+                                    <h4 class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">{{ speltakLabel }}</h4>
                                 </div>
-                                <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-700 text-white" title="Rij toevoegen" aria-label="Rij toevoegen" @click="addMonsterrolRow('vaarbemanning')">
-                                    <PlusIcon class="h-4 w-4" />
-                                </button>
                             </div>
                             <div class="overflow-x-auto rounded border border-app-border dark:border-app-border-dark">
                                 <table class="w-full min-w-[920px] text-sm">
@@ -768,26 +1100,31 @@ function statusClass(status) {
                                             <th class="px-2 py-2 text-left">Voornaam</th>
                                             <th class="px-2 py-2 text-left">Achternaam</th>
                                             <th class="px-2 py-2 text-left">Functie</th>
-                                            <th class="px-2 py-2 text-left">Aan boord</th>
-                                            <th class="px-2 py-2 text-left">Van boord</th>
+                                            <th v-if="isFramCamp" class="px-2 py-2 text-left">Aan boord</th>
+                                            <th v-if="isFramCamp" class="px-2 py-2 text-left">Van boord</th>
                                             <th class="px-2 py-2 text-left">Actie</th>
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-app-border dark:divide-app-border-dark">
-                                        <tr v-for="(row, rowIdx) in form.monsterrol_rows.vaarbemanning" :key="`monsterrol-vaarbemanning-${rowIdx}`">
+                                        <tr v-for="(row, rowIdx) in form.monsterrol_rows.speltak" :key="`monsterrol-speltak-${rowIdx}`">
                                             <td class="px-2 py-2"><input v-model="row.first_name" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Voornaam" /></td>
                                             <td class="px-2 py-2"><input v-model="row.last_name" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Achternaam" /></td>
                                             <td class="px-2 py-2"><input v-model="row.functie" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Functie" /></td>
-                                            <td class="px-2 py-2"><input v-model="row.on_board" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Aan boord" /></td>
-                                            <td class="px-2 py-2"><input v-model="row.off_board" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Van boord" /></td>
+                                            <td v-if="isFramCamp" class="px-2 py-2"><input v-model="row.on_board" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Aan boord" /></td>
+                                            <td v-if="isFramCamp" class="px-2 py-2"><input v-model="row.off_board" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Van boord" /></td>
                                             <td class="px-2 py-2">
-                                                <button type="button" class="btn-action-delete" title="Rij verwijderen" @click="removeMonsterrolRow('vaarbemanning', rowIdx)">
+                                                <button type="button" class="btn-action-delete" title="Rij verwijderen" @click="removeMonsterrolRow('speltak', rowIdx)">
                                                     <TrashIcon class="h-5 w-5" />
                                                 </button>
                                             </td>
                                         </tr>
                                     </tbody>
                                 </table>
+                            </div>
+                            <div>
+                                <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-700 text-white" title="Rij toevoegen" aria-label="Rij toevoegen" @click="addMonsterrolRow('speltak')">
+                                    <PlusIcon class="h-4 w-4" />
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -801,15 +1138,34 @@ function statusClass(status) {
                                 <thead class="bg-slate-50 dark:bg-slate-800/70">
                                     <tr>
                                         <th class="px-2 py-2 text-left">Taak</th>
-                                        <th class="px-2 py-2 text-left">Beschrijving</th>
                                         <th class="px-2 py-2 text-left">Verantwoordelijke</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-app-border dark:divide-app-border-dark">
                                     <tr v-for="(row, rowIdx) in form.task_distribution_rows" :key="`task-distribution-row-${rowIdx}`">
                                         <td class="px-2 py-2"><input v-model="row.task" type="text" readonly class="w-full rounded border border-app-border bg-slate-100 px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" placeholder="Taak" /></td>
-                                        <td class="px-2 py-2"><input v-model="row.description" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Beschrijving" /></td>
-                                        <td class="px-2 py-2"><input v-model="row.responsible" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Verantwoordelijke" /></td>
+                                        <td class="px-2 py-2">
+                                            <div class="space-y-2">
+                                                <div class="flex flex-wrap gap-1.5">
+                                                    <span
+                                                        v-for="name in normalizeResponsibleNames(row.responsibles)"
+                                                        :key="`task-responsible-chip-${rowIdx}-${name}`"
+                                                        class="inline-flex items-center gap-1 rounded-full bg-brand-blue/15 px-2 py-0.5 text-xs text-app-ink dark:text-app-ink-dark"
+                                                    >
+                                                        {{ name }}
+                                                        <button v-if="!isDagverloopTask(row.task)" type="button" class="rounded p-0.5 hover:bg-brand-blue/25" @click="removeResponsibleFromTask(row, name)">
+                                                            <XMarkIcon class="h-3.5 w-3.5" />
+                                                        </button>
+                                                    </span>
+                                                </div>
+                                                <select class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black disabled:bg-slate-100 disabled:text-slate-500 dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:disabled:bg-slate-800 dark:disabled:text-slate-400" :disabled="isDagverloopTask(row.task)" @change="addResponsibleToTask(row, $event)">
+                                                    <option value="">Verantwoordelijke toevoegen...</option>
+                                                    <option v-for="name in availableResponsibleOptions(row)" :key="`responsible-option-${rowIdx}-${name}`" :value="name">
+                                                        {{ name }}
+                                                    </option>
+                                                </select>
+                                            </div>
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -914,12 +1270,97 @@ function statusClass(status) {
                         </div>
                     </div>
 
+                    <div v-if="isSpeltakAfsprakenSection(activeSection)" class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">Speltak afspraken</h4>
+                            <button type="button" class="rounded bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800" @click="addSpeltakAgreementItem">
+                                Blok toevoegen
+                            </button>
+                        </div>
+
+                        <div
+                            v-for="(item, itemIdx) in form.speltak_agreements_items"
+                            :key="`speltak-agreement-item-${itemIdx}`"
+                            class="rounded-lg border border-app-border bg-white p-3 dark:border-app-border-dark dark:bg-slate-900"
+                        >
+                            <div class="flex items-center justify-between gap-2">
+                                <input
+                                    v-model="item.title"
+                                    type="text"
+                                    class="w-full rounded border border-app-border bg-white px-3 py-2 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
+                                    :placeholder="`Kop ${itemIdx + 1}`"
+                                />
+                                <button type="button" class="btn-action-delete" title="Blok verwijderen" @click="removeSpeltakAgreementItem(itemIdx)">
+                                    <TrashIcon class="h-5 w-5" />
+                                </button>
+                            </div>
+
+                            <div class="mt-3 space-y-2">
+                                <div
+                                    v-for="(bullet, bulletIdx) in item.bullets"
+                                    :key="`speltak-agreement-bullet-${itemIdx}-${bulletIdx}`"
+                                    class="flex items-center gap-2"
+                                >
+                                    <span class="text-sm text-app-muted dark:text-app-muted-dark">•</span>
+                                    <input
+                                        v-model="item.bullets[bulletIdx]"
+                                        type="text"
+                                        class="w-full rounded border border-app-border bg-white px-3 py-2 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
+                                        placeholder="Bulletpoint"
+                                    />
+                                    <button type="button" class="btn-action-delete" title="Bulletpoint verwijderen" @click="removeSpeltakAgreementBullet(itemIdx, bulletIdx)">
+                                        <TrashIcon class="h-5 w-5" />
+                                    </button>
+                                </div>
+                                <button type="button" class="rounded bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800" @click="addSpeltakAgreementBullet(itemIdx)">
+                                    Bulletpoint toevoegen
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2 rounded-lg border border-app-border bg-white p-3 dark:border-app-border-dark dark:bg-slate-900">
+                            <div class="flex items-center justify-between">
+                                <h5 class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">Hygiëne en gezondheid tabel</h5>
+                            </div>
+                            <div class="overflow-x-auto rounded border border-app-border dark:border-app-border-dark">
+                                <table class="w-full min-w-[980px] text-sm">
+                                    <thead class="bg-slate-50 dark:bg-slate-800/70">
+                                        <tr>
+                                            <th class="px-2 py-2 text-left">Onderwerp</th>
+                                            <th class="px-2 py-2 text-left">Jerrycans</th>
+                                            <th class="px-2 py-2 text-left">Kraanwater</th>
+                                            <th class="px-2 py-2 text-left">Buitenboordwater</th>
+                                            <th class="px-2 py-2 text-left">Desinfectans</th>
+                                            <th class="px-2 py-2 text-left">Actie</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-app-border dark:divide-app-border-dark">
+                                        <tr v-for="(row, rowIdx) in form.speltak_hygiene_rows" :key="`speltak-hygiene-row-${rowIdx}`">
+                                            <td class="px-2 py-2"><input v-model="row.topic" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Onderwerp" /></td>
+                                            <td class="px-2 py-2"><input v-model="row.jerrycans" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Ja/Nee" /></td>
+                                            <td class="px-2 py-2"><input v-model="row.kraanwater" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Ja/Nee" /></td>
+                                            <td class="px-2 py-2"><input v-model="row.buitenboordwater" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Ja/Nee" /></td>
+                                            <td class="px-2 py-2"><input v-model="row.desinfectans" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Ja/Nee" /></td>
+                                            <td class="px-2 py-2">
+                                                <button type="button" class="btn-action-delete" title="Rij verwijderen" @click="removeSpeltakHygieneRow(rowIdx)">
+                                                    <TrashIcon class="h-5 w-5" />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div>
+                                <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-700 text-white" title="Rij toevoegen" aria-label="Rij toevoegen" @click="addSpeltakHygieneRow">
+                                    <PlusIcon class="h-4 w-4" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <div v-if="isCorveeroosterSection(activeSection)" class="space-y-3">
                         <div class="flex items-center justify-between">
                             <h4 class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">Corveerooster</h4>
-                            <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-700 text-white" title="Rij toevoegen" aria-label="Rij toevoegen" @click="addCorveeRow">
-                                <PlusIcon class="h-4 w-4" />
-                            </button>
                         </div>
                         <div class="overflow-x-auto rounded border border-app-border dark:border-app-border-dark">
                             <table class="w-full min-w-[1300px] text-sm">
@@ -953,14 +1394,16 @@ function statusClass(status) {
                                 </tbody>
                             </table>
                         </div>
+                        <div>
+                            <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-700 text-white" title="Rij toevoegen" aria-label="Rij toevoegen" @click="addCorveeRow">
+                                <PlusIcon class="h-4 w-4" />
+                            </button>
+                        </div>
                     </div>
 
                     <div v-if="isVinindelingSection(activeSection)" class="space-y-3">
                         <div class="flex items-center justify-between">
                             <h4 class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">Vinindeling</h4>
-                            <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-700 text-white" title="Rij toevoegen" aria-label="Rij toevoegen" @click="addVinindelingRow">
-                                <PlusIcon class="h-4 w-4" />
-                            </button>
                         </div>
 
                         <div class="overflow-x-auto rounded border border-app-border dark:border-app-border-dark">
@@ -1012,6 +1455,11 @@ function statusClass(status) {
                                     </tr>
                                 </tbody>
                             </table>
+                        </div>
+                        <div>
+                            <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-700 text-white" title="Rij toevoegen" aria-label="Rij toevoegen" @click="addVinindelingRow">
+                                <PlusIcon class="h-4 w-4" />
+                            </button>
                         </div>
                     </div>
 

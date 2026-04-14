@@ -3,10 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\CampPlaybook;
+use App\Models\Member;
 use App\Models\User;
 use App\Models\UserSectionRole;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -44,7 +47,10 @@ class CampPlaybookController extends Controller
      *   section:string,
      *   camp_year:int,
      *   title:string,
-     *   content:string,
+     *   camp_location:string,
+     *   camp_place:string,
+     *   camp_dates:string,
+     *   cover_photo_url:?string,
      *   status:string,
      *   review_note:string,
      *   review_notes:array<int,array{note:string,user_name:string,at:string}>,
@@ -56,17 +62,15 @@ class CampPlaybookController extends Controller
      */
     private function indexItemPayload(CampPlaybook $item, bool $canReview): array
     {
-        $sections = $this->normalizePlaybookSections(
-            (array) data_get($item->meta, 'sections', []),
-            (string) ($item->content ?? '')
-        );
-
         return [
             'id' => (int) $item->id,
             'section' => (string) $item->section,
             'camp_year' => (int) $item->camp_year,
             'title' => (string) $item->title,
-            'content' => $this->flattenSectionsToContent($sections),
+            'camp_location' => $this->normalizeCampLocation((string) data_get($item->meta, 'camp_location', 'fram')),
+            'camp_place' => trim((string) data_get($item->meta, 'camp_place', '')),
+            'camp_dates' => trim((string) data_get($item->meta, 'camp_dates', '')),
+            'cover_photo_url' => $this->coverPhotoUrl((string) data_get($item->meta, 'cover_photo_path', '')),
             'status' => (string) ($item->status ?: CampPlaybook::STATUS_DRAFT),
             'review_note' => (string) ($item->review_note ?? ''),
             'review_notes' => $this->reviewNotesForPayload((array) data_get($item->meta, 'review_notes', [])),
@@ -95,6 +99,7 @@ class CampPlaybookController extends Controller
                     'camp_location' => $this->normalizeCampLocation((string) data_get($source->meta, 'camp_location', 'fram')),
                     'camp_place' => (string) data_get($source->meta, 'camp_place', ''),
                     'camp_dates' => (string) data_get($source->meta, 'camp_dates', ''),
+                    'cover_photo_url' => $this->coverPhotoUrl((string) data_get($source->meta, 'cover_photo_path', '')),
                     'task_distribution_rows' => $this->normalizeTaskDistributionRows((array) data_get($source->meta, 'task_distribution_rows', [])),
                     'task_explanation_items' => $this->normalizeTaskExplanationItems(
                         (array) data_get($source->meta, 'task_explanation_items', []),
@@ -104,6 +109,11 @@ class CampPlaybookController extends Controller
                         (array) data_get($source->meta, 'general_agreements_items', []),
                         (string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN),
                     ),
+                    'speltak_agreements_items' => $this->normalizeSpeltakAgreementsItems(
+                        (array) data_get($source->meta, 'speltak_agreements_items', []),
+                        (string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN),
+                    ),
+                    'speltak_hygiene_rows' => $this->normalizeSpeltakHygieneRows((array) data_get($source->meta, 'speltak_hygiene_rows', [])),
                     'vinindeling_rows' => $this->normalizeVinindelingRows((array) data_get($source->meta, 'vinindeling_rows', [])),
                     'corvee_rows' => $this->normalizeCorveeRows((array) data_get($source->meta, 'corvee_rows', [])),
                     'monsterrol_rows' => $this->normalizeMonsterrolRows((array) data_get($source->meta, 'monsterrol_rows', [])),
@@ -120,10 +130,13 @@ class CampPlaybookController extends Controller
             'item' => null,
             'copyItem' => $copyItem,
             'leaderTeam' => $this->leaderTeamOptions(),
+            'sectionMembers' => $this->sectionMemberOptions((string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN)),
             'defaultSections' => $this->defaultPlaybookSections((string) session('active_section', 'dolfijnen')),
             'defaultTaskDistributionRows' => $this->defaultTaskDistributionRows((string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN)),
             'defaultTaskExplanationItems' => $this->defaultTaskExplanationItems((string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN)),
             'defaultGeneralAgreementsItems' => $this->defaultGeneralAgreementsItems((string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN)),
+            'defaultSpeltakAgreementsItems' => $this->defaultSpeltakAgreementsItems((string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN)),
+            'defaultSpeltakHygieneRows' => $this->defaultSpeltakHygieneRows(),
             'defaultVinindelingRows' => $this->defaultVinindelingRows(),
             'defaultCorveeRows' => $this->defaultCorveeRows(),
             'defaultMonsterrolRows' => $this->defaultMonsterrolRows(),
@@ -153,6 +166,7 @@ class CampPlaybookController extends Controller
                 'camp_location' => $this->normalizeCampLocation((string) data_get($campPlaybook->meta, 'camp_location', 'fram')),
                 'camp_place' => (string) data_get($campPlaybook->meta, 'camp_place', ''),
                 'camp_dates' => (string) data_get($campPlaybook->meta, 'camp_dates', ''),
+                'cover_photo_url' => $this->coverPhotoUrl((string) data_get($campPlaybook->meta, 'cover_photo_path', '')),
                 'status' => (string) ($campPlaybook->status ?: CampPlaybook::STATUS_DRAFT),
                 'review_note' => (string) ($campPlaybook->review_note ?? ''),
                 'task_distribution_rows' => $this->normalizeTaskDistributionRows((array) data_get($campPlaybook->meta, 'task_distribution_rows', [])),
@@ -164,6 +178,11 @@ class CampPlaybookController extends Controller
                     (array) data_get($campPlaybook->meta, 'general_agreements_items', []),
                     (string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN),
                 ),
+                'speltak_agreements_items' => $this->normalizeSpeltakAgreementsItems(
+                    (array) data_get($campPlaybook->meta, 'speltak_agreements_items', []),
+                    (string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN),
+                ),
+                'speltak_hygiene_rows' => $this->normalizeSpeltakHygieneRows((array) data_get($campPlaybook->meta, 'speltak_hygiene_rows', [])),
                 'vinindeling_rows' => $this->normalizeVinindelingRows((array) data_get($campPlaybook->meta, 'vinindeling_rows', [])),
                 'corvee_rows' => $this->normalizeCorveeRows((array) data_get($campPlaybook->meta, 'corvee_rows', [])),
                 'monsterrol_rows' => $this->normalizeMonsterrolRows((array) data_get($campPlaybook->meta, 'monsterrol_rows', [])),
@@ -177,10 +196,13 @@ class CampPlaybookController extends Controller
             ],
             'copyItem' => null,
             'leaderTeam' => $this->leaderTeamOptions(),
+            'sectionMembers' => $this->sectionMemberOptions((string) $campPlaybook->section),
             'defaultSections' => $this->defaultPlaybookSections((string) session('active_section', 'dolfijnen')),
             'defaultTaskDistributionRows' => $this->defaultTaskDistributionRows((string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN)),
             'defaultTaskExplanationItems' => $this->defaultTaskExplanationItems((string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN)),
             'defaultGeneralAgreementsItems' => $this->defaultGeneralAgreementsItems((string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN)),
+            'defaultSpeltakAgreementsItems' => $this->defaultSpeltakAgreementsItems((string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN)),
+            'defaultSpeltakHygieneRows' => $this->defaultSpeltakHygieneRows(),
             'defaultVinindelingRows' => $this->defaultVinindelingRows(),
             'defaultCorveeRows' => $this->defaultCorveeRows(),
             'defaultMonsterrolRows' => $this->defaultMonsterrolRows(),
@@ -198,9 +220,13 @@ class CampPlaybookController extends Controller
             'camp_location' => ['nullable', 'string', 'in:clubhuis,fram'],
             'camp_place' => ['nullable', 'string', 'max:255'],
             'camp_dates' => ['nullable', 'string', 'max:255'],
+            'cover_photo' => ['nullable', 'image', 'max:5120'],
+            'cover_photo_remove' => ['nullable', 'boolean'],
             'task_distribution_rows' => ['nullable', 'array'],
             'task_explanation_items' => ['nullable', 'array'],
             'general_agreements_items' => ['nullable', 'array'],
+            'speltak_agreements_items' => ['nullable', 'array'],
+            'speltak_hygiene_rows' => ['nullable', 'array'],
             'vinindeling_rows' => ['nullable', 'array'],
             'corvee_rows' => ['nullable', 'array'],
             'monsterrol_rows' => ['nullable', 'array'],
@@ -216,6 +242,7 @@ class CampPlaybookController extends Controller
         $content = $this->flattenSectionsToContent($sections);
         $dayPlans = $this->normalizeDayPlans((array) ($data['day_plans'] ?? []));
         $vaarschemaRows = $this->normalizeVaarschemaRows((array) ($data['vaarschema_rows'] ?? []));
+        $coverPhotoPath = $this->storeCoverPhoto($request->file('cover_photo'));
         $status = $this->statusFromAction((string) ($data['action'] ?? 'save'));
         CampPlaybook::create([
             'camp_year' => (int) $data['camp_year'],
@@ -226,6 +253,7 @@ class CampPlaybookController extends Controller
                 'camp_location' => $this->normalizeCampLocation((string) ($data['camp_location'] ?? 'fram')),
                 'camp_place' => trim((string) ($data['camp_place'] ?? '')),
                 'camp_dates' => trim((string) ($data['camp_dates'] ?? '')),
+                'cover_photo_path' => $coverPhotoPath,
                 'task_distribution_rows' => $this->normalizeTaskDistributionRows((array) ($data['task_distribution_rows'] ?? [])),
                 'task_explanation_items' => $this->normalizeTaskExplanationItems(
                     (array) ($data['task_explanation_items'] ?? []),
@@ -235,6 +263,11 @@ class CampPlaybookController extends Controller
                     (array) ($data['general_agreements_items'] ?? []),
                     (string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN),
                 ),
+                'speltak_agreements_items' => $this->normalizeSpeltakAgreementsItems(
+                    (array) ($data['speltak_agreements_items'] ?? []),
+                    (string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN),
+                ),
+                'speltak_hygiene_rows' => $this->normalizeSpeltakHygieneRows((array) ($data['speltak_hygiene_rows'] ?? [])),
                 'vinindeling_rows' => $this->normalizeVinindelingRows((array) ($data['vinindeling_rows'] ?? [])),
                 'corvee_rows' => $this->normalizeCorveeRows((array) ($data['corvee_rows'] ?? [])),
                 'monsterrol_rows' => $this->normalizeMonsterrolRows((array) ($data['monsterrol_rows'] ?? [])),
@@ -264,9 +297,13 @@ class CampPlaybookController extends Controller
             'camp_location' => ['nullable', 'string', 'in:clubhuis,fram'],
             'camp_place' => ['nullable', 'string', 'max:255'],
             'camp_dates' => ['nullable', 'string', 'max:255'],
+            'cover_photo' => ['nullable', 'image', 'max:5120'],
+            'cover_photo_remove' => ['nullable', 'boolean'],
             'task_distribution_rows' => ['nullable', 'array'],
             'task_explanation_items' => ['nullable', 'array'],
             'general_agreements_items' => ['nullable', 'array'],
+            'speltak_agreements_items' => ['nullable', 'array'],
+            'speltak_hygiene_rows' => ['nullable', 'array'],
             'vinindeling_rows' => ['nullable', 'array'],
             'corvee_rows' => ['nullable', 'array'],
             'monsterrol_rows' => ['nullable', 'array'],
@@ -284,6 +321,18 @@ class CampPlaybookController extends Controller
         $meta['camp_location'] = $this->normalizeCampLocation((string) ($data['camp_location'] ?? 'fram'));
         $meta['camp_place'] = trim((string) ($data['camp_place'] ?? ''));
         $meta['camp_dates'] = trim((string) ($data['camp_dates'] ?? ''));
+        $existingCoverPhotoPath = (string) data_get($meta, 'cover_photo_path', '');
+        $coverPhotoPath = $existingCoverPhotoPath;
+        if (($data['cover_photo_remove'] ?? false) === true) {
+            if ($existingCoverPhotoPath !== '') {
+                Storage::disk('public')->delete($existingCoverPhotoPath);
+            }
+            $coverPhotoPath = '';
+        }
+        if ($request->hasFile('cover_photo')) {
+            $coverPhotoPath = (string) ($this->storeCoverPhoto($request->file('cover_photo'), $coverPhotoPath) ?? '');
+        }
+        $meta['cover_photo_path'] = $coverPhotoPath;
         $meta['task_distribution_rows'] = $this->normalizeTaskDistributionRows((array) ($data['task_distribution_rows'] ?? []));
         $meta['task_explanation_items'] = $this->normalizeTaskExplanationItems(
             (array) ($data['task_explanation_items'] ?? []),
@@ -293,6 +342,11 @@ class CampPlaybookController extends Controller
             (array) ($data['general_agreements_items'] ?? []),
             (string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN),
         );
+        $meta['speltak_agreements_items'] = $this->normalizeSpeltakAgreementsItems(
+            (array) ($data['speltak_agreements_items'] ?? []),
+            (string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN),
+        );
+        $meta['speltak_hygiene_rows'] = $this->normalizeSpeltakHygieneRows((array) ($data['speltak_hygiene_rows'] ?? []));
         $meta['vinindeling_rows'] = $this->normalizeVinindelingRows((array) ($data['vinindeling_rows'] ?? []));
         $meta['corvee_rows'] = $this->normalizeCorveeRows((array) ($data['corvee_rows'] ?? []));
         $meta['monsterrol_rows'] = $this->normalizeMonsterrolRows((array) ($data['monsterrol_rows'] ?? []));
@@ -347,6 +401,7 @@ class CampPlaybookController extends Controller
             'camp_location' => $this->normalizeCampLocation((string) data_get($campPlaybook->meta, 'camp_location', 'fram')),
             'camp_place' => (string) data_get($campPlaybook->meta, 'camp_place', ''),
             'camp_dates' => (string) data_get($campPlaybook->meta, 'camp_dates', ''),
+            'cover_photo_path' => (string) data_get($campPlaybook->meta, 'cover_photo_path', ''),
             'task_distribution_rows' => $this->normalizeTaskDistributionRows((array) data_get($campPlaybook->meta, 'task_distribution_rows', [])),
             'task_explanation_items' => $this->normalizeTaskExplanationItems(
                 (array) data_get($campPlaybook->meta, 'task_explanation_items', []),
@@ -356,6 +411,11 @@ class CampPlaybookController extends Controller
                 (array) data_get($campPlaybook->meta, 'general_agreements_items', []),
                 (string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN),
             ),
+            'speltak_agreements_items' => $this->normalizeSpeltakAgreementsItems(
+                (array) data_get($campPlaybook->meta, 'speltak_agreements_items', []),
+                (string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN),
+            ),
+            'speltak_hygiene_rows' => $this->normalizeSpeltakHygieneRows((array) data_get($campPlaybook->meta, 'speltak_hygiene_rows', [])),
             'vinindeling_rows' => $this->normalizeVinindelingRows((array) data_get($campPlaybook->meta, 'vinindeling_rows', [])),
             'corvee_rows' => $this->normalizeCorveeRows((array) data_get($campPlaybook->meta, 'corvee_rows', [])),
             'monsterrol_rows' => $this->normalizeMonsterrolRows((array) data_get($campPlaybook->meta, 'monsterrol_rows', [])),
@@ -480,6 +540,11 @@ class CampPlaybookController extends Controller
                 (array) data_get($campPlaybook->meta, 'general_agreements_items', []),
                 (string) $campPlaybook->section,
             ),
+            'speltakAgreementsItems' => $this->normalizeSpeltakAgreementsItems(
+                (array) data_get($campPlaybook->meta, 'speltak_agreements_items', []),
+                (string) $campPlaybook->section,
+            ),
+            'speltakHygieneRows' => $this->normalizeSpeltakHygieneRows((array) data_get($campPlaybook->meta, 'speltak_hygiene_rows', [])),
             'vinindelingRows' => $this->normalizeVinindelingRows((array) data_get($campPlaybook->meta, 'vinindeling_rows', [])),
             'corveeRows' => $this->normalizeCorveeRows((array) data_get($campPlaybook->meta, 'corvee_rows', [])),
             'monsterrolRows' => $this->normalizeMonsterrolRows((array) data_get($campPlaybook->meta, 'monsterrol_rows', [])),
@@ -488,6 +553,7 @@ class CampPlaybookController extends Controller
             'vaarschemaRows' => $this->normalizeVaarschemaRows((array) data_get($campPlaybook->meta, 'vaarschema_rows', [])),
             'leaderTeamMap' => $this->leaderTeamMapById(),
             'logoDataUri' => $this->logoDataUri(),
+            'coverPhotoDataUri' => $this->coverPhotoDataUri((string) data_get($campPlaybook->meta, 'cover_photo_path', '')),
         ])->setPaper('a4');
 
         $filename = sprintf('draaiboek-%d-%s.pdf', (int) $campPlaybook->id, now()->format('Ymd-His'));
@@ -512,6 +578,57 @@ class CampPlaybookController extends Controller
             : 'image/png';
 
         return 'data:'.$mime.';base64,'.base64_encode($binary);
+    }
+
+    private function coverPhotoUrl(string $path): ?string
+    {
+        $trimmed = trim($path);
+        if ($trimmed === '') {
+            return null;
+        }
+
+        if (! Storage::disk('public')->exists($trimmed)) {
+            return null;
+        }
+
+        return asset('storage/'.ltrim($trimmed, '/'));
+    }
+
+    private function coverPhotoDataUri(string $path): string
+    {
+        $trimmed = trim($path);
+        if ($trimmed === '' || ! Storage::disk('public')->exists($trimmed)) {
+            return '';
+        }
+
+        $binary = Storage::disk('public')->get($trimmed);
+        if ($binary === '') {
+            return '';
+        }
+
+        $extension = strtolower(pathinfo($trimmed, PATHINFO_EXTENSION));
+        $mime = match ($extension) {
+            'jpg', 'jpeg' => 'image/jpeg',
+            'gif' => 'image/gif',
+            'webp' => 'image/webp',
+            default => 'image/png',
+        };
+
+        return 'data:'.$mime.';base64,'.base64_encode($binary);
+    }
+
+    private function storeCoverPhoto(?UploadedFile $file, ?string $oldPath = null): ?string
+    {
+        if (! $file instanceof UploadedFile) {
+            return $oldPath;
+        }
+
+        $storedPath = $file->store('camp-playbooks/covers', 'public');
+        if ($oldPath && $oldPath !== $storedPath) {
+            Storage::disk('public')->delete($oldPath);
+        }
+
+        return $storedPath;
     }
 
     /**
@@ -637,7 +754,7 @@ class CampPlaybookController extends Controller
     }
 
     /**
-     * @return array<int,array{task:string,description:string,responsible:string}>
+     * @return array<int,array{task:string,responsibles:array<int,string>}>
      */
     private function defaultTaskDistributionRows(string $activeSection): array
     {
@@ -649,16 +766,14 @@ class CampPlaybookController extends Controller
         if ($titles->isEmpty()) {
             return [[
                 'task' => '',
-                'description' => '',
-                'responsible' => '',
+                'responsibles' => [],
             ]];
         }
 
         return $titles
             ->map(fn (string $title): array => [
                 'task' => $title,
-                'description' => '',
-                'responsible' => '',
+                'responsibles' => [],
             ])
             ->values()
             ->all();
@@ -666,20 +781,31 @@ class CampPlaybookController extends Controller
 
     /**
      * @param  array<int,mixed>  $raw
-     * @return array<int,array{task:string,description:string,responsible:string}>
+     * @return array<int,array{task:string,responsibles:array<int,string>}>
      */
     private function normalizeTaskDistributionRows(array $raw): array
     {
         $rows = collect($raw)
             ->filter(fn ($entry): bool => is_array($entry))
             ->map(function (array $entry): array {
+                $responsiblesRaw = $entry['responsibles'] ?? $entry['responsible'] ?? [];
+                $responsibles = collect(is_array($responsiblesRaw) ? $responsiblesRaw : explode(',', (string) $responsiblesRaw))
+                    ->map(fn ($name): string => trim((string) $name))
+                    ->filter(fn (string $name): bool => $name !== '')
+                    ->unique(fn (string $name): string => mb_strtolower($name))
+                    ->values()
+                    ->all();
+                $task = trim((string) ($entry['task'] ?? ''));
+                if (mb_strtolower($task) === 'dagverloop') {
+                    $responsibles = ['Dagwacht'];
+                }
+
                 return [
-                    'task' => trim((string) ($entry['task'] ?? '')),
-                    'description' => trim((string) ($entry['description'] ?? '')),
-                    'responsible' => trim((string) ($entry['responsible'] ?? '')),
+                    'task' => $task,
+                    'responsibles' => $responsibles,
                 ];
             })
-            ->filter(fn (array $row): bool => $row['task'] !== '' || $row['description'] !== '' || $row['responsible'] !== '')
+            ->filter(fn (array $row): bool => $row['task'] !== '' || $row['responsibles'] !== [])
             ->values()
             ->all();
 
@@ -874,6 +1000,124 @@ class CampPlaybookController extends Controller
     }
 
     /**
+     * @return array<int,array{title:string,bullets:array<int,string>}>
+     */
+    private function defaultSpeltakAgreementsItems(string $activeSection): array
+    {
+        $speltak = $this->sectionLabel($activeSection);
+        $speltakLower = mb_strtolower($speltak);
+
+        return [
+            ['title' => "{$speltak} afspraken", 'bullets' => [
+                'Er zijn vaste vinnen voor het hele kamp.',
+            ]],
+            ['title' => 'Eten en drinken', 'bullets' => [
+                'Eerst wordt er een boterham met kaas of vlees gegeten, daarna pas zoet.',
+            ]],
+            ['title' => 'Dagverloop', 'bullets' => [
+                'Elke dag openen we gezamenlijk.',
+                "Alle {$speltakLower} doen aan alle activiteiten mee.",
+                "Iedere {$speltakLower} doet het corvee zonder mopperen totdat iedereen klaar is.",
+                'Wanneer er geslapen moet worden, wordt er ook geslapen en is het dus stil.',
+            ]],
+            ['title' => 'Plaatsen op de Fram', 'bullets' => [
+                'Het achteronder dient overdag zo min mogelijk te worden bezocht.',
+                "{$speltakLower} mogen niet in de poep komen.",
+                "Het vooronder, de plek van het materiaal, is verboden voor de {$speltakLower}. Deze mag alleen betreden worden met toestemming van de vaarbemanning of staf.",
+                'Tijdens de vaart mag er, met toestemming van de schipper van de Fram, een kijkje worden genomen in de stuurhut. In de stuurhut mogen maximaal 2 kinderen.',
+                'De machinekamer is te allen tijde verboden terrein tenzij je toestemming hebt van de vaarbemanning.',
+                'Tijdens af- en aanmeren en ankeren bevind je je niet op de dekken en het dak zonder nadrukkelijke vraag van iemand van de vaarbemanning.',
+                "Geen enkele {$speltakLower} verlaat ongevraagd de Fram.",
+            ]],
+            ['title' => 'Materiaal', 'bullets' => [
+                'Elektrische apparaten, stopcontacten en lampen zijn niet om mee te spelen. Ruim opladers en apparaten na het opladen meteen op.',
+                'Zorg dat spullen elke ochtend in je tas zitten en op je kooi liggen zodat het opgeruimd blijft.',
+                'Leg geen natte spullen in het achteronder, maar hang ze uit op dek of in het dekhuis.',
+            ]],
+            ['title' => 'Veiligheid', 'bullets' => [
+                'Rennen is te allen tijde verboden op de Fram.',
+                'Op de dekken en in het dekhuis heb je altijd dichte schoenen aan.',
+                'Leg je reddingsvest op je kooi en bind het niet vast.',
+                'Alle medicijnen en zakmessen worden aan het begin van het kamp in bewaring genomen door de leiding.',
+            ]],
+            ['title' => 'Hygiëne en gezondheid', 'bullets' => [
+                'Houd de Fram en de vletten schoon. Gooi rommel in de prullenbak.',
+                'Alle ziektes en wondjes, hoe klein ook, worden gemeld bij de leiding.',
+                'Drinkwater zit in jerrycans op het voordek en wordt alleen gebruikt om te drinken.',
+                'Kraanwater kan gebruikt worden om tanden te poetsen maar is niet drinkbaar. Gebruik zuinig water.',
+            ]],
+        ];
+    }
+
+    /**
+     * @param  array<int,mixed>  $raw
+     * @return array<int,array{title:string,bullets:array<int,string>}>
+     */
+    private function normalizeSpeltakAgreementsItems(array $raw, string $activeSection): array
+    {
+        $items = collect($raw)
+            ->filter(fn ($entry): bool => is_array($entry))
+            ->map(function (array $entry): array {
+                $bullets = collect((array) ($entry['bullets'] ?? []))
+                    ->map(fn ($bullet): string => trim((string) $bullet))
+                    ->filter(fn (string $bullet): bool => $bullet !== '')
+                    ->values()
+                    ->all();
+
+                return [
+                    'title' => trim((string) ($entry['title'] ?? '')),
+                    'bullets' => $bullets !== [] ? $bullets : [''],
+                ];
+            })
+            ->filter(fn (array $item): bool => $item['title'] !== '' || collect($item['bullets'])->filter(fn (string $bullet): bool => trim($bullet) !== '')->isNotEmpty())
+            ->values()
+            ->all();
+
+        return $items !== [] ? $items : $this->defaultSpeltakAgreementsItems($activeSection);
+    }
+
+    /**
+     * @return array<int,array{topic:string,jerrycans:string,kraanwater:string,buitenboordwater:string,desinfectans:string}>
+     */
+    private function defaultSpeltakHygieneRows(): array
+    {
+        return [
+            ['topic' => 'Drinken', 'jerrycans' => 'Ja', 'kraanwater' => 'Nee', 'buitenboordwater' => 'Nee', 'desinfectans' => 'Nee'],
+            ['topic' => 'Tandenpoetsen', 'jerrycans' => 'Nee', 'kraanwater' => 'Ja', 'buitenboordwater' => 'Nee', 'desinfectans' => 'Nee'],
+            ['topic' => 'Wassen', 'jerrycans' => 'Nee', 'kraanwater' => 'Nee', 'buitenboordwater' => 'Ja', 'desinfectans' => 'Nee'],
+            ['topic' => 'Koken', 'jerrycans' => 'Nee', 'kraanwater' => 'Ja', 'buitenboordwater' => 'Nee', 'desinfectans' => 'Nee'],
+            ['topic' => 'Handen wassen + zeep', 'jerrycans' => '', 'kraanwater' => '', 'buitenboordwater' => '', 'desinfectans' => ''],
+            ['topic' => 'Na wc', 'jerrycans' => 'Nee', 'kraanwater' => 'Nee', 'buitenboordwater' => 'Ja', 'desinfectans' => 'Ja'],
+            ['topic' => 'Voor eten maken', 'jerrycans' => 'Nee', 'kraanwater' => 'Ja', 'buitenboordwater' => 'Nee', 'desinfectans' => 'Nee'],
+            ['topic' => 'Zichtbaar vuil voor eten', 'jerrycans' => 'Nee', 'kraanwater' => 'Nee', 'buitenboordwater' => 'Ja', 'desinfectans' => 'Nee'],
+        ];
+    }
+
+    /**
+     * @param  array<int,mixed>  $raw
+     * @return array<int,array{topic:string,jerrycans:string,kraanwater:string,buitenboordwater:string,desinfectans:string}>
+     */
+    private function normalizeSpeltakHygieneRows(array $raw): array
+    {
+        $rows = collect($raw)
+            ->filter(fn ($entry): bool => is_array($entry))
+            ->map(function (array $entry): array {
+                return [
+                    'topic' => trim((string) ($entry['topic'] ?? '')),
+                    'jerrycans' => trim((string) ($entry['jerrycans'] ?? '')),
+                    'kraanwater' => trim((string) ($entry['kraanwater'] ?? '')),
+                    'buitenboordwater' => trim((string) ($entry['buitenboordwater'] ?? '')),
+                    'desinfectans' => trim((string) ($entry['desinfectans'] ?? '')),
+                ];
+            })
+            ->filter(fn (array $row): bool => $row['topic'] !== '' || $row['jerrycans'] !== '' || $row['kraanwater'] !== '' || $row['buitenboordwater'] !== '' || $row['desinfectans'] !== '')
+            ->values()
+            ->all();
+
+        return $rows !== [] ? $rows : $this->defaultSpeltakHygieneRows();
+    }
+
+    /**
      * @return array<int,array{role:string,fin_names:array<int,string>}>
      */
     private function defaultVinindelingRows(): array
@@ -992,8 +1236,8 @@ class CampPlaybookController extends Controller
 
     /**
      * @return array{
-     *   staff:array<int,array{first_name:string,last_name:string,functie:string,on_board:string,off_board:string}>,
-     *   vaarbemanning:array<int,array{first_name:string,last_name:string,functie:string,on_board:string,off_board:string}>
+     *   crew:array<int,array{first_name:string,last_name:string,functie:string,on_board:string,off_board:string}>,
+     *   speltak:array<int,array{first_name:string,last_name:string,functie:string,on_board:string,off_board:string}>
      * }
      */
     private function defaultMonsterrolRows(): array
@@ -1007,24 +1251,24 @@ class CampPlaybookController extends Controller
         ];
 
         return [
-            'staff' => [$emptyRow],
-            'vaarbemanning' => [$emptyRow],
+            'crew' => [$emptyRow],
+            'speltak' => [$emptyRow],
         ];
     }
 
     /**
      * @param  array<string,mixed>  $raw
      * @return array{
-     *   staff:array<int,array{first_name:string,last_name:string,functie:string,on_board:string,off_board:string}>,
-     *   vaarbemanning:array<int,array{first_name:string,last_name:string,functie:string,on_board:string,off_board:string}>
+     *   crew:array<int,array{first_name:string,last_name:string,functie:string,on_board:string,off_board:string}>,
+     *   speltak:array<int,array{first_name:string,last_name:string,functie:string,on_board:string,off_board:string}>
      * }
      */
     private function normalizeMonsterrolRows(array $raw): array
     {
         $defaults = $this->defaultMonsterrolRows();
 
-        foreach (['staff', 'vaarbemanning'] as $category) {
-            $rows = collect((array) ($raw[$category] ?? []))
+        $normalizeRows = function (array $rows): array {
+            return collect($rows)
                 ->filter(fn ($row): bool => is_array($row))
                 ->map(function (array $row): array {
                     return [
@@ -1038,17 +1282,31 @@ class CampPlaybookController extends Controller
                 ->filter(fn (array $row): bool => $row['first_name'] !== '' || $row['last_name'] !== '' || $row['functie'] !== '' || $row['on_board'] !== '' || $row['off_board'] !== '')
                 ->values()
                 ->all();
+        };
 
-            $defaults[$category] = $rows !== []
-                ? $rows
-                : [[
-                    'first_name' => '',
-                    'last_name' => '',
-                    'functie' => '',
-                    'on_board' => '',
-                    'off_board' => '',
-                ]];
-        }
+        // Backward-compatible mapping:
+        // old keys were "staff" and "vaarbemanning". These are merged into the new crew table.
+        $crewRows = $normalizeRows([
+            ...(array) ($raw['crew'] ?? []),
+            ...(array) ($raw['staff'] ?? []),
+            ...(array) ($raw['vaarbemanning'] ?? []),
+        ]);
+        $speltakRows = $normalizeRows((array) ($raw['speltak'] ?? []));
+
+        $defaults['crew'] = $crewRows !== [] ? $crewRows : [[
+            'first_name' => '',
+            'last_name' => '',
+            'functie' => '',
+            'on_board' => '',
+            'off_board' => '',
+        ]];
+        $defaults['speltak'] = $speltakRows !== [] ? $speltakRows : [[
+            'first_name' => '',
+            'last_name' => '',
+            'functie' => '',
+            'on_board' => '',
+            'off_board' => '',
+        ]];
 
         return $defaults;
     }
@@ -1182,6 +1440,26 @@ class CampPlaybookController extends Controller
                 'id' => (int) $leader->id,
                 'name' => trim(((string) $leader->first_name).' '.((string) ($leader->last_name ?? ''))),
             ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array<int,array{id:int,name:string}>
+     */
+    private function sectionMemberOptions(string $section): array
+    {
+        return Member::query()
+            ->withoutGlobalScope('section')
+            ->where('section', $section)
+            ->orderBy('first_name')
+            ->orderBy('last_name')
+            ->get()
+            ->map(fn (Member $member): array => [
+                'id' => (int) $member->id,
+                'name' => trim(((string) $member->first_name).' '.((string) ($member->last_name ?? ''))),
+            ])
+            ->filter(fn (array $member): bool => trim((string) ($member['name'] ?? '')) !== '')
             ->values()
             ->all();
     }

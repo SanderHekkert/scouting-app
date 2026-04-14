@@ -103,6 +103,10 @@ function statusClass(status) {
     if (status === 'needs_changes') return 'bg-amber-100 text-amber-800';
     return 'bg-sky-100 text-sky-800';
 }
+
+function campTypeLabel(value) {
+    return String(value) === 'clubhuis' ? 'Clubhuis' : 'Fram';
+}
 </script>
 
 <template>
@@ -130,14 +134,33 @@ function statusClass(status) {
                 </div>
                 <div v-for="item in props.items" :key="`playbook-${item.id}`" class="rounded-lg border border-app-border bg-white p-3 dark:bg-app-canvas-dark">
                     <div class="flex items-start justify-between gap-3">
-                        <div class="min-w-0">
-                            <p class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">{{ item.camp_year }} - {{ item.title }}</p>
-                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-300">
-                                {{ sectionLabels[item.section] || item.section }} | Door {{ item.created_by_name || 'Onbekend' }} | Gewijzigd {{ formattedUpdatedAt(item.updated_at) }}
-                                | Laatst gewijzigd door {{ item.updated_by_name || 'Onbekend' }}
-                            </p>
-                            <p class="mt-1 line-clamp-4 whitespace-pre-wrap text-sm text-app-ink dark:text-app-ink-dark">{{ item.content }}</p>
+                        <div class="min-w-0 flex items-start gap-3">
+                            <div class="h-24 w-24 shrink-0 overflow-hidden rounded-md border border-app-border bg-slate-100 dark:border-app-border-dark dark:bg-slate-800">
+                                <img
+                                    v-if="item.cover_photo_url"
+                                    :src="item.cover_photo_url"
+                                    alt="Cover"
+                                    class="h-full w-full object-cover"
+                                />
+                                <div v-else class="flex h-full w-full items-center justify-center text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
+                                    Geen cover
+                                </div>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">{{ item.camp_year }} - {{ item.title }}</p>
+                                <p class="mt-1 text-xs text-slate-500 dark:text-slate-300">
+                                    {{ sectionLabels[item.section] || item.section }} | Door {{ item.created_by_name || 'Onbekend' }} | Gewijzigd {{ formattedUpdatedAt(item.updated_at) }}
+                                    | Laatst gewijzigd door {{ item.updated_by_name || 'Onbekend' }}
+                                </p>
+                                <p class="mt-1 text-xs text-slate-600 dark:text-slate-200">
+                                    Kamptype: {{ campTypeLabel(item.camp_location) }}
+                                    <span v-if="item.camp_place"> | Plaats: {{ item.camp_place }}</span>
+                                    <span v-if="item.camp_dates"> | Datum: {{ item.camp_dates }}</span>
+                                </p>
+                            </div>
+                        </div>
 
+                        <div class="min-w-0">
                             <div v-if="item.review_note" class="mt-2 rounded-md border border-amber-200 bg-amber-50 px-2.5 py-2 text-xs text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/15 dark:text-amber-200">
                                 <p class="font-semibold">Notitie bestuur:</p>
                                 <p class="mt-0.5 whitespace-pre-line">{{ item.review_note }}</p>

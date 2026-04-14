@@ -176,6 +176,67 @@
         .service-line strong {
             color: #334155;
         }
+        .page-break {
+            page-break-after: always;
+        }
+        .cover-page {
+            min-height: 100%;
+            border: 1px solid #dbe5f2;
+            border-radius: 14px;
+            background: #f8fbff;
+            overflow: hidden;
+        }
+        .cover-photo {
+            width: 100%;
+            height: 420px;
+            object-fit: cover;
+            border-bottom: 1px solid #dbe5f2;
+        }
+        .cover-photo-fallback {
+            height: 420px;
+            border-bottom: 1px solid #dbe5f2;
+            background: linear-gradient(130deg, #1d4ed8, #2563eb 45%, #0ea5e9);
+            color: #ffffff;
+            text-align: center;
+            padding-top: 170px;
+            font-size: 34px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        .cover-meta {
+            padding: 18px 20px;
+        }
+        .cover-title {
+            margin: 0 0 6px;
+            font-size: 30px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        .cover-subtitle {
+            margin: 0;
+            font-size: 13px;
+            color: #334155;
+        }
+        .toc-page {
+            border: 1px solid #dbe5f2;
+            border-radius: 14px;
+            background: #ffffff;
+            padding: 20px;
+        }
+        .toc-title {
+            margin: 0 0 10px;
+            font-size: 24px;
+            color: #0f172a;
+        }
+        .toc-list {
+            margin: 0;
+            padding-left: 18px;
+        }
+        .toc-list li {
+            margin-bottom: 7px;
+            font-size: 12px;
+            color: #0f172a;
+        }
         .footer {
             margin-top: 10px;
             font-size: 10px;
@@ -185,6 +246,43 @@
     </style>
 </head>
 <body>
+    @php
+        $sectionTitles = collect((array) ($sections ?? []))
+            ->map(fn ($section): string => trim((string) ($section['title'] ?? '')))
+            ->filter(fn (string $title): bool => $title !== '')
+            ->values()
+            ->all();
+    @endphp
+    <div class="cover-page">
+        @if(!empty($coverPhotoDataUri))
+            <img src="{{ $coverPhotoDataUri }}" alt="Cover foto kampdraaiboek" class="cover-photo">
+        @else
+            <div class="cover-photo-fallback">DRAAIBOEK</div>
+        @endif
+        <div class="cover-meta">
+            <p class="cover-title">{{ $playbook->title }}</p>
+            <p class="cover-subtitle">Kampdraaiboek - Fridtjof Nansen Groep 12</p>
+            <div style="margin-top: 10px;">
+                <span class="pill">Jaar: {{ (int) $playbook->camp_year }}</span>
+                <span class="pill">Speltak: {{ ucfirst(str_replace('_', ' ', (string) $playbook->section)) }}</span>
+                <span class="pill">Kamptype: {{ (string) data_get($playbook->meta, 'camp_location', 'fram') === 'clubhuis' ? 'Clubhuis' : 'Fram' }}</span>
+            </div>
+        </div>
+    </div>
+    <div class="page-break"></div>
+    <div class="toc-page">
+        <p class="toc-title">Inhoud</p>
+        @if($sectionTitles !== [])
+            <ol class="toc-list">
+                @foreach($sectionTitles as $title)
+                    <li>{{ $title }}</li>
+                @endforeach
+            </ol>
+        @else
+            <p>Geen hoofdstukken gevonden.</p>
+        @endif
+    </div>
+    <div class="page-break"></div>
     <div class="top-accent"></div>
     <div class="header">
         <table class="header-table">
@@ -223,6 +321,7 @@
                 $isTaakverdeling = mb_strtolower(trim((string) ($section['title'] ?? ''))) === 'taakverdeling';
                 $isTaakUitleg = mb_strtolower(trim((string) ($section['title'] ?? ''))) === 'taak uitleg';
                 $isAlgemeneAfspraken = mb_strtolower(trim((string) ($section['title'] ?? ''))) === 'algemene afspraken';
+                $isSpeltakAfspraken = mb_strtolower(trim((string) ($section['title'] ?? ''))) === 'speltak afspraken';
                 $isCorveerooster = mb_strtolower(trim((string) ($section['title'] ?? ''))) === 'corveerooster';
                 $isVinindeling = mb_strtolower(trim((string) ($section['title'] ?? ''))) === 'vinindeling';
                 $isPlanning = mb_strtolower(trim((string) ($section['title'] ?? ''))) === 'planning per dag';
@@ -230,7 +329,14 @@
                 $isFramCamp = (string) data_get($playbook->meta, 'camp_location', 'fram') === 'fram';
                 $hasSectionContent = trim((string) ($section['content'] ?? '')) !== '';
                 $hasTaakverdelingContent = $isTaakverdeling && collect((array) ($taskDistributionRows ?? []))
-                    ->contains(fn ($row): bool => trim((string) data_get($row, 'task', '')) !== '' || trim((string) data_get($row, 'description', '')) !== '' || trim((string) data_get($row, 'responsible', '')) !== '');
+                    ->contains(function ($row): bool {
+                        $responsibles = collect((array) data_get($row, 'responsibles', data_get($row, 'responsible', [])))
+                            ->map(fn ($name): string => trim((string) $name))
+                            ->filter(fn (string $name): bool => $name !== '')
+                            ->values()
+                            ->all();
+                        return trim((string) data_get($row, 'task', '')) !== '' || $responsibles !== [];
+                    });
                 $hasTaakUitlegContent = $isTaakUitleg && collect((array) ($taskExplanationItems ?? []))
                     ->contains(function ($item): bool {
                         if (!is_array($item)) {
@@ -249,6 +355,17 @@
                             ->contains(fn ($bullet): bool => trim((string) $bullet) !== '');
                         return trim((string) ($item['title'] ?? '')) !== '' || $bulletsFilled;
                     });
+                $hasSpeltakAfsprakenContent = $isSpeltakAfspraken && collect((array) ($speltakAgreementsItems ?? []))
+                    ->contains(function ($item): bool {
+                        if (!is_array($item)) {
+                            return false;
+                        }
+                        $bulletsFilled = collect((array) ($item['bullets'] ?? []))
+                            ->contains(fn ($bullet): bool => trim((string) $bullet) !== '');
+                        return trim((string) ($item['title'] ?? '')) !== '' || $bulletsFilled;
+                    });
+                $hasSpeltakHygieneContent = $isSpeltakAfspraken && collect((array) ($speltakHygieneRows ?? []))
+                    ->contains(fn ($row): bool => trim((string) data_get($row, 'topic', '')) !== '' || trim((string) data_get($row, 'jerrycans', '')) !== '' || trim((string) data_get($row, 'kraanwater', '')) !== '' || trim((string) data_get($row, 'buitenboordwater', '')) !== '' || trim((string) data_get($row, 'desinfectans', '')) !== '');
                 $hasCorveeContent = $isCorveerooster && collect((array) ($corveeRows ?? []))
                     ->contains(fn ($row): bool => trim((string) data_get($row, 'day', '')) !== '' || trim((string) data_get($row, 'date', '')) !== '' || trim((string) data_get($row, 'daywatch', '')) !== '' || trim((string) data_get($row, 'dienstvin', '')) !== '' || trim((string) data_get($row, 'dekhuis', '')) !== '' || trim((string) data_get($row, 'achteronder_en_dekken', '')) !== '' || trim((string) data_get($row, 'wc_en_klusjes', '')) !== '');
                 $hasVinindelingContent = $isVinindeling && collect((array) ($vinindelingRows ?? []))
@@ -292,7 +409,7 @@
                     })
                     ->isNotEmpty();
             @endphp
-            @if($hasSectionContent || $hasTaakverdelingContent || $hasTaakUitlegContent || $hasAlgemeneAfsprakenContent || $hasCorveeContent || $hasVinindelingContent || $hasMonsterrolContent || $hasEmergencyContent || $hasPlanningContent || $hasVaarschemaContent)
+            @if($hasSectionContent || $hasTaakverdelingContent || $hasTaakUitlegContent || $hasAlgemeneAfsprakenContent || $hasSpeltakAfsprakenContent || $hasSpeltakHygieneContent || $hasCorveeContent || $hasVinindelingContent || $hasMonsterrolContent || $hasEmergencyContent || $hasPlanningContent || $hasVaarschemaContent)
                 <div class="section">
                     <h3 class="section-title">{{ (string) ($section['title'] ?? 'Sectie') }}</h3>
                     @if($isTaakverdeling)
@@ -301,17 +418,22 @@
                                 <thead>
                                     <tr>
                                         <th>Taak</th>
-                                        <th>Beschrijving</th>
                                         <th>Verantwoordelijke</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach((array) ($taskDistributionRows ?? []) as $row)
-                                        @if(trim((string) ($row['task'] ?? '')) !== '' || trim((string) ($row['description'] ?? '')) !== '' || trim((string) ($row['responsible'] ?? '')) !== '')
+                                        @php
+                                            $responsibles = collect((array) data_get($row, 'responsibles', data_get($row, 'responsible', [])))
+                                                ->map(fn ($name): string => trim((string) $name))
+                                                ->filter(fn (string $name): bool => $name !== '')
+                                                ->values()
+                                                ->all();
+                                        @endphp
+                                        @if(trim((string) ($row['task'] ?? '')) !== '' || $responsibles !== [])
                                             <tr>
                                                 <td>{{ (string) ($row['task'] ?? '') }}</td>
-                                                <td>{{ (string) ($row['description'] ?? '') }}</td>
-                                                <td>{{ (string) ($row['responsible'] ?? '') }}</td>
+                                                <td>{{ $responsibles !== [] ? implode(', ', $responsibles) : '' }}</td>
                                             </tr>
                                         @endif
                                     @endforeach
@@ -365,6 +487,58 @@
                                     </div>
                                 @endif
                             @endforeach
+                        </div>
+                    @elseif($isSpeltakAfspraken)
+                        <div class="service-grid">
+                            @foreach((array) ($speltakAgreementsItems ?? []) as $item)
+                                @php
+                                    $filledBullets = collect((array) ($item['bullets'] ?? []))
+                                        ->map(fn ($bullet): string => trim((string) $bullet))
+                                        ->filter(fn (string $bullet): bool => $bullet !== '')
+                                        ->values()
+                                        ->all();
+                                @endphp
+                                @if(trim((string) ($item['title'] ?? '')) !== '' || $filledBullets !== [])
+                                    <div class="day-block">
+                                        <p class="day-title">{{ (string) ($item['title'] ?? 'Afspraken') }}</p>
+                                        @if($filledBullets !== [])
+                                            <ul style="margin: 0; padding-left: 16px;">
+                                                @foreach($filledBullets as $bullet)
+                                                    <li style="margin-bottom: 3px; font-size: 11px; color: #0f172a;">{{ $bullet }}</li>
+                                                @endforeach
+                                            </ul>
+                                        @endif
+                                    </div>
+                                @endif
+                            @endforeach
+
+                            <div class="day-block">
+                                <p class="day-title">Hygiëne en gezondheid tabel</p>
+                                <table class="planning-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Onderwerp</th>
+                                            <th>Jerrycans</th>
+                                            <th>Kraanwater</th>
+                                            <th>Buitenboordwater</th>
+                                            <th>Desinfectans</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach((array) ($speltakHygieneRows ?? []) as $row)
+                                            @if(trim((string) ($row['topic'] ?? '')) !== '' || trim((string) ($row['jerrycans'] ?? '')) !== '' || trim((string) ($row['kraanwater'] ?? '')) !== '' || trim((string) ($row['buitenboordwater'] ?? '')) !== '' || trim((string) ($row['desinfectans'] ?? '')) !== '')
+                                                <tr>
+                                                    <td>{{ (string) ($row['topic'] ?? '') }}</td>
+                                                    <td>{{ (string) ($row['jerrycans'] ?? '') }}</td>
+                                                    <td>{{ (string) ($row['kraanwater'] ?? '') }}</td>
+                                                    <td>{{ (string) ($row['buitenboordwater'] ?? '') }}</td>
+                                                    <td>{{ (string) ($row['desinfectans'] ?? '') }}</td>
+                                                </tr>
+                                            @endif
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     @elseif($isCorveerooster)
                         <div class="service-grid">
@@ -428,26 +602,30 @@
                     @elseif($isMonsterrol)
                         <div class="service-grid">
                             <div class="day-block">
-                                <p class="day-title">Staf</p>
+                                <p class="day-title">Staf en vaarbemanning</p>
                                 <table class="planning-table">
                                     <thead>
                                         <tr>
                                             <th>Voornaam</th>
                                             <th>Achternaam</th>
                                             <th>Functie</th>
-                                            <th>Aan boord</th>
-                                            <th>Van boord</th>
+                                            @if($isFramCamp)
+                                                <th>Aan boord</th>
+                                                <th>Van boord</th>
+                                            @endif
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @foreach((array) data_get($monsterrolRows ?? [], 'staff', []) as $row)
+                                        @foreach((array) data_get($monsterrolRows ?? [], 'crew', []) as $row)
                                             @if(trim((string) ($row['first_name'] ?? '')) !== '' || trim((string) ($row['last_name'] ?? '')) !== '' || trim((string) ($row['functie'] ?? '')) !== '' || trim((string) ($row['on_board'] ?? '')) !== '' || trim((string) ($row['off_board'] ?? '')) !== '')
                                                 <tr>
                                                     <td>{{ (string) ($row['first_name'] ?? '') }}</td>
                                                     <td>{{ (string) ($row['last_name'] ?? '') }}</td>
                                                     <td>{{ (string) ($row['functie'] ?? '') }}</td>
-                                                    <td>{{ (string) ($row['on_board'] ?? '') }}</td>
-                                                    <td>{{ (string) ($row['off_board'] ?? '') }}</td>
+                                                    @if($isFramCamp)
+                                                        <td>{{ (string) ($row['on_board'] ?? '') }}</td>
+                                                        <td>{{ (string) ($row['off_board'] ?? '') }}</td>
+                                                    @endif
                                                 </tr>
                                             @endif
                                         @endforeach
@@ -455,27 +633,30 @@
                                 </table>
                             </div>
                             <div class="day-block">
-                                <p class="day-title">Vaarbemanning</p>
-                                <p class="daywatch"><strong>Speltak:</strong> {{ ucfirst(str_replace('_', ' ', (string) $playbook->section)) }}</p>
+                                <p class="day-title">{{ ucfirst(str_replace('_', ' ', (string) $playbook->section)) }}</p>
                                 <table class="planning-table">
                                     <thead>
                                         <tr>
                                             <th>Voornaam</th>
                                             <th>Achternaam</th>
                                             <th>Functie</th>
-                                            <th>Aan boord</th>
-                                            <th>Van boord</th>
+                                            @if($isFramCamp)
+                                                <th>Aan boord</th>
+                                                <th>Van boord</th>
+                                            @endif
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @foreach((array) data_get($monsterrolRows ?? [], 'vaarbemanning', []) as $row)
+                                        @foreach((array) data_get($monsterrolRows ?? [], 'speltak', []) as $row)
                                             @if(trim((string) ($row['first_name'] ?? '')) !== '' || trim((string) ($row['last_name'] ?? '')) !== '' || trim((string) ($row['functie'] ?? '')) !== '' || trim((string) ($row['on_board'] ?? '')) !== '' || trim((string) ($row['off_board'] ?? '')) !== '')
                                                 <tr>
                                                     <td>{{ (string) ($row['first_name'] ?? '') }}</td>
                                                     <td>{{ (string) ($row['last_name'] ?? '') }}</td>
                                                     <td>{{ (string) ($row['functie'] ?? '') }}</td>
-                                                    <td>{{ (string) ($row['on_board'] ?? '') }}</td>
-                                                    <td>{{ (string) ($row['off_board'] ?? '') }}</td>
+                                                    @if($isFramCamp)
+                                                        <td>{{ (string) ($row['on_board'] ?? '') }}</td>
+                                                        <td>{{ (string) ($row['off_board'] ?? '') }}</td>
+                                                    @endif
                                                 </tr>
                                             @endif
                                         @endforeach
