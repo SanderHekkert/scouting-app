@@ -149,13 +149,23 @@ class CampBudgetController extends Controller
         $campLocation = $this->normalizeCampLocation((string) ($data['camp_location'] ?? 'fram'));
 
         $status = $this->statusFromAction((string) ($data['action'] ?? 'save'));
-        $userId = $request->user()?->id;
+        $actor = $request->user();
+        $userId = $actor?->id;
+        $meta = [
+            'sections' => $sections,
+            'standard_values' => $standardValues,
+            'camp_days' => $campDays,
+            'camp_location' => $campLocation,
+        ];
+        $meta = $this->appendChangeLog($meta, $status === CampBudget::STATUS_SUBMITTED ? 'submitted' : 'saved_draft', $actor);
         CampBudget::create([
             'camp_year' => (int) $data['camp_year'],
             'title' => (string) $data['title'],
             'content' => (string) ($data['content'] ?? ''),
-            'meta' => ['sections' => $sections, 'standard_values' => $standardValues, 'camp_days' => $campDays, 'camp_location' => $campLocation],
+            'meta' => $meta,
             'status' => $status,
+            'submitted_by_user_id' => $status === CampBudget::STATUS_SUBMITTED ? $userId : null,
+            'submitted_at' => $status === CampBudget::STATUS_SUBMITTED ? now() : null,
             'created_by_user_id' => $userId,
             'updated_by_user_id' => $userId,
         ]);
@@ -183,11 +193,13 @@ class CampBudgetController extends Controller
         $campLocation = $this->normalizeCampLocation((string) ($data['camp_location'] ?? 'fram'));
 
         $status = $this->statusFromAction((string) ($data['action'] ?? 'save'));
+        $actor = $request->user();
         $meta = (array) ($campBudget->meta ?? []);
         $meta['sections'] = $sections;
         $meta['standard_values'] = $standardValues;
         $meta['camp_days'] = $campDays;
         $meta['camp_location'] = $campLocation;
+        $meta = $this->appendChangeLog($meta, $status === CampBudget::STATUS_SUBMITTED ? 'submitted' : 'saved_draft', $actor);
         $campBudget->update([
             'camp_year' => (int) $data['camp_year'],
             'title' => (string) $data['title'],
@@ -195,9 +207,11 @@ class CampBudgetController extends Controller
             'meta' => $meta,
             'status' => $status,
             'review_note' => null,
+            'submitted_by_user_id' => $status === CampBudget::STATUS_SUBMITTED ? $actor?->id : null,
+            'submitted_at' => $status === CampBudget::STATUS_SUBMITTED ? now() : null,
             'processed_by_user_id' => null,
             'processed_at' => null,
-            'updated_by_user_id' => $request->user()?->id,
+            'updated_by_user_id' => $actor?->id,
         ]);
 
         return to_route('camp-budgets.index');
@@ -215,13 +229,16 @@ class CampBudgetController extends Controller
     {
         abort_unless((string) $campBudget->section === (string) session('active_section', 'dolfijnen'), 403);
 
-        $userId = request()->user()?->id;
+        $actor = request()->user();
+        $userId = $actor?->id;
+        $meta = (array) ($campBudget->meta ?? []);
+        $meta = $this->appendChangeLog($meta, 'copied', $actor);
         CampBudget::create([
             'section' => (string) $campBudget->section,
             'camp_year' => (int) $campBudget->camp_year,
             'title' => (string) $campBudget->title.' (kopie)',
             'content' => (string) ($campBudget->content ?? ''),
-            'meta' => (array) ($campBudget->meta ?? []),
+            'meta' => $meta,
             'created_by_user_id' => $userId,
             'updated_by_user_id' => $userId,
         ]);
@@ -274,6 +291,7 @@ class CampBudgetController extends Controller
         $meta = (array) ($campBudget->meta ?? []);
         $meta['pdf_path'] = $path;
         $meta['pdf_generated_at'] = now()->toIso8601String();
+        $meta = $this->appendChangeLog($meta, 'approved', $user);
 
         $campBudget->update([
             'meta' => $meta,
@@ -290,13 +308,19 @@ class CampBudgetController extends Controller
     public function submit(Request $request, CampBudget $campBudget)
     {
         abort_unless((string) $campBudget->section === (string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN), 403);
+        $actor = $request->user();
+        $meta = (array) ($campBudget->meta ?? []);
+        $meta = $this->appendChangeLog($meta, 'submitted', $actor);
 
         $campBudget->update([
+            'meta' => $meta,
             'status' => CampBudget::STATUS_SUBMITTED,
             'review_note' => null,
+            'submitted_by_user_id' => $actor?->id,
+            'submitted_at' => now(),
             'processed_by_user_id' => null,
             'processed_at' => null,
-            'updated_by_user_id' => $request->user()?->id,
+            'updated_by_user_id' => $actor?->id,
         ]);
 
         return to_route('camp-budgets.index');
@@ -315,7 +339,11 @@ class CampBudgetController extends Controller
             'review_note' => ['required', 'string', 'max:1000'],
         ]);
 
+        $meta = (array) ($campBudget->meta ?? []);
+        $meta = $this->appendChangeLog($meta, 'needs_changes', $user);
+
         $campBudget->update([
+            'meta' => $meta,
             'status' => CampBudget::STATUS_NEEDS_CHANGES,
             'review_note' => trim((string) $data['review_note']),
             'processed_by_user_id' => (int) $user->id,
@@ -442,6 +470,7 @@ class CampBudgetController extends Controller
         return [
             'prijs_per_dag_clubhuis' => 0.00,
             'prijs_per_dag_leiding' => 0.00,
+            'prijs_per_dag_jeugdlid' => 0.00,
             'kosten_vaart_pu' => 0.00,
             'kosten_aggregaat_pu' => 0.00,
             'huur_fram_pppd' => 0.00,
@@ -470,6 +499,9 @@ class CampBudgetController extends Controller
 
         if ($section === 'bijdragen' && str_contains($label, 'leiding')) {
             return (float) ($standardValues['prijs_per_dag_leiding'] ?? 0) * $campDays;
+        }
+        if ($section === 'bijdragen' && (str_contains($label, 'jeugdleden') || str_contains($label, 'jeugdlid'))) {
+            return (float) ($standardValues['prijs_per_dag_jeugdlid'] ?? 0) * $campDays;
         }
         if (str_contains($label, 'vaart')) {
             return (float) ($standardValues['kosten_vaart_pu'] ?? 0);
@@ -536,6 +568,28 @@ class CampBudgetController extends Controller
         return $action === 'submit'
             ? CampBudget::STATUS_SUBMITTED
             : CampBudget::STATUS_DRAFT;
+    }
+
+    /**
+     * @param  array<string,mixed>  $meta
+     * @return array<string,mixed>
+     */
+    private function appendChangeLog(array $meta, string $action, ?User $actor): array
+    {
+        $history = collect((array) data_get($meta, 'change_log', []))
+            ->filter(fn ($entry): bool => is_array($entry))
+            ->values();
+
+        $history->push([
+            'action' => $action,
+            'user_id' => $actor?->id,
+            'user_name' => $actor?->name,
+            'at' => now()->toIso8601String(),
+        ]);
+
+        $meta['change_log'] = $history->take(-200)->values()->all();
+
+        return $meta;
     }
 
     private function buildAndStorePdf(CampBudget $campBudget): string

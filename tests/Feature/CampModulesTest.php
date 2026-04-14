@@ -42,6 +42,7 @@ class CampModulesTest extends TestCase
         $budget = CampBudget::query()->firstOrFail();
         $this->assertSame(UserSectionRole::SECTION_DOLFIJNEN, $budget->section);
         $this->assertSame(CampBudget::STATUS_DRAFT, $budget->status);
+        $this->assertNotEmpty((array) data_get($budget->meta, 'change_log', []));
 
         $this->actingAs($admin)
             ->withSession(['active_section' => UserSectionRole::SECTION_DOLFIJNEN])
@@ -68,7 +69,9 @@ class CampModulesTest extends TestCase
         $this->assertDatabaseHas('camp_budgets', [
             'id' => $budget->id,
             'status' => CampBudget::STATUS_SUBMITTED,
+            'submitted_by_user_id' => $admin->id,
         ]);
+        $this->assertNotNull($budget->fresh()->submitted_at);
 
         $this->actingAs($admin)
             ->withSession(['active_section' => UserSectionRole::SECTION_DOLFIJNEN])

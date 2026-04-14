@@ -1,5 +1,6 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
+import AppConfirmModal from '@/Components/AppConfirmModal.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { formatMoney } from '@/utils/money';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
@@ -24,6 +25,7 @@ const sectionLabels = {
     bestuur: 'Bestuur',
 };
 const speltakLabel = computed(() => sectionLabels[page.props.auth?.active_section] || 'Dolfijnen');
+const deleteModalItem = ref(null);
 
 function formattedUpdatedAt(value) {
     if (!value) return 'Onbekend';
@@ -45,8 +47,18 @@ function copyItem(item) {
 
 function deleteItem(item) {
     if (!canUpdate.value) return;
-    if (!confirm(`Begroting "${item.title}" verwijderen?`)) return;
+    deleteModalItem.value = item;
+}
+
+function closeDeleteModal() {
+    deleteModalItem.value = null;
+}
+
+function confirmDeleteItem() {
+    const item = deleteModalItem.value;
+    if (!item?.id) return;
     router.delete(route('camp-budgets.destroy', item.id), { preserveScroll: true });
+    closeDeleteModal();
 }
 
 function approveItem(item) {
@@ -104,11 +116,9 @@ function statusClass(status) {
                             <p class="truncate text-sm font-semibold text-app-ink dark:text-app-ink-dark">{{ item.camp_year }} - {{ item.title }}</p>
                             <p class="mt-1 text-xs text-slate-500 dark:text-slate-300">
                                 {{ sectionLabels[item.section] || item.section }} | Door {{ item.created_by_name || 'Onbekend' }} | Gewijzigd {{ formattedUpdatedAt(item.updated_at) }}
-                            </p>
-                            <p class="mt-1 text-xs text-app-ink dark:text-app-ink-dark">
-                                Bijdragen: € {{ formatMoney(item.totals?.income || 0) }}
-                                | Uitgaven: € {{ formatMoney(item.totals?.expenses || 0) }}
-                                | Verschil: € {{ formatMoney(item.totals?.difference || 0) }}
+                                | Bijdragen € {{ formatMoney(item.totals?.income || 0) }}
+                                | Uitgaven € {{ formatMoney(item.totals?.expenses || 0) }}
+                                | Verschil € {{ formatMoney(item.totals?.difference || 0) }}
                             </p>
                             <p v-if="item.review_note" class="mt-1 text-xs text-amber-700 dark:text-amber-300">
                                 Opmerking bestuur: {{ item.review_note }}
@@ -133,5 +143,15 @@ function statusClass(status) {
             </div>
         </div>
     </AuthenticatedLayout>
+
+    <AppConfirmModal
+        :show="!!deleteModalItem"
+        title="Begroting verwijderen?"
+        :message="deleteModalItem ? `Weet je zeker dat je begroting '${deleteModalItem.title}' wilt verwijderen?` : ''"
+        confirm-text="Ja, verwijderen"
+        cancel-text="Annuleren"
+        @close="closeDeleteModal"
+        @confirm="confirmDeleteItem"
+    />
 </template>
 

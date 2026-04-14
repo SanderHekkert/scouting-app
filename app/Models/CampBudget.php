@@ -26,6 +26,8 @@ class CampBudget extends Model
         'meta',
         'status',
         'review_note',
+        'submitted_by_user_id',
+        'submitted_at',
         'processed_by_user_id',
         'processed_at',
         'created_by_user_id',
@@ -35,6 +37,7 @@ class CampBudget extends Model
     protected $casts = [
         'camp_year' => 'integer',
         'meta' => 'array',
+        'submitted_at' => 'datetime',
         'processed_at' => 'datetime',
     ];
 
@@ -51,5 +54,10 @@ class CampBudget extends Model
     public function processedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'processed_by_user_id');
+    }
+
+    public function submittedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'submitted_by_user_id');
     }
 }
