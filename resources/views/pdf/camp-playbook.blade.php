@@ -103,6 +103,7 @@
         .section-content {
             padding: 10px;
             white-space: pre-wrap;
+            color: #e2e8f0;
         }
         .day-block {
             border: 1px solid #334155;
@@ -337,7 +338,7 @@
         .toc-list li {
             margin-bottom: 7px;
             font-size: 12px;
-            color: #0f172a;
+            color: #e2e8f0;
         }
         .footer {
             margin-top: 10px;
@@ -607,7 +608,7 @@
                                         @if($filledBullets !== [])
                                             <ul style="margin: 0; padding-left: 16px;">
                                                 @foreach($filledBullets as $bullet)
-                                                    <li style="margin-bottom: 3px; font-size: 11px; color: #0f172a;">{{ $bullet }}</li>
+                                                    <li style="margin-bottom: 3px; font-size: 11px; color: #e2e8f0;">{{ $bullet }}</li>
                                                 @endforeach
                                             </ul>
                                         @endif
@@ -631,7 +632,7 @@
                                         @if($filledBullets !== [])
                                             <ul style="margin: 0; padding-left: 16px;">
                                                 @foreach($filledBullets as $bullet)
-                                                    <li style="margin-bottom: 3px; font-size: 11px; color: #0f172a;">{{ $bullet }}</li>
+                                                    <li style="margin-bottom: 3px; font-size: 11px; color: #e2e8f0;">{{ $bullet }}</li>
                                                 @endforeach
                                             </ul>
                                         @endif
@@ -655,7 +656,7 @@
                                         @if($filledBullets !== [])
                                             <ul style="margin: 0; padding-left: 16px;">
                                                 @foreach($filledBullets as $bullet)
-                                                    <li style="margin-bottom: 3px; font-size: 11px; color: #0f172a;">{{ $bullet }}</li>
+                                                    <li style="margin-bottom: 3px; font-size: 11px; color: #e2e8f0;">{{ $bullet }}</li>
                                                 @endforeach
                                             </ul>
                                         @endif
