@@ -305,7 +305,7 @@ function normalizeVinindelingRows(raw) {
                 .filter((name) => name !== '')
         )
     );
-    const defaultHeaders = ['De Regisseurs', 'De Acteurs', 'De Cameraploeg'];
+    const defaultHeaders = ['', '', ''];
     const defaultRoles = ['Topper', 'Tipper', 'Vinlid', 'Vinlid', 'Vinlid'];
     const buildDefaultRows = () => defaultRoles.map((role) => ({
         role,
@@ -1291,7 +1291,7 @@ function ensureVinMatrixColumns() {
 
 function updateVinHeader(vinIndex, value) {
     const incoming = String(value ?? '').trim();
-    const fallback = ['De Regisseurs', 'De Acteurs', 'De Cameraploeg'];
+    const fallback = ['', '', ''];
     const header = incoming || fallback[vinIndex] || `Vin ${vinIndex + 1}`;
     if (!Array.isArray(form.vinindeling_rows)) return;
     form.vinindeling_rows.forEach((row) => {
