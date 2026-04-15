@@ -2,6 +2,9 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import AppConfirmModal from '@/Components/AppConfirmModal.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import CampPlaybookCorveeSection from '@/Pages/CampPlaybooks/Partials/CampPlaybookCorveeSection.vue';
+import CampPlaybookEmergencyContactsSection from '@/Pages/CampPlaybooks/Partials/CampPlaybookEmergencyContactsSection.vue';
+import CampPlaybookVinindelingSection from '@/Pages/CampPlaybooks/Partials/CampPlaybookVinindelingSection.vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { ArrowUturnLeftIcon, BellAlertIcon, DocumentCheckIcon, PaperAirplaneIcon, PlusIcon, TrashIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 
@@ -1837,121 +1840,26 @@ function statusClass(status) {
                         </div>
                     </div>
 
-                    <div v-if="isCorveeroosterSection(activeSection)" class="space-y-3">
-                        <div class="overflow-x-auto rounded border border-app-border dark:border-app-border-dark">
-                            <table class="w-full min-w-[1300px] text-sm">
-                                <thead class="bg-slate-50 dark:bg-slate-800/70">
-                                    <tr>
-                                        <th class="px-2 py-2 text-left">Dag</th>
-                                        <th class="px-2 py-2 text-left">Datum</th>
-                                        <th class="px-2 py-2 text-left">Dagwacht</th>
-                                        <th class="px-2 py-2 text-left">Dienstvin</th>
-                                        <th class="px-2 py-2 text-left">Dekhuis</th>
-                                        <th class="px-2 py-2 text-left">Achteronder &amp; Dekken</th>
-                                        <th class="px-2 py-2 text-left">WC &amp; klusjes</th>
-                                        <th class="px-2 py-2 text-left">Actie</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-app-border dark:divide-app-border-dark">
-                                    <tr v-for="(row, rowIdx) in form.corvee_rows" :key="`corvee-row-${rowIdx}`">
-                                        <td class="px-2 py-2"><input v-model="row.day" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Dag" /></td>
-                                        <td class="px-2 py-2"><input v-model="row.date" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Datum" /></td>
-                                        <td class="px-2 py-2"><input v-model="row.daywatch" type="text" readonly class="w-full rounded border border-app-border bg-slate-100 px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" placeholder="Dagwacht" /></td>
-                                        <td class="px-2 py-2">
-                                            <select v-model="row.dienstvin" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark">
-                                                <option value="">Kies vin / n.v.t.</option>
-                                                <option v-for="option in corveeVinOptions" :key="`corvee-dienstvin-option-${option}`" :value="option">{{ option }}</option>
-                                            </select>
-                                        </td>
-                                        <td class="px-2 py-2">
-                                            <select v-model="row.dekhuis" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark">
-                                                <option value="">Kies vin / n.v.t.</option>
-                                                <option v-for="option in corveeVinOptions" :key="`corvee-dekhuis-option-${option}`" :value="option">{{ option }}</option>
-                                            </select>
-                                        </td>
-                                        <td class="px-2 py-2">
-                                            <select v-model="row.achteronder_en_dekken" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark">
-                                                <option value="">Kies vin / n.v.t.</option>
-                                                <option v-for="option in corveeVinOptions" :key="`corvee-achteronder-option-${option}`" :value="option">{{ option }}</option>
-                                            </select>
-                                        </td>
-                                        <td class="px-2 py-2">
-                                            <select v-model="row.wc_en_klusjes" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark">
-                                                <option value="">Kies vin / n.v.t.</option>
-                                                <option v-for="option in corveeVinOptions" :key="`corvee-wc-option-${option}`" :value="option">{{ option }}</option>
-                                            </select>
-                                        </td>
-                                        <td class="px-2 py-2">
-                                            <button type="button" class="btn-action-delete" title="Rij verwijderen" @click="removeCorveeRow(rowIdx)">
-                                                <TrashIcon class="h-5 w-5" />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <div>
-                            <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-700 text-white" title="Rij toevoegen" aria-label="Rij toevoegen" @click="addCorveeRow">
-                                <PlusIcon class="h-4 w-4" />
-                            </button>
-                        </div>
-                    </div>
+                    <CampPlaybookCorveeSection
+                        v-if="isCorveeroosterSection(activeSection)"
+                        :corvee-rows="form.corvee_rows"
+                        :corvee-vin-options="corveeVinOptions"
+                        @add-row="addCorveeRow"
+                        @remove-row="removeCorveeRow"
+                    />
 
-                    <div v-if="isVinindelingSection(activeSection)" class="space-y-3">
-                        <div class="overflow-x-auto rounded border border-app-border dark:border-app-border-dark">
-                            <table class="w-full min-w-[960px] text-sm">
-                                <thead class="bg-slate-50 dark:bg-slate-800/70">
-                                    <tr>
-                                        <th class="px-2 py-2 text-left">Rol</th>
-                                        <th v-for="(header, vinIdx) in vinHeaderValues" :key="`vinindeling-header-${vinIdx}`" class="px-2 py-2 text-left">
-                                            <input
-                                                :value="header"
-                                                type="text"
-                                                class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm font-semibold text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                                                @input="updateVinHeader(vinIdx, $event.target.value)"
-                                            />
-                                        </th>
-                                        <th class="px-2 py-2 text-left">Actie</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-app-border dark:divide-app-border-dark">
-                                    <tr v-for="(row, rowIdx) in form.vinindeling_rows" :key="`vinindeling-row-${rowIdx}`">
-                                        <td class="px-2 py-2 align-top">
-                                            <input
-                                                v-model="row.role"
-                                                type="text"
-                                                class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                                                placeholder="Rol"
-                                            />
-                                        </td>
-                                        <td v-for="(header, vinIdx) in vinHeaderValues" :key="`vinindeling-cell-${rowIdx}-${vinIdx}`" class="px-2 py-2">
-                                            <select
-                                                :value="vinCellSelection(row, vinIdx)"
-                                                class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                                                @change="setVinCellSelection(row, vinIdx, $event.target.value)"
-                                            >
-                                                <option value="">Lid kiezen uit {{ speltakLabel }}</option>
-                                                <option value="n.v.t.">n.v.t.</option>
-                                                <option v-for="option in availableVinCellOptions(rowIdx, vinIdx)" :key="`vin-member-option-${rowIdx}-${vinIdx}-${option}`" :value="option">
-                                                    {{ option }}
-                                                </option>
-                                            </select>
-                                        </td>
-                                        <td class="px-2 py-2 align-top">
-                                            <button type="button" class="btn-action-delete" title="Rij verwijderen" @click="removeVinindelingRow(rowIdx)">
-                                                <TrashIcon class="h-5 w-5" />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <div>
-                            <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-700 text-white" title="Rij toevoegen" aria-label="Rij toevoegen" @click="addVinindelingRow">
-                                <PlusIcon class="h-4 w-4" />
-                            </button>
-                        </div>
-                    </div>
+                    <CampPlaybookVinindelingSection
+                        v-if="isVinindelingSection(activeSection)"
+                        :vinindeling-rows="form.vinindeling_rows"
+                        :vin-header-values="vinHeaderValues"
+                        :speltak-label="speltakLabel"
+                        :available-vin-cell-options="availableVinCellOptions"
+                        :vin-cell-selection="vinCellSelection"
+                        @update-header="updateVinHeader"
+                        @set-cell="setVinCellSelection"
+                        @remove-row="removeVinindelingRow"
+                        @add-row="addVinindelingRow"
+                    />
 
                     <div v-if="isVaarschemaSection(activeSection)" class="space-y-3">
                         <div class="rounded-lg border border-brand-blue/25 bg-brand-blue/5 p-3 text-sm text-app-ink dark:border-brand-blue/40 dark:bg-brand-blue/10 dark:text-app-ink-dark">
@@ -2107,42 +2015,12 @@ function statusClass(status) {
                         </div>
                     </div>
 
-                    <div v-if="isHulpdienstenSection(activeSection)" class="space-y-3">
-                        <div
-                            v-for="(label, key) in { huisartsen: 'Huisartsen', ziekenhuizen: 'Ziekenhuizen', tandartsen: 'Tandartsen' }"
-                            :key="`emergency-${key}`"
-                            class="rounded-lg border border-app-border bg-white p-3 dark:border-app-border-dark dark:bg-slate-900"
-                        >
-                            <h4 class="mb-2 text-sm font-semibold text-app-ink dark:text-app-ink-dark">{{ label }}</h4>
-                            <div class="space-y-2">
-                                <div
-                                    v-for="(entry, entryIdx) in form.emergency_contacts[key]"
-                                    :key="`emergency-${key}-${entryIdx}`"
-                                    class="rounded border border-app-border/80 p-2 dark:border-app-border-dark/80"
-                                >
-                                    <div class="mb-2 flex justify-end">
-                                        <button type="button" class="btn-action-delete" title="Rij verwijderen" @click="removeEmergencyContactRow(key, entryIdx)">
-                                            <TrashIcon class="h-5 w-5" />
-                                        </button>
-                                    </div>
-                                    <div class="grid gap-2 sm:grid-cols-2">
-                                        <input v-model="entry.name" type="text" class="rounded border border-app-border bg-white px-3 py-2 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Naam" />
-                                        <input v-model="entry.address" type="text" class="rounded border border-app-border bg-white px-3 py-2 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Adres" />
-                                        <input v-model="entry.postal_code" type="text" class="rounded border border-app-border bg-white px-3 py-2 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Postcode" />
-                                        <input v-model="entry.city" type="text" class="rounded border border-app-border bg-white px-3 py-2 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Plaats" />
-                                        <input v-model="entry.phone_010" type="text" class="rounded border border-app-border bg-white px-3 py-2 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="010 nummer" />
-                                        <input v-model="entry.website" type="text" class="rounded border border-app-border bg-white px-3 py-2 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Site" />
-                                        <textarea v-model="entry.extra_info" rows="3" class="rounded border border-app-border bg-white px-3 py-2 text-sm text-black sm:col-span-2 dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Extra informatie" />
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="mt-2">
-                                <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-700 text-white" title="Rij toevoegen" aria-label="Rij toevoegen" @click="addEmergencyContactRow(key)">
-                                    <PlusIcon class="h-4 w-4" />
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                    <CampPlaybookEmergencyContactsSection
+                        v-if="isHulpdienstenSection(activeSection)"
+                        :emergency-contacts="form.emergency_contacts"
+                        @add-row="addEmergencyContactRow"
+                        @remove-row="removeEmergencyContactRow"
+                    />
 
                     <textarea
                         v-if="!isStructuredSection(activeSection)"
