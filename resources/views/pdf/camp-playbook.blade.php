@@ -5,11 +5,17 @@
     <title>{{ $playbook->title }} - Draaiboek</title>
     <style>
         @page { margin: 24px; }
-        body { font-family: DejaVu Sans, sans-serif; font-size: 12px; color: #0f172a; line-height: 1.45; }
+        body {
+            font-family: DejaVu Sans, sans-serif;
+            font-size: 12px;
+            color: #e2e8f0;
+            line-height: 1.45;
+            background: #0b1220;
+        }
         h1, p { margin: 0; }
         .top-accent {
             height: 7px;
-            background: linear-gradient(90deg, #cf2a2a, #f4c33f, #2563eb);
+            background: linear-gradient(90deg, #f43f5e, #f59e0b, #22d3ee, #3b82f6);
             border-radius: 999px;
             margin-bottom: 14px;
         }
@@ -52,19 +58,19 @@
         .title {
             font-size: 21px;
             font-weight: 700;
-            color: #0f172a;
+            color: #f8fafc;
             margin-bottom: 4px;
         }
         .subtitle {
             font-size: 11px;
-            color: #475569;
+            color: #94a3b8;
             margin-bottom: 8px;
         }
         .pill {
             display: inline-block;
-            border: 1px solid #bfd5ff;
-            background: #eaf2ff;
-            color: #1e3a8a;
+            border: 1px solid #334155;
+            background: #111827;
+            color: #93c5fd;
             border-radius: 999px;
             padding: 2px 8px;
             font-size: 10px;
@@ -72,17 +78,17 @@
             margin-top: 3px;
         }
         .content {
-            border: 1px solid #dbe5f2;
+            border: 1px solid #334155;
             border-radius: 10px;
-            background: #ffffff;
+            background: #0f172a;
             padding: 12px;
             white-space: pre-wrap;
         }
         .section {
             margin-bottom: 10px;
-            border: 1px solid #dbe5f2;
+            border: 1px solid #334155;
             border-radius: 10px;
-            background: #ffffff;
+            background: #0f172a;
             overflow: hidden;
         }
         .section-title {
@@ -90,18 +96,18 @@
             padding: 8px 10px;
             font-size: 12px;
             font-weight: 700;
-            color: #1e3a8a;
-            background: #eaf2ff;
-            border-bottom: 1px solid #dbe5f2;
+            color: #e2e8f0;
+            background: linear-gradient(90deg, #1e293b, #0f172a);
+            border-bottom: 1px solid #334155;
         }
         .section-content {
             padding: 10px;
             white-space: pre-wrap;
         }
         .day-block {
-            border: 1px solid #dbe5f2;
+            border: 1px solid #334155;
             border-radius: 8px;
-            background: #f8fbff;
+            background: #111827;
             padding: 8px;
             margin-bottom: 8px;
             page-break-inside: avoid;
@@ -110,12 +116,12 @@
         .day-title {
             font-size: 11px;
             font-weight: 700;
-            color: #1e3a8a;
+            color: #93c5fd;
             margin-bottom: 6px;
         }
         .daywatch {
             font-size: 11px;
-            color: #334155;
+            color: #cbd5e1;
             margin-bottom: 6px;
         }
         .planning-table {
@@ -127,7 +133,7 @@
         }
         .planning-table th,
         .planning-table td {
-            border: 1px solid #dbe5f2;
+            border: 1px solid #cbd5e1;
             padding: 5px;
             font-size: 10px;
             vertical-align: top;
@@ -139,26 +145,30 @@
             break-inside: avoid-page;
         }
         .planning-table th {
-            background: #eaf2ff;
-            color: #1e3a8a;
+            background: #f1f5f9;
+            color: #0f172a;
             font-weight: 700;
+        }
+        .planning-table td {
+            color: #0f172a;
+            background: #ffffff;
         }
         .game-explanation {
             font-size: 10px;
-            color: #0f172a;
+            color: #e2e8f0;
             white-space: pre-wrap;
         }
         .vaarschema-info {
-            border: 1px solid #bfd5ff;
-            background: #eaf2ff;
+            border: 1px solid #1e3a8a;
+            background: #0f1b33;
             border-radius: 8px;
             padding: 8px;
             margin-bottom: 8px;
             font-size: 10px;
-            color: #1e3a8a;
+            color: #bfdbfe;
         }
         .vaarschema-link {
-            color: #1d4ed8;
+            color: #7dd3fc;
             text-decoration: underline;
             word-break: break-all;
         }
@@ -166,25 +176,25 @@
             padding: 10px;
         }
         .service-card {
-            border: 1px solid #dbe5f2;
+            border: 1px solid #334155;
             border-radius: 8px;
-            background: #f8fbff;
+            background: #111827;
             padding: 8px;
             margin-bottom: 8px;
         }
         .service-title {
             font-size: 11px;
             font-weight: 700;
-            color: #1e3a8a;
+            color: #93c5fd;
             margin-bottom: 6px;
         }
         .service-line {
             margin-bottom: 3px;
             font-size: 11px;
-            color: #0f172a;
+            color: #e2e8f0;
         }
         .service-line strong {
-            color: #334155;
+            color: #cbd5e1;
         }
         .page-break {
             page-break-after: always;
@@ -197,9 +207,9 @@
             height: 920px;
             width: 100%;
             display: table;
-            border: 1px solid #dbe5f2;
+            border: 1px solid #334155;
             border-radius: 14px;
-            background: #f8fbff;
+            background: #0f172a;
             overflow: hidden;
             box-sizing: border-box;
         }
@@ -213,9 +223,9 @@
         .cover-photo-wrap {
             width: 100%;
             height: 380px;
-            border: 1px solid #dbe5f2;
+            border: 1px solid #334155;
             border-radius: 12px;
-            background: #ffffff;
+            background: #111827;
             display: table;
             overflow: hidden;
             margin-bottom: 10px;
@@ -248,19 +258,19 @@
             margin: 0 0 6px;
             font-size: 22px;
             font-weight: 700;
-            color: #0f172a;
+            color: #f8fafc;
             text-align: center;
         }
         .cover-subtitle {
             margin: 0;
             font-size: 13px;
-            color: #334155;
+            color: #94a3b8;
             text-align: center;
         }
         .cover-header-card {
-            border: 1px solid #dbe5f2;
+            border: 1px solid #334155;
             border-radius: 12px;
-            background: #ffffff;
+            background: #111827;
             padding: 8px 10px;
             margin-top: 8px;
             text-align: left;
@@ -274,41 +284,42 @@
             vertical-align: top;
         }
         .toc-page {
-            border: 1px solid #dbe5f2;
+            border: 1px solid #334155;
             border-radius: 14px;
-            background: #ffffff;
+            background: #0f172a;
             padding: 20px;
         }
         .toc-title {
             margin: 0 0 10px;
             font-size: 24px;
-            color: #0f172a;
+            color: #f8fafc;
         }
         .toc-subtitle {
             margin: 0 0 14px;
             font-size: 11px;
-            color: #64748b;
+            color: #94a3b8;
         }
         .toc-table {
             width: 100%;
             border-collapse: collapse;
-            border: 1px solid #dbe5f2;
+            border: 1px solid #cbd5e1;
             border-radius: 10px;
             overflow: hidden;
         }
         .toc-table thead th {
-            background: #eaf2ff;
-            color: #1e3a8a;
+            background: #f1f5f9;
+            color: #0f172a;
             font-size: 11px;
             text-align: left;
             padding: 8px 10px;
-            border-bottom: 1px solid #dbe5f2;
+            border-bottom: 1px solid #cbd5e1;
         }
         .toc-table tbody td {
             padding: 8px 10px;
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 1px solid #cbd5e1;
             font-size: 11px;
             color: #0f172a;
+            background: #ffffff;
         }
         .toc-table tbody tr:last-child td {
             border-bottom: none;
@@ -317,7 +328,7 @@
             text-align: right;
             width: 70px;
             font-weight: 700;
-            color: #1e3a8a;
+            color: #0f172a;
         }
         .toc-list {
             margin: 0;
@@ -331,7 +342,7 @@
         .footer {
             margin-top: 10px;
             font-size: 10px;
-            color: #64748b;
+            color: #94a3b8;
             text-align: right;
         }
         .section-page-break {
