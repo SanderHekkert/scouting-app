@@ -104,6 +104,8 @@
             background: #f8fbff;
             padding: 8px;
             margin-bottom: 8px;
+            page-break-inside: avoid;
+            break-inside: avoid-page;
         }
         .day-title {
             font-size: 11px;
@@ -120,6 +122,8 @@
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 6px;
+            page-break-inside: avoid;
+            break-inside: avoid-page;
         }
         .planning-table th,
         .planning-table td {
@@ -127,6 +131,12 @@
             padding: 5px;
             font-size: 10px;
             vertical-align: top;
+        }
+        .planning-table tr,
+        .planning-table thead,
+        .planning-table tbody {
+            page-break-inside: avoid;
+            break-inside: avoid-page;
         }
         .planning-table th {
             background: #eaf2ff;
@@ -183,18 +193,22 @@
             page-break-before: always;
         }
         .cover-page {
-            height: 100%;
+            page-break-after: always;
+            height: 920px;
+            width: 100%;
+            display: table;
             border: 1px solid #dbe5f2;
             border-radius: 14px;
             background: #f8fbff;
             overflow: hidden;
-            display: table;
-            width: 100%;
+            box-sizing: border-box;
         }
         .cover-main {
             display: table-cell;
             vertical-align: middle;
-            padding: 18px 20px;
+            height: 920px;
+            padding: 10px 14px;
+            box-sizing: border-box;
         }
         .cover-photo-wrap {
             width: 100%;
@@ -204,7 +218,7 @@
             background: #ffffff;
             display: table;
             overflow: hidden;
-            margin-top: 14px;
+            margin-bottom: 10px;
         }
         .cover-photo-wrap > div {
             display: table-cell;
@@ -223,7 +237,7 @@
             width: 100%;
             height: 380px;
             line-height: 380px;
-            font-size: 34px;
+            font-size: 28px;
             font-weight: 700;
             letter-spacing: 1px;
         }
@@ -232,7 +246,7 @@
         }
         .cover-title {
             margin: 0 0 6px;
-            font-size: 30px;
+            font-size: 22px;
             font-weight: 700;
             color: #0f172a;
             text-align: center;
@@ -247,8 +261,8 @@
             border: 1px solid #dbe5f2;
             border-radius: 12px;
             background: #ffffff;
-            padding: 10px 12px;
-            margin-top: 12px;
+            padding: 8px 10px;
+            margin-top: 8px;
             text-align: left;
         }
         .cover-header-table {
@@ -270,6 +284,41 @@
             font-size: 24px;
             color: #0f172a;
         }
+        .toc-subtitle {
+            margin: 0 0 14px;
+            font-size: 11px;
+            color: #64748b;
+        }
+        .toc-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid #dbe5f2;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .toc-table thead th {
+            background: #eaf2ff;
+            color: #1e3a8a;
+            font-size: 11px;
+            text-align: left;
+            padding: 8px 10px;
+            border-bottom: 1px solid #dbe5f2;
+        }
+        .toc-table tbody td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 11px;
+            color: #0f172a;
+        }
+        .toc-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        .toc-page-number {
+            text-align: right;
+            width: 70px;
+            font-weight: 700;
+            color: #1e3a8a;
+        }
         .toc-list {
             margin: 0;
             padding-left: 18px;
@@ -285,6 +334,9 @@
             color: #64748b;
             text-align: right;
         }
+        .section-page-break {
+            page-break-before: always;
+        }
     </style>
 </head>
 <body>
@@ -294,9 +346,25 @@
             ->filter(fn (string $title): bool => $title !== '')
             ->values()
             ->all();
+        $tocEntries = collect($sectionTitles)
+            ->values()
+            ->map(fn (string $title, int $index): array => [
+                'title' => $title,
+                'page' => $index + 3,
+            ])
+            ->all();
     @endphp
     <div class="cover-page">
         <div class="cover-main">
+            <div class="cover-photo-wrap">
+                <div>
+                    @if(!empty($coverPhotoDataUri))
+                        <img src="{{ $coverPhotoDataUri }}" alt="Cover foto kampdraaiboek" class="cover-photo">
+                    @else
+                        <div class="cover-photo-fallback">DRAAIBOEK</div>
+                    @endif
+                </div>
+            </div>
             <div class="cover-meta">
             <p class="cover-title">{{ $playbook->title }}</p>
             <p class="cover-subtitle">Kampdraaiboek - Fridtjof Nansen Groep 12</p>
@@ -327,32 +395,33 @@
                     </tr>
                 </table>
             </div>
-
-            <div class="cover-photo-wrap">
-                <div>
-                    @if(!empty($coverPhotoDataUri))
-                        <img src="{{ $coverPhotoDataUri }}" alt="Cover foto kampdraaiboek" class="cover-photo">
-                    @else
-                        <div class="cover-photo-fallback">DRAAIBOEK</div>
-                    @endif
-                </div>
-            </div>
         </div>
         </div>
     </div>
-    <div class="toc-page page-break-before">
+    <div class="toc-page">
         <p class="toc-title">Inhoud</p>
-        @if($sectionTitles !== [])
-            <ol class="toc-list">
-                @foreach($sectionTitles as $title)
-                    <li>{{ $title }}</li>
-                @endforeach
-            </ol>
+        <p class="toc-subtitle">Overzicht van hoofdstukken en startpagina's.</p>
+        @if($tocEntries !== [])
+            <table class="toc-table">
+                <thead>
+                    <tr>
+                        <th>Hoofdstuk</th>
+                        <th class="toc-page-number">Pagina</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($tocEntries as $entry)
+                        <tr>
+                            <td>{{ (string) ($entry['title'] ?? '') }}</td>
+                            <td class="toc-page-number">{{ (int) ($entry['page'] ?? 0) }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
         @else
-            <p>Geen hoofdstukken gevonden.</p>
+            <p>Geen hoofdstukken gevonden voor de inhoudspagina.</p>
         @endif
     </div>
-    <div class="top-accent page-break-before"></div>
 
     @if(!empty($sections))
         @foreach($sections as $section)
@@ -480,7 +549,8 @@
                     ->isNotEmpty();
             @endphp
             @if($hasSectionContent || $hasTaakverdelingContent || $hasTaakUitlegContent || $hasAlgemeneAfsprakenContent || $hasSpeltakAfsprakenContent || $hasSpeltakHygieneContent || $hasCorveeContent || $hasVinindelingContent || $hasMonsterrolContent || $hasEmergencyContent || $hasPlanningContent || $hasVaarschemaContent)
-                <div class="section">
+                <div class="section section-page-break">
+                    <div class="top-accent"></div>
                     <h3 class="section-title">{{ (string) ($section['title'] ?? 'Sectie') }}</h3>
                     @if($isTaakverdeling)
                         <div class="service-grid">
@@ -907,6 +977,6 @@
     @else
         <div class="content">{{ (string) ($playbook->content ?? '') }}</div>
     @endif
-    <p class="footer">Gegenereerd op {{ now()->format('d-m-Y H:i') }}</p>
+    <p class="footer">Gegenereerd op {{ now()->timezone('Europe/Amsterdam')->format('d-m-Y H:i') }}</p>
 </body>
 </html>
