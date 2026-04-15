@@ -1,10 +1,11 @@
 <script setup>
 import { computed, ref } from 'vue';
-import SpeltakSubnav from '@/Components/SpeltakSubnav.vue';
 import AppConfirmModal from '@/Components/AppConfirmModal.vue';
+import MembersCreateForm from '@/Pages/Members/Partials/MembersCreateForm.vue';
+import MembersOverviewBoard from '@/Pages/Members/Partials/MembersOverviewBoard.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link, useForm, usePage, router } from '@inertiajs/vue3';
-import { ChevronRightIcon, DocumentCheckIcon, MagnifyingGlassIcon, PencilSquareIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import { Head, useForm, usePage, router } from '@inertiajs/vue3';
+import { PlusIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     members: Array,
@@ -251,340 +252,35 @@ function editMember(member) {
             </div>
         </template>
         <div class="space-y-4 text-app-ink dark:text-app-ink-dark">
-            <form
-                v-if="canCreateMembers"
-                v-show="showAddForm"
-                class="surface-brand-top space-y-4 rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5"
-                @submit.prevent="submitAdd"
-            >
-                <h3 class="text-base font-semibold text-app-ink dark:text-app-ink-dark">Nieuw contact</h3>
-                <div class="grid gap-4 sm:grid-cols-[10rem_1fr] sm:items-start">
-                    <label for="add-member-installed" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Geïnstalleerd
-                    </label>
-                    <select
-                        id="add-member-installed"
-                        v-model="form.installed"
-                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                    >
-                        <option :value="true">Ja</option>
-                        <option :value="false">Nee</option>
-                    </select>
+            <MembersCreateForm
+                :can-create-members="canCreateMembers"
+                :show-add-form="showAddForm"
+                :form="form"
+                :is-bestuur-section="isBestuurSection"
+                :is-bevers-section="isBeversSection"
+                @submit="submitAdd"
+            />
 
-                    <template v-if="!isBestuurSection && !isBeversSection">
-                        <label for="add-member-gedoopt" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                            Gedoopt
-                        </label>
-                        <select
-                            id="add-member-gedoopt"
-                            v-model="form.gedoopt"
-                            class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                        >
-                            <option :value="true">Ja</option>
-                            <option :value="false">Nee</option>
-                        </select>
-                    </template>
-
-                    <label for="add-member-first-name" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Voornaam
-                    </label>
-                    <input
-                        id="add-member-first-name"
-                        v-model="form.first_name"
-                        type="text"
-                        autocomplete="given-name"
-                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
-                    />
-
-                    <label for="add-member-last-name" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Achternaam <span class="font-normal text-app-muted dark:text-app-muted-dark">(optioneel)</span>
-                    </label>
-                    <input
-                        id="add-member-last-name"
-                        v-model="form.last_name"
-                        type="text"
-                        autocomplete="family-name"
-                        placeholder="Optioneel"
-                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
-                    />
-
-                    <label for="add-member-birthday" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Geboortedatum
-                    </label>
-                    <input
-                        id="add-member-birthday"
-                        v-model="form.birthday"
-                        type="date"
-                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                    />
-
-                    <label for="add-member-phone-mother" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Telefoon moeder
-                    </label>
-                    <input
-                        id="add-member-phone-mother"
-                        v-model="form.phone_mother"
-                        type="text"
-                        autocomplete="tel"
-                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
-                    />
-
-                    <label for="add-member-phone-father" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Telefoon vader
-                    </label>
-                    <input
-                        id="add-member-phone-father"
-                        v-model="form.phone_father"
-                        type="text"
-                        autocomplete="tel"
-                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
-                    />
-
-                    <label for="add-member-address" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Adres
-                    </label>
-                    <input
-                        id="add-member-address"
-                        v-model="form.address"
-                        type="text"
-                        autocomplete="street-address"
-                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
-                    />
-
-                    <label for="add-member-postal-code" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Postcode
-                    </label>
-                    <input
-                        id="add-member-postal-code"
-                        v-model="form.postal_code"
-                        type="text"
-                        autocomplete="postal-code"
-                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
-                    />
-
-                    <label for="add-member-city" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Plaats
-                    </label>
-                    <input
-                        id="add-member-city"
-                        v-model="form.city"
-                        type="text"
-                        autocomplete="address-level2"
-                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
-                    />
-
-                    <label for="add-member-email-parents" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        E-mail ouders
-                    </label>
-                    <input
-                        id="add-member-email-parents"
-                        v-model="form.email_parents"
-                        type="email"
-                        autocomplete="email"
-                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
-                    />
-
-                    <label for="add-member-bijzonderheden" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Bijzonderheden
-                    </label>
-                    <textarea
-                        id="add-member-bijzonderheden"
-                        v-model="form.bijzonderheden"
-                        rows="3"
-                        placeholder="Allergiën, medicatie, dieet, andere aandachtspunten…"
-                        class="min-h-[5rem] min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
-                    />
-
-                    <span class="hidden sm:block" aria-hidden="true" />
-                    <div>
-                        <button
-                            type="submit"
-                            class="btn-action-save"
-                            :disabled="form.processing"
-                            title="Opslaan"
-                            aria-label="Opslaan"
-                        >
-                            <DocumentCheckIcon class="h-5 w-5" />
-                        </button>
-                    </div>
-                </div>
-                <p v-for="err in Object.values(form.errors)" :key="String(err)" class="text-sm text-red-400">
-                    {{ err }}
-                </p>
-            </form>
-
-            <div class="surface-brand-top rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-4">
-                <SpeltakSubnav />
-
-                <div
-                    class="mb-3 flex w-full flex-col gap-3 border-b border-brand-blue/35 pb-2 sm:flex-row sm:items-center sm:justify-between"
-                >
-                    <div>
-                        <h3 class="text-lg font-semibold text-app-ink dark:text-app-ink-dark">
-                            {{ membersTab === 'dolfijnen' ? 'Overzicht' : 'Bijzonderheden' }}
-                        </h3>
-                        <p
-                            v-if="membersTab === 'dolfijnen'"
-                            class="mt-0.5 text-xs text-app-muted dark:text-app-muted-dark"></p>
-                    </div>
-                    <div class="flex w-full max-w-sm items-center gap-2 self-end sm:ms-auto">
-                        <MagnifyingGlassIcon
-                            class="h-5 w-5 shrink-0 text-app-muted dark:text-app-muted-dark"
-                            aria-hidden="true"
-                        />
-                        <label class="sr-only" for="members-page-search">Zoeken in alle contactvelden</label>
-                        <input
-                            id="members-page-search"
-                            v-model="memberSearchQuery"
-                            type="search"
-                            autocomplete="off"
-                            :placeholder="
-                                membersTab === 'dolfijnen'
-                                    ? 'Zoek op naam, adres, telefoon…'
-                                    : 'Zoek op naam, adres, telefoon, bijzonderheden…'
-                            "
-                            class="min-w-0 flex-1 rounded border border-app-border bg-white px-3 py-2 text-sm text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
-                        />
-                    </div>
-                </div>
-
-                <p
-                    v-if="membersTab === 'bijzonderheden'"
-                    class="mb-3 text-xs text-app-muted dark:text-app-muted-dark"
-                >
-                    Allergiën, medicatie, dieet en andere aandachtspunten. Dubbelklik in een cel om te bewerken.
-                    Kinderen met ingevulde bijzonderheden staan bovenaan. Voor leiding: menu Leiding.
-                </p>
-
-                <div v-if="!props.members?.length" class="py-6 text-center text-sm text-app-muted dark:text-app-muted-dark">
-                    Nog geen {{ speltakLabel }}.
-                </div>
-                <div v-else-if="!filteredMembers.length" class="py-6 text-center text-sm text-app-muted dark:text-app-muted-dark">
-                    Geen resultaten voor deze zoekopdracht.
-                </div>
-
-                <div v-else-if="membersTab === 'dolfijnen'" class="space-y-2 md:space-y-0">
-                    <div class="md:hidden space-y-2">
-                        <div
-                            v-for="member in sortedDolfijnenMembers"
-                            :key="`m-mob-${member.id}`"
-                            class="surface-brand-top rounded-xl border border-brand-blue/30 bg-app-panel px-4 py-3 text-app-ink shadow-sm dark:bg-app-panel-dark/95 dark:text-app-ink-dark"
-                        >
-                            <Link
-                                :href="route('members.show', member.id)"
-                                class="flex items-center justify-between gap-3 rounded-lg active:bg-brand-blue/15"
-                            >
-                                <span class="flex min-w-0 items-center gap-2 truncate">
-                                    <span class="truncate font-medium">{{ memberDisplayName(member) }}</span>
-                                </span>
-                                <ChevronRightIcon class="h-5 w-5 shrink-0 text-app-muted dark:text-app-muted-dark" aria-hidden="true" />
-                            </Link>
-                            <div class="mt-3 flex flex-wrap items-center gap-2 border-t border-brand-blue/25 pt-3 dark:border-brand-blue/35" @click.stop>
-                                <span class="text-xs font-semibold text-app-muted dark:text-app-muted-dark">Geïnstalleerd</span>
-                                <span class="rounded bg-brand-blue/10 px-2 py-0.5 text-xs font-semibold text-app-ink dark:text-app-ink-dark">{{ yesNo(member.installed) }}</span>
-                            </div>
-                            <div v-if="!isBestuurSection && !isBeversSection" class="mt-2 flex flex-wrap items-center gap-2" @click.stop>
-                                <span class="text-xs font-semibold text-app-muted dark:text-app-muted-dark">Gedoopt</span>
-                                <span class="rounded bg-brand-blue/10 px-2 py-0.5 text-xs font-semibold text-app-ink dark:text-app-ink-dark">{{ yesNo(member.gedoopt) }}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="hidden overflow-x-auto rounded-lg border border-brand-blue/25 md:block">
-                        <table class="w-full min-w-[50rem] border-collapse text-left text-sm text-app-ink lg:min-w-[58rem] dark:text-app-ink-dark">
-                        <thead class="border-b border-brand-blue/35 bg-app-sidebar dark:bg-app-canvas-dark/80">
-                            <tr class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
-                                <th scope="col" class="whitespace-nowrap px-3 py-2.5">Geïnstalleerd</th>
-                                <th v-if="!isBestuurSection && !isBeversSection" scope="col" class="whitespace-nowrap px-3 py-2.5">Gedoopt</th>
-                                <th scope="col" class="whitespace-nowrap px-3 py-2.5">Naam</th>
-                                <th scope="col" class="whitespace-nowrap px-3 py-2.5">Verjaardag</th>
-                                <th scope="col" class="whitespace-nowrap px-3 py-2.5">Leeftijd</th>
-                                <th scope="col" class="min-w-[10rem] px-3 py-2.5">Adres</th>
-                                <th scope="col" class="min-w-[9rem] px-3 py-2.5">Telefoon moeder</th>
-                                <th scope="col" class="min-w-[9rem] px-3 py-2.5">Telefoon vader</th>
-                                <th scope="col" class="min-w-[11rem] whitespace-nowrap px-3 py-2.5 text-end sm:text-start">
-                                    Acties
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-brand-blue/25">
-                            <tr
-                                v-for="member in sortedDolfijnenMembers"
-                                :id="`member-row-${member.id}`"
-                                :key="member.id"
-                                class="bg-brand-blue/5 transition-colors hover:bg-brand-blue/12 dark:bg-app-panel-dark/50 dark:hover:bg-brand-blue/15"
-                                :class="{ '!bg-brand-blue/15 dark:!bg-app-canvas-dark/90': rowHighlightMemberId === member.id }"
-                            >
-                                <td class="whitespace-nowrap px-3 py-2.5 align-top text-app-ink dark:text-app-ink-dark">
-                                    {{ yesNo(member.installed) }}
-                                </td>
-                                <td v-if="!isBestuurSection && !isBeversSection" class="whitespace-nowrap px-3 py-2.5 align-top text-app-ink dark:text-app-ink-dark">
-                                    {{ yesNo(member.gedoopt) }}
-                                </td>
-                                <td class="max-w-[16rem] px-3 py-2.5 align-top">{{ memberDisplayName(member) }}</td>
-                                <td class="whitespace-nowrap px-3 py-2.5 align-top tabular-nums text-app-ink dark:text-app-ink-dark">
-                                    {{ member.birthday ? formatBirthday(member.birthday) : '–' }}
-                                </td>
-                                <td class="whitespace-nowrap px-3 py-2.5 align-top tabular-nums text-app-ink dark:text-app-ink-dark">
-                                    {{ member.age ?? '–' }}
-                                </td>
-                                <td class="px-3 py-2.5 align-top">{{ member.address || '–' }}</td>
-                                <td class="px-3 py-2.5 align-top tabular-nums text-app-ink dark:text-app-ink-dark">{{ member.phone_mother || '–' }}</td>
-                                <td class="px-3 py-2.5 align-top tabular-nums text-app-ink dark:text-app-ink-dark">{{ member.phone_father || '–' }}</td>
-                                <td class="px-3 py-2.5 align-top">
-                                    <button v-if="canUpdateMembers" type="button" class="btn-action-edit me-2" title="Bewerken" @click="editMember(member)">
-                                        <PencilSquareIcon class="h-4 w-4 shrink-0" />
-                                    </button>
-                                    <button v-if="canDeleteMembers" type="button" class="btn-action-delete" title="Verwijderen" @click="deleteMember(member)">
-                                        <TrashIcon class="h-4 w-4 shrink-0" />
-                                    </button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    </div>
-                </div>
-
-                <div v-else-if="membersTab === 'bijzonderheden'" class="space-y-2">
-                    <div class="md:hidden space-y-2">
-                        <div
-                            v-for="member in sortedFilteredMembers"
-                            :key="`bijz-mob-${member.id}`"
-                            class="surface-brand-top rounded-xl border border-brand-blue/30 bg-app-panel p-4 shadow-sm dark:bg-app-panel-dark/95"
-                        >
-                            <p class="font-medium text-app-ink dark:text-app-ink-dark">{{ memberDisplayName(member) }}</p>
-                            <div class="mt-2 text-sm leading-snug">
-                                {{ member.bijzonderheden || '–' }}
-                            </div>
-                        </div>
-                    </div>
-                    <div class="hidden overflow-x-auto rounded-lg border border-brand-blue/25 md:block">
-                        <table class="w-full min-w-[24rem] border-collapse text-left text-sm text-app-ink dark:text-app-ink-dark">
-                            <thead class="border-b border-brand-blue/35 bg-app-sidebar dark:bg-app-canvas-dark/80">
-                                <tr class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
-                                    <th scope="col" class="min-w-[8rem] px-3 py-2.5">Naam</th>
-                                    <th scope="col" class="min-w-[16rem] px-3 py-2.5">Bijzonderheden</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-brand-blue/25">
-                                <tr
-                                    v-for="member in sortedFilteredMembers"
-                                    :id="`member-row-${member.id}`"
-                                    :key="`bijz-${member.id}`"
-                                    class="bg-brand-blue/5 transition-colors hover:bg-brand-blue/12 dark:bg-app-panel-dark/50 dark:hover:bg-brand-blue/15"
-                                    :class="{ '!bg-brand-blue/15 dark:!bg-app-canvas-dark/90': rowHighlightMemberId === member.id }"
-                                >
-                                    <td class="px-3 py-2.5 align-top font-medium text-app-ink dark:text-app-ink-dark">
-                                        {{ memberDisplayName(member) }}
-                                    </td>
-                                    <td class="px-3 py-2.5 align-top break-words leading-snug text-app-ink dark:text-app-ink-dark">
-                                        {{ member.bijzonderheden || '–' }}
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
+            <MembersOverviewBoard
+                :members-tab="membersTab"
+                :member-search-query="memberSearchQuery"
+                :members="props.members || []"
+                :filtered-members="filteredMembers"
+                :sorted-dolfijnen-members="sortedDolfijnenMembers"
+                :sorted-filtered-members="sortedFilteredMembers"
+                :speltak-label="speltakLabel"
+                :is-bestuur-section="isBestuurSection"
+                :is-bevers-section="isBeversSection"
+                :can-update-members="canUpdateMembers"
+                :can-delete-members="canDeleteMembers"
+                :row-highlight-member-id="rowHighlightMemberId"
+                :member-display-name="memberDisplayName"
+                :yes-no="yesNo"
+                :format-birthday="formatBirthday"
+                @update:member-search-query="memberSearchQuery = $event"
+                @edit-member="editMember"
+                @delete-member="deleteMember"
+            />
         </div>
     </AuthenticatedLayout>
 

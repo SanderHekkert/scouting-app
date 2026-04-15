@@ -1,9 +1,12 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import ProfileAccountPanel from './Partials/ProfileAccountPanel.vue';
+import ProfileAppearancePanel from './Partials/ProfileAppearancePanel.vue';
+import ProfilePushNotificationsPanel from './Partials/ProfilePushNotificationsPanel.vue';
 import DeleteUserForm from './Partials/DeleteUserForm.vue';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm.vue';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm.vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import { BellAlertIcon, BellSlashIcon, MoonIcon, SunIcon } from '@heroicons/vue/24/outline';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 
@@ -13,6 +16,10 @@ const props = defineProps({
     },
     status: {
         type: String,
+    },
+    browserSessions: {
+        type: Array,
+        default: () => [],
     },
     push: {
         type: Object,
@@ -426,120 +433,37 @@ onUnmounted(() => {
                 </div>
 
                 <div class="grid gap-4 lg:grid-cols-2">
-                    <div
-                        class="surface-brand-top rounded-2xl border border-app-border bg-app-panel p-5 shadow-sm dark:border-app-border-dark dark:bg-app-panel-dark sm:p-6"
-                    >
-                        <div class="w-full">
-                            <h3 class="text-lg font-medium text-app-ink dark:text-app-ink-dark">
-                                Weergave
-                            </h3>
-                            <p class="mt-1 text-sm text-app-muted dark:text-app-muted-dark">
-                                Schakel tussen lichte en donkere modus.
-                            </p>
-                            <div class="mt-4 flex items-center justify-between rounded-xl border border-app-border bg-white p-3 dark:border-app-border-dark dark:bg-app-canvas-dark">
-                                <div class="flex items-center gap-2 text-sm font-medium text-app-ink dark:text-app-ink-dark">
-                                    <SunIcon class="h-5 w-5 text-amber-500" />
-                                    <span>Licht</span>
-                                </div>
-                                <div
-                                    class="relative inline-flex h-10 w-52 items-center rounded-xl transition"
-                                    :class="themeTrackDark ? 'bg-brand-blue' : 'bg-slate-300 dark:bg-slate-600'"
-                                >
-                                    <button
-                                        type="button"
-                                        class="inline-flex h-8 w-8 cursor-grab items-center justify-center rounded-full bg-white text-slate-700 shadow transition-transform active:cursor-grabbing focus:outline-none focus:ring-2 focus:ring-brand-blue/40 disabled:opacity-60"
-                                        :style="themeKnobStyle"
-                                        :disabled="themeBusy"
-                                        title="Sleep om te wisselen"
-                                        aria-label="Sleep om te wisselen"
-                                        @mousedown.prevent="onThemeKnobMouseDown"
-                                        @touchstart.prevent="onThemeKnobTouchStart"
-                                        @keydown.enter.prevent="toggleTheme"
-                                        @keydown.space.prevent="toggleTheme"
-                                    >
-                                        <component :is="themeKnobIcon" class="h-4 w-4 transition-transform" :style="themeKnobIconStyle" />
-                                    </button>
-                                </div>
-                                <div class="flex items-center gap-2 text-sm font-medium text-app-ink dark:text-app-ink-dark">
-                                    <span>Donker</span>
-                                    <MoonIcon class="h-5 w-5 text-indigo-500" />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <ProfileAppearancePanel
+                        :theme-track-dark="themeTrackDark"
+                        :theme-knob-style="themeKnobStyle"
+                        :theme-busy="themeBusy"
+                        :theme-knob-icon="themeKnobIcon"
+                        :theme-knob-icon-style="themeKnobIconStyle"
+                        :on-theme-knob-mouse-down="onThemeKnobMouseDown"
+                        :on-theme-knob-touch-start="onThemeKnobTouchStart"
+                        :toggle-theme="toggleTheme"
+                    />
 
-                    <div
-                        class="surface-brand-top rounded-2xl border border-app-border bg-app-panel p-5 shadow-sm dark:border-app-border-dark dark:bg-app-panel-dark sm:p-6"
-                    >
-                        <div class="w-full">
-                            <h3 class="text-lg font-medium text-app-ink dark:text-app-ink-dark">
-                                Pushmeldingen
-                            </h3>
-                            <p class="mt-1 text-sm text-app-muted dark:text-app-muted-dark">
-                                Meldingen voor dit apparaat.
-                            </p>
-                            <p v-if="pushSupportIssue" class="mt-2 text-sm text-amber-700 dark:text-amber-300">
-                                {{ pushSupportIssue }}
-                            </p>
-
-                            <div class="mt-4 flex items-center justify-between rounded-xl border border-app-border bg-white p-3 dark:border-app-border-dark dark:bg-app-canvas-dark">
-                                <div class="flex items-center gap-2 text-sm font-medium text-app-ink dark:text-app-ink-dark">
-                                    <BellSlashIcon class="h-5 w-5 text-slate-500 dark:text-slate-300" />
-                                    <span>Uit</span>
-                                </div>
-                                <div
-                                    class="relative inline-flex h-10 w-52 items-center rounded-xl transition"
-                                    :class="pushTrackEnabled ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-600'"
-                                >
-                                    <button
-                                        type="button"
-                                        class="inline-flex h-8 w-8 cursor-grab items-center justify-center rounded-full bg-white text-slate-700 shadow transition-transform active:cursor-grabbing focus:outline-none focus:ring-2 focus:ring-emerald-500/40 disabled:opacity-60"
-                                        :style="pushKnobStyle"
-                                        :disabled="pushBusy || !!pushSupportIssue"
-                                        title="Sleep om push te wisselen"
-                                        aria-label="Sleep om push te wisselen"
-                                        @mousedown.prevent="onPushKnobMouseDown"
-                                        @touchstart.prevent="onPushKnobTouchStart"
-                                        @keydown.enter.prevent="setPushEnabled(!pushEnabled)"
-                                        @keydown.space.prevent="setPushEnabled(!pushEnabled)"
-                                    >
-                                        <component :is="pushKnobIcon" class="h-4 w-4 transition-transform" :style="pushKnobIconStyle" />
-                                    </button>
-                                </div>
-                                <div class="flex items-center gap-2 text-sm font-medium text-app-ink dark:text-app-ink-dark">
-                                    <span>Aan</span>
-                                    <BellAlertIcon class="h-5 w-5 text-emerald-600 dark:text-emerald-300" />
-                                </div>
-                            </div>
-
-                            <p v-if="pushMessage" class="mt-3 text-sm text-emerald-700 dark:text-emerald-300">{{ pushMessage }}</p>
-                            <p v-if="pushError" class="mt-2 text-sm text-red-700 dark:text-red-300">{{ pushError }}</p>
-                        </div>
-                    </div>
+                    <ProfilePushNotificationsPanel
+                        :push-support-issue="pushSupportIssue"
+                        :push-track-enabled="pushTrackEnabled"
+                        :push-knob-style="pushKnobStyle"
+                        :push-busy="pushBusy"
+                        :push-enabled="pushEnabled"
+                        :push-knob-icon="pushKnobIcon"
+                        :push-knob-icon-style="pushKnobIconStyle"
+                        :push-message="pushMessage"
+                        :push-error="pushError"
+                        :on-push-knob-mouse-down="onPushKnobMouseDown"
+                        :on-push-knob-touch-start="onPushKnobTouchStart"
+                        :set-push-enabled="setPushEnabled"
+                    />
                 </div>
 
-                <div
-                    class="surface-brand-top rounded-2xl border border-app-border bg-app-panel p-5 shadow-sm dark:border-app-border-dark dark:bg-app-panel-dark sm:p-6"
-                >
-                    <div class="flex items-center justify-between gap-3">
-                        <div>
-                            <h3 class="text-lg font-medium text-app-ink dark:text-app-ink-dark">
-                                Account
-                            </h3>
-                            <p class="mt-1 text-sm text-app-muted dark:text-app-muted-dark">
-                                Log uit op dit apparaat.
-                            </p>
-                        </div>
-                        <Link
-                            :href="route('logout')"
-                            method="post"
-                            as="button"
-                            class="inline-flex min-h-11 items-center rounded-md border-2 border-brand-blue bg-transparent px-4 py-2.5 text-sm font-semibold uppercase tracking-wide text-brand-blue-dark shadow-sm transition hover:bg-brand-blue/10 dark:border-brand-blue-light dark:text-brand-blue-light dark:hover:bg-brand-blue/20"
-                        >
-                            Uitloggen
-                        </Link>
-                    </div>
-                </div>
+                <ProfileAccountPanel
+                    :browser-sessions="browserSessions"
+                    :status="status"
+                />
 
                 <div
                     class="surface-brand-top rounded-2xl border border-red-300/60 bg-red-50/40 p-5 shadow-sm dark:border-red-500/40 dark:bg-red-950/20 sm:p-6"

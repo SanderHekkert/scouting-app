@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 import { formatMoney, sanitizeMoneyInput } from '@/utils/money';
 import AppConfirmModal from '@/Components/AppConfirmModal.vue';
+import CampBudgetSectionsEditor from '@/Pages/CampBudgets/Partials/CampBudgetSectionsEditor.vue';
 import CampBudgetStandardValuesPanel from '@/Pages/CampBudgets/Partials/CampBudgetStandardValuesPanel.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
@@ -604,97 +605,25 @@ const totals = computed(() => {
                 @set-camp-location="setCampLocation"
             />
 
-            <div class="space-y-3 rounded-xl border border-app-border bg-white p-3 dark:border-app-border-dark dark:bg-app-canvas-dark">
-                <div class="flex flex-wrap items-center gap-2">
-                    <button
-                        v-for="(section, idx) in form.budget_sections"
-                        :key="`section-tab-${idx}`"
-                        type="button"
-                        class="rounded-md border px-3 py-1.5 text-sm"
-                        :class="idx === activeSectionIndex ? 'border-brand-blue bg-brand-blue/10 text-app-ink dark:text-app-ink-dark' : 'border-app-border bg-white text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark'"
-                        @click="activeSectionIndex = idx"
-                    >
-                        {{ section.title || `Sectie ${idx + 1}` }}
-                    </button>
-                    <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-700 text-white" title="Sectie toevoegen" @click="addSection">
-                        <PlusIcon class="h-4 w-4" />
-                    </button>
-                </div>
-
-                <div v-if="form.budget_sections[activeSectionIndex]" class="space-y-3">
-                    <div class="flex items-center gap-2">
-                        <input
-                            v-model="form.budget_sections[activeSectionIndex].title"
-                            type="text"
-                            class="w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-slate-900 dark:text-app-ink-dark"
-                            placeholder="Naam sectie"
-                        />
-                        <button type="button" class="btn-action-delete" title="Sectie verwijderen" @click="removeSection(activeSectionIndex)">
-                            <TrashIcon class="h-5 w-5" />
-                        </button>
-                    </div>
-
-                    <div class="overflow-x-auto rounded border border-app-border">
-                        <table class="w-full table-fixed text-sm">
-                            <colgroup>
-                                <col class="w-[42%]" />
-                                <col class="w-24" />
-                                <col class="w-36" />
-                                <col class="w-36" />
-                                <col class="w-16" />
-                            </colgroup>
-                            <thead class="bg-slate-50 text-app-ink dark:bg-slate-900 dark:text-app-ink-dark">
-                                <tr>
-                                    <th class="px-1.5 py-2 text-left">Post</th>
-                                    <th class="px-1.5 py-2 text-left">Aantal</th>
-                                    <th class="px-1.5 py-2 text-left">Bedrag</th>
-                                    <th class="px-1.5 py-2 text-left">Totaal</th>
-                                    <th class="px-1.5 py-2 text-left">Actie</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-app-border bg-white dark:divide-app-border-dark dark:bg-app-canvas-dark">
-                                <tr v-for="(row, rowIdx) in form.budget_sections[activeSectionIndex].rows" :key="`row-${rowIdx}`">
-                                    <td class="px-1.5 py-2">
-                                        <input v-model="row.label" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-slate-900 dark:text-app-ink-dark" />
-                                    </td>
-                                    <td class="px-1.5 py-2">
-                                        <input
-                                            v-model.number="row.quantity"
-                                            type="number"
-                                            :min="isFixedQuantityFormulaRow(form.budget_sections[activeSectionIndex].title, row.label) ? 1 : 0"
-                                            step="1"
-                                            inputmode="numeric"
-                                            :readonly="isFixedQuantityFormulaRow(form.budget_sections[activeSectionIndex].title, row.label)"
-                                            class="w-24 rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-slate-900 dark:text-app-ink-dark readonly:bg-slate-100 readonly:text-slate-700 dark:readonly:bg-slate-800 dark:readonly:text-app-ink-dark"
-                                            @input="onRowQuantityInput(row, form.budget_sections[activeSectionIndex].title)"
-                                        />
-                                    </td>
-                                    <td class="px-1.5 py-2">
-                                        <div class="relative w-36">
-                                            <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span>
-                                            <input :value="rowAmountInputValue(row, form.budget_sections[activeSectionIndex].title, activeSectionIndex, rowIdx)" type="text" inputmode="decimal" :readonly="isAmountReadOnly(form.budget_sections[activeSectionIndex].title, row.label)" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-slate-900 dark:text-app-ink-dark readonly:bg-slate-100 readonly:text-slate-700 dark:readonly:bg-slate-800 dark:readonly:text-app-ink-dark" @focus="onRowAmountFocus(row, activeSectionIndex, rowIdx)" @input="onRowAmountInput(row, $event, activeSectionIndex, rowIdx)" @blur="onRowAmountBlur(row, activeSectionIndex, rowIdx)" />
-                                        </div>
-                                    </td>
-                                    <td class="px-1.5 py-2 whitespace-nowrap">
-                                        <span class="text-base font-bold text-brand-blue-dark dark:text-brand-blue-light">€ {{ formatMoney(rowComputedTotal(row, form.budget_sections[activeSectionIndex].title)) }}</span>
-                                    </td>
-                                    <td class="px-1.5 py-2">
-                                        <button type="button" class="btn-action-delete" title="Regel verwijderen" @click="removeRow(activeSectionIndex, rowIdx)">
-                                            <TrashIcon class="h-5 w-5" />
-                                        </button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-700 text-white" title="Regel toevoegen" @click="addRow(activeSectionIndex)">
-                            <PlusIcon class="h-4 w-4" />
-                        </button>
-                        <p class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">Sectietotaal: € {{ formatMoney(sectionTotal(form.budget_sections[activeSectionIndex])) }}</p>
-                    </div>
-                </div>
-            </div>
+            <CampBudgetSectionsEditor
+                :form="form"
+                :active-section-index="activeSectionIndex"
+                :add-section="addSection"
+                :remove-section="removeSection"
+                :add-row="addRow"
+                :remove-row="removeRow"
+                :is-fixed-quantity-formula-row="isFixedQuantityFormulaRow"
+                :on-row-quantity-input="onRowQuantityInput"
+                :row-amount-input-value="rowAmountInputValue"
+                :is-amount-read-only="isAmountReadOnly"
+                :on-row-amount-focus="onRowAmountFocus"
+                :on-row-amount-input="onRowAmountInput"
+                :on-row-amount-blur="onRowAmountBlur"
+                :row-computed-total="rowComputedTotal"
+                :section-total="sectionTotal"
+                :format-money="formatMoney"
+                @update:active-section-index="activeSectionIndex = $event"
+            />
 
             <div class="grid gap-2 rounded-xl border border-app-border bg-white p-3 sm:grid-cols-3 dark:border-app-border-dark dark:bg-app-canvas-dark">
                 <p class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">Totaal bijdragen: € {{ formatMoney(totals.income) }}</p>
