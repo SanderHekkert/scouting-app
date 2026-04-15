@@ -112,7 +112,7 @@ trait CampPlaybookWorkflowMedia
             || $user->sectionRoles()
                 ->where('section', UserSectionRole::SECTION_BESTUUR)
                 ->whereIn('role', UserSectionRole::BESTUUR_ROLES)
-            ->exists();
+                ->exists();
     }
 
     private function statusFromAction(string $action): string

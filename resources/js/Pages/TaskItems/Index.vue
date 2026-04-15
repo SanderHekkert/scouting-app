@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import TaskItemsCreateForms from '@/Pages/TaskItems/Partials/TaskItemsCreateForms.vue';
 import { Head, useForm, router, usePage } from '@inertiajs/vue3';
 import { Bars3Icon, DocumentCheckIcon, PencilSquareIcon, PlusIcon, TrashIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 
@@ -488,223 +489,28 @@ function onCategoryDrop(category, event) {
             </div>
         </template>
         <div class="space-y-4 text-app-ink dark:text-app-ink-dark">
-            <form
-                v-if="canCreateTasks"
-                v-show="showCategoryForm"
-                class="surface-brand-top space-y-3 rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5"
-                @submit.prevent="submitCategory"
-            >
-                <h3 class="text-base font-semibold text-app-ink dark:text-app-ink-dark">Nieuwe sectie</h3>
-                <div class="grid gap-4 sm:grid-cols-[8rem_1fr] sm:items-start">
-                    <label for="category-name" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Naam
-                    </label>
-                    <input
-                        id="category-name"
-                        v-model="categoryForm.name"
-                        type="text"
-                        placeholder="Bijv. Materiaal"
-                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
-                    />
-                    <span class="hidden sm:block" aria-hidden="true" />
-                    <div>
-                        <button
-                            type="submit"
-                            class="rounded bg-brand-blue px-5 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark disabled:opacity-50"
-                            :disabled="categoryForm.processing"
-                        >
-                            Aanmaken
-                        </button>
-                    </div>
-                </div>
-                <p v-if="categoryForm.errors.name" class="text-sm text-red-400">{{ categoryForm.errors.name }}</p>
-            </form>
-
-            <form
-                v-if="canCreateTasks"
-                v-show="showAddForm"
-                class="surface-brand-top space-y-4 rounded-xl border border-app-border bg-app-panel shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark p-5"
-                @submit.prevent="submitAdd"
-            >
-                <h3 class="text-base font-semibold text-app-ink dark:text-app-ink-dark">Nieuwe taak</h3>
-                <div class="grid gap-4 sm:grid-cols-[8rem_1fr] sm:items-start">
-                    <label v-if="props.canCreateCrossSection" for="add-target-section" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Speltak
-                    </label>
-                    <select
-                        v-if="props.canCreateCrossSection"
-                        id="add-target-section"
-                        v-model="form.target_section"
-                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                    >
-                        <option value="">Kies speltak</option>
-                        <option v-for="section in props.targetSections" :key="`task-target-${section}`" :value="section">
-                            {{ sectionLabels[section] || section }}
-                        </option>
-                    </select>
-
-                    <span v-if="!hideCategories" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-1">
-                        Kopje
-                    </span>
-                    <div v-if="!hideCategories" class="flex flex-wrap gap-2" role="radiogroup" aria-label="Kies kopje voor deze taak">
-                        <label
-                            v-for="cat in createTaskCategories"
-                            :key="`add-${cat}`"
-                            class="cursor-pointer rounded-lg border px-3 py-2 text-sm transition"
-                            :class="
-                                form.category === cat
-                                    ? 'border-brand-yellow bg-brand-blue/45 text-white ring-2 ring-brand-yellow/70'
-                                    : 'border-brand-blue/35 bg-white text-app-ink hover:border-brand-blue/55 dark:bg-app-canvas-dark dark:text-app-ink-dark dark:hover:border-brand-blue/55'
-                            "
-                        >
-                            <input
-                                v-model="form.category"
-                                type="radio"
-                                class="sr-only"
-                                :value="cat"
-                                :required="createTaskCategories[0] === cat"
-                            />
-                            {{ cat }}
-                        </label>
-                    </div>
-
-                    <label for="add-title" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Taak
-                    </label>
-                    <input
-                        id="add-title"
-                        v-model="form.title"
-                        type="text"
-                        autocomplete="off"
-                        placeholder="bv. Agenda bijhouden"
-                        required
-                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
-                    />
-
-                    <label for="add-owners" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Wie
-                    </label>
-                    <div>
-                        <div class="flex flex-wrap gap-1.5">
-                            <span
-                                v-for="id in form.owner_user_ids"
-                                :key="`add-owner-chip-${id}`"
-                                class="inline-flex items-center gap-1 rounded-full bg-brand-blue/15 px-2 py-0.5 text-xs"
-                            >
-                                {{ firstNameOnly(leaderNameById(id)) }}
-                                <button
-                                    type="button"
-                                    class="rounded p-0.5 hover:bg-brand-blue/25"
-                                    @click="form.owner_user_ids = form.owner_user_ids.filter((x) => Number(x) !== Number(id))"
-                                >
-                                    <XMarkIcon class="h-3.5 w-3.5" />
-                                </button>
-                            </span>
-                        </div>
-                        <select
-                            id="add-owners"
-                            class="mt-2 min-w-0 w-full rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                            @change="
-                                (e) => {
-                                    const v = Number(e.target.value);
-                                    if (Number.isFinite(v) && !form.owner_user_ids.includes(v)) form.owner_user_ids.push(v);
-                                    e.target.value = '';
-                                }
-                            "
-                        >
-                            <option value="">Naam toevoegen…</option>
-                            <option v-for="leader in leaders" :key="`add-leader-${leader.id}`" :value="String(leader.id)">
-                                {{ firstNameOnly(leader.name) }}
-                            </option>
-                        </select>
-                    </div>
-
-                    <label for="add-description" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Uitleg
-                    </label>
-                    <textarea
-                        id="add-description"
-                        v-model="form.description"
-                        rows="4"
-                        placeholder="Wat houdt deze taak in?"
-                        required
-                        class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
-                    />
-
-                    <label for="add-deadline" class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Deadlines
-                    </label>
-                    <div>
-                        <div class="flex flex-wrap gap-1.5">
-                            <span
-                                v-for="d in form.deadlines"
-                                :key="`add-deadline-chip-${d}`"
-                                class="inline-flex items-center gap-1 rounded-full bg-brand-blue/15 px-2 py-0.5 text-xs"
-                            >
-                                {{ d }}
-                                <button type="button" class="rounded p-0.5 hover:bg-brand-blue/25" @click="removeFormDeadline(d)">
-                                    <XMarkIcon class="h-3.5 w-3.5" />
-                                </button>
-                            </span>
-                        </div>
-                        <div class="mt-2 flex gap-2">
-                            <input
-                                id="add-deadline"
-                                v-model="addDeadlineInput"
-                                type="date"
-                                class="min-w-0 flex-1 rounded border border-app-border bg-white px-3 py-2 text-app-ink dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                            />
-                            <button
-                                type="button"
-                                class="rounded border border-brand-blue-light/50 px-3 py-2 text-sm font-medium text-app-ink transition hover:bg-brand-blue/10 dark:text-app-ink-dark"
-                                @click="addFormDeadline"
-                            >
-                                Toevoegen
-                            </button>
-                        </div>
-                    </div>
-
-                    <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">
-                        Gezamenlijk met
-                    </label>
-                    <div class="flex flex-wrap gap-2">
-                        <label
-                            v-for="section in shareableSections"
-                            :key="`add-task-share-${section}`"
-                            class="inline-flex items-center gap-2 rounded border border-app-border bg-white px-2 py-1 text-xs dark:border-app-border-dark dark:bg-app-canvas-dark"
-                        >
-                            <input
-                                v-model="form.shared_sections"
-                                type="checkbox"
-                                :value="section"
-                                class="rounded border-app-border"
-                            />
-                            {{ sectionLabels[section] || section }}
-                        </label>
-                    </div>
-
-                    <span class="hidden sm:block" aria-hidden="true" />
-                    <div>
-                        <button
-                            type="submit"
-                            class="btn-action-save"
-                            :disabled="form.processing"
-                            title="Opslaan"
-                            aria-label="Opslaan"
-                        >
-                            <DocumentCheckIcon class="h-5 w-5" />
-                        </button>
-                    </div>
-                </div>
-                <p v-if="form.errors.category" class="text-sm text-red-400">{{ form.errors.category }}</p>
-                <p v-if="form.errors.target_section" class="text-sm text-red-400">{{ form.errors.target_section }}</p>
-                <p v-if="form.errors.title" class="text-sm text-red-400">
-                    {{ form.errors.title }}
-                </p>
-                <p v-if="form.errors.description" class="text-sm text-red-400">
-                    {{ form.errors.description }}
-                </p>
-            </form>
+            <TaskItemsCreateForms
+                :can-create-tasks="canCreateTasks"
+                :show-category-form="showCategoryForm"
+                :show-add-form="showAddForm"
+                :category-form="categoryForm"
+                :form="form"
+                :can-create-cross-section="props.canCreateCrossSection"
+                :target-sections="props.targetSections"
+                :section-labels="sectionLabels"
+                :hide-categories="hideCategories"
+                :create-task-categories="createTaskCategories"
+                :leaders="leaders"
+                :shareable-sections="shareableSections"
+                :add-deadline-input="addDeadlineInput"
+                :first-name-only="firstNameOnly"
+                :leader-name-by-id="leaderNameById"
+                @submit-category="submitCategory"
+                @submit-add="submitAdd"
+                @add-deadline="addFormDeadline"
+                @remove-deadline="removeFormDeadline"
+                @update:add-deadline-input="addDeadlineInput = $event"
+            />
 
             <div class="space-y-6">
                 <div

@@ -1,7 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { ChevronLeftIcon, ChevronRightIcon, MagnifyingGlassIcon, PlusIcon } from '@heroicons/vue/24/outline';
+import AgendaTopControls from '@/Pages/Agenda/Partials/AgendaTopControls.vue';
+import { Head, router, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
 const props = defineProps({
@@ -589,104 +589,35 @@ function opkomstColorClass(section) {
     <Head title="Persoonlijke Agenda" />
     <AuthenticatedLayout>
         <template #header>
-            <div class="flex w-full flex-wrap items-center justify-between gap-3">
-                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">Persoonlijke Agenda</h2>
-                <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-1 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
-                    <template v-if="props.canBrowseAllAgendas">
-                        <select
-                            v-model="sectionFilter"
-                            class="w-full rounded-full border border-app-border bg-app-panel px-3.5 py-2 text-sm font-semibold text-app-ink shadow-sm transition hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/20 sm:w-auto sm:py-1.5"
-                            @change="applyAgendaScopeFilters"
-                        >
-                            <option v-for="section in props.sectionOptions" :key="`section-filter-${section}`" :value="section">
-                                {{ sectionLabels[section] || section }}
-                            </option>
-                        </select>
-                        <select
-                            v-model="userFilter"
-                            class="w-full rounded-full border border-app-border bg-app-panel px-3.5 py-2 text-sm font-semibold text-app-ink shadow-sm transition hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/20 sm:w-auto sm:py-1.5"
-                            @change="applyAgendaScopeFilters"
-                        >
-                            <option v-for="u in props.filterUsers" :key="`user-filter-${u.id}`" :value="u.id">
-                                {{ u.name }}
-                            </option>
-                        </select>
-                        <p v-if="selectedFilterUserName" class="px-1 text-xs text-app-muted dark:text-app-muted-dark sm:hidden">
-                            Gebruiker: {{ selectedFilterUserName }}
-                        </p>
-                    </template>
-                    <div class="flex w-full items-center gap-2 sm:w-auto">
-                        <button type="button" class="w-full rounded-full border border-app-border bg-app-panel px-3.5 py-2 text-sm font-semibold text-app-ink shadow-sm transition hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/20 sm:w-auto sm:py-1.5" @click="goToToday">Vandaag</button>
-                        <button
-                            type="button"
-                            class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-app-border bg-app-panel text-app-ink shadow-sm transition hover:border-brand-blue/40 hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:border-brand-blue/45 dark:hover:bg-brand-blue/15"
-                            :title="showSearchPanel ? 'Zoeken sluiten' : 'Zoeken'"
-                            :aria-label="showSearchPanel ? 'Zoeken sluiten' : 'Zoeken'"
-                            @click="toggleSearchPanel"
-                        >
-                            <MagnifyingGlassIcon class="h-5 w-5" />
-                        </button>
-                        <button v-if="canCreateAgendaItem" type="button" class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-700 text-white shadow-sm transition hover:bg-emerald-800" title="Toevoegen" aria-label="Toevoegen" @click="goToCreateAgendaItem">
-                            <PlusIcon class="h-5 w-5" />
-                        </button>
-                    </div>
-                    <div class="inline-flex w-full items-center rounded-full border border-app-border bg-app-panel p-1 shadow-sm dark:border-app-border-dark dark:bg-app-panel-dark sm:w-auto">
-                        <button type="button" class="rounded-full px-3.5 py-1.5 text-sm font-semibold transition" :class="viewMode === 'day' ? 'bg-brand-blue text-white shadow-sm' : 'text-app-ink hover:bg-brand-blue/10 dark:text-app-ink-dark dark:hover:bg-brand-blue/20'" @click="viewMode = 'day'">Dag</button>
-                        <button type="button" class="hidden rounded-full px-3.5 py-1.5 text-sm font-semibold transition sm:inline-flex" :class="viewMode === 'week' ? 'bg-brand-blue text-white shadow-sm' : 'text-app-ink hover:bg-brand-blue/10 dark:text-app-ink-dark dark:hover:bg-brand-blue/20'" @click="viewMode = 'week'">Week</button>
-                        <button type="button" class="rounded-full px-3.5 py-1.5 text-sm font-semibold transition" :class="viewMode === 'month' ? 'bg-brand-blue text-white shadow-sm' : 'text-app-ink hover:bg-brand-blue/10 dark:text-app-ink-dark dark:hover:bg-brand-blue/20'" @click="viewMode = 'month'">Maand</button>
-                        <button type="button" class="rounded-full px-3.5 py-1.5 text-sm font-semibold transition" :class="viewMode === 'year' ? 'bg-brand-blue text-white shadow-sm' : 'text-app-ink hover:bg-brand-blue/10 dark:text-app-ink-dark dark:hover:bg-brand-blue/20'" @click="viewMode = 'year'">Jaar</button>
-                    </div>
-                </div>
-            </div>
+            <AgendaTopControls
+                :can-browse-all-agendas="props.canBrowseAllAgendas"
+                :section-options="props.sectionOptions"
+                :filter-users="props.filterUsers"
+                :section-labels="sectionLabels"
+                :selected-filter-user-name="selectedFilterUserName"
+                :can-create-agenda-item="canCreateAgendaItem"
+                :show-search-panel="showSearchPanel"
+                :view-mode="viewMode"
+                :period-label="periodLabel"
+                :agenda-search="agendaSearch"
+                :search-results="searchResults"
+                :section-filter="sectionFilter"
+                :user-filter="userFilter"
+                @apply-filters="applyAgendaScopeFilters"
+                @go-today="goToToday"
+                @toggle-search="toggleSearchPanel"
+                @go-create="goToCreateAgendaItem"
+                @set-view-mode="viewMode = $event"
+                @previous-period="previousPeriod"
+                @next-period="nextPeriod"
+                @update:agenda-search="agendaSearch = $event"
+                @update:section-filter="sectionFilter = $event"
+                @update:user-filter="userFilter = $event"
+            />
         </template>
 
         <div class="space-y-4">
             <div class="surface-brand-top rounded-2xl border border-app-border bg-white/95 p-4 shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark">
-                <div class="mb-3 flex items-center justify-between gap-3">
-                    <button
-                        type="button"
-                        class="inline-flex items-center justify-center rounded-full border border-app-border bg-app-panel p-2 text-app-ink hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:text-app-ink-dark"
-                        @click="previousPeriod"
-                    >
-                        <ChevronLeftIcon class="h-5 w-5" />
-                    </button>
-                    <h3 class="text-lg font-semibold tracking-tight text-app-ink dark:text-app-ink-dark">{{ periodLabel }}</h3>
-                    <button
-                        type="button"
-                        class="inline-flex items-center justify-center rounded-full border border-app-border bg-app-panel p-2 text-app-ink hover:bg-brand-blue/10 dark:border-app-border-dark dark:bg-app-panel-dark dark:text-app-ink-dark"
-                        @click="nextPeriod"
-                    >
-                        <ChevronRightIcon class="h-5 w-5" />
-                    </button>
-                </div>
-
-                <div v-if="showSearchPanel" class="mb-3 rounded-xl border border-app-border bg-app-panel p-3 dark:border-app-border-dark dark:bg-app-canvas-dark/70">
-                    <input
-                        v-model="agendaSearch"
-                        type="search"
-                        placeholder="Zoek in agenda en opkomsten..."
-                        class="w-full rounded border border-app-border bg-white px-3 py-2 text-sm text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted-dark"
-                    />
-                    <div class="mt-3">
-                        <table class="w-full text-sm text-app-ink dark:text-app-ink-dark">
-                            <tbody class="divide-y divide-brand-blue/20">
-                                <tr v-for="entry in searchResults" :key="`search-${entry.sourceType}-${entry.sourceId}`">
-                                    <td class="py-2 pe-2 whitespace-nowrap text-xs text-app-muted dark:text-app-muted-dark">{{ entry.date || '-' }}</td>
-                                    <td class="py-2">
-                                        <Link :href="entry.href" class="hover:underline">
-                                            <span class="font-semibold">{{ entry.tag }}</span>
-                                            <span class="ms-1">{{ entry.title }}</span>
-                                        </Link>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                        <p v-if="agendaSearch.trim() !== '' && !searchResults.length" class="py-2 text-sm text-app-muted dark:text-app-muted-dark">
-                            Geen resultaten gevonden.
-                        </p>
-                    </div>
-                </div>
-
                 <div v-if="viewMode === 'month'" class="grid grid-cols-7 border-b border-app-border pb-2 text-center text-xs font-semibold uppercase tracking-wide text-app-muted dark:border-app-border-dark dark:text-app-muted-dark">
                     <span v-for="day in weekDays" :key="`week-${day}`">{{ day }}</span>
                 </div>

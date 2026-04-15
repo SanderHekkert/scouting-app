@@ -1235,5 +1235,4 @@ class CampPlaybookController extends Controller
             ],
         ];
     }
-
 }

@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 import { formatMoney, sanitizeMoneyInput } from '@/utils/money';
 import AppConfirmModal from '@/Components/AppConfirmModal.vue';
+import CampBudgetStandardValuesPanel from '@/Pages/CampBudgets/Partials/CampBudgetStandardValuesPanel.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { ArrowUturnLeftIcon, DocumentCheckIcon, PaperAirplaneIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
@@ -594,41 +595,14 @@ const totals = computed(() => {
                 </div>
             </div>
 
-            <div class="rounded-xl border border-app-border bg-white p-3 dark:border-app-border-dark dark:bg-app-canvas-dark">
-                <h3 class="mb-2 text-sm font-semibold text-app-ink dark:text-app-ink-dark">Standaardwaarden</h3>
-                <div class="mb-3">
-                    <div class="inline-flex items-center rounded-full border border-app-border bg-slate-100 p-1 dark:border-app-border-dark dark:bg-slate-800">
-                        <button
-                            type="button"
-                            class="rounded-full px-4 py-1.5 text-xs font-semibold transition"
-                            :class="campLocation === 'clubhuis' ? 'bg-brand-blue text-white shadow-sm' : 'text-app-ink dark:text-app-ink-dark'"
-                            @click="setCampLocation('clubhuis')"
-                        >
-                            Clubhuis
-                        </button>
-                        <button
-                            type="button"
-                            class="rounded-full px-4 py-1.5 text-xs font-semibold transition"
-                            :class="campLocation === 'fram' ? 'bg-brand-blue text-white shadow-sm' : 'text-app-ink dark:text-app-ink-dark'"
-                            @click="setCampLocation('fram')"
-                        >
-                            Fram
-                        </button>
-                    </div>
-                </div>
-                <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                    <label v-if="campLocation === 'clubhuis'" class="text-xs text-app-ink dark:text-app-ink-dark">Clubhuis <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="standardAmountInputValue('clubhuis_bedrag')" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @focus="onStandardMoneyFocus('clubhuis_bedrag')" @input="onStandardMoneyInput('clubhuis_bedrag', $event)" @blur="onStandardMoneyBlur('clubhuis_bedrag')" /></div></label>
-                    <label v-if="campLocation === 'clubhuis'" class="text-xs text-app-ink dark:text-app-ink-dark">Borg <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="standardAmountInputValue('borg_bedrag')" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @focus="onStandardMoneyFocus('borg_bedrag')" @input="onStandardMoneyInput('borg_bedrag', $event)" @blur="onStandardMoneyBlur('borg_bedrag')" /></div></label>
-                    <label v-if="campLocation === 'fram'" class="text-xs text-app-ink dark:text-app-ink-dark">Kosten vaart p/u <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="standardAmountInputValue('kosten_vaart_pu')" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @focus="onStandardMoneyFocus('kosten_vaart_pu')" @input="onStandardMoneyInput('kosten_vaart_pu', $event)" @blur="onStandardMoneyBlur('kosten_vaart_pu')" /></div></label>
-                    <label v-if="campLocation === 'fram'" class="text-xs text-app-ink dark:text-app-ink-dark">Kosten aggregaat p/u <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="standardAmountInputValue('kosten_aggregaat_pu')" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @focus="onStandardMoneyFocus('kosten_aggregaat_pu')" @input="onStandardMoneyInput('kosten_aggregaat_pu', $event)" @blur="onStandardMoneyBlur('kosten_aggregaat_pu')" /></div></label>
-                    <label v-if="campLocation === 'fram'" class="text-xs text-app-ink dark:text-app-ink-dark">Huur Fram pppd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="standardAmountInputValue('huur_fram_pppd')" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @focus="onStandardMoneyFocus('huur_fram_pppd')" @input="onStandardMoneyInput('huur_fram_pppd', $event)" @blur="onStandardMoneyBlur('huur_fram_pppd')" /></div></label>
-                    <label class="text-xs text-app-ink dark:text-app-ink-dark">Prijs per dag leiding <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="standardAmountInputValue('prijs_per_dag_leiding')" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @focus="onStandardMoneyFocus('prijs_per_dag_leiding')" @input="onStandardMoneyInput('prijs_per_dag_leiding', $event)" @blur="onStandardMoneyBlur('prijs_per_dag_leiding')" /></div></label>
-                    <label class="text-xs text-app-ink dark:text-app-ink-dark">Standaard kamp prijs per Jeugdlid <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="standardAmountInputValue('prijs_per_dag_jeugdlid')" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @focus="onStandardMoneyFocus('prijs_per_dag_jeugdlid')" @input="onStandardMoneyInput('prijs_per_dag_jeugdlid', $event)" @blur="onStandardMoneyBlur('prijs_per_dag_jeugdlid')" /></div></label>
-                    <label class="text-xs text-app-ink dark:text-app-ink-dark">Proviand pppd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="standardAmountInputValue('proviand_pppd')" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @focus="onStandardMoneyFocus('proviand_pppd')" @input="onStandardMoneyInput('proviand_pppd', $event)" @blur="onStandardMoneyBlur('proviand_pppd')" /></div></label>
-                    <label class="text-xs text-app-ink dark:text-app-ink-dark">Groepsafdracht pjpd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="standardAmountInputValue('groepsafdracht_pjpd')" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @focus="onStandardMoneyFocus('groepsafdracht_pjpd')" @input="onStandardMoneyInput('groepsafdracht_pjpd', $event)" @blur="onStandardMoneyBlur('groepsafdracht_pjpd')" /></div></label>
-                    <label class="text-xs text-app-ink dark:text-app-ink-dark">Reservering NaWaKa pjpd <div class="relative mt-1"><span class="pointer-events-none absolute inset-y-0 left-0 flex items-center rounded-l border-r border-app-border bg-slate-100 px-2 font-semibold text-slate-700 dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark">€</span><input :value="standardAmountInputValue('reservering_nawaka_pjpd')" type="text" inputmode="decimal" class="w-full rounded border border-app-border bg-white py-1.5 pl-8 pr-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" @focus="onStandardMoneyFocus('reservering_nawaka_pjpd')" @input="onStandardMoneyInput('reservering_nawaka_pjpd', $event)" @blur="onStandardMoneyBlur('reservering_nawaka_pjpd')" /></div></label>
-                </div>
-            </div>
+            <CampBudgetStandardValuesPanel
+                :camp-location="campLocation"
+                :standard-amount-input-value="standardAmountInputValue"
+                :on-standard-money-focus="onStandardMoneyFocus"
+                :on-standard-money-input="onStandardMoneyInput"
+                :on-standard-money-blur="onStandardMoneyBlur"
+                @set-camp-location="setCampLocation"
+            />
 
             <div class="space-y-3 rounded-xl border border-app-border bg-white p-3 dark:border-app-border-dark dark:bg-app-canvas-dark">
                 <div class="flex flex-wrap items-center gap-2">

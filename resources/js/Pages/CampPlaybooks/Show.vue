@@ -4,6 +4,7 @@ import AppConfirmModal from '@/Components/AppConfirmModal.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import CampPlaybookCorveeSection from '@/Pages/CampPlaybooks/Partials/CampPlaybookCorveeSection.vue';
 import CampPlaybookEmergencyContactsSection from '@/Pages/CampPlaybooks/Partials/CampPlaybookEmergencyContactsSection.vue';
+import CampPlaybookVaarschemaSection from '@/Pages/CampPlaybooks/Partials/CampPlaybookVaarschemaSection.vue';
 import CampPlaybookVinindelingSection from '@/Pages/CampPlaybooks/Partials/CampPlaybookVinindelingSection.vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { ArrowUturnLeftIcon, BellAlertIcon, DocumentCheckIcon, PaperAirplaneIcon, PlusIcon, TrashIcon, XMarkIcon } from '@heroicons/vue/24/outline';
@@ -1861,58 +1862,13 @@ function statusClass(status) {
                         @add-row="addVinindelingRow"
                     />
 
-                    <div v-if="isVaarschemaSection(activeSection)" class="space-y-3">
-                        <div class="rounded-lg border border-brand-blue/25 bg-brand-blue/5 p-3 text-sm text-app-ink dark:border-brand-blue/40 dark:bg-brand-blue/10 dark:text-app-ink-dark">
-                            <p class="font-semibold">Website getij</p>
-                            <a
-                                href="https://waterinfo.rws.nl/publiek/astronomische-getij/heinenoord.goidschalxoord/details"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                class="mt-1 inline-block break-all text-brand-blue underline"
-                            >
-                                https://waterinfo.rws.nl/publiek/astronomische-getij/heinenoord.goidschalxoord/details
-                            </a>
-                            <p class="mt-2 text-xs">
-                                Note: We kunnen met 60 NAP net wel naar binnen in de Koedood. Voor de veiligheid 75 NAP aanhouden.
-                            </p>
-                        </div>
-
-                        <div class="overflow-x-auto rounded border border-app-border dark:border-app-border-dark">
-                            <table class="w-full min-w-[880px] text-sm">
-                                <thead class="bg-slate-50 dark:bg-slate-800/70">
-                                    <tr>
-                                        <th class="px-2 py-2 text-left">Datum</th>
-                                        <th class="px-2 py-2 text-left">Van</th>
-                                        <th class="px-2 py-2 text-left">Naar</th>
-                                        <th class="px-2 py-2 text-left">Wegvaren</th>
-                                        <th class="px-2 py-2 text-left">Aankomen</th>
-                                        <th class="px-2 py-2 text-left">Speling (minuten)</th>
-                                        <th class="px-2 py-2 text-left">Actie</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-app-border dark:divide-app-border-dark">
-                                    <tr v-for="(row, rowIdx) in form.vaarschema_rows" :key="`vaarschema-row-${rowIdx}`">
-                                        <td class="px-2 py-2"><input v-model="row.date" type="date" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" /></td>
-                                        <td class="px-2 py-2"><input v-model="row.from" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Van" /></td>
-                                        <td class="px-2 py-2"><input v-model="row.to" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Naar" /></td>
-                                        <td class="px-2 py-2"><input v-model="row.depart_at" type="time" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" /></td>
-                                        <td class="px-2 py-2"><input v-model="row.arrive_at" type="time" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" /></td>
-                                        <td class="px-2 py-2"><input v-model="row.tide_margin_minutes" type="number" min="0" step="1" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="0" @input="row.tide_margin_minutes = normalizeWholeMinutes(row.tide_margin_minutes)" /></td>
-                                        <td class="px-2 py-2">
-                                            <button type="button" class="btn-action-delete" title="Rij verwijderen" @click="removeVaarschemaRow(rowIdx)">
-                                                <TrashIcon class="h-5 w-5" />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <div>
-                            <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-700 text-white" title="Rij toevoegen" aria-label="Rij toevoegen" @click="addVaarschemaRow">
-                                <PlusIcon class="h-4 w-4" />
-                            </button>
-                        </div>
-                    </div>
+                    <CampPlaybookVaarschemaSection
+                        v-if="isVaarschemaSection(activeSection)"
+                        :vaarschema-rows="form.vaarschema_rows"
+                        :normalize-whole-minutes="normalizeWholeMinutes"
+                        @add-row="addVaarschemaRow"
+                        @remove-row="removeVaarschemaRow"
+                    />
 
                     <div v-if="isPlanningPerDagSection(activeSection)" class="space-y-3">
                         <div class="flex items-center">
