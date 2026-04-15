@@ -179,43 +179,85 @@
         .page-break {
             page-break-after: always;
         }
+        .page-break-before {
+            page-break-before: always;
+        }
         .cover-page {
-            min-height: 100%;
+            height: 100%;
             border: 1px solid #dbe5f2;
             border-radius: 14px;
             background: #f8fbff;
             overflow: hidden;
+            display: table;
+            width: 100%;
+        }
+        .cover-main {
+            display: table-cell;
+            vertical-align: middle;
+            padding: 18px 20px;
+        }
+        .cover-photo-wrap {
+            width: 100%;
+            height: 380px;
+            border: 1px solid #dbe5f2;
+            border-radius: 12px;
+            background: #ffffff;
+            display: table;
+            overflow: hidden;
+            margin-top: 14px;
+        }
+        .cover-photo-wrap > div {
+            display: table-cell;
+            vertical-align: middle;
+            text-align: center;
         }
         .cover-photo {
             width: 100%;
-            height: 420px;
-            object-fit: cover;
-            border-bottom: 1px solid #dbe5f2;
+            max-height: 380px;
+            object-fit: contain;
         }
         .cover-photo-fallback {
-            height: 420px;
-            border-bottom: 1px solid #dbe5f2;
             background: linear-gradient(130deg, #1d4ed8, #2563eb 45%, #0ea5e9);
             color: #ffffff;
             text-align: center;
-            padding-top: 170px;
+            width: 100%;
+            height: 380px;
+            line-height: 380px;
             font-size: 34px;
             font-weight: 700;
             letter-spacing: 1px;
         }
         .cover-meta {
-            padding: 18px 20px;
+            text-align: center;
         }
         .cover-title {
             margin: 0 0 6px;
             font-size: 30px;
             font-weight: 700;
             color: #0f172a;
+            text-align: center;
         }
         .cover-subtitle {
             margin: 0;
             font-size: 13px;
             color: #334155;
+            text-align: center;
+        }
+        .cover-header-card {
+            border: 1px solid #dbe5f2;
+            border-radius: 12px;
+            background: #ffffff;
+            padding: 10px 12px;
+            margin-top: 12px;
+            text-align: left;
+        }
+        .cover-header-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .cover-header-table td {
+            border: none;
+            vertical-align: top;
         }
         .toc-page {
             border: 1px solid #dbe5f2;
@@ -254,23 +296,51 @@
             ->all();
     @endphp
     <div class="cover-page">
-        @if(!empty($coverPhotoDataUri))
-            <img src="{{ $coverPhotoDataUri }}" alt="Cover foto kampdraaiboek" class="cover-photo">
-        @else
-            <div class="cover-photo-fallback">DRAAIBOEK</div>
-        @endif
-        <div class="cover-meta">
+        <div class="cover-main">
+            <div class="cover-meta">
             <p class="cover-title">{{ $playbook->title }}</p>
             <p class="cover-subtitle">Kampdraaiboek - Fridtjof Nansen Groep 12</p>
-            <div style="margin-top: 10px;">
-                <span class="pill">Jaar: {{ (int) $playbook->camp_year }}</span>
-                <span class="pill">Speltak: {{ ucfirst(str_replace('_', ' ', (string) $playbook->section)) }}</span>
-                <span class="pill">Kamptype: {{ (string) data_get($playbook->meta, 'camp_location', 'fram') === 'clubhuis' ? 'Clubhuis' : 'Fram' }}</span>
+
+            <div class="cover-header-card">
+                <table class="cover-header-table">
+                    <tr>
+                        <td style="width:76px;">
+                            @if(!empty($logoDataUri))
+                                <img src="{{ $logoDataUri }}" alt="Fridtjof Nansen Groep 12" class="logo">
+                            @else
+                                <div class="logo-fallback">FN12</div>
+                            @endif
+                        </td>
+                        <td>
+                            <div>
+                                <span class="pill">Jaar: {{ (int) $playbook->camp_year }}</span>
+                                <span class="pill">Speltak: {{ ucfirst(str_replace('_', ' ', (string) $playbook->section)) }}</span>
+                                <span class="pill">Kamptype: {{ (string) data_get($playbook->meta, 'camp_location', 'fram') === 'clubhuis' ? 'Clubhuis' : 'Fram' }}</span>
+                                @if(trim((string) data_get($playbook->meta, 'camp_place', '')) !== '')
+                                    <span class="pill">Plaats: {{ (string) data_get($playbook->meta, 'camp_place', '') }}</span>
+                                @endif
+                                @if(trim((string) data_get($playbook->meta, 'camp_dates', '')) !== '')
+                                    <span class="pill">Datum: {{ (string) data_get($playbook->meta, 'camp_dates', '') }}</span>
+                                @endif
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="cover-photo-wrap">
+                <div>
+                    @if(!empty($coverPhotoDataUri))
+                        <img src="{{ $coverPhotoDataUri }}" alt="Cover foto kampdraaiboek" class="cover-photo">
+                    @else
+                        <div class="cover-photo-fallback">DRAAIBOEK</div>
+                    @endif
+                </div>
             </div>
         </div>
+        </div>
     </div>
-    <div class="page-break"></div>
-    <div class="toc-page">
+    <div class="toc-page page-break-before">
         <p class="toc-title">Inhoud</p>
         @if($sectionTitles !== [])
             <ol class="toc-list">
@@ -282,36 +352,7 @@
             <p>Geen hoofdstukken gevonden.</p>
         @endif
     </div>
-    <div class="page-break"></div>
-    <div class="top-accent"></div>
-    <div class="header">
-        <table class="header-table">
-            <tr>
-                <td style="width:76px;">
-                    @if(!empty($logoDataUri))
-                        <img src="{{ $logoDataUri }}" alt="Fridtjof Nansen Groep 12" class="logo">
-                    @else
-                        <div class="logo-fallback">FN12</div>
-                    @endif
-                </td>
-                <td>
-                    <h1 class="title">{{ $playbook->title }}</h1>
-                    <p class="subtitle">Kampdraaiboek - Fridtjof Nansen Groep 12</p>
-                    <div>
-                        <span class="pill">Jaar: {{ (int) $playbook->camp_year }}</span>
-                        <span class="pill">Speltak: {{ ucfirst(str_replace('_', ' ', (string) $playbook->section)) }}</span>
-                        <span class="pill">Kamptype: {{ (string) data_get($playbook->meta, 'camp_location', 'fram') === 'clubhuis' ? 'Clubhuis' : 'Fram' }}</span>
-                        @if(trim((string) data_get($playbook->meta, 'camp_place', '')) !== '')
-                            <span class="pill">Plaats: {{ (string) data_get($playbook->meta, 'camp_place', '') }}</span>
-                        @endif
-                        @if(trim((string) data_get($playbook->meta, 'camp_dates', '')) !== '')
-                            <span class="pill">Datum: {{ (string) data_get($playbook->meta, 'camp_dates', '') }}</span>
-                        @endif
-                    </div>
-                </td>
-            </tr>
-        </table>
-    </div>
+    <div class="top-accent page-break-before"></div>
 
     @if(!empty($sections))
         @foreach($sections as $section)
@@ -373,9 +414,25 @@
                         if (!is_array($row)) {
                             return false;
                         }
-                        $hasVinNames = collect((array) ($row['fin_names'] ?? []))
-                            ->contains(fn ($name): bool => trim((string) $name) !== '');
-                        return trim((string) ($row['role'] ?? '')) !== '' || $hasVinNames;
+                        $vins = collect((array) ($row['vins'] ?? []))
+                            ->filter(fn ($vin): bool => is_array($vin))
+                            ->values();
+
+                        if ($vins->isEmpty()) {
+                            $vins = collect((array) ($row['fin_names'] ?? []))
+                                ->map(fn ($name): array => ['vin_name' => trim((string) $name), 'member_names' => []])
+                                ->values();
+                        }
+
+                        $hasVins = $vins->contains(function ($vin): bool {
+                            $vinName = trim((string) data_get($vin, 'vin_name', data_get($vin, 'name', '')));
+                            $hasMembers = collect((array) data_get($vin, 'member_names', data_get($vin, 'members', [])))
+                                ->contains(fn ($member): bool => trim((string) $member) !== '');
+
+                            return $vinName !== '' || $hasMembers;
+                        });
+
+                        return trim((string) ($row['role'] ?? '')) !== '' || $hasVins;
                     });
                 $hasMonsterrolContent = $isMonsterrol && collect((array) ($monsterrolRows ?? []))
                     ->flatten(1)
@@ -390,10 +447,23 @@
                             || trim((string) ($row['on_board'] ?? '')) !== ''
                             || trim((string) ($row['off_board'] ?? '')) !== '';
                     });
-                $hasEmergencyContent = $isHulpdiensten && collect((array) ($emergencyContacts ?? []))
-                    ->flatten(1)
-                    ->filter(fn ($value): bool => trim((string) $value) !== '')
-                    ->isNotEmpty();
+                $hasEmergencyContent = $isHulpdiensten && collect(['huisartsen', 'ziekenhuizen', 'tandartsen'])
+                    ->contains(function (string $category) use ($emergencyContacts): bool {
+                        $rows = data_get($emergencyContacts ?? [], $category, []);
+                        $rowsList = is_array($rows) && array_is_list($rows) ? $rows : [$rows];
+
+                        return collect($rowsList)
+                            ->filter(fn ($row): bool => is_array($row))
+                            ->contains(function (array $row): bool {
+                                return trim((string) ($row['name'] ?? '')) !== ''
+                                    || trim((string) ($row['address'] ?? '')) !== ''
+                                    || trim((string) ($row['postal_code'] ?? '')) !== ''
+                                    || trim((string) ($row['city'] ?? '')) !== ''
+                                    || trim((string) ($row['phone_010'] ?? '')) !== ''
+                                    || trim((string) ($row['website'] ?? '')) !== ''
+                                    || trim((string) ($row['extra_info'] ?? '')) !== '';
+                            });
+                    });
                 $hasVaarschemaContent = $isVaarschema && $isFramCamp && collect((array) ($vaarschemaRows ?? []))
                     ->contains(fn ($row): bool => trim((string) data_get($row, 'date', '')) !== '' || trim((string) data_get($row, 'from', '')) !== '' || trim((string) data_get($row, 'to', '')) !== '' || trim((string) data_get($row, 'depart_at', '')) !== '' || trim((string) data_get($row, 'arrive_at', '')) !== '' || trim((string) data_get($row, 'tide_margin_minutes', '')) !== '');
                 $hasPlanningContent = $isPlanning && collect((array) ($dayPlans ?? []))
@@ -573,26 +643,89 @@
                         </div>
                     @elseif($isVinindeling)
                         <div class="service-grid">
+                            @php
+                                $defaultVinHeaders = ['De Regisseurs', 'De Acteurs', 'De Cameraploeg'];
+                                $vinRows = collect((array) ($vinindelingRows ?? []))
+                                    ->filter(fn ($row): bool => is_array($row))
+                                    ->map(function (array $row): array {
+                                        $vins = collect((array) ($row['vins'] ?? []))
+                                            ->filter(fn ($vin): bool => is_array($vin))
+                                            ->map(function (array $vin): array {
+                                                $memberNames = collect((array) ($vin['member_names'] ?? $vin['members'] ?? []))
+                                                    ->map(fn ($name): string => trim((string) $name))
+                                                    ->filter(fn (string $name): bool => $name !== '')
+                                                    ->values()
+                                                    ->all();
+
+                                                return [
+                                                    'vin_name' => trim((string) ($vin['vin_name'] ?? $vin['name'] ?? '')),
+                                                    'member_names' => $memberNames,
+                                                ];
+                                            })
+                                            ->values()
+                                            ->all();
+
+                                        if ($vins === []) {
+                                            $vins = collect((array) ($row['fin_names'] ?? []))
+                                                ->map(fn ($name): array => ['vin_name' => trim((string) $name), 'member_names' => []])
+                                                ->values()
+                                                ->all();
+                                        }
+
+                                        return [
+                                            'role' => trim((string) ($row['role'] ?? '')),
+                                            'vins' => $vins,
+                                        ];
+                                    })
+                                    ->values();
+
+                                $vinHeaders = $vinRows
+                                    ->flatMap(fn (array $row): array => (array) ($row['vins'] ?? []))
+                                    ->map(fn (array $vin): string => trim((string) ($vin['vin_name'] ?? '')))
+                                    ->filter(fn (string $name): bool => $name !== '')
+                                    ->unique()
+                                    ->take(3)
+                                    ->values();
+
+                                if ($vinHeaders->count() < 3) {
+                                    $vinHeaders = $vinHeaders->concat(collect($defaultVinHeaders)->slice($vinHeaders->count(), 3 - $vinHeaders->count()))->values();
+                                }
+                            @endphp
                             <table class="planning-table">
                                 <thead>
                                     <tr>
                                         <th>Rol</th>
-                                        <th>Vinnamen</th>
+                                        @foreach($vinHeaders as $header)
+                                            <th>{{ $header }}</th>
+                                        @endforeach
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach((array) ($vinindelingRows ?? []) as $row)
+                                    @foreach($vinRows as $row)
                                         @php
-                                            $filledVinNames = collect((array) ($row['fin_names'] ?? []))
-                                                ->map(fn ($name): string => trim((string) $name))
-                                                ->filter(fn (string $name): bool => $name !== '')
-                                                ->values()
-                                                ->all();
+                                            $rowVins = collect((array) ($row['vins'] ?? []))->values();
+                                            $hasAnySelection = $vinHeaders->contains(function (string $header, int $index) use ($rowVins): bool {
+                                                $members = collect((array) data_get($rowVins->get($index), 'member_names', []))
+                                                    ->map(fn ($name): string => trim((string) $name))
+                                                    ->filter(fn (string $name): bool => $name !== '')
+                                                    ->values()
+                                                    ->all();
+                                                return $members !== [];
+                                            });
                                         @endphp
-                                        @if(trim((string) ($row['role'] ?? '')) !== '' || $filledVinNames !== [])
+                                        @if(trim((string) ($row['role'] ?? '')) !== '' || $hasAnySelection)
                                             <tr>
                                                 <td>{{ (string) ($row['role'] ?? '') }}</td>
-                                                <td>{{ $filledVinNames !== [] ? implode(', ', $filledVinNames) : '' }}</td>
+                                                @foreach($vinHeaders as $headerIndex => $header)
+                                                    @php
+                                                        $members = collect((array) data_get($rowVins->get($headerIndex), 'member_names', []))
+                                                            ->map(fn ($name): string => trim((string) $name))
+                                                            ->filter(fn (string $name): bool => $name !== '')
+                                                            ->values()
+                                                            ->all();
+                                                    @endphp
+                                                    <td>{{ $members !== [] ? implode(', ', $members) : '' }}</td>
+                                                @endforeach
                                             </tr>
                                         @endif
                                     @endforeach
@@ -667,17 +800,23 @@
                     @elseif($isHulpdiensten)
                         <div class="service-grid">
                             @foreach(['huisartsen' => 'Huisartsen', 'ziekenhuizen' => 'Ziekenhuizen', 'tandartsen' => 'Tandartsen'] as $key => $label)
-                                @php $entry = (array) data_get($emergencyContacts ?? [], $key, []); @endphp
-                                <div class="service-card">
-                                    <p class="service-title">{{ $label }}</p>
-                                    <p class="service-line"><strong>Naam:</strong> {{ (string) ($entry['name'] ?? '—') ?: '—' }}</p>
-                                    <p class="service-line"><strong>Adres:</strong> {{ (string) ($entry['address'] ?? '—') ?: '—' }}</p>
-                                    <p class="service-line"><strong>Postcode:</strong> {{ (string) ($entry['postal_code'] ?? '—') ?: '—' }}</p>
-                                    <p class="service-line"><strong>Plaats:</strong> {{ (string) ($entry['city'] ?? '—') ?: '—' }}</p>
-                                    <p class="service-line"><strong>010 nummer:</strong> {{ (string) ($entry['phone_010'] ?? '—') ?: '—' }}</p>
-                                    <p class="service-line"><strong>Site:</strong> {{ (string) ($entry['website'] ?? '—') ?: '—' }}</p>
-                                    <p class="service-line"><strong>Extra informatie:</strong> {{ (string) ($entry['extra_info'] ?? '—') ?: '—' }}</p>
-                                </div>
+                                @php
+                                    $entries = data_get($emergencyContacts ?? [], $key, []);
+                                    $entryRows = is_array($entries) && array_is_list($entries) ? $entries : [$entries];
+                                @endphp
+                                @foreach($entryRows as $entryIndex => $entry)
+                                    @php $entry = (array) $entry; @endphp
+                                    <div class="service-card">
+                                        <p class="service-title">{{ $label }}{{ count($entryRows) > 1 ? ' #'.($entryIndex + 1) : '' }}</p>
+                                        <p class="service-line"><strong>Naam:</strong> {{ (string) ($entry['name'] ?? '—') ?: '—' }}</p>
+                                        <p class="service-line"><strong>Adres:</strong> {{ (string) ($entry['address'] ?? '—') ?: '—' }}</p>
+                                        <p class="service-line"><strong>Postcode:</strong> {{ (string) ($entry['postal_code'] ?? '—') ?: '—' }}</p>
+                                        <p class="service-line"><strong>Plaats:</strong> {{ (string) ($entry['city'] ?? '—') ?: '—' }}</p>
+                                        <p class="service-line"><strong>010 nummer:</strong> {{ (string) ($entry['phone_010'] ?? '—') ?: '—' }}</p>
+                                        <p class="service-line"><strong>Site:</strong> {{ (string) ($entry['website'] ?? '—') ?: '—' }}</p>
+                                        <p class="service-line"><strong>Extra informatie:</strong> {{ (string) ($entry['extra_info'] ?? '—') ?: '—' }}</p>
+                                    </div>
+                                @endforeach
                             @endforeach
                         </div>
                     @elseif($isVaarschema)
@@ -689,7 +828,7 @@
                                         https://waterinfo.rws.nl/publiek/astronomische-getij/heinenoord.goidschalxoord/details
                                     </a>
                                 </p>
-                                <p style="margin-top:4px;">Note: We kunnen met 60 NAP net wel naar binnen in de Koedood. Voor de veiligheid 75 NAP aanhouden.</p>
+                                <p style="margin-top:4px;">We kunnen met 60 NAP net wel naar binnen in de Koedood. Voor de veiligheid 75 NAP aanhouden.</p>
                             </div>
                             <table class="planning-table">
                                 <thead>

@@ -721,7 +721,6 @@ class CampPlaybookController extends Controller
             ['title' => 'Algemene afspraken', 'content' => ''],
             ['title' => 'Speltak afspraken', 'content' => ''],
             ['title' => 'Planning per dag', 'content' => ''],
-            ['title' => 'Corveerooster', 'content' => ''],
         ];
 
         if ($activeSection === 'dolfijnen') {
@@ -729,6 +728,8 @@ class CampPlaybookController extends Controller
         } elseif ($activeSection === 'zeeverkenners') {
             $sections[] = ['title' => 'Bakindeling', 'content' => ''];
         }
+
+        $sections[] = ['title' => 'Corveerooster', 'content' => ''];
 
         $sections = [
             ...$sections,
@@ -1136,41 +1137,134 @@ class CampPlaybookController extends Controller
     }
 
     /**
-     * @return array<int,array{role:string,fin_names:array<int,string>}>
+     * @return array<int,array{role:string,vins:array<int,array{vin_name:string,member_names:array<int,string>}>}>
      */
     private function defaultVinindelingRows(): array
     {
-        return [[
-            'role' => '',
-            'fin_names' => [''],
-        ]];
+        $defaultHeaders = ['De Regisseurs', 'De Acteurs', 'De Cameraploeg'];
+        $defaultRoles = ['Topper', 'Tipper', 'Vinlid', 'Vinlid', 'Vinlid'];
+
+        return collect($defaultRoles)
+            ->map(fn (string $role): array => [
+                'role' => $role,
+                'vins' => collect($defaultHeaders)
+                    ->map(fn (string $header): array => [
+                        'vin_name' => $header,
+                        'member_names' => [],
+                    ])
+                    ->all(),
+            ])
+            ->all();
     }
 
     /**
      * @param  array<int,mixed>  $raw
-     * @return array<int,array{role:string,fin_names:array<int,string>}>
+     * @return array<int,array{role:string,vins:array<int,array{vin_name:string,member_names:array<int,string>}>}>
      */
     private function normalizeVinindelingRows(array $raw): array
     {
+        $defaultHeaders = ['De Regisseurs', 'De Acteurs', 'De Cameraploeg'];
+        $defaultRoles = ['Topper', 'Tipper', 'Vinlid', 'Vinlid', 'Vinlid'];
+
         $rows = collect($raw)
             ->filter(fn ($entry): bool => is_array($entry))
             ->map(function (array $entry): array {
-                $finNames = collect((array) ($entry['fin_names'] ?? []))
-                    ->map(fn ($name): string => trim((string) $name))
-                    ->filter(fn (string $name): bool => $name !== '')
+                $vins = collect((array) ($entry['vins'] ?? []))
+                    ->filter(fn ($vin): bool => is_array($vin))
+                    ->map(function (array $vin): array {
+                        $memberNames = collect((array) ($vin['member_names'] ?? $vin['members'] ?? []))
+                            ->map(fn ($name): string => trim((string) $name))
+                            ->filter(fn (string $name): bool => $name !== '')
+                            ->unique(fn (string $name): string => mb_strtolower($name))
+                            ->values()
+                            ->all();
+
+                        return [
+                            'vin_name' => trim((string) ($vin['vin_name'] ?? $vin['name'] ?? '')),
+                            'member_names' => $memberNames,
+                        ];
+                    })
+                    ->filter(fn (array $vin): bool => $vin['vin_name'] !== '' || $vin['member_names'] !== [])
                     ->values()
                     ->all();
 
+                if ($vins === []) {
+                    $legacyFinNames = collect((array) ($entry['fin_names'] ?? []))
+                        ->map(fn ($name): string => trim((string) $name))
+                        ->filter(fn (string $name): bool => $name !== '')
+                        ->map(fn (string $name): array => ['vin_name' => $name, 'member_names' => []])
+                        ->values()
+                        ->all();
+
+                    $vins = $legacyFinNames;
+                }
+
                 return [
                     'role' => trim((string) ($entry['role'] ?? '')),
-                    'fin_names' => $finNames !== [] ? $finNames : [''],
+                    'vins' => $vins,
                 ];
             })
-            ->filter(fn (array $row): bool => $row['role'] !== '' || collect($row['fin_names'])->filter(fn (string $name): bool => trim($name) !== '')->isNotEmpty())
             ->values()
             ->all();
 
-        return $rows !== [] ? $rows : $this->defaultVinindelingRows();
+        if ($rows === []) {
+            return $this->defaultVinindelingRows();
+        }
+
+        $headerCandidates = collect($rows)
+            ->flatMap(fn (array $row): array => (array) ($row['vins'] ?? []))
+            ->filter(fn ($vin): bool => is_array($vin))
+            ->map(fn (array $vin): string => trim((string) ($vin['vin_name'] ?? '')))
+            ->filter(fn (string $name): bool => $name !== '')
+            ->values()
+            ->all();
+
+        $headers = [];
+        foreach ($headerCandidates as $name) {
+            if (! in_array($name, $headers, true)) {
+                $headers[] = $name;
+            }
+            if (count($headers) >= count($defaultHeaders)) {
+                break;
+            }
+        }
+        while (count($headers) < count($defaultHeaders)) {
+            $headers[] = $defaultHeaders[count($headers)];
+        }
+
+        $normalizedRows = collect($rows)
+            ->map(function (array $row, int $index) use ($headers, $defaultRoles): array {
+                $rowVins = collect((array) ($row['vins'] ?? []))
+                    ->filter(fn ($vin): bool => is_array($vin))
+                    ->values();
+
+                $vins = collect($headers)->map(function (string $header, int $headerIndex) use ($rowVins): array {
+                    $sourceVin = (array) ($rowVins->get($headerIndex, []));
+                    $memberNames = collect((array) ($sourceVin['member_names'] ?? []))
+                        ->map(fn ($name): string => trim((string) $name))
+                        ->filter(fn (string $name): bool => $name !== '')
+                        ->unique(fn (string $name): string => mb_strtolower($name))
+                        ->values()
+                        ->all();
+
+                    return [
+                        'vin_name' => $header,
+                        'member_names' => $memberNames,
+                    ];
+                })->all();
+
+                $fallbackRole = $defaultRoles[$index] ?? 'Vinlid';
+                $role = trim((string) ($row['role'] ?? ''));
+
+                return [
+                    'role' => $role !== '' ? $role : $fallbackRole,
+                    'vins' => $vins,
+                ];
+            })
+            ->values()
+            ->all();
+
+        return $normalizedRows !== [] ? $normalizedRows : $this->defaultVinindelingRows();
     }
 
     /**
@@ -1331,9 +1425,9 @@ class CampPlaybookController extends Controller
 
     /**
      * @return array{
-     *   huisartsen:array{name:string,address:string,postal_code:string,city:string,phone_010:string,website:string,extra_info:string},
-     *   ziekenhuizen:array{name:string,address:string,postal_code:string,city:string,phone_010:string,website:string,extra_info:string},
-     *   tandartsen:array{name:string,address:string,postal_code:string,city:string,phone_010:string,website:string,extra_info:string}
+     *   huisartsen:array<int,array{name:string,address:string,postal_code:string,city:string,phone_010:string,website:string,extra_info:string}>,
+     *   ziekenhuizen:array<int,array{name:string,address:string,postal_code:string,city:string,phone_010:string,website:string,extra_info:string}>,
+     *   tandartsen:array<int,array{name:string,address:string,postal_code:string,city:string,phone_010:string,website:string,extra_info:string}>
      * }
      */
     private function defaultEmergencyContacts(): array
@@ -1349,26 +1443,25 @@ class CampPlaybookController extends Controller
         ];
 
         return [
-            'huisartsen' => $empty,
-            'ziekenhuizen' => $empty,
-            'tandartsen' => $empty,
+            'huisartsen' => [$empty],
+            'ziekenhuizen' => [$empty],
+            'tandartsen' => [$empty],
         ];
     }
 
     /**
      * @param  array<string,mixed>  $raw
      * @return array{
-     *   huisartsen:array{name:string,address:string,postal_code:string,city:string,phone_010:string,website:string,extra_info:string},
-     *   ziekenhuizen:array{name:string,address:string,postal_code:string,city:string,phone_010:string,website:string,extra_info:string},
-     *   tandartsen:array{name:string,address:string,postal_code:string,city:string,phone_010:string,website:string,extra_info:string}
+     *   huisartsen:array<int,array{name:string,address:string,postal_code:string,city:string,phone_010:string,website:string,extra_info:string}>,
+     *   ziekenhuizen:array<int,array{name:string,address:string,postal_code:string,city:string,phone_010:string,website:string,extra_info:string}>,
+     *   tandartsen:array<int,array{name:string,address:string,postal_code:string,city:string,phone_010:string,website:string,extra_info:string}>
      * }
      */
     private function normalizeEmergencyContacts(array $raw): array
     {
         $defaults = $this->defaultEmergencyContacts();
-        foreach (array_keys($defaults) as $category) {
-            $entry = is_array($raw[$category] ?? null) ? $raw[$category] : [];
-            $defaults[$category] = [
+        $normalizeEntry = function (array $entry): array {
+            return [
                 'name' => trim((string) ($entry['name'] ?? '')),
                 'address' => trim((string) ($entry['address'] ?? '')),
                 'postal_code' => trim((string) ($entry['postal_code'] ?? '')),
@@ -1377,6 +1470,29 @@ class CampPlaybookController extends Controller
                 'website' => trim((string) ($entry['website'] ?? '')),
                 'extra_info' => trim((string) ($entry['extra_info'] ?? '')),
             ];
+        };
+
+        foreach (array_keys($defaults) as $category) {
+            $rawCategory = $raw[$category] ?? [];
+            $rows = [];
+
+            if (is_array($rawCategory) && array_is_list($rawCategory)) {
+                $rows = collect($rawCategory)
+                    ->filter(fn ($entry): bool => is_array($entry))
+                    ->map(fn (array $entry): array => $normalizeEntry($entry))
+                    ->filter(fn (array $entry): bool => collect($entry)->contains(fn (string $value): bool => $value !== ''))
+                    ->values()
+                    ->all();
+            } elseif (is_array($rawCategory)) {
+                // Backward compatibility with old single object shape.
+                $single = $normalizeEntry($rawCategory);
+                $rows = collect([$single])
+                    ->filter(fn (array $entry): bool => collect($entry)->contains(fn (string $value): bool => $value !== ''))
+                    ->values()
+                    ->all();
+            }
+
+            $defaults[$category] = $rows !== [] ? $rows : $this->defaultEmergencyContacts()[$category];
         }
 
         return $defaults;

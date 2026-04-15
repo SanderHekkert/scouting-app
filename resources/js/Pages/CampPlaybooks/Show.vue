@@ -109,25 +109,42 @@ function isoDateEntriesBetween(startIso, endIso) {
     return entries;
 }
 const initialDateRange = parseCampDateRange(source.camp_dates || '');
+const emptyEmergencyContact = () => ({
+    name: '',
+    address: '',
+    postal_code: '',
+    city: '',
+    phone_010: '',
+    website: '',
+    extra_info: '',
+});
 const defaultEmergencyContacts = () => ({
-    huisartsen: { name: '', address: '', postal_code: '', city: '', phone_010: '', website: '', extra_info: '' },
-    ziekenhuizen: { name: '', address: '', postal_code: '', city: '', phone_010: '', website: '', extra_info: '' },
-    tandartsen: { name: '', address: '', postal_code: '', city: '', phone_010: '', website: '', extra_info: '' },
+    huisartsen: [emptyEmergencyContact()],
+    ziekenhuizen: [emptyEmergencyContact()],
+    tandartsen: [emptyEmergencyContact()],
 });
 function normalizeEmergencyContacts(raw) {
     const defaults = defaultEmergencyContacts();
     const value = raw && typeof raw === 'object' ? raw : {};
     for (const key of Object.keys(defaults)) {
-        const entry = value[key] && typeof value[key] === 'object' ? value[key] : {};
-        defaults[key] = {
-            name: String(entry.name ?? ''),
-            address: String(entry.address ?? ''),
-            postal_code: String(entry.postal_code ?? ''),
-            city: String(entry.city ?? ''),
-            phone_010: String(entry.phone_010 ?? ''),
-            website: String(entry.website ?? ''),
-            extra_info: String(entry.extra_info ?? ''),
-        };
+        const sourceRows = Array.isArray(value[key])
+            ? value[key]
+            : value[key] && typeof value[key] === 'object'
+                ? [value[key]]
+                : [];
+        const rows = sourceRows
+            .filter((entry) => entry && typeof entry === 'object')
+            .map((entry) => ({
+                name: String(entry.name ?? ''),
+                address: String(entry.address ?? ''),
+                postal_code: String(entry.postal_code ?? ''),
+                city: String(entry.city ?? ''),
+                phone_010: String(entry.phone_010 ?? ''),
+                website: String(entry.website ?? ''),
+                extra_info: String(entry.extra_info ?? ''),
+            }))
+            .filter((entry) => Object.values(entry).some((val) => String(val).trim() !== ''));
+        defaults[key] = rows.length ? rows : [emptyEmergencyContact()];
     }
     return defaults;
 }
@@ -281,17 +298,73 @@ function normalizeSpeltakHygieneRows(raw) {
     }));
 }
 function normalizeVinindelingRows(raw) {
+    const normalizeVinMemberNames = (value) => Array.from(
+        new Set(
+            (Array.isArray(value) ? value : String(value ?? '').split(','))
+                .map((name) => String(name ?? '').trim())
+                .filter((name) => name !== '')
+        )
+    );
+    const defaultHeaders = ['De Regisseurs', 'De Acteurs', 'De Cameraploeg'];
+    const defaultRoles = ['Topper', 'Tipper', 'Vinlid', 'Vinlid', 'Vinlid'];
+    const buildDefaultRows = () => defaultRoles.map((role) => ({
+        role,
+        vins: defaultHeaders.map((header) => ({ vin_name: header, member_names: [] })),
+    }));
+    const defaultRows = () => JSON.parse(JSON.stringify(props.defaultVinindelingRows?.length ? props.defaultVinindelingRows : buildDefaultRows()));
     const incoming = Array.isArray(raw) ? raw : [];
     if (!incoming.length) {
-        return JSON.parse(JSON.stringify(props.defaultVinindelingRows || [{ role: '', fin_names: [''] }]));
+        return defaultRows();
     }
 
-    return incoming.map((row) => ({
-        role: String(row?.role ?? ''),
-        fin_names: Array.isArray(row?.fin_names) && row.fin_names.length
-            ? row.fin_names.map((name) => String(name ?? ''))
-            : [''],
-    }));
+    const rows = incoming.map((row, rowIndex) => {
+        const vins = Array.isArray(row?.vins) && row.vins.length
+            ? row.vins.map((vin) => ({
+                vin_name: String(vin?.vin_name ?? vin?.name ?? ''),
+                member_names: normalizeVinMemberNames(vin?.member_names ?? vin?.members ?? []),
+            }))
+            : Array.isArray(row?.fin_names) && row.fin_names.length
+                ? row.fin_names.map((name) => ({ vin_name: String(name ?? ''), member_names: [] }))
+                : [];
+
+        return {
+            role: String(row?.role ?? defaultRoles[rowIndex] ?? 'Vinlid'),
+            vins,
+        };
+    });
+
+    const headerCandidates = rows
+        .flatMap((row) => (Array.isArray(row?.vins) ? row.vins : []))
+        .map((vin) => String(vin?.vin_name ?? '').trim())
+        .filter((name) => name !== '');
+
+    const headers = [];
+    for (const name of headerCandidates) {
+        if (!headers.includes(name)) {
+            headers.push(name);
+        }
+        if (headers.length >= defaultHeaders.length) break;
+    }
+    while (headers.length < defaultHeaders.length) {
+        headers.push(defaultHeaders[headers.length]);
+    }
+
+    const normalizedRows = rows.map((row, rowIndex) => {
+        const vins = headers.map((header, vinIndex) => {
+            const sourceVin = Array.isArray(row?.vins) ? row.vins[vinIndex] : null;
+            return {
+                vin_name: header,
+                member_names: normalizeVinMemberNames(sourceVin?.member_names ?? []),
+            };
+        });
+
+        return {
+            role: String(row?.role ?? defaultRoles[rowIndex] ?? 'Vinlid'),
+            vins,
+        };
+    });
+
+    return normalizedRows.length ? normalizedRows : defaultRows();
 }
 function normalizeCorveeRows(raw) {
     const incoming = Array.isArray(raw) ? raw : [];
@@ -461,6 +534,29 @@ const responsibleOptions = computed(() => {
         .filter((name) => name !== '');
     return ['n.v.t.', ...Array.from(new Set(crewNames))];
 });
+const vinMemberOptions = computed(() => {
+    const speltakNames = (form.monsterrol_rows?.speltak || [])
+        .map((row) => `${String(row?.first_name ?? '').trim()} ${String(row?.last_name ?? '').trim()}`.trim())
+        .filter((name) => name !== '');
+    return Array.from(new Set(speltakNames));
+});
+const vinHeaderValues = computed(() => {
+    const fallback = ['De Regisseurs', 'De Acteurs', 'De Cameraploeg'];
+    const firstRow = Array.isArray(form.vinindeling_rows) ? form.vinindeling_rows[0] : null;
+    const values = Array.isArray(firstRow?.vins)
+        ? firstRow.vins.map((vin) => String(vin?.vin_name ?? '').trim()).filter((name) => name !== '')
+        : [];
+    if (values.length >= fallback.length) {
+        return values.slice(0, fallback.length);
+    }
+    return [...values, ...fallback.slice(values.length)];
+});
+const corveeVinOptions = computed(() => {
+    const names = vinHeaderValues.value
+        .map((name) => String(name ?? '').trim())
+        .filter((name) => name !== '');
+    return ['n.v.t.', 'Leiding', ...Array.from(new Set(names))];
+});
 const VAARSCHEMA_SECTION_TITLE = 'Vaarschema';
 const HULPDIENSTEN_SECTION_TITLE = 'Hulpdiensten';
 
@@ -525,6 +621,12 @@ watch(
     })),
     () => syncCorveeDaywatchFromPlanning(),
     { deep: true }
+);
+
+watch(
+    () => (form.vinindeling_rows || []).length,
+    () => ensureVinMatrixColumns(),
+    { immediate: true }
 );
 
 watch(
@@ -1147,9 +1249,10 @@ function removeSpeltakHygieneRow(index) {
 }
 
 function addVinindelingRow() {
+    const headers = vinHeaderValues.value;
     form.vinindeling_rows.push({
-        role: '',
-        fin_names: [''],
+        role: 'Vinlid',
+        vins: headers.map((header) => ({ vin_name: header, member_names: [] })),
     });
 }
 
@@ -1158,19 +1261,96 @@ function removeVinindelingRow(index) {
     form.vinindeling_rows.splice(index, 1);
 }
 
-function addVinName(rowIndex) {
-    const row = form.vinindeling_rows?.[rowIndex];
-    if (!row) return;
-    if (!Array.isArray(row.fin_names)) {
-        row.fin_names = [];
-    }
-    row.fin_names.push('');
+function normalizeVinMembers(value) {
+    const source = Array.isArray(value) ? value : String(value ?? '').split(',');
+    return Array.from(
+        new Set(
+            source
+                .map((name) => String(name ?? '').trim())
+                .filter((name) => name !== '')
+        )
+    );
 }
 
-function removeVinName(rowIndex, vinIndex) {
-    const row = form.vinindeling_rows?.[rowIndex];
-    if (!row || !Array.isArray(row.fin_names) || row.fin_names.length <= 1) return;
-    row.fin_names.splice(vinIndex, 1);
+function ensureVinMatrixColumns() {
+    const headers = vinHeaderValues.value;
+    if (!Array.isArray(form.vinindeling_rows)) return;
+    form.vinindeling_rows.forEach((row) => {
+        if (!Array.isArray(row.vins)) {
+            row.vins = [];
+        }
+        row.vins = headers.map((header, index) => {
+            const existing = row.vins[index] || {};
+            return {
+                vin_name: header,
+                member_names: normalizeVinMembers(existing.member_names ?? []),
+            };
+        });
+    });
+}
+
+function updateVinHeader(vinIndex, value) {
+    const incoming = String(value ?? '').trim();
+    const fallback = ['De Regisseurs', 'De Acteurs', 'De Cameraploeg'];
+    const header = incoming || fallback[vinIndex] || `Vin ${vinIndex + 1}`;
+    if (!Array.isArray(form.vinindeling_rows)) return;
+    form.vinindeling_rows.forEach((row) => {
+        if (!Array.isArray(row.vins)) {
+            row.vins = [];
+        }
+        while (row.vins.length <= vinIndex) {
+            row.vins.push({ vin_name: '', member_names: [] });
+        }
+        row.vins[vinIndex].vin_name = header;
+    });
+}
+
+function vinCellSelection(row, vinIndex) {
+    const members = normalizeVinMembers(row?.vins?.[vinIndex]?.member_names ?? []);
+    return members[0] || '';
+}
+
+function selectedVinMembers(excludeRowIdx = null, excludeVinIdx = null) {
+    const selected = new Set();
+    if (!Array.isArray(form.vinindeling_rows)) {
+        return selected;
+    }
+
+    form.vinindeling_rows.forEach((row, rowIdx) => {
+        const vins = Array.isArray(row?.vins) ? row.vins : [];
+        vins.forEach((vin, vinIdx) => {
+            if (excludeRowIdx === rowIdx && excludeVinIdx === vinIdx) {
+                return;
+            }
+            const value = normalizeVinMembers(vin?.member_names ?? [])[0] || '';
+            if (!value || value === 'n.v.t.') {
+                return;
+            }
+            selected.add(value);
+        });
+    });
+
+    return selected;
+}
+
+function availableVinCellOptions(rowIdx, vinIdx) {
+    const taken = selectedVinMembers(rowIdx, vinIdx);
+    const currentRow = form.vinindeling_rows?.[rowIdx];
+    const currentValue = vinCellSelection(currentRow, vinIdx);
+
+    return vinMemberOptions.value.filter((name) => name === currentValue || !taken.has(name));
+}
+
+function setVinCellSelection(row, vinIndex, value) {
+    const selected = String(value ?? '').trim();
+    if (!Array.isArray(row?.vins)) {
+        row.vins = [];
+    }
+    while (row.vins.length <= vinIndex) {
+        row.vins.push({ vin_name: vinHeaderValues.value[vinIndex] || `Vin ${vinIndex + 1}`, member_names: [] });
+    }
+    row.vins[vinIndex].vin_name = vinHeaderValues.value[vinIndex] || row.vins[vinIndex].vin_name || `Vin ${vinIndex + 1}`;
+    row.vins[vinIndex].member_names = selected ? [selected] : [];
 }
 
 function addCorveeRow() {
@@ -1188,6 +1368,20 @@ function addCorveeRow() {
 function removeCorveeRow(index) {
     if (!Array.isArray(form.corvee_rows) || form.corvee_rows.length <= 1) return;
     form.corvee_rows.splice(index, 1);
+}
+
+function addEmergencyContactRow(category) {
+    if (!['huisartsen', 'ziekenhuizen', 'tandartsen'].includes(String(category))) return;
+    if (!Array.isArray(form.emergency_contacts?.[category])) {
+        form.emergency_contacts[category] = [];
+    }
+    form.emergency_contacts[category].push(emptyEmergencyContact());
+}
+
+function removeEmergencyContactRow(category, index) {
+    if (!['huisartsen', 'ziekenhuizen', 'tandartsen'].includes(String(category))) return;
+    if (!Array.isArray(form.emergency_contacts?.[category]) || form.emergency_contacts[category].length <= 1) return;
+    form.emergency_contacts[category].splice(index, 1);
 }
 
 function openDeleteModal() {
@@ -1663,10 +1857,30 @@ function statusClass(status) {
                                         <td class="px-2 py-2"><input v-model="row.day" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Dag" /></td>
                                         <td class="px-2 py-2"><input v-model="row.date" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Datum" /></td>
                                         <td class="px-2 py-2"><input v-model="row.daywatch" type="text" readonly class="w-full rounded border border-app-border bg-slate-100 px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-slate-800 dark:text-app-ink-dark" placeholder="Dagwacht" /></td>
-                                        <td class="px-2 py-2"><input v-model="row.dienstvin" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Dienstvin" /></td>
-                                        <td class="px-2 py-2"><input v-model="row.dekhuis" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Dekhuis" /></td>
-                                        <td class="px-2 py-2"><input v-model="row.achteronder_en_dekken" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Achteronder &amp; Dekken" /></td>
-                                        <td class="px-2 py-2"><input v-model="row.wc_en_klusjes" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="WC &amp; klusjes" /></td>
+                                        <td class="px-2 py-2">
+                                            <select v-model="row.dienstvin" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark">
+                                                <option value="">Kies vin / n.v.t.</option>
+                                                <option v-for="option in corveeVinOptions" :key="`corvee-dienstvin-option-${option}`" :value="option">{{ option }}</option>
+                                            </select>
+                                        </td>
+                                        <td class="px-2 py-2">
+                                            <select v-model="row.dekhuis" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark">
+                                                <option value="">Kies vin / n.v.t.</option>
+                                                <option v-for="option in corveeVinOptions" :key="`corvee-dekhuis-option-${option}`" :value="option">{{ option }}</option>
+                                            </select>
+                                        </td>
+                                        <td class="px-2 py-2">
+                                            <select v-model="row.achteronder_en_dekken" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark">
+                                                <option value="">Kies vin / n.v.t.</option>
+                                                <option v-for="option in corveeVinOptions" :key="`corvee-achteronder-option-${option}`" :value="option">{{ option }}</option>
+                                            </select>
+                                        </td>
+                                        <td class="px-2 py-2">
+                                            <select v-model="row.wc_en_klusjes" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark">
+                                                <option value="">Kies vin / n.v.t.</option>
+                                                <option v-for="option in corveeVinOptions" :key="`corvee-wc-option-${option}`" :value="option">{{ option }}</option>
+                                            </select>
+                                        </td>
                                         <td class="px-2 py-2">
                                             <button type="button" class="btn-action-delete" title="Rij verwijderen" @click="removeCorveeRow(rowIdx)">
                                                 <TrashIcon class="h-5 w-5" />
@@ -1685,11 +1899,18 @@ function statusClass(status) {
 
                     <div v-if="isVinindelingSection(activeSection)" class="space-y-3">
                         <div class="overflow-x-auto rounded border border-app-border dark:border-app-border-dark">
-                            <table class="w-full min-w-[860px] text-sm">
+                            <table class="w-full min-w-[960px] text-sm">
                                 <thead class="bg-slate-50 dark:bg-slate-800/70">
                                     <tr>
                                         <th class="px-2 py-2 text-left">Rol</th>
-                                        <th class="px-2 py-2 text-left">Vinnamen</th>
+                                        <th v-for="(header, vinIdx) in vinHeaderValues" :key="`vinindeling-header-${vinIdx}`" class="px-2 py-2 text-left">
+                                            <input
+                                                :value="header"
+                                                type="text"
+                                                class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm font-semibold text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
+                                                @input="updateVinHeader(vinIdx, $event.target.value)"
+                                            />
+                                        </th>
                                         <th class="px-2 py-2 text-left">Actie</th>
                                     </tr>
                                 </thead>
@@ -1703,27 +1924,18 @@ function statusClass(status) {
                                                 placeholder="Rol"
                                             />
                                         </td>
-                                        <td class="px-2 py-2">
-                                            <div class="space-y-2">
-                                                <div
-                                                    v-for="(vinName, vinIdx) in row.fin_names"
-                                                    :key="`vinindeling-vin-${rowIdx}-${vinIdx}`"
-                                                    class="flex items-center gap-2"
-                                                >
-                                                    <input
-                                                        v-model="row.fin_names[vinIdx]"
-                                                        type="text"
-                                                        class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                                                        placeholder="Vinnaam"
-                                                    />
-                                                    <button type="button" class="btn-action-delete" title="Vinnaam verwijderen" @click="removeVinName(rowIdx, vinIdx)">
-                                                        <TrashIcon class="h-5 w-5" />
-                                                    </button>
-                                                </div>
-                                                <button type="button" class="rounded bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800" @click="addVinName(rowIdx)">
-                                                    Vinnaam toevoegen
-                                                </button>
-                                            </div>
+                                        <td v-for="(header, vinIdx) in vinHeaderValues" :key="`vinindeling-cell-${rowIdx}-${vinIdx}`" class="px-2 py-2">
+                                            <select
+                                                :value="vinCellSelection(row, vinIdx)"
+                                                class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
+                                                @change="setVinCellSelection(row, vinIdx, $event.target.value)"
+                                            >
+                                                <option value="">Lid kiezen uit {{ speltakLabel }}</option>
+                                                <option value="n.v.t.">n.v.t.</option>
+                                                <option v-for="option in availableVinCellOptions(rowIdx, vinIdx)" :key="`vin-member-option-${rowIdx}-${vinIdx}-${option}`" :value="option">
+                                                    {{ option }}
+                                                </option>
+                                            </select>
                                         </td>
                                         <td class="px-2 py-2 align-top">
                                             <button type="button" class="btn-action-delete" title="Rij verwijderen" @click="removeVinindelingRow(rowIdx)">
@@ -1863,7 +2075,7 @@ function statusClass(status) {
                                             @drop="dropPlanningRow(dayIdx, rowIdx, $event)"
                                             @dragend="endPlanningRowDrag"
                                         >
-                                            <td class="px-2 py-2"><input v-model="row.time" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="08:00 - 09:00" /></td>
+                                            <td class="px-2 py-2"><input v-model="row.time" type="time" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" /></td>
                                             <td class="px-2 py-2"><input v-model="row.program" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Programma" /></td>
                                             <td class="px-2 py-2"><input v-model="row.game" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Spel" /></td>
                                             <td class="px-2 py-2"><input v-model="row.needs" type="text" class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Benodigdheden" /></td>
@@ -1902,14 +2114,32 @@ function statusClass(status) {
                             class="rounded-lg border border-app-border bg-white p-3 dark:border-app-border-dark dark:bg-slate-900"
                         >
                             <h4 class="mb-2 text-sm font-semibold text-app-ink dark:text-app-ink-dark">{{ label }}</h4>
-                            <div class="grid gap-2 sm:grid-cols-2">
-                                <input v-model="form.emergency_contacts[key].name" type="text" class="rounded border border-app-border bg-white px-3 py-2 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Naam" />
-                                <input v-model="form.emergency_contacts[key].address" type="text" class="rounded border border-app-border bg-white px-3 py-2 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Adres" />
-                                <input v-model="form.emergency_contacts[key].postal_code" type="text" class="rounded border border-app-border bg-white px-3 py-2 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Postcode" />
-                                <input v-model="form.emergency_contacts[key].city" type="text" class="rounded border border-app-border bg-white px-3 py-2 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Plaats" />
-                                <input v-model="form.emergency_contacts[key].phone_010" type="text" class="rounded border border-app-border bg-white px-3 py-2 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="010 nummer" />
-                                <input v-model="form.emergency_contacts[key].website" type="text" class="rounded border border-app-border bg-white px-3 py-2 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Site" />
-                                <textarea v-model="form.emergency_contacts[key].extra_info" rows="3" class="rounded border border-app-border bg-white px-3 py-2 text-sm text-black sm:col-span-2 dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Extra informatie" />
+                            <div class="space-y-2">
+                                <div
+                                    v-for="(entry, entryIdx) in form.emergency_contacts[key]"
+                                    :key="`emergency-${key}-${entryIdx}`"
+                                    class="rounded border border-app-border/80 p-2 dark:border-app-border-dark/80"
+                                >
+                                    <div class="mb-2 flex justify-end">
+                                        <button type="button" class="btn-action-delete" title="Rij verwijderen" @click="removeEmergencyContactRow(key, entryIdx)">
+                                            <TrashIcon class="h-5 w-5" />
+                                        </button>
+                                    </div>
+                                    <div class="grid gap-2 sm:grid-cols-2">
+                                        <input v-model="entry.name" type="text" class="rounded border border-app-border bg-white px-3 py-2 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Naam" />
+                                        <input v-model="entry.address" type="text" class="rounded border border-app-border bg-white px-3 py-2 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Adres" />
+                                        <input v-model="entry.postal_code" type="text" class="rounded border border-app-border bg-white px-3 py-2 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Postcode" />
+                                        <input v-model="entry.city" type="text" class="rounded border border-app-border bg-white px-3 py-2 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Plaats" />
+                                        <input v-model="entry.phone_010" type="text" class="rounded border border-app-border bg-white px-3 py-2 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="010 nummer" />
+                                        <input v-model="entry.website" type="text" class="rounded border border-app-border bg-white px-3 py-2 text-sm text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Site" />
+                                        <textarea v-model="entry.extra_info" rows="3" class="rounded border border-app-border bg-white px-3 py-2 text-sm text-black sm:col-span-2 dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" placeholder="Extra informatie" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-700 text-white" title="Rij toevoegen" aria-label="Rij toevoegen" @click="addEmergencyContactRow(key)">
+                                    <PlusIcon class="h-4 w-4" />
+                                </button>
                             </div>
                         </div>
                     </div>
