@@ -417,30 +417,28 @@ class EventController extends Controller
             return back()->withErrors(['attendance' => 'Kon je naam niet bepalen.']);
         }
 
-        $existing = collect(explode(',', (string) ($event->absent ?? '')))
-            ->map(fn (string $item): string => trim($item))
-            ->filter(fn (string $item): bool => $item !== '')
+        $existing = collect($this->splitAbsentNames((string) ($event->absent ?? '')))
             ->values();
         $present = collect($event->present_names ?? [])
             ->map(fn ($item): string => trim((string) $item))
             ->filter(fn (string $item): bool => $item !== '')
             ->values();
 
-        $normalizedSelf = Str::lower($name);
+        $selfLookup = $this->absentLookup($name);
         $defaultAbsent = in_array($section, $this->defaultAbsentSections(), true);
 
-        $filtered = $existing->reject(function (string $item) use ($normalizedSelf): bool {
-            return Str::lower($item) === $normalizedSelf;
-        })->values();
-        $presentFiltered = $present->reject(function (string $item) use ($normalizedSelf): bool {
-            return Str::lower($item) === $normalizedSelf;
-        })->values();
+        $filtered = $existing->reject(
+            fn (string $item): bool => $this->nameMatchesLookup($item, $selfLookup)
+        )->values();
+        $presentFiltered = $present->reject(
+            fn (string $item): bool => $this->nameMatchesLookup($item, $selfLookup)
+        )->values();
 
         if ($data['present']) {
             $presentFiltered->push($name);
-            $filtered = $filtered->reject(function (string $item) use ($normalizedSelf): bool {
-                return Str::lower($item) === $normalizedSelf;
-            })->values();
+            $filtered = $filtered->reject(
+                fn (string $item): bool => $this->nameMatchesLookup($item, $selfLookup)
+            )->values();
         } else {
             if ($defaultAbsent) {
                 // In default-afwezig secties is "afwezig" de standaard.
@@ -701,15 +699,14 @@ class EventController extends Controller
         }
 
         $members = $sectionMembers[$section] ?? [];
-        $absentLookup = collect($this->splitAbsentNames((string) ($event->absent ?? '')))
-            ->mapWithKeys(fn (string $name): array => [Str::lower($name) => true]);
+        $absentLookup = $this->absentLookup((string) ($event->absent ?? ''));
         $explicitPresent = collect($explicitPresent)
-            ->reject(fn (string $name): bool => $absentLookup->has(Str::lower($name)))
+            ->reject(fn (string $name): bool => $this->nameMatchesLookup($name, $absentLookup))
             ->values()
             ->all();
 
         $defaultPresent = collect($members)
-            ->reject(fn (string $name): bool => $absentLookup->has(Str::lower($name)))
+            ->reject(fn (string $name): bool => $this->nameMatchesLookup($name, $absentLookup))
             ->values()
             ->all();
 
@@ -764,18 +761,65 @@ class EventController extends Controller
     }
 
     /**
+     * @return array<string, true>
+     */
+    private function absentLookup(string $absent): array
+    {
+        $lookup = [];
+        foreach ($this->splitAbsentNames($absent) as $name) {
+            foreach ($this->nameKeys($name) as $key) {
+                $lookup[$key] = true;
+            }
+        }
+
+        return $lookup;
+    }
+
+    /**
+     * @param  array<string, true>  $lookup
+     */
+    private function nameMatchesLookup(string $name, array $lookup): bool
+    {
+        foreach ($this->nameKeys($name) as $key) {
+            if (isset($lookup[$key])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function nameKeys(string $name): array
+    {
+        $trimmed = trim($name);
+        if ($trimmed === '') {
+            return [];
+        }
+
+        $keys = [Str::lower($trimmed)];
+        $first = Str::lower((string) Str::of($trimmed)->before(' '));
+        if ($first !== '' && ! in_array($first, $keys, true)) {
+            $keys[] = $first;
+        }
+
+        return $keys;
+    }
+
+    /**
      * @param  list<string>  $presentNames
      * @return list<string>
      */
     private function filterPresentAgainstAbsent(array $presentNames, string $absent): array
     {
-        $absentLookup = collect($this->splitAbsentNames($absent))
-            ->mapWithKeys(fn (string $name): array => [Str::lower($name) => true]);
+        $absentLookup = $this->absentLookup($absent);
 
         return $this->uniqueNames(
             collect($presentNames)
                 ->map(fn ($name): string => trim((string) $name))
-                ->reject(fn (string $name): bool => $name === '' || $absentLookup->has(Str::lower($name)))
+                ->reject(fn (string $name): bool => $name === '' || $this->nameMatchesLookup($name, $absentLookup))
                 ->values()
                 ->all()
         );
