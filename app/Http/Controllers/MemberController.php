@@ -40,8 +40,8 @@ class MemberController extends Controller
             'members' => Member::query()
                 ->orderByRaw('CASE WHEN age IS NULL THEN 1 ELSE 0 END')
                 ->orderByDesc('age')
-                ->orderBy('first_name')
-                ->orderBy('last_name')
+                ->orderBy('first_name', 'asc')
+                ->orderBy('last_name', 'asc')
                 ->get()
                 ->map(function (Member $member) {
                     if ($member->age === null && ! empty($member->birthday)) {

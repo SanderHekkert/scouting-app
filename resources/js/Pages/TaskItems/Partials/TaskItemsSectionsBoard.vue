@@ -40,7 +40,15 @@ const props = defineProps({
     toggleTaskEdit: { type: Function, required: true },
     deleteTask: { type: Function, required: true },
     formatCompletedAt: { type: Function, required: true },
+    formatDeadlineLabel: { type: Function, required: true },
     toggleTaskCompleted: { type: Function, required: true },
+    toggleDeadlineCompleted: { type: Function, required: true },
+    taskHasDeadlines: { type: Function, required: true },
+    isTaskFullyCompleted: { type: Function, required: true },
+    isDeadlineCompleted: { type: Function, required: true },
+    deadlineCompletedAt: { type: Function, required: true },
+    deadlineCompletedByName: { type: Function, required: true },
+    isDeadlineSaving: { type: Function, required: true },
 });
 </script>
 
@@ -73,7 +81,7 @@ const props = defineProps({
                         v-for="task in section.tasks"
                         :key="`task-mob-${task.id}`"
                         class="surface-brand-top rounded-xl border border-brand-blue/30 bg-app-panel px-4 py-3 text-app-ink shadow-sm dark:bg-app-panel-dark/95 dark:text-app-ink-dark"
-                        :class="{ 'opacity-70': task.completed_at }"
+                        :class="{ 'opacity-70': props.isTaskFullyCompleted(task) }"
                         :draggable="props.canEditTask(task)"
                         @dragstart="props.onTaskDragStart(task)"
                         @dragend="props.onTaskDragEnd"
@@ -84,7 +92,7 @@ const props = defineProps({
                                 Sleep naar ander kopje
                             </div>
                             <label
-                                v-if="props.canCompleteTask(task)"
+                                v-if="props.canCompleteTask(task) && !props.taskHasDeadlines(task)"
                                 class="inline-flex shrink-0 items-center gap-2 text-sm"
                             >
                                 <input
@@ -97,7 +105,7 @@ const props = defineProps({
                                 <span class="text-xs text-app-muted dark:text-app-muted-dark">Klaar</span>
                             </label>
                             <span
-                                v-else-if="task.completed_at"
+                                v-else-if="!props.taskHasDeadlines(task) && task.completed_at"
                                 class="shrink-0 text-xs text-app-muted dark:text-app-muted-dark"
                             >
                                 Klaar
@@ -116,12 +124,12 @@ const props = defineProps({
                         <p
                             v-else
                             class="mt-1 text-sm text-app-ink dark:text-app-ink-dark"
-                            :class="{ 'line-through text-app-muted dark:text-app-muted-dark': task.completed_at }"
+                            :class="{ 'line-through text-app-muted dark:text-app-muted-dark': props.isTaskFullyCompleted(task) }"
                         >
                             {{ task.title || '—' }}
                         </p>
                         <p
-                            v-if="task.completed_at"
+                            v-if="!props.taskHasDeadlines(task) && task.completed_at"
                             class="mt-1 text-xs text-app-muted dark:text-app-muted-dark"
                         >
                             Afgevinkt op {{ props.formatCompletedAt(task.completed_at) }}
@@ -173,17 +181,48 @@ const props = defineProps({
                         <p v-else class="mt-1 whitespace-pre-wrap text-sm text-app-ink dark:text-app-ink-dark">{{ task.description || '—' }}</p>
 
                         <p class="mt-2 text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Deadlines</p>
-                        <div class="mt-1 flex flex-wrap gap-1.5">
-                            <span
+                        <div class="mt-1 space-y-1.5">
+                            <div
                                 v-for="d in props.deadlinesForTask(task)"
                                 :key="`mob-deadline-chip-${task.id}-${d}`"
-                                class="inline-flex items-center gap-1 rounded-full bg-brand-blue/15 px-2 py-0.5 text-xs"
+                                class="flex flex-wrap items-center gap-2 rounded-lg border border-brand-blue/20 bg-brand-blue/5 px-2 py-1.5 text-xs dark:border-brand-blue/30 dark:bg-brand-blue/10"
+                                :class="{ 'opacity-70': props.isDeadlineCompleted(task, d) }"
                             >
-                                {{ d }}
-                                <button type="button" class="rounded p-0.5 hover:bg-brand-blue/25" :disabled="!props.isTaskEditing(task) || props.isTaskRowSaving(task)" @click="props.removeTaskDeadline(task, d)">
+                                <input
+                                    v-if="props.canCompleteTask(task)"
+                                    type="checkbox"
+                                    class="h-4 w-4 shrink-0 rounded border-app-border text-brand-blue focus:ring-brand-blue dark:border-app-border-dark"
+                                    :checked="props.isDeadlineCompleted(task, d)"
+                                    :disabled="props.isDeadlineSaving(task, d) || props.isTaskEditing(task)"
+                                    @change="props.toggleDeadlineCompleted(task, d)"
+                                />
+                                <div class="min-w-0 flex-1">
+                                    <span :class="{ 'line-through text-app-muted dark:text-app-muted-dark': props.isDeadlineCompleted(task, d) }">
+                                        {{ props.formatDeadlineLabel(d) }}
+                                    </span>
+                                    <p
+                                        v-if="props.isDeadlineCompleted(task, d)"
+                                        class="text-[11px] text-app-muted dark:text-app-muted-dark"
+                                    >
+                                        <template v-if="props.deadlineCompletedByName(task, d)">
+                                            Afgevinkt door {{ props.deadlineCompletedByName(task, d) }}
+                                            op {{ props.formatCompletedAt(props.deadlineCompletedAt(task, d)) }}
+                                        </template>
+                                        <template v-else>
+                                            Afgevinkt op {{ props.formatCompletedAt(props.deadlineCompletedAt(task, d)) }}
+                                        </template>
+                                    </p>
+                                </div>
+                                <button
+                                    v-if="props.isTaskEditing(task)"
+                                    type="button"
+                                    class="rounded p-0.5 hover:bg-brand-blue/25"
+                                    :disabled="props.isTaskRowSaving(task)"
+                                    @click="props.removeTaskDeadline(task, d)"
+                                >
                                     <XMarkIcon class="h-3.5 w-3.5" />
                                 </button>
-                            </span>
+                            </div>
                         </div>
                         <input
                             v-if="props.isTaskEditing(task)"
@@ -300,7 +339,7 @@ const props = defineProps({
                                 v-for="task in section.tasks"
                                 :key="task.id"
                                 class="bg-brand-blue/5 transition-colors hover:bg-brand-blue/12 dark:bg-app-panel-dark/50 dark:hover:bg-brand-blue/15"
-                                :class="{ 'opacity-70': task.completed_at }"
+                                :class="{ 'opacity-70': props.isTaskFullyCompleted(task) }"
                                 :draggable="props.canEditTask(task)"
                                 @dragstart="props.onTaskDragStart(task)"
                                 @dragend="props.onTaskDragEnd"
@@ -308,7 +347,7 @@ const props = defineProps({
                                 <td class="px-3 py-2.5 align-middle">
                                     <div class="flex items-center gap-2">
                                         <input
-                                            v-if="props.canCompleteTask(task)"
+                                            v-if="props.canCompleteTask(task) && !props.taskHasDeadlines(task)"
                                             type="checkbox"
                                             class="h-4 w-4 rounded border-app-border text-brand-blue focus:ring-brand-blue dark:border-app-border-dark"
                                             :checked="!!task.completed_at"
@@ -316,9 +355,16 @@ const props = defineProps({
                                             @change="props.toggleTaskCompleted(task)"
                                         />
                                         <span
-                                            v-else-if="task.completed_at"
+                                            v-else-if="!props.taskHasDeadlines(task) && task.completed_at"
                                             class="inline-flex h-4 w-4 items-center justify-center rounded border border-brand-blue/40 bg-brand-blue/15 text-[10px] font-bold text-brand-blue"
                                             title="Afgevinkt"
+                                        >
+                                            ✓
+                                        </span>
+                                        <span
+                                            v-else-if="props.taskHasDeadlines(task) && props.isTaskFullyCompleted(task)"
+                                            class="text-xs font-medium text-brand-green dark:text-brand-green"
+                                            title="Alle deadlines afgevinkt"
                                         >
                                             ✓
                                         </span>
@@ -339,12 +385,12 @@ const props = defineProps({
                                     />
                                     <div v-else>
                                         <span
-                                            :class="{ 'line-through text-app-muted dark:text-app-muted-dark': task.completed_at }"
+                                            :class="{ 'line-through text-app-muted dark:text-app-muted-dark': props.isTaskFullyCompleted(task) }"
                                         >
                                             {{ task.title || '—' }}
                                         </span>
                                         <p
-                                            v-if="task.completed_at"
+                                            v-if="!props.taskHasDeadlines(task) && task.completed_at"
                                             class="mt-0.5 text-xs text-app-muted dark:text-app-muted-dark"
                                         >
                                             Afgevinkt op {{ props.formatCompletedAt(task.completed_at) }}
@@ -400,17 +446,48 @@ const props = defineProps({
                                 </td>
                                 <td class="px-3 py-2.5 align-middle">
                                     <label class="sr-only" :for="`task-deadline-${task.id}`">Deadlines</label>
-                                    <div class="flex flex-wrap gap-1.5">
-                                        <span
+                                    <div class="space-y-1.5">
+                                        <div
                                             v-for="d in props.deadlinesForTask(task)"
                                             :key="`desk-deadline-chip-${task.id}-${d}`"
-                                            class="inline-flex items-center gap-1 rounded-full bg-brand-blue/15 px-2 py-0.5 text-xs"
+                                            class="flex items-start gap-2 rounded-md border border-brand-blue/20 bg-brand-blue/5 px-2 py-1 text-xs dark:border-brand-blue/30 dark:bg-brand-blue/10"
+                                            :class="{ 'opacity-70': props.isDeadlineCompleted(task, d) }"
                                         >
-                                            {{ d }}
-                                            <button type="button" class="rounded p-0.5 hover:bg-brand-blue/25" :disabled="!props.isTaskEditing(task) || props.isTaskRowSaving(task)" @click="props.removeTaskDeadline(task, d)">
+                                            <input
+                                                v-if="props.canCompleteTask(task)"
+                                                type="checkbox"
+                                                class="mt-0.5 h-4 w-4 shrink-0 rounded border-app-border text-brand-blue focus:ring-brand-blue dark:border-app-border-dark"
+                                                :checked="props.isDeadlineCompleted(task, d)"
+                                                :disabled="props.isDeadlineSaving(task, d) || props.isTaskEditing(task)"
+                                                @change="props.toggleDeadlineCompleted(task, d)"
+                                            />
+                                            <div class="min-w-0 flex-1">
+                                                <span :class="{ 'line-through text-app-muted dark:text-app-muted-dark': props.isDeadlineCompleted(task, d) }">
+                                                    {{ props.formatDeadlineLabel(d) }}
+                                                </span>
+                                                <p
+                                                    v-if="props.isDeadlineCompleted(task, d)"
+                                                    class="text-[11px] leading-tight text-app-muted dark:text-app-muted-dark"
+                                                >
+                                                    <template v-if="props.deadlineCompletedByName(task, d)">
+                                                        Afgevinkt door {{ props.deadlineCompletedByName(task, d) }}
+                                                        op {{ props.formatCompletedAt(props.deadlineCompletedAt(task, d)) }}
+                                                    </template>
+                                                    <template v-else>
+                                                        Afgevinkt op {{ props.formatCompletedAt(props.deadlineCompletedAt(task, d)) }}
+                                                    </template>
+                                                </p>
+                                            </div>
+                                            <button
+                                                v-if="props.isTaskEditing(task)"
+                                                type="button"
+                                                class="rounded p-0.5 hover:bg-brand-blue/25"
+                                                :disabled="props.isTaskRowSaving(task)"
+                                                @click="props.removeTaskDeadline(task, d)"
+                                            >
                                                 <XMarkIcon class="h-3.5 w-3.5" />
                                             </button>
-                                        </span>
+                                        </div>
                                     </div>
                                     <input
                                         v-if="props.isTaskEditing(task)"

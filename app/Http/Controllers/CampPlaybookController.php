@@ -1140,13 +1140,13 @@ class CampPlaybookController extends Controller
         $activeSection = (string) session('active_section', UserSectionRole::SECTION_DOLFIJNEN);
 
         return User::query()
-            ->whereNotNull('first_name')
+            ->whereNotNull('first_name', 'and')
             ->whereHas('sectionRoles', function ($query) use ($activeSection): void {
                 $query->where('section', $activeSection)
                     ->whereIn('role', [UserSectionRole::ROLE_TEAMLEIDER, UserSectionRole::ROLE_LEIDING]);
             })
-            ->orderBy('first_name')
-            ->orderBy('last_name')
+            ->orderBy('first_name', 'asc')
+            ->orderBy('last_name', 'asc')
             ->get()
             ->map(fn (User $leader): array => [
                 'id' => (int) $leader->id,
@@ -1164,8 +1164,8 @@ class CampPlaybookController extends Controller
         return Member::query()
             ->withoutGlobalScope('section')
             ->where('section', $section)
-            ->orderBy('first_name')
-            ->orderBy('last_name')
+            ->orderBy('first_name', 'asc')
+            ->orderBy('last_name', 'asc')
             ->get()
             ->map(fn (Member $member): array => [
                 'id' => (int) $member->id,

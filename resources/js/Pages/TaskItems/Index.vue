@@ -232,12 +232,71 @@ function formatCompletedAt(iso) {
     });
 }
 
+function deadlineCompletionsForTask(task) {
+    const raw = task?.deadline_completions;
+    return raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+}
+
+function taskHasDeadlines(task) {
+    return deadlinesForTask(task).length > 0;
+}
+
+function deadlineCompletionEntry(task, deadline) {
+    const date = normalizeDeadlines([deadline])[0];
+    if (!date) return null;
+    const entry = deadlineCompletionsForTask(task)[date];
+    if (!entry) return null;
+    if (typeof entry === 'string') {
+        return { completed_at: entry, completed_by_user_id: null, completed_by_name: null };
+    }
+    if (typeof entry === 'object') {
+        return entry;
+    }
+    return null;
+}
+
+function isDeadlineCompleted(task, deadline) {
+    return !!deadlineCompletionEntry(task, deadline);
+}
+
+function deadlineCompletedAt(task, deadline) {
+    return deadlineCompletionEntry(task, deadline)?.completed_at || '';
+}
+
+function deadlineCompletedByName(task, deadline) {
+    return deadlineCompletionEntry(task, deadline)?.completed_by_name || '';
+}
+
+function isTaskFullyCompleted(task) {
+    if (!taskHasDeadlines(task)) {
+        return !!task?.completed_at;
+    }
+    const dates = deadlinesForTask(task);
+    const completions = deadlineCompletionsForTask(task);
+    return dates.length > 0 && dates.every((d) => !!completions[d]);
+}
+
+function formatDeadlineLabel(date) {
+    const iso = normalizeDeadlines([date])[0];
+    if (!iso) return date;
+    const parsed = new Date(`${iso}T12:00:00`);
+    if (Number.isNaN(parsed.getTime())) return iso;
+    return parsed.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
 function toggleTaskCompleted(task) {
     if (!canCompleteTask(task)) return;
     patchTaskField(task, 'completed', !task.completed_at);
 }
 
-function patchTaskField(task, field, raw) {
+function toggleDeadlineCompleted(task, deadline) {
+    if (!canCompleteTask(task)) return;
+    const date = normalizeDeadlines([deadline])[0];
+    if (!date) return;
+    patchTaskField(task, 'completed', !isDeadlineCompleted(task, date), date);
+}
+
+function patchTaskField(task, field, raw, deadline = null) {
     if (field === 'completed') {
         if (!canCompleteTask(task)) return;
     } else if (!canEditTask(task)) {
@@ -259,10 +318,14 @@ function patchTaskField(task, field, raw) {
         payload = { shared_sections: Array.isArray(raw) ? raw : [] };
     } else if (field === 'completed') {
         payload = { completed: !!raw };
+        if (deadline) {
+            payload.deadline = deadline;
+        }
     } else {
         return;
     }
-    taskFieldSaving.value = `${task.id}:${field}`;
+    taskFieldSaving.value =
+        field === 'completed' && deadline ? `${task.id}:completed:${deadline}` : `${task.id}:${field}`;
     const url =
         field === 'completed'
             ? route('task-items.complete', task.id)
@@ -566,7 +629,15 @@ function onCategoryDrop(category, event) {
                 :is-task-row-saving="isTaskRowSaving"
                 :patch-task-field="patchTaskField"
                 :format-completed-at="formatCompletedAt"
+                :format-deadline-label="formatDeadlineLabel"
                 :toggle-task-completed="toggleTaskCompleted"
+                :toggle-deadline-completed="toggleDeadlineCompleted"
+                :task-has-deadlines="taskHasDeadlines"
+                :is-task-fully-completed="isTaskFullyCompleted"
+                :is-deadline-completed="isDeadlineCompleted"
+                :deadline-completed-at="deadlineCompletedAt"
+                :deadline-completed-by-name="deadlineCompletedByName"
+                :is-deadline-saving="(task, deadline) => isTaskFieldSaving(task, `completed:${normalizeDeadlines([deadline])[0]}`)"
                 :owner-ids="ownerIds"
                 :first-name-only="firstNameOnly"
                 :leader-name-by-id="leaderNameById"

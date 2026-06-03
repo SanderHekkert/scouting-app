@@ -35,12 +35,12 @@ class InfoNoteController extends Controller
         $activeSection = $this->activeSection();
         $canCreateCrossSection = $this->canCreateCrossSection($user, $activeSection);
         $notesQuery = $canCreateCrossSection
-            ? InfoNote::withoutGlobalScope('section')->whereIn('section', $this->targetSectionsForBoard())
+            ? InfoNote::withoutGlobalScope('section')->whereIn('section', $this->targetSectionsForBoard(), 'and', false)
             : InfoNote::query();
 
         return Inertia::render('InfoNotes/Index', [
             'notes' => $notesQuery
-                ->orderBy('category')
+                ->orderBy('category', 'asc')
                 ->latest()
                 ->get()
                 ->map(fn (InfoNote $note): array => [

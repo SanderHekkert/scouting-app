@@ -22,12 +22,14 @@ class TaskItem extends Model
         'description',
         'deadlines',
         'completed_at',
+        'deadline_completions',
         'shared_sections',
     ];
 
     protected $casts = [
         'owner_user_ids' => 'array',
         'deadlines' => 'array',
+        'deadline_completions' => 'array',
         'shared_sections' => 'array',
         'completed_at' => 'datetime',
     ];

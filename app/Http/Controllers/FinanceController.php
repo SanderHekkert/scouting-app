@@ -31,7 +31,7 @@ class FinanceController extends Controller
         $pots = FinancePot::withoutGlobalScope('section')
             ->where('section', $section)
             ->orderByDesc('active')
-            ->orderBy('name')
+            ->orderBy('name', 'asc')
             ->get()
             ->map(fn (FinancePot $pot): array => [
                 'id' => (int) $pot->id,
@@ -62,7 +62,7 @@ class FinanceController extends Controller
         $pots = FinancePot::withoutGlobalScope('section')
             ->where('section', $section)
             ->where('active', true)
-            ->orderBy('name')
+            ->orderBy('name', 'asc')
             ->get()
             ->map(fn (FinancePot $pot): array => [
                 'id' => (int) $pot->id,
@@ -126,7 +126,7 @@ class FinanceController extends Controller
         $pots = FinancePot::withoutGlobalScope('section')
             ->where('section', $section)
             ->where('active', true)
-            ->orderBy('name')
+            ->orderBy('name', 'asc')
             ->get()
             ->map(fn (FinancePot $pot): array => [
                 'id' => (int) $pot->id,

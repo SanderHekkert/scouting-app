@@ -44,10 +44,20 @@ class SendScheduledPushNotifications extends Command
         $targetIso = $targetDate->toDateString();
 
         $tasks = TaskItem::withoutGlobalScope('section')
-            ->whereNotNull('deadlines')
-            ->get(['id', 'title', 'deadlines', 'owner_user_id', 'owner_user_ids', 'section']);
+            ->whereNotNull('deadlines', 'and')
+            ->get(['id', 'title', 'deadlines', 'deadline_completions', 'owner_user_id', 'owner_user_ids', 'section']);
 
         foreach ($tasks as $task) {
+            $completedDates = collect(is_array($task->deadline_completions) ? $task->deadline_completions : [])
+                ->keys()
+                ->map(fn ($d) => is_string($d) ? trim($d) : '')
+                ->filter()
+                ->flip();
+
+            if ($completedDates->has($targetIso)) {
+                continue;
+            }
+
             $deadlines = collect($task->deadlines ?? [])
                 ->map(fn ($d) => is_string($d) ? trim($d) : '')
                 ->filter(fn ($d) => preg_match('/^\d{4}-\d{2}-\d{2}$/', $d) === 1)
@@ -80,7 +90,7 @@ class SendScheduledPushNotifications extends Command
                 : "Taak \"{$task->title}\" heeft vandaag een deadline ({$targetIso}).";
 
             $subscriptions = PushSubscription::query()
-                ->whereIn('user_id', $ownerIds->all())
+                ->whereIn('user_id', $ownerIds->all(), 'and', false)
                 ->get();
 
             if ($subscriptions->isEmpty()) {
@@ -116,7 +126,7 @@ class SendScheduledPushNotifications extends Command
 
             $baseUserIds = UserSectionRole::query()
                 ->where(function (Builder $query) use ($sections): void {
-                    $query->whereIn('section', $sections->all())
+                    $query->whereIn('section', $sections->all(), 'and', false)
                         ->orWhere('section', UserSectionRole::SECTION_ALL);
                 })
                 ->pluck('user_id')
@@ -135,7 +145,7 @@ class SendScheduledPushNotifications extends Command
             }
 
             $subscriptions = PushSubscription::query()
-                ->whereIn('user_id', $userIds)
+                ->whereIn('user_id', $userIds, 'and', false)
                 ->get();
 
             if ($subscriptions->isEmpty()) {
@@ -178,7 +188,7 @@ class SendScheduledPushNotifications extends Command
     {
         $candidateUsers = User::query()
             ->with('sectionRoles:id,user_id,section,role')
-            ->whereIn('id', $candidateUserIds)
+            ->whereIn('id', $candidateUserIds, 'and', false)
             ->get();
 
         $absentNames = collect(explode(',', (string) ($event->absent ?? '')))

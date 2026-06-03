@@ -36,8 +36,8 @@ class EventController extends Controller
                 }
             })
             ->whereDate('event_date', '>=', $today)
-            ->orderBy('event_date')
-            ->orderBy('theme')
+            ->orderBy('event_date', 'asc')
+            ->orderBy('theme', 'asc')
             ->get();
         $memberSections = $active
             ->pluck('section')
@@ -58,7 +58,7 @@ class EventController extends Controller
                     $query->orWhereJsonContains('shared_sections', $section);
                 }
             })
-            ->orderBy('title')
+            ->orderBy('title', 'asc')
             ->get(['id', 'title'])
             ->map(fn (TaskItem $task): array => [
                 'id' => $task->id,
@@ -100,7 +100,7 @@ class EventController extends Controller
             })
             ->whereDate('event_date', '<', $today)
             ->orderByDesc('event_date')
-            ->orderBy('theme')
+            ->orderBy('theme', 'asc')
             ->get();
         $memberSections = $archived
             ->pluck('section')
@@ -138,7 +138,7 @@ class EventController extends Controller
                     $query->orWhereJsonContains('shared_sections', $section);
                 }
             })
-            ->orderBy('title')
+            ->orderBy('title', 'asc')
             ->get(['id', 'title'])
             ->map(fn (TaskItem $task): array => [
                 'id' => (int) $task->id,
@@ -188,7 +188,7 @@ class EventController extends Controller
                     $query->orWhereJsonContains('shared_sections', $section);
                 }
             })
-            ->orderBy('title')
+            ->orderBy('title', 'asc')
             ->get(['id', 'title'])
             ->map(fn (TaskItem $task): array => [
                 'id' => (int) $task->id,
@@ -483,7 +483,7 @@ class EventController extends Controller
         $section = $this->activeSection();
 
         return User::query()
-            ->whereNotNull('first_name')
+            ->whereNotNull('first_name', 'and')
             ->whereHas('sectionRoles', function (Builder $query) use ($section): void {
                 $query->where('section', $section)
                     ->whereIn('role', [
@@ -492,8 +492,8 @@ class EventController extends Controller
                         UserSectionRole::ROLE_OUDERCONTACT,
                     ]);
             })
-            ->orderBy('first_name')
-            ->orderBy('last_name')
+            ->orderBy('first_name', 'asc')
+            ->orderBy('last_name', 'asc')
             ->get()
             ->map(function (User $leader): string {
                 return trim(($leader->first_name ?? '').' '.($leader->last_name ?? ''));
@@ -529,7 +529,7 @@ class EventController extends Controller
                     $query->orWhereJsonContains('shared_sections', $section);
                 }
             })
-            ->whereIn('id', $ids)
+            ->whereIn('id', $ids, 'and', false)
             ->pluck('id')
             ->map(fn ($id): int => (int) $id)
             ->all();
@@ -670,8 +670,8 @@ class EventController extends Controller
             ->whereHas('sectionRoles', function (Builder $query) use ($section): void {
                 $query->where('section', $section);
             })
-            ->orderBy('first_name')
-            ->orderBy('last_name')
+            ->orderBy('first_name', 'asc')
+            ->orderBy('last_name', 'asc')
             ->get()
             ->map(fn (User $member): string => $this->currentUserDisplayName($member))
             ->filter(fn (string $name): bool => $name !== '')

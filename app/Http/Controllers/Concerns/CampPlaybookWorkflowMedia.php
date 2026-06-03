@@ -111,7 +111,7 @@ trait CampPlaybookWorkflowMedia
         return $user->isGlobalBoardMember()
             || $user->sectionRoles()
                 ->where('section', UserSectionRole::SECTION_BESTUUR)
-                ->whereIn('role', UserSectionRole::BESTUUR_ROLES)
+                ->whereIn('role', UserSectionRole::BESTUUR_ROLES, 'and', false)
                 ->exists();
     }
 

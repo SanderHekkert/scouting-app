@@ -36,7 +36,7 @@ const emit = defineEmits(['update:leaderSearchQuery', 'edit-leader', 'delete-lea
                     type="search"
                     autocomplete="off"
                     placeholder="Zoek op naam, adres, e-mail, bijzonderheden…"
-                    class="min-w-0 flex-1 rounded border border-app-border bg-white px-3 py-2 text-sm text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
+                    class="min-w-0 flex-1 rounded border border-app-border bg-white px-3 py-2 text-sm text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted-dark"
                     @input="emit('update:leaderSearchQuery', $event.target.value)"
                 />
             </div>

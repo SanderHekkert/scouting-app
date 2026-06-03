@@ -54,7 +54,7 @@ const emit = defineEmits(['update:memberSearchQuery', 'edit-member', 'delete-mem
                             ? 'Zoek op naam, adres, telefoon…'
                             : 'Zoek op naam, adres, telefoon, bijzonderheden…'
                     "
-                    class="min-w-0 flex-1 rounded border border-app-border bg-white px-3 py-2 text-sm text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted dark:text-app-muted-dark"
+                    class="min-w-0 flex-1 rounded border border-app-border bg-white px-3 py-2 text-sm text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted-dark"
                     @input="emit('update:memberSearchQuery', $event.target.value)"
                 />
             </div>
