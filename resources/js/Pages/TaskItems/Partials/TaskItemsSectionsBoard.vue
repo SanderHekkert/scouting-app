@@ -14,6 +14,7 @@ const props = defineProps({
     onSectionDragStart: { type: Function, required: true },
     onSectionDragEnd: { type: Function, required: true },
     canEditTask: { type: Function, required: true },
+    canCompleteTask: { type: Function, required: true },
     canDeleteTask: { type: Function, required: true },
     onTaskDragStart: { type: Function, required: true },
     onTaskDragEnd: { type: Function, required: true },
@@ -83,7 +84,7 @@ const props = defineProps({
                                 Sleep naar ander kopje
                             </div>
                             <label
-                                v-if="props.canEditTask(task)"
+                                v-if="props.canCompleteTask(task)"
                                 class="inline-flex shrink-0 items-center gap-2 text-sm"
                             >
                                 <input
@@ -95,6 +96,12 @@ const props = defineProps({
                                 />
                                 <span class="text-xs text-app-muted dark:text-app-muted-dark">Klaar</span>
                             </label>
+                            <span
+                                v-else-if="task.completed_at"
+                                class="shrink-0 text-xs text-app-muted dark:text-app-muted-dark"
+                            >
+                                Klaar
+                            </span>
                         </div>
 
                         <p class="mt-2 text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Taak</p>
@@ -301,13 +308,20 @@ const props = defineProps({
                                 <td class="px-3 py-2.5 align-middle">
                                     <div class="flex items-center gap-2">
                                         <input
-                                            v-if="props.canEditTask(task)"
+                                            v-if="props.canCompleteTask(task)"
                                             type="checkbox"
                                             class="h-4 w-4 rounded border-app-border text-brand-blue focus:ring-brand-blue dark:border-app-border-dark"
                                             :checked="!!task.completed_at"
                                             :disabled="props.isTaskRowSaving(task)"
                                             @change="props.toggleTaskCompleted(task)"
                                         />
+                                        <span
+                                            v-else-if="task.completed_at"
+                                            class="inline-flex h-4 w-4 items-center justify-center rounded border border-brand-blue/40 bg-brand-blue/15 text-[10px] font-bold text-brand-blue"
+                                            title="Afgevinkt"
+                                        >
+                                            ✓
+                                        </span>
                                         <Bars3Icon
                                             v-if="props.canEditTask(task)"
                                             class="h-5 w-5 cursor-grab text-app-muted dark:text-app-muted-dark"

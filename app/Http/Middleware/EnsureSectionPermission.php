@@ -13,10 +13,14 @@ class EnsureSectionPermission
         private readonly SectionPermissionGate $gate
     ) {}
 
-    public function handle(Request $request, Closure $next, string $module): Response
+    public function handle(Request $request, Closure $next, string $module, ?string $action = null): Response
     {
+        if (str_contains($module, '.')) {
+            [$module, $action] = explode('.', $module, 2);
+        }
+
         $section = app()->bound('currentSection') ? app('currentSection') : 'dolfijnen';
-        $action = $this->actionFromMethod($request->method());
+        $action = $action ?? $this->actionFromMethod($request->method());
 
         if (! $this->gate->allows($request->user(), $section, $module, $action)) {
             abort(403, 'Je hebt geen rechten voor deze actie.');

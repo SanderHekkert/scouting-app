@@ -181,6 +181,10 @@ function canEditTask(task) {
     return !!canUpdateTasks.value && !!task?.can_update;
 }
 
+function canCompleteTask(task) {
+    return !!task?.can_complete;
+}
+
 function canDeleteTask(task) {
     return !!canDeleteTasks.value && !!task?.can_delete;
 }
@@ -229,12 +233,16 @@ function formatCompletedAt(iso) {
 }
 
 function toggleTaskCompleted(task) {
-    if (!canEditTask(task)) return;
+    if (!canCompleteTask(task)) return;
     patchTaskField(task, 'completed', !task.completed_at);
 }
 
 function patchTaskField(task, field, raw) {
-    if (!canEditTask(task)) return;
+    if (field === 'completed') {
+        if (!canCompleteTask(task)) return;
+    } else if (!canEditTask(task)) {
+        return;
+    }
     if (!task?.id) return;
     let payload = {};
     if (field === 'owner_user_ids') {
@@ -255,7 +263,11 @@ function patchTaskField(task, field, raw) {
         return;
     }
     taskFieldSaving.value = `${task.id}:${field}`;
-    router.patch(route('task-items.quick-update', task.id), payload, {
+    const url =
+        field === 'completed'
+            ? route('task-items.complete', task.id)
+            : route('task-items.quick-update', task.id);
+    router.patch(url, payload, {
         preserveScroll: true,
         onFinish: () => {
             taskFieldSaving.value = null;
@@ -546,6 +558,7 @@ function onCategoryDrop(category, event) {
                 :on-section-drag-start="onSectionDragStart"
                 :on-section-drag-end="onSectionDragEnd"
                 :can-edit-task="canEditTask"
+                :can-complete-task="canCompleteTask"
                 :can-delete-task="canDeleteTask"
                 :on-task-drag-start="onTaskDragStart"
                 :on-task-drag-end="onTaskDragEnd"

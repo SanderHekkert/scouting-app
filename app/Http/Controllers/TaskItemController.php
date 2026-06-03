@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
+use App\Models\SectionPermission;
 use App\Models\TaskCategory;
 use App\Models\TaskItem;
 use App\Models\User;
 use App\Models\UserSectionRole;
+use App\Services\SectionPermissionGate;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +17,10 @@ use Inertia\Inertia;
 
 class TaskItemController extends Controller
 {
+    public function __construct(
+        private readonly SectionPermissionGate $permissionGate,
+    ) {}
+
     private function activeSection(): string
     {
         $fromSession = session('active_section');
@@ -106,6 +112,7 @@ class TaskItemController extends Controller
                     'shared_sections' => $this->normalizedSharedSections($task->shared_sections ?? null),
                     'can_update' => $this->canEditOrDeleteTask($user, $task),
                     'can_delete' => $this->canEditOrDeleteTask($user, $task),
+                    'can_complete' => $this->canCompleteTask($user, $task),
                 ];
             });
 
@@ -256,6 +263,23 @@ class TaskItemController extends Controller
         return to_route('task-items.index');
     }
 
+    public function toggleComplete(Request $request, TaskItem $taskItem)
+    {
+        $user = $request->user();
+        abort_unless($user instanceof User, 403);
+        abort_unless($this->canCompleteTask($user, $taskItem), 403);
+
+        $data = $request->validate([
+            'completed' => ['required', 'boolean'],
+        ]);
+
+        $taskItem->update([
+            'completed_at' => $data['completed'] ? now() : null,
+        ]);
+
+        return back();
+    }
+
     /**
      * Snel één veld bijwerken (tabel + dubbelklik / EditableTextCell).
      */
@@ -283,15 +307,7 @@ class TaskItemController extends Controller
             'deadlines.*' => ['date_format:Y-m-d'],
             'shared_sections' => ['sometimes', 'nullable', 'array'],
             'shared_sections.*' => ['string', Rule::in(UserSectionRole::ALL_SECTIONS)],
-            'completed' => ['sometimes', 'boolean'],
         ]);
-
-        if (array_key_exists('completed', $data)) {
-            $taskItem->update([
-                'completed_at' => $data['completed'] ? now() : null,
-            ]);
-            unset($data['completed']);
-        }
 
         if (array_key_exists('owner_user_id', $data) || array_key_exists('owner_user_ids', $data)) {
             $this->hydrateOwnerFields($data);
@@ -549,5 +565,28 @@ class TaskItemController extends Controller
         }
 
         return $user->roleInSection((string) $task->section) === UserSectionRole::ROLE_TEAMLEIDER;
+    }
+
+    private function canCompleteTask(User $user, TaskItem $task): bool
+    {
+        if ($user->isGlobalAdmin()) {
+            return true;
+        }
+
+        if ($this->permissionGate->allows($user, $this->activeSection(), SectionPermission::MODULE_TASK_ITEMS, 'update')) {
+            return true;
+        }
+
+        $ownerIds = collect($task->owner_user_ids ?? [])
+            ->map(fn ($v): int => (int) $v)
+            ->filter(fn (int $v): bool => $v > 0)
+            ->values()
+            ->all();
+
+        if ($task->owner_user_id) {
+            $ownerIds[] = (int) $task->owner_user_id;
+        }
+
+        return in_array((int) $user->id, array_unique($ownerIds), true);
     }
 }

@@ -6,12 +6,19 @@ use App\Models\TaskCategory;
 use App\Models\TaskItem;
 use App\Models\User;
 use App\Models\UserSectionRole;
+use Database\Seeders\SectionPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class TaskItemsPermissionsTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seed(SectionPermissionsSeeder::class);
+    }
 
     private function userWithRole(string $section, string $role): User
     {
@@ -132,7 +139,7 @@ class TaskItemsPermissionsTest extends TestCase
 
         $this->actingAs($teamleider)
             ->withSession(['active_section' => UserSectionRole::SECTION_DOLFIJNEN])
-            ->patch(route('task-items.quick-update', $task), [
+            ->patch(route('task-items.complete', $task), [
                 'completed' => true,
             ])
             ->assertRedirect();
@@ -142,7 +149,7 @@ class TaskItemsPermissionsTest extends TestCase
 
         $this->actingAs($teamleider)
             ->withSession(['active_section' => UserSectionRole::SECTION_DOLFIJNEN])
-            ->patch(route('task-items.quick-update', $task), [
+            ->patch(route('task-items.complete', $task), [
                 'completed' => false,
             ])
             ->assertRedirect();
@@ -151,7 +158,33 @@ class TaskItemsPermissionsTest extends TestCase
         $this->assertNull($task->completed_at);
     }
 
-    public function test_lid_cannot_mark_task_completed(): void
+    public function test_leiding_can_mark_task_completed(): void
+    {
+        $leiding = $this->userWithRole(UserSectionRole::SECTION_DOLFIJNEN, UserSectionRole::ROLE_LEIDING);
+        TaskCategory::withoutGlobalScope('section')->create([
+            'section' => UserSectionRole::SECTION_DOLFIJNEN,
+            'name' => 'Algemeen',
+            'position' => 1,
+        ]);
+        $task = TaskItem::withoutGlobalScope('section')->create([
+            'section' => UserSectionRole::SECTION_DOLFIJNEN,
+            'category' => 'Algemeen',
+            'title' => 'Taak',
+            'description' => 'Beschrijving',
+        ]);
+
+        $this->actingAs($leiding)
+            ->withSession(['active_section' => UserSectionRole::SECTION_DOLFIJNEN])
+            ->patch(route('task-items.complete', $task), [
+                'completed' => true,
+            ])
+            ->assertRedirect();
+
+        $task->refresh();
+        $this->assertNotNull($task->completed_at);
+    }
+
+    public function test_lid_cannot_mark_unassigned_task_completed(): void
     {
         $lid = $this->userWithRole(UserSectionRole::SECTION_DOLFIJNEN, UserSectionRole::ROLE_LID);
         TaskCategory::withoutGlobalScope('section')->create([
@@ -168,7 +201,7 @@ class TaskItemsPermissionsTest extends TestCase
 
         $this->actingAs($lid)
             ->withSession(['active_section' => UserSectionRole::SECTION_DOLFIJNEN])
-            ->patch(route('task-items.quick-update', $task), [
+            ->patch(route('task-items.complete', $task), [
                 'completed' => true,
             ])
             ->assertForbidden();
