@@ -41,7 +41,7 @@ class SectionRoleVisibility extends Model
         $defaults = self::defaultsForSection($section);
         $rows = self::query()
             ->where('section', $section)
-            ->whereIn('role', $defaults)
+            ->whereIn('role', $defaults, 'and', false)
             ->get(['role', 'is_enabled'])
             ->keyBy('role');
 

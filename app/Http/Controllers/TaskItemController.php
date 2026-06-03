@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
+use App\Models\SectionPermission;
 use App\Models\TaskCategory;
 use App\Models\TaskItem;
 use App\Models\User;
 use App\Models\UserSectionRole;
+use App\Services\SectionPermissionGate;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +17,10 @@ use Inertia\Inertia;
 
 class TaskItemController extends Controller
 {
+    public function __construct(
+        private readonly SectionPermissionGate $permissionGate,
+    ) {}
+
     private function activeSection(): string
     {
         $fromSession = session('active_section');
@@ -36,17 +42,17 @@ class TaskItemController extends Controller
         $canCreateCrossSection = $this->canCreateCrossSection($user, $section);
         $visibleSections = $canCreateCrossSection ? $this->targetSectionsForBoard() : [$section];
         $taskCategories = TaskCategory::withoutGlobalScope('section')
-            ->whereIn('section', $visibleSections)
-            ->orderBy('position')
-            ->orderBy('name')
+            ->whereIn('section', $visibleSections, 'and', false)
+            ->orderBy('position', 'asc')
+            ->orderBy('name', 'asc')
             ->pluck('name')
             ->unique()
             ->values()
             ->all();
         $taskCategoriesBySection = TaskCategory::withoutGlobalScope('section')
-            ->whereIn('section', $visibleSections)
-            ->orderBy('position')
-            ->orderBy('name')
+            ->whereIn('section', $visibleSections, 'and', false)
+            ->orderBy('position', 'asc')
+            ->orderBy('name', 'asc')
             ->get(['section', 'name'])
             ->groupBy('section')
             ->map(fn ($rows) => $rows->pluck('name')->values()->all())
@@ -59,8 +65,8 @@ class TaskItemController extends Controller
                         ->orWhereJsonContains('shared_sections', $visibleSection);
                 }
             })
-            ->orderBy('event_date')
-            ->orderBy('theme')
+            ->orderBy('event_date', 'asc')
+            ->orderBy('theme', 'asc')
             ->get(['id', 'event_date', 'theme', 'task_item_ids']);
 
         $eventIdsByTask = [];
@@ -84,7 +90,7 @@ class TaskItemController extends Controller
                 $categoryIndex = array_search($task->category, $taskCategories, true);
 
                 return [
-                    $task->completed_at ? 1 : 0,
+                    $this->isTaskFullyComplete($task) ? 1 : 0,
                     $categoryIndex === false ? 99 : $categoryIndex,
                     $task->title,
                 ];
@@ -101,18 +107,20 @@ class TaskItemController extends Controller
                     'owner_user_ids' => $task->owner_user_ids ?? [],
                     'description' => $task->description,
                     'deadlines' => $this->normalizedDeadlines($task->deadlines),
+                    'deadline_completions' => $this->normalizedDeadlineCompletions($task->deadline_completions),
                     'completed_at' => $task->completed_at?->toIso8601String(),
                     'event_ids' => collect($eventIdsByTask[(int) $task->id] ?? [])->map(fn ($v): int => (int) $v)->unique()->values()->all(),
                     'shared_sections' => $this->normalizedSharedSections($task->shared_sections ?? null),
                     'can_update' => $this->canEditOrDeleteTask($user, $task),
                     'can_delete' => $this->canEditOrDeleteTask($user, $task),
+                    'can_complete' => $this->canCompleteTask($user, $task),
                 ];
             });
 
         $leaders = User::query()
-            ->whereNotNull('first_name')
-            ->orderBy('last_name')
-            ->orderBy('first_name')
+            ->whereNotNull('first_name', 'and')
+            ->orderBy('last_name', 'asc')
+            ->orderBy('first_name', 'asc')
             ->get(['id', 'first_name', 'last_name'])
             ->map(fn (User $leader) => [
                 'id' => $leader->id,
@@ -148,14 +156,14 @@ class TaskItemController extends Controller
             UserSectionRole::SECTION_BESTUUR,
         ], true);
         $taskCategories = TaskCategory::query()
-            ->orderBy('position')
-            ->orderBy('name')
+            ->orderBy('position', 'asc')
+            ->orderBy('name', 'asc')
             ->pluck('name')
             ->all();
         $leaders = User::query()
-            ->whereNotNull('first_name')
-            ->orderBy('last_name')
-            ->orderBy('first_name')
+            ->whereNotNull('first_name', 'and')
+            ->orderBy('last_name', 'asc')
+            ->orderBy('first_name', 'asc')
             ->get(['id', 'first_name', 'last_name'])
             ->map(fn (User $leader) => [
                 'id' => (int) $leader->id,
@@ -256,6 +264,46 @@ class TaskItemController extends Controller
         return to_route('task-items.index');
     }
 
+    public function toggleComplete(Request $request, TaskItem $taskItem)
+    {
+        $user = $request->user();
+        abort_unless($user instanceof User, 403);
+        abort_unless($this->canCompleteTask($user, $taskItem), 403);
+
+        $data = $request->validate([
+            'completed' => ['required', 'boolean'],
+            'deadline' => ['sometimes', 'nullable', 'date_format:Y-m-d'],
+        ]);
+
+        $deadline = isset($data['deadline']) ? Carbon::parse($data['deadline'])->toDateString() : null;
+        $deadlines = $this->normalizedDeadlines($taskItem->deadlines);
+
+        if ($deadline !== null) {
+            abort_unless(in_array($deadline, $deadlines, true), 422, 'Onbekende deadline voor deze taak.');
+
+            $completions = $this->normalizedDeadlineCompletions($taskItem->deadline_completions);
+            if ($data['completed']) {
+                $completions[$deadline] = $this->completionEntryForUser($user);
+            } else {
+                unset($completions[$deadline]);
+            }
+
+            $taskItem->update([
+                'deadline_completions' => $this->completionsForDeadlines($deadlines, $completions),
+            ]);
+            $this->syncCompletedAtFromDeadlines($taskItem->refresh());
+        } else {
+            abort_unless($deadlines === [], 422, 'Gebruik per deadline afvinken voor deze taak.');
+
+            $taskItem->update([
+                'completed_at' => $data['completed'] ? now() : null,
+                'deadline_completions' => null,
+            ]);
+        }
+
+        return back();
+    }
+
     /**
      * Snel één veld bijwerken (tabel + dubbelklik / EditableTextCell).
      */
@@ -283,21 +331,15 @@ class TaskItemController extends Controller
             'deadlines.*' => ['date_format:Y-m-d'],
             'shared_sections' => ['sometimes', 'nullable', 'array'],
             'shared_sections.*' => ['string', Rule::in(UserSectionRole::ALL_SECTIONS)],
-            'completed' => ['sometimes', 'boolean'],
         ]);
-
-        if (array_key_exists('completed', $data)) {
-            $taskItem->update([
-                'completed_at' => $data['completed'] ? now() : null,
-            ]);
-            unset($data['completed']);
-        }
 
         if (array_key_exists('owner_user_id', $data) || array_key_exists('owner_user_ids', $data)) {
             $this->hydrateOwnerFields($data);
         }
         if (array_key_exists('deadlines', $data)) {
             $this->hydrateDeadlineFields($data);
+            $completions = $this->normalizedDeadlineCompletions($taskItem->deadline_completions);
+            $data['deadline_completions'] = $this->completionsForDeadlines($data['deadlines'], $completions);
         }
         if (array_key_exists('shared_sections', $data)) {
             $data['shared_sections'] = $this->normalizedSharedSections($data['shared_sections']);
@@ -305,6 +347,9 @@ class TaskItemController extends Controller
 
         if ($data !== []) {
             $taskItem->update($data);
+            if (array_key_exists('deadlines', $data)) {
+                $this->syncCompletedAtFromDeadlines($taskItem->refresh());
+            }
         }
 
         return back();
@@ -343,8 +388,8 @@ class TaskItemController extends Controller
         ]);
 
         $current = TaskCategory::query()
-            ->orderBy('position')
-            ->orderBy('name')
+            ->orderBy('position', 'asc')
+            ->orderBy('name', 'asc')
             ->pluck('name')
             ->values()
             ->all();
@@ -383,12 +428,12 @@ class TaskItemController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(TaskItem $task_item)
+    public function destroy(TaskItem $taskItem)
     {
         $user = request()->user();
         abort_unless($user instanceof User, 403);
-        abort_unless($this->canEditOrDeleteTask($user, $task_item), 403);
-        $task_item->delete();
+        abort_unless($this->canEditOrDeleteTask($user, $taskItem), 403);
+        TaskItem::destroy($taskItem->getKey());
 
         return to_route('task-items.index');
     }
@@ -417,7 +462,7 @@ class TaskItemController extends Controller
                 $query->where('section', $section)
                     ->orWhereJsonContains('shared_sections', $section);
             })
-            ->whereIn('id', $eventIds)
+            ->whereIn('id', $eventIds, 'and', false)
             ->pluck('id')
             ->map(fn ($v): int => (int) $v)
             ->all();
@@ -469,9 +514,9 @@ class TaskItemController extends Controller
         }
 
         $names = User::query()
-            ->whereIn('id', $ids)
-            ->orderBy('last_name')
-            ->orderBy('first_name')
+            ->whereIn('id', $ids, 'and', false)
+            ->orderBy('last_name', 'asc')
+            ->orderBy('first_name', 'asc')
             ->get()
             ->map(fn (User $u) => trim(($u->first_name ?? '').' '.($u->last_name ?? '')) ?: $u->name)
             ->filter()
@@ -499,6 +544,124 @@ class TaskItemController extends Controller
             ->sort()
             ->values()
             ->all();
+    }
+
+    /**
+     * @return array<string, array{completed_at: string, completed_by_user_id: ?int, completed_by_name: ?string}>
+     */
+    private function normalizedDeadlineCompletions(mixed $completions): array
+    {
+        return collect(is_array($completions) ? $completions : [])
+            ->mapWithKeys(function (mixed $value, mixed $key): array {
+                try {
+                    $date = Carbon::parse((string) $key)->toDateString();
+                } catch (\Throwable) {
+                    return [];
+                }
+
+                if (is_string($value)) {
+                    try {
+                        return [$date => [
+                            'completed_at' => Carbon::parse($value)->toIso8601String(),
+                            'completed_by_user_id' => null,
+                            'completed_by_name' => null,
+                        ]];
+                    } catch (\Throwable) {
+                        return [];
+                    }
+                }
+
+                if (! is_array($value)) {
+                    return [];
+                }
+
+                try {
+                    $completedAt = Carbon::parse((string) ($value['completed_at'] ?? ''))->toIso8601String();
+                } catch (\Throwable) {
+                    return [];
+                }
+
+                $userId = isset($value['completed_by_user_id']) ? (int) $value['completed_by_user_id'] : null;
+
+                return [$date => [
+                    'completed_at' => $completedAt,
+                    'completed_by_user_id' => $userId > 0 ? $userId : null,
+                    'completed_by_name' => $this->nullableTrimmedString($value['completed_by_name'] ?? null),
+                ]];
+            })
+            ->filter()
+            ->all();
+    }
+
+    /**
+     * @return array{completed_at: string, completed_by_user_id: int, completed_by_name: ?string}
+     */
+    private function completionEntryForUser(User $user): array
+    {
+        $name = trim(($user->first_name ?? '').' '.($user->last_name ?? '')) ?: (string) ($user->name ?? '');
+
+        return [
+            'completed_at' => now()->toIso8601String(),
+            'completed_by_user_id' => (int) $user->id,
+            'completed_by_name' => $name !== '' ? $name : null,
+        ];
+    }
+
+    private function nullableTrimmedString(mixed $value): ?string
+    {
+        $string = trim((string) ($value ?? ''));
+
+        return $string !== '' ? $string : null;
+    }
+
+    /**
+     * @param  list<string>  $deadlines
+     * @param  array<string, array{completed_at: string, completed_by_user_id: ?int, completed_by_name: ?string}>  $completions
+     * @return array<string, array{completed_at: string, completed_by_user_id: ?int, completed_by_name: ?string}>
+     */
+    private function completionsForDeadlines(array $deadlines, array $completions): array
+    {
+        $allowed = array_fill_keys($deadlines, true);
+
+        return array_intersect_key($completions, $allowed);
+    }
+
+    private function isTaskFullyComplete(TaskItem $task): bool
+    {
+        $deadlines = $this->normalizedDeadlines($task->deadlines);
+        if ($deadlines === []) {
+            return $task->completed_at !== null;
+        }
+
+        $completions = $this->normalizedDeadlineCompletions($task->deadline_completions);
+
+        return collect($deadlines)->every(fn (string $date): bool => isset($completions[$date]));
+    }
+
+    private function syncCompletedAtFromDeadlines(TaskItem $task): void
+    {
+        $deadlines = $this->normalizedDeadlines($task->deadlines);
+        if ($deadlines === []) {
+            return;
+        }
+
+        $completions = $this->normalizedDeadlineCompletions($task->deadline_completions);
+        $allComplete = collect($deadlines)->every(fn (string $date): bool => isset($completions[$date]));
+
+        if (! $allComplete) {
+            $task->update(['completed_at' => null]);
+
+            return;
+        }
+
+        $latest = collect($completions)
+            ->map(fn (array $entry): Carbon => Carbon::parse($entry['completed_at']))
+            ->sortDesc()
+            ->first();
+
+        $task->update([
+            'completed_at' => $latest ?? now(),
+        ]);
     }
 
     /**
@@ -549,5 +712,28 @@ class TaskItemController extends Controller
         }
 
         return $user->roleInSection((string) $task->section) === UserSectionRole::ROLE_TEAMLEIDER;
+    }
+
+    private function canCompleteTask(User $user, TaskItem $task): bool
+    {
+        if ($user->isGlobalAdmin()) {
+            return true;
+        }
+
+        if ($this->permissionGate->allows($user, $this->activeSection(), SectionPermission::MODULE_TASK_ITEMS, 'update')) {
+            return true;
+        }
+
+        $ownerIds = collect($task->owner_user_ids ?? [])
+            ->map(fn ($v): int => (int) $v)
+            ->filter(fn (int $v): bool => $v > 0)
+            ->values()
+            ->all();
+
+        if ($task->owner_user_id) {
+            $ownerIds[] = (int) $task->owner_user_id;
+        }
+
+        return in_array((int) $user->id, array_unique($ownerIds), true);
     }
 }

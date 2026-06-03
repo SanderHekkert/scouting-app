@@ -34,7 +34,7 @@ class LeaderController extends Controller
         $activeSection = $this->activeSection();
         $isEditableLeader = $leader->sectionRoles()
             ->where('section', $activeSection)
-            ->whereIn('role', $this->editableLeaderRoles())
+            ->whereIn('role', $this->editableLeaderRoles(), 'and', false)
             ->exists();
 
         // Hide existence for users outside the active section/role scope.
@@ -54,7 +54,7 @@ class LeaderController extends Controller
 
         return Inertia::render('Leaders/Index', [
             'leaders' => User::query()
-                ->whereNotNull('first_name')
+                ->whereNotNull('first_name', 'and')
                 ->whereHas('sectionRoles', function ($query) use ($activeSection): void {
                     $query->where('section', $activeSection)
                         ->whereIn('role', [
@@ -71,8 +71,8 @@ class LeaderController extends Controller
                             UserSectionRole::ROLE_OUDERCONTACT,
                         ]);
                 }])
-                ->orderBy('first_name')
-                ->orderBy('last_name')
+                ->orderBy('first_name', 'asc')
+                ->orderBy('last_name', 'asc')
                 ->get()
                 ->map(function (User $leader) {
                     $role = $leader->sectionRoles->pluck('role')->first();

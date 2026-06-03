@@ -37,7 +37,7 @@ class HealthFormController extends Controller
         $forms = $formsQuery->get();
         $membersById = Member::query()
             ->withoutGlobalScope('section')
-            ->whereIn('id', $forms->pluck('member_id')->filter()->unique()->values())
+            ->whereIn('id', $forms->pluck('member_id', 'and', false)->filter()->unique()->values())
             ->get()
             ->keyBy('id');
 

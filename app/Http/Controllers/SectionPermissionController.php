@@ -27,10 +27,10 @@ class SectionPermissionController extends Controller
 
         $rows = SectionPermission::query()
             ->where('section', $section)
-            ->whereIn('role', $editableRoles)
-            ->whereIn('module', $allowedModules)
-            ->orderBy('role')
-            ->orderBy('module')
+            ->whereIn('role', $editableRoles, 'and', false)
+            ->whereIn('module', $allowedModules, 'and', false)
+            ->orderBy('role', 'asc')
+            ->orderBy('module', 'asc')
             ->get()
             ->map(fn (SectionPermission $row) => [
                 'id' => $row->id,
@@ -110,7 +110,7 @@ class SectionPermissionController extends Controller
         if ($disabledRoles !== []) {
             UserSectionRole::query()
                 ->where('section', $section)
-                ->whereIn('role', $disabledRoles)
+                ->whereIn('role', $disabledRoles, 'and', false)
                 ->delete();
         }
 
@@ -134,7 +134,7 @@ class SectionPermissionController extends Controller
 
         $manageableSections = $user->sectionRoles()
             ->where('role', UserSectionRole::ROLE_TEAMLEIDER)
-            ->whereIn('section', UserSectionRole::ALL_SECTIONS)
+            ->whereIn('section', UserSectionRole::ALL_SECTIONS, 'and', false)
             ->pluck('section')
             ->unique()
             ->values()

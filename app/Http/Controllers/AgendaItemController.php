@@ -82,7 +82,7 @@ class AgendaItemController extends Controller
                 if ($sections !== []) {
                     $query->orWhere(function (Builder $q) use ($sections): void {
                         $q->whereNull('owner_user_id')
-                            ->whereIn('section', $sections);
+                            ->whereIn('section', $sections, 'and', false);
                     });
                 }
             });
@@ -92,8 +92,8 @@ class AgendaItemController extends Controller
                 $query->whereDate('event_date', '>=', $today)
                     ->orWhereDate('end_date', '>=', $today);
             })
-            ->orderBy('event_date')
-            ->orderBy('theme')
+            ->orderBy('event_date', 'asc')
+            ->orderBy('theme', 'asc')
             ->get();
 
         $opkomstenQuery = Event::withoutGlobalScope('section');
@@ -120,8 +120,8 @@ class AgendaItemController extends Controller
         }
         $opkomsten = $opkomstenQuery
             ->whereDate('event_date', '>=', $today)
-            ->orderBy('event_date')
-            ->orderBy('theme')
+            ->orderBy('event_date', 'asc')
+            ->orderBy('theme', 'asc')
             ->get();
 
         $tasksQuery = TaskItem::withoutGlobalScope('section');
@@ -151,8 +151,8 @@ class AgendaItemController extends Controller
                     $query->where('section', $selectedSection);
                 });
             })
-            ->orderBy('first_name')
-            ->orderBy('last_name')
+            ->orderBy('first_name', 'asc')
+            ->orderBy('last_name', 'asc')
             ->get(['id', 'first_name', 'last_name', 'name'])
             ->map(fn (User $u): array => [
                 'id' => (int) $u->id,
@@ -215,7 +215,7 @@ class AgendaItemController extends Controller
                 if ($sections !== []) {
                     $query->orWhere(function (Builder $q) use ($sections): void {
                         $q->whereNull('owner_user_id')
-                            ->whereIn('section', $sections);
+                            ->whereIn('section', $sections, 'and', false);
                     });
                 }
             });
@@ -229,7 +229,7 @@ class AgendaItemController extends Controller
                     });
             })
             ->orderByDesc('event_date')
-            ->orderBy('theme')
+            ->orderBy('theme', 'asc')
             ->get();
 
         return Inertia::render('Agenda/Archived', [
@@ -256,9 +256,9 @@ class AgendaItemController extends Controller
         $targetUsers = $targetIds === []
             ? []
             : User::query()
-                ->whereIn('id', $targetIds)
-                ->orderBy('first_name')
-                ->orderBy('last_name')
+                ->whereIn('id', $targetIds, 'and', false)
+                ->orderBy('first_name', 'asc')
+                ->orderBy('last_name', 'asc')
                 ->get(['id', 'first_name', 'last_name', 'name', 'email'])
                 ->map(fn (User $u): array => [
                     'id' => (int) $u->id,
@@ -646,8 +646,8 @@ class AgendaItemController extends Controller
             ->whereHas('sectionRoles', function (Builder $query) use ($section): void {
                 $query->where('section', $section);
             })
-            ->orderBy('first_name')
-            ->orderBy('last_name')
+            ->orderBy('first_name', 'asc')
+            ->orderBy('last_name', 'asc')
             ->get(['first_name', 'last_name', 'name'])
             ->map(function (User $user): string {
                 $full = trim((string) ($user->first_name ?? '').' '.(string) ($user->last_name ?? ''));
@@ -777,10 +777,10 @@ class AgendaItemController extends Controller
 
         return User::query()
             ->whereHas('sectionRoles', function (Builder $query) use ($sections): void {
-                $query->whereIn('section', $sections);
+                $query->whereIn('section', $sections, 'and', false);
             })
-            ->orderBy('first_name')
-            ->orderBy('last_name')
+            ->orderBy('first_name', 'asc')
+            ->orderBy('last_name', 'asc')
             ->get(['id', 'first_name', 'last_name', 'name', 'email'])
             ->map(fn (User $u): array => [
                 'id' => (int) $u->id,

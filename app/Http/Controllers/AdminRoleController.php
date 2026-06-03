@@ -15,7 +15,7 @@ class AdminRoleController extends Controller
     public function index()
     {
         $users = User::query()
-            ->orderBy('name')
+            ->orderBy('name', 'asc')
             ->get()
             ->map(function (User $user): array {
                 $roles = $user->sectionRoles()->get(['section', 'role']);

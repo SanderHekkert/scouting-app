@@ -46,8 +46,8 @@ class PodController extends Controller
             'pods' => $pods,
             'unassignedMembers' => Member::query()
                 ->whereDoesntHave('podMemberships')
-                ->orderBy('first_name')
-                ->orderBy('last_name')
+                ->orderBy('first_name', 'asc')
+                ->orderBy('last_name', 'asc')
                 ->get(['id', 'first_name', 'last_name', 'age', 'birthday']),
         ]);
     }

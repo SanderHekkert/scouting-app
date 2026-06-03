@@ -31,7 +31,7 @@ class YearThemeController extends Controller
 
         $section = $this->activeSection();
         $rows = YearThemeEntry::query()
-            ->orderBy('sort_order')
+            ->orderBy('sort_order', 'asc')
             ->get();
 
         if ($section === UserSectionRole::SECTION_BEVERS) {

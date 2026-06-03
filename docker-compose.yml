@@ -1,0 +1,110 @@
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-scouting_app}
+      MYSQL_USER: ${DB_USERNAME:-scouting}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-scouting}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "${DB_PUBLISH_PORT:-3306}:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${DB_ROOT_PASSWORD:-root}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: php
+      args:
+        VITE_APP_NAME: ${VITE_APP_NAME:-FN12 App}
+        VITE_WEBPUSH_VAPID_PUBLIC_KEY: ${VITE_WEBPUSH_VAPID_PUBLIC_KEY:-}
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DB_HOST: mysql
+      RUN_MIGRATIONS: ${RUN_MIGRATIONS:-true}
+    volumes:
+      - app_storage:/var/www/html/storage
+      - app_bootstrap_cache:/var/www/html/bootstrap/cache
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: web
+      args:
+        VITE_APP_NAME: ${VITE_APP_NAME:-FN12 App}
+        VITE_WEBPUSH_VAPID_PUBLIC_KEY: ${VITE_WEBPUSH_VAPID_PUBLIC_KEY:-}
+    restart: unless-stopped
+    ports:
+      - "${APP_PUBLISH_PORT:-8080}:80"
+    depends_on:
+      - php
+
+  queue:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: php
+      args:
+        VITE_APP_NAME: ${VITE_APP_NAME:-FN12 App}
+        VITE_WEBPUSH_VAPID_PUBLIC_KEY: ${VITE_WEBPUSH_VAPID_PUBLIC_KEY:-}
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DB_HOST: mysql
+      RUN_MIGRATIONS: "false"
+    command: ["php", "artisan", "queue:work", "--sleep=3", "--tries=3", "--timeout=120"]
+    volumes:
+      - app_storage:/var/www/html/storage
+      - app_bootstrap_cache:/var/www/html/bootstrap/cache
+    depends_on:
+      mysql:
+        condition: service_healthy
+      php:
+        condition: service_started
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: php
+      args:
+        VITE_APP_NAME: ${VITE_APP_NAME:-FN12 App}
+        VITE_WEBPUSH_VAPID_PUBLIC_KEY: ${VITE_WEBPUSH_VAPID_PUBLIC_KEY:-}
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DB_HOST: mysql
+      RUN_MIGRATIONS: "false"
+    command:
+      - sh
+      - -c
+      - "while true; do php artisan schedule:run --no-interaction -q; sleep 60; done"
+    volumes:
+      - app_storage:/var/www/html/storage
+      - app_bootstrap_cache:/var/www/html/bootstrap/cache
+    depends_on:
+      mysql:
+        condition: service_healthy
+      php:
+        condition: service_started
+
+volumes:
+  mysql_data:
+  app_storage:
+  app_bootstrap_cache:

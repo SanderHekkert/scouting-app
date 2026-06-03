@@ -27,7 +27,7 @@ class DashboardController extends Controller
                     ->orWhereJsonContains('shared_sections', $section);
             })
             ->whereDate('event_date', $today)
-            ->orderBy('theme')
+            ->orderBy('theme', 'asc')
             ->get()
             ->map(fn (Event $e) => $this->serializeEvent($e, $today));
 
@@ -37,8 +37,8 @@ class DashboardController extends Controller
                     ->orWhereJsonContains('shared_sections', $section);
             })
             ->whereDate('event_date', '>=', $today)
-            ->orderBy('event_date')
-            ->orderBy('theme')
+            ->orderBy('event_date', 'asc')
+            ->orderBy('theme', 'asc')
             ->limit(3)
             ->get()
             ->map(fn (Event $e) => $this->serializeEvent($e, $today));
@@ -47,8 +47,8 @@ class DashboardController extends Controller
             'todayEvents' => $todayEvents,
             'upcomingEvents' => $upcomingEvents,
             'upcomingBirthdays' => $this->upcomingBirthdays($today),
-            'memberCount' => Member::count(),
-            'leaderCount' => $this->scopedLeadersQuery()->count(),
+            'memberCount' => (int) Member::query()->count('*'),
+            'leaderCount' => (int) $this->scopedLeadersQuery()->count('*'),
             'nextUpcomingAttendance' => $this->nextUpcomingAttendanceState($today),
             'leaderAbsenceChart' => $this->leaderAbsenceChart($today),
             'myTaskDeadlines' => $this->myTasks($today),
@@ -69,8 +69,8 @@ class DashboardController extends Controller
                     ->orWhereJsonContains('shared_sections', $section);
             })
             ->whereDate('event_date', '>=', $today)
-            ->orderBy('event_date')
-            ->orderBy('theme')
+            ->orderBy('event_date', 'asc')
+            ->orderBy('theme', 'asc')
             ->first();
 
         if (! $nextEvent) {
@@ -113,8 +113,8 @@ class DashboardController extends Controller
                     ->orWhereJsonContains('shared_sections', $section);
             })
             ->whereDate('event_date', '>=', $today)
-            ->orderBy('event_date')
-            ->orderBy('theme')
+            ->orderBy('event_date', 'asc')
+            ->orderBy('theme', 'asc')
             ->first();
         $currentUser = Auth::user();
         if (! $nextEvent || ! $currentUser) {
@@ -151,12 +151,12 @@ class DashboardController extends Controller
                 $query->where('section', $section)
                     ->orWhereJsonContains('shared_sections', $section);
             })
-            ->whereNotNull('absent')
+            ->whereNotNull('absent', 'and')
             ->pluck('absent');
 
         $leaders = $this->scopedLeadersQuery()
-            ->orderBy('last_name')
-            ->orderBy('first_name')
+            ->orderBy('last_name', 'asc')
+            ->orderBy('first_name', 'asc')
             ->get();
 
         $rows = [];
@@ -271,7 +271,7 @@ class DashboardController extends Controller
         $rows = collect();
         $section = $this->activeSection();
 
-        foreach (Member::query()->whereNotNull('birthday')->cursor() as $member) {
+        foreach (Member::query()->whereNotNull('birthday', 'and')->cursor(['*']) as $member) {
             $birthday = Carbon::parse($member->birthday);
             $next = $this->nextBirthdayDate($birthday, $today);
             $rows->push($this->serializeBirthdayRow(
@@ -287,8 +287,8 @@ class DashboardController extends Controller
 
         foreach (
             User::query()
-                ->whereNotNull('first_name')
-                ->whereNotNull('birthday')
+                ->whereNotNull('first_name', 'and')
+                ->whereNotNull('birthday', 'and')
                 ->whereHas('sectionRoles', function (Builder $query) use ($section): void {
                     $query->where('section', $section)
                         ->whereIn('role', [
@@ -297,7 +297,7 @@ class DashboardController extends Controller
                             UserSectionRole::ROLE_OUDERCONTACT,
                         ]);
                 })
-                ->cursor() as $leader
+                ->cursor(['*']) as $leader
         ) {
             $birthday = Carbon::parse($leader->birthday);
             $next = $this->nextBirthdayDate($birthday, $today);
@@ -393,7 +393,7 @@ class DashboardController extends Controller
         $section = $this->activeSection();
 
         return User::query()
-            ->whereNotNull('first_name')
+            ->whereNotNull('first_name', 'and')
             ->whereHas('sectionRoles', function (Builder $query) use ($section): void {
                 $query->where('section', $section)
                     ->whereIn('role', [
@@ -450,9 +450,16 @@ class DashboardController extends Controller
 
     private function nextTaskDeadline(TaskItem $task, Carbon $today): ?Carbon
     {
+        $completedDates = collect(is_array($task->deadline_completions) ? $task->deadline_completions : [])
+            ->keys()
+            ->map(fn ($v): string => trim((string) $v))
+            ->filter()
+            ->flip();
+
         $dates = collect(is_array($task->deadlines) ? $task->deadlines : [])
             ->map(fn ($v): string => trim((string) $v))
             ->filter()
+            ->reject(fn (string $v): bool => $completedDates->has($v))
             ->map(function (string $v): ?Carbon {
                 try {
                     return Carbon::parse($v)->startOfDay();

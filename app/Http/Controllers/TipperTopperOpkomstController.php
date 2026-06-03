@@ -19,8 +19,8 @@ class TipperTopperOpkomstController extends Controller
 
         return Inertia::render('TipperTopperOpkomst/Index', [
             'members' => Member::query()
-                ->orderBy('first_name')
-                ->orderBy('last_name')
+                ->orderBy('first_name', 'asc')
+                ->orderBy('last_name', 'asc')
                 ->get(),
         ]);
     }

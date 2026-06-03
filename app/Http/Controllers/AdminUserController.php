@@ -15,7 +15,7 @@ class AdminUserController extends Controller
     {
         $allUsers = User::query()
             ->with('sectionRoles:id,user_id,section,role')
-            ->orderBy('name')
+            ->orderBy('name', 'asc')
             ->get()
             ->map(function (User $user): array {
                 $roles = [];

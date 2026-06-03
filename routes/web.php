@@ -178,6 +178,7 @@ Route::middleware(['auth', 'verified', 'has.role'])->group(function () {
     Route::resource('agenda', AgendaItemController::class)->middleware('section.permission:events')->parameters(['agenda' => 'agendaItem'])->except(['create', 'show', 'edit']);
 
     // Taakverdeling
+    Route::patch('/task-items/{taskItem}/complete', [TaskItemController::class, 'toggleComplete'])->middleware('section.permission:task_items.view')->name('task-items.complete');
     Route::patch('/task-items/{taskItem}/fields', [TaskItemController::class, 'quickUpdate'])->middleware('section.permission:task_items')->name('task-items.quick-update');
     Route::patch('/task-items/{taskItem}/linked-events', [TaskItemController::class, 'updateLinkedEvents'])->middleware('section.permission:task_items')->name('task-items.linked-events.update');
     Route::get('/task-items/nieuw', [TaskItemController::class, 'create'])->middleware('section.permission:task_items')->name('task-items.create');
