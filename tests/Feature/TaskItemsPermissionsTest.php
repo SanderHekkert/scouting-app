@@ -114,4 +114,68 @@ class TaskItemsPermissionsTest extends TestCase
             ])
             ->assertForbidden();
     }
+
+    public function test_teamleider_can_mark_task_completed_with_timestamp(): void
+    {
+        $teamleider = $this->userWithRole(UserSectionRole::SECTION_DOLFIJNEN, UserSectionRole::ROLE_TEAMLEIDER);
+        TaskCategory::withoutGlobalScope('section')->create([
+            'section' => UserSectionRole::SECTION_DOLFIJNEN,
+            'name' => 'Algemeen',
+            'position' => 1,
+        ]);
+        $task = TaskItem::withoutGlobalScope('section')->create([
+            'section' => UserSectionRole::SECTION_DOLFIJNEN,
+            'category' => 'Algemeen',
+            'title' => 'Taak',
+            'description' => 'Beschrijving',
+        ]);
+
+        $this->actingAs($teamleider)
+            ->withSession(['active_section' => UserSectionRole::SECTION_DOLFIJNEN])
+            ->patch(route('task-items.quick-update', $task), [
+                'completed' => true,
+            ])
+            ->assertRedirect();
+
+        $task->refresh();
+        $this->assertNotNull($task->completed_at);
+
+        $this->actingAs($teamleider)
+            ->withSession(['active_section' => UserSectionRole::SECTION_DOLFIJNEN])
+            ->patch(route('task-items.quick-update', $task), [
+                'completed' => false,
+            ])
+            ->assertRedirect();
+
+        $task->refresh();
+        $this->assertNull($task->completed_at);
+    }
+
+    public function test_lid_cannot_mark_task_completed(): void
+    {
+        $lid = $this->userWithRole(UserSectionRole::SECTION_DOLFIJNEN, UserSectionRole::ROLE_LID);
+        TaskCategory::withoutGlobalScope('section')->create([
+            'section' => UserSectionRole::SECTION_DOLFIJNEN,
+            'name' => 'Algemeen',
+            'position' => 1,
+        ]);
+        $task = TaskItem::withoutGlobalScope('section')->create([
+            'section' => UserSectionRole::SECTION_DOLFIJNEN,
+            'category' => 'Algemeen',
+            'title' => 'Taak',
+            'description' => 'Beschrijving',
+        ]);
+
+        $this->actingAs($lid)
+            ->withSession(['active_section' => UserSectionRole::SECTION_DOLFIJNEN])
+            ->patch(route('task-items.quick-update', $task), [
+                'completed' => true,
+            ])
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('task_items', [
+            'id' => $task->id,
+            'completed_at' => null,
+        ]);
+    }
 }

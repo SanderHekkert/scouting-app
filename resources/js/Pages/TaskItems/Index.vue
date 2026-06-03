@@ -215,6 +215,24 @@ function toggleTaskEdit(task) {
     editingTaskId.value = editingTaskId.value === task.id ? null : task.id;
 }
 
+function formatCompletedAt(iso) {
+    if (!iso) return '';
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toLocaleString('nl-NL', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+}
+
+function toggleTaskCompleted(task) {
+    if (!canEditTask(task)) return;
+    patchTaskField(task, 'completed', !task.completed_at);
+}
+
 function patchTaskField(task, field, raw) {
     if (!canEditTask(task)) return;
     if (!task?.id) return;
@@ -231,6 +249,8 @@ function patchTaskField(task, field, raw) {
         payload = { deadlines: Array.isArray(raw) ? raw : [] };
     } else if (field === 'shared_sections') {
         payload = { shared_sections: Array.isArray(raw) ? raw : [] };
+    } else if (field === 'completed') {
+        payload = { completed: !!raw };
     } else {
         return;
     }
@@ -532,6 +552,8 @@ function onCategoryDrop(category, event) {
                 :is-task-editing="isTaskEditing"
                 :is-task-row-saving="isTaskRowSaving"
                 :patch-task-field="patchTaskField"
+                :format-completed-at="formatCompletedAt"
+                :toggle-task-completed="toggleTaskCompleted"
                 :owner-ids="ownerIds"
                 :first-name-only="firstNameOnly"
                 :leader-name-by-id="leaderNameById"

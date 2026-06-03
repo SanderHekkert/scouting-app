@@ -21,6 +21,7 @@ class TaskItem extends Model
         'owner_user_ids',
         'description',
         'deadlines',
+        'completed_at',
         'shared_sections',
     ];
 
@@ -28,6 +29,7 @@ class TaskItem extends Model
         'owner_user_ids' => 'array',
         'deadlines' => 'array',
         'shared_sections' => 'array',
+        'completed_at' => 'datetime',
     ];
 
     public function ownerUser(): BelongsTo
