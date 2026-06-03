@@ -38,6 +38,8 @@ const props = defineProps({
     addTaskSharedSection: { type: Function, required: true },
     toggleTaskEdit: { type: Function, required: true },
     deleteTask: { type: Function, required: true },
+    formatCompletedAt: { type: Function, required: true },
+    toggleTaskCompleted: { type: Function, required: true },
 });
 </script>
 
@@ -70,13 +72,29 @@ const props = defineProps({
                         v-for="task in section.tasks"
                         :key="`task-mob-${task.id}`"
                         class="surface-brand-top rounded-xl border border-brand-blue/30 bg-app-panel px-4 py-3 text-app-ink shadow-sm dark:bg-app-panel-dark/95 dark:text-app-ink-dark"
+                        :class="{ 'opacity-70': task.completed_at }"
                         :draggable="props.canEditTask(task)"
                         @dragstart="props.onTaskDragStart(task)"
                         @dragend="props.onTaskDragEnd"
                     >
-                        <div class="mb-1 inline-flex items-center gap-1 rounded bg-brand-blue/10 px-2 py-1 text-xs text-app-muted dark:text-app-muted-dark">
-                            <Bars3Icon class="h-4 w-4" />
-                            Sleep naar ander kopje
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="mb-1 inline-flex items-center gap-1 rounded bg-brand-blue/10 px-2 py-1 text-xs text-app-muted dark:text-app-muted-dark">
+                                <Bars3Icon class="h-4 w-4" />
+                                Sleep naar ander kopje
+                            </div>
+                            <label
+                                v-if="props.canEditTask(task)"
+                                class="inline-flex shrink-0 items-center gap-2 text-sm"
+                            >
+                                <input
+                                    type="checkbox"
+                                    class="h-5 w-5 rounded border-app-border text-brand-blue focus:ring-brand-blue dark:border-app-border-dark"
+                                    :checked="!!task.completed_at"
+                                    :disabled="props.isTaskRowSaving(task)"
+                                    @change="props.toggleTaskCompleted(task)"
+                                />
+                                <span class="text-xs text-app-muted dark:text-app-muted-dark">Klaar</span>
+                            </label>
                         </div>
 
                         <p class="mt-2 text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Taak</p>
@@ -88,7 +106,19 @@ const props = defineProps({
                             :disabled="props.isTaskRowSaving(task)"
                             @change="props.patchTaskField(task, 'title', $event.target.value)"
                         />
-                        <p v-else class="mt-1 text-sm text-app-ink dark:text-app-ink-dark">{{ task.title || '—' }}</p>
+                        <p
+                            v-else
+                            class="mt-1 text-sm text-app-ink dark:text-app-ink-dark"
+                            :class="{ 'line-through text-app-muted dark:text-app-muted-dark': task.completed_at }"
+                        >
+                            {{ task.title || '—' }}
+                        </p>
+                        <p
+                            v-if="task.completed_at"
+                            class="mt-1 text-xs text-app-muted dark:text-app-muted-dark"
+                        >
+                            Afgevinkt op {{ props.formatCompletedAt(task.completed_at) }}
+                        </p>
 
                         <p class="mt-2 text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Wie</p>
                         <div class="mt-1 flex flex-wrap gap-1.5">
@@ -249,7 +279,7 @@ const props = defineProps({
                         </colgroup>
                         <thead class="border-b border-brand-blue/35 bg-app-sidebar dark:bg-app-canvas-dark/80">
                             <tr class="text-left text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">
-                                <th class="px-3 py-2.5"></th>
+                                <th class="px-3 py-2.5">Klaar</th>
                                 <th class="px-3 py-2.5">Taak</th>
                                 <th class="px-3 py-2.5">Wie</th>
                                 <th class="px-3 py-2.5">Uitleg</th>
@@ -263,12 +293,26 @@ const props = defineProps({
                                 v-for="task in section.tasks"
                                 :key="task.id"
                                 class="bg-brand-blue/5 transition-colors hover:bg-brand-blue/12 dark:bg-app-panel-dark/50 dark:hover:bg-brand-blue/15"
+                                :class="{ 'opacity-70': task.completed_at }"
                                 :draggable="props.canEditTask(task)"
                                 @dragstart="props.onTaskDragStart(task)"
                                 @dragend="props.onTaskDragEnd"
                             >
-                                <td class="px-3 py-2.5 align-middle text-app-muted dark:text-app-muted-dark">
-                                    <Bars3Icon v-if="props.canEditTask(task)" class="h-5 w-5 cursor-grab" />
+                                <td class="px-3 py-2.5 align-middle">
+                                    <div class="flex items-center gap-2">
+                                        <input
+                                            v-if="props.canEditTask(task)"
+                                            type="checkbox"
+                                            class="h-4 w-4 rounded border-app-border text-brand-blue focus:ring-brand-blue dark:border-app-border-dark"
+                                            :checked="!!task.completed_at"
+                                            :disabled="props.isTaskRowSaving(task)"
+                                            @change="props.toggleTaskCompleted(task)"
+                                        />
+                                        <Bars3Icon
+                                            v-if="props.canEditTask(task)"
+                                            class="h-5 w-5 cursor-grab text-app-muted dark:text-app-muted-dark"
+                                        />
+                                    </div>
                                 </td>
                                 <td class="px-3 py-2.5 align-middle">
                                     <input
@@ -279,7 +323,19 @@ const props = defineProps({
                                         :disabled="props.isTaskRowSaving(task)"
                                         @change="props.patchTaskField(task, 'title', $event.target.value)"
                                     />
-                                    <span v-else>{{ task.title || '—' }}</span>
+                                    <div v-else>
+                                        <span
+                                            :class="{ 'line-through text-app-muted dark:text-app-muted-dark': task.completed_at }"
+                                        >
+                                            {{ task.title || '—' }}
+                                        </span>
+                                        <p
+                                            v-if="task.completed_at"
+                                            class="mt-0.5 text-xs text-app-muted dark:text-app-muted-dark"
+                                        >
+                                            Afgevinkt op {{ props.formatCompletedAt(task.completed_at) }}
+                                        </p>
+                                    </div>
                                 </td>
                                 <td class="px-3 py-2.5 align-middle">
                                     <label class="sr-only" :for="`task-owner-${task.id}`">Wie</label>

@@ -84,6 +84,7 @@ class TaskItemController extends Controller
                 $categoryIndex = array_search($task->category, $taskCategories, true);
 
                 return [
+                    $task->completed_at ? 1 : 0,
                     $categoryIndex === false ? 99 : $categoryIndex,
                     $task->title,
                 ];
@@ -100,6 +101,7 @@ class TaskItemController extends Controller
                     'owner_user_ids' => $task->owner_user_ids ?? [],
                     'description' => $task->description,
                     'deadlines' => $this->normalizedDeadlines($task->deadlines),
+                    'completed_at' => $task->completed_at?->toIso8601String(),
                     'event_ids' => collect($eventIdsByTask[(int) $task->id] ?? [])->map(fn ($v): int => (int) $v)->unique()->values()->all(),
                     'shared_sections' => $this->normalizedSharedSections($task->shared_sections ?? null),
                     'can_update' => $this->canEditOrDeleteTask($user, $task),
@@ -281,7 +283,15 @@ class TaskItemController extends Controller
             'deadlines.*' => ['date_format:Y-m-d'],
             'shared_sections' => ['sometimes', 'nullable', 'array'],
             'shared_sections.*' => ['string', Rule::in(UserSectionRole::ALL_SECTIONS)],
+            'completed' => ['sometimes', 'boolean'],
         ]);
+
+        if (array_key_exists('completed', $data)) {
+            $taskItem->update([
+                'completed_at' => $data['completed'] ? now() : null,
+            ]);
+            unset($data['completed']);
+        }
 
         if (array_key_exists('owner_user_id', $data) || array_key_exists('owner_user_ids', $data)) {
             $this->hydrateOwnerFields($data);
@@ -293,7 +303,9 @@ class TaskItemController extends Controller
             $data['shared_sections'] = $this->normalizedSharedSections($data['shared_sections']);
         }
 
-        $taskItem->update($data);
+        if ($data !== []) {
+            $taskItem->update($data);
+        }
 
         return back();
     }
