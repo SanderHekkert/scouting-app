@@ -39,6 +39,26 @@ docker build --target web -t scouting-app:web .
 - Voor Vite-build in de image: geef `VITE_WEBPUSH_VAPID_PUBLIC_KEY` mee als build-arg (staat in `docker-compose.yml`).
 - Persistent volumes: `app_storage`, `app_bootstrap_cache`, `mysql_data`.
 
+## GHCR (GitHub Container Registry)
+
+Images worden automatisch gepubliceerd bij push naar `main` (workflow `.github/workflows/docker-publish.yml`).
+
+| Image | Gebruik |
+|-------|---------|
+| `ghcr.io/sanderhekkert/scouting-app-php:latest` | PHP-FPM, queue, scheduler |
+| `ghcr.io/sanderhekkert/scouting-app-web:latest` | Nginx (static assets) |
+
+Handmatig triggeren: GitHub → Actions → **Publish Docker images to GHCR** → Run workflow.
+
+Lokaal pushen (PAT met `write:packages`):
+
+```bash
+chmod +x docker/publish-ghcr.sh
+GHCR_TOKEN=ghp_... ./docker/publish-ghcr.sh latest
+```
+
+Optioneel repository secret `VITE_WEBPUSH_VAPID_PUBLIC_KEY` voor de Vite-build in CI.
+
 ## Handige commando’s
 
 ```bash
