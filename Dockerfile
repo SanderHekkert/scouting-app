@@ -1,5 +1,17 @@
 # syntax=docker/dockerfile:1
 
+FROM composer:2 AS composer-deps
+
+WORKDIR /app
+
+COPY composer.json composer.lock ./
+RUN composer install \
+    --no-dev \
+    --no-interaction \
+    --prefer-dist \
+    --no-scripts \
+    --ignore-platform-reqs
+
 FROM node:22-alpine AS frontend
 
 WORKDIR /app
@@ -10,6 +22,7 @@ RUN npm ci
 COPY vite.config.js tailwind.config.js postcss.config.js ./
 COPY resources ./resources
 COPY public ./public
+COPY --from=composer-deps /app/vendor/tightenco/ziggy ./vendor/tightenco/ziggy
 
 ARG VITE_APP_NAME="FN12 App"
 ARG VITE_WEBPUSH_VAPID_PUBLIC_KEY=
@@ -23,17 +36,12 @@ FROM composer:2 AS vendor
 WORKDIR /app
 
 COPY composer.json composer.lock ./
-RUN composer install \
-    --no-dev \
-    --no-interaction \
-    --prefer-dist \
-    --optimize-autoloader \
-    --no-scripts
+COPY --from=composer-deps /app/vendor ./vendor
 
 COPY . .
 COPY --from=frontend /app/public/build ./public/build
 
-RUN composer dump-autoload --optimize --classmap-authoritative
+RUN composer dump-autoload --optimize --classmap-authoritative --no-interaction
 
 FROM php:8.3-fpm-bookworm AS php
 
