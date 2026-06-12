@@ -99,7 +99,7 @@ Route::middleware(['auth', 'verified', 'has.role', 'section.role:admin,bestuursl
     Route::get('/opkomsten/archived', [EventController::class, 'archived'])->middleware('section.permission:events')->name('opkomsten.archived');
     Route::get('/opkomsten/nieuw', [EventController::class, 'create'])->middleware('section.permission:events')->name('opkomsten.create');
     Route::get('/opkomsten/{event}', [EventController::class, 'show'])->middleware('section.permission:events')->name('opkomsten.show');
-    Route::resource('opkomsten', EventController::class)->middleware('section.permission:events')->parameters(['opkomsten' => 'event'])->except(['show', 'edit']);
+    Route::resource('opkomsten', EventController::class)->middleware('section.permission:events')->parameters(['opkomsten' => 'event'])->except(['create', 'show', 'edit']);
 
     // Leden
     Route::patch('/members/{member}/installed', [MemberController::class, 'updateInstalled'])->middleware('section.permission:members')->name('members.update-installed');
