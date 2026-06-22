@@ -3,12 +3,14 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { ArrowUturnLeftIcon, DocumentCheckIcon, PaperClipIcon, TrashIcon } from '@heroicons/vue/24/outline';
 import { computed, ref, watch } from 'vue';
+import { useSaveRedirect } from '@/utils/saveForm';
 
 const props = defineProps({
     item: { type: Object, required: true },
     isBestuur: { type: Boolean, default: false },
     availableUsers: { type: Array, default: () => [] },
 });
+const { applySaveRedirect, saveFormOptions } = useSaveRedirect();
 const page = usePage();
 const sectionLabels = {
     bevers: 'Bevers',
@@ -19,11 +21,17 @@ const sectionLabels = {
     bestuur: 'Bestuur',
 };
 const speltakLabel = computed(() => sectionLabels[page.props.auth?.active_section] || 'Dolfijnen');
+const isEditing = computed(() => !!props.item?.id);
+const pageTitle = computed(() =>
+    isEditing.value
+        ? `${speltakLabel.value} - Agenda activiteit bewerken`
+        : `${speltakLabel.value} - Agenda activiteit toevoegen`,
+);
 
 const form = useForm({
     theme: props.item.theme || '',
-    event_date: props.item.event_date || '',
-    end_date: props.item.end_date || props.item.event_date || '',
+    event_date: String(props.item.event_date || '').slice(0, 10),
+    end_date: String(props.item.end_date || props.item.event_date || '').slice(0, 10),
     start_time: props.item.start_time || '',
     end_time: props.item.end_time || '',
     location: props.item.location || '',
@@ -53,10 +61,21 @@ function clearAttachment() {
 }
 
 function submit() {
-    form.post(route('agenda.store'), {
+    const options = saveFormOptions({
         forceFormData: true,
-        preserveScroll: true,
     });
+    const redirectPayload = (data) => applySaveRedirect(data);
+
+    if (isEditing.value) {
+        form
+            .transform((data) => redirectPayload({ ...data, _method: 'put' }))
+            .post(route('agenda.update', props.item.id), options);
+        return;
+    }
+
+    form
+        .transform((data) => redirectPayload(data))
+        .post(route('agenda.store'), options);
 }
 
 function addTargetUser(event) {
@@ -119,7 +138,15 @@ const selectableInviteeUsers = computed(() => {
     return (props.availableUsers || []).filter((u) => !emails.has(String(u.email || '').trim().toLowerCase()));
 });
 
-const attachmentFileName = computed(() => form.attachment_file?.name || 'Geen bestand gekozen');
+const attachmentFileName = computed(() => {
+    if (form.attachment_file?.name) {
+        return form.attachment_file.name;
+    }
+    if (props.item.attachment_name) {
+        return props.item.attachment_name;
+    }
+    return 'Geen bestand gekozen';
+});
 
 watch(
     () => form.audience_scope,
@@ -132,11 +159,11 @@ watch(
 </script>
 
 <template>
-    <Head :title="`${speltakLabel} - Agenda activiteit toevoegen`" />
+    <Head :title="pageTitle" />
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center justify-between gap-3">
-                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">{{ speltakLabel }} - Agenda activiteit toevoegen</h2>
+                <h2 class="text-xl font-semibold text-app-ink dark:text-app-ink-dark">{{ pageTitle }}</h2>
                 <Link :href="route('agenda.index')" class="btn-action-back" title="Terug" aria-label="Terug">
                     <ArrowUturnLeftIcon class="h-5 w-5" />
                 </Link>
@@ -218,6 +245,13 @@ watch(
                         <PaperClipIcon class="h-5 w-5" />
                     </button>
                     <span class="truncate text-sm text-black dark:text-app-ink-dark">{{ attachmentFileName }}</span>
+                    <a
+                        v-if="isEditing && props.item.attachment_name && !form.attachment_file"
+                        :href="route('agenda.attachment.download', props.item.id)"
+                        class="shrink-0 text-sm text-brand-blue underline"
+                    >
+                        Download
+                    </a>
                     <button
                         v-if="form.attachment_file"
                         type="button"

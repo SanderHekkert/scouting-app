@@ -3,10 +3,12 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ArrowUturnLeftIcon, CloudArrowUpIcon } from '@heroicons/vue/24/outline';
 import { watch } from 'vue';
+import { useSaveRedirect } from '@/utils/saveForm';
 
 const props = defineProps({
     preview: { type: Object, default: null },
 });
+const { applySaveRedirect, saveFormOptions } = useSaveRedirect();
 
 const form = useForm({
     file: null,
@@ -59,7 +61,9 @@ function submit() {
 }
 
 function confirmSubmit() {
-    confirmForm.post(route('admin.health-forms.confirm'));
+    confirmForm
+        .transform((data) => applySaveRedirect(data))
+        .post(route('admin.health-forms.confirm'), saveFormOptions());
 }
 </script>
 

@@ -7,6 +7,7 @@ import CampBudgetStandardValuesPanel from '@/Pages/CampBudgets/Partials/CampBudg
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { ArrowUturnLeftIcon, DocumentCheckIcon, PaperAirplaneIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import { useSaveRedirect } from '@/utils/saveForm';
 
 const props = defineProps({
     mode: { type: String, default: 'create' },
@@ -15,6 +16,7 @@ const props = defineProps({
     defaultSections: { type: Array, default: () => [] },
     defaultStandardValues: { type: Object, default: () => ({}) },
 });
+const { applySaveRedirect, saveFormOptions } = useSaveRedirect();
 
 const page = usePage();
 const perms = computed(() => page.props.auth?.permissions?.camp_budgets ?? {});
@@ -83,19 +85,18 @@ function statusClass(status) {
 function submit(action = 'save') {
     enforceFixedQuantityRows();
     const normalizedAction = typeof action === 'string' && action.length > 0 ? action : 'save';
-    const options = {
-        preserveScroll: true,
+    const options = saveFormOptions({
         onFinish: () => form.transform((data) => data),
-    };
+    });
 
     if (isEdit.value) {
         form
-            .transform((data) => ({ ...data, action: normalizedAction }))
+            .transform((data) => applySaveRedirect({ ...data, action: normalizedAction }))
             .patch(route('camp-budgets.update', props.item.id), options);
         return;
     }
     form
-        .transform((data) => ({ ...data, action: normalizedAction }))
+        .transform((data) => applySaveRedirect({ ...data, action: normalizedAction }))
         .post(route('camp-budgets.store'), options);
 }
 

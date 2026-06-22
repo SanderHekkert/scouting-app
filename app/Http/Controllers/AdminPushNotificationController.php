@@ -49,7 +49,8 @@ class AdminPushNotificationController extends Controller
             $message .= ", {$result['failed']} mislukt";
         }
 
-        return to_route('admin.push-notifications.index')->with('status', $message);
+        return $this->redirectAfterSave($request, config('save-redirects.admin_push_notifications'))
+            ->with('status', $message);
     }
 
     private function canManagePushNotifications(Request $request): bool

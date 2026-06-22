@@ -3,6 +3,9 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { moneyDisplayValue, sanitizeMoneyInput } from '@/utils/money';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { ArrowUturnLeftIcon, DocumentCheckIcon } from '@heroicons/vue/24/outline';
+import { useSaveRedirect } from '@/utils/saveForm';
+
+const { applySaveRedirect, saveFormOptions } = useSaveRedirect();
 
 const page = usePage();
 const sectionLabelMap = {
@@ -30,7 +33,9 @@ function setActiveStatus(isActive) {
 }
 
 function submit() {
-    form.post(route('finance.pots.store'));
+    form
+        .transform((data) => applySaveRedirect(data))
+        .post(route('finance.pots.store'), saveFormOptions());
 }
 </script>
 

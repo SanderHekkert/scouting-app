@@ -193,7 +193,7 @@ class HealthFormController extends Controller
         $request->session()->forget('health_form_preview');
         $request->session()->put('active_section', $data['section']);
 
-        return to_route('admin.health-forms.show', $healthForm->id);
+        return $this->redirectAfterSave($request, config('save-redirects.admin_health_forms'));
     }
 
     public function show(Request $request, HealthForm $health_form)

@@ -162,7 +162,7 @@ class LeaderController extends Controller
         $data['password'] = Str::password(24);
         User::create($data);
 
-        return to_route('leaders.index');
+        return $this->redirectAfterSave($request, config('save-redirects.leaders'));
     }
 
     public function update(Request $request, User $leader)
@@ -193,7 +193,7 @@ class LeaderController extends Controller
         $data['name'] = trim(($data['first_name'] ?? '').' '.($data['last_name'] ?? ''));
         $leader->update($data);
 
-        return to_route('leaders.index');
+        return $this->redirectAfterSave($request, config('save-redirects.leaders'));
     }
 
     public function destroy(User $leader)

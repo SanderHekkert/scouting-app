@@ -19,11 +19,15 @@ class AdminUserInvitationController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->validate([
-            'email' => ['required', 'email:rfc,dns', 'max:255'],
+        $request->merge([
+            'email' => mb_strtolower(trim((string) $request->input('email', ''))),
         ]);
 
-        $email = mb_strtolower(trim((string) $data['email']));
+        $data = $request->validate([
+            'email' => ['required', 'email', 'max:255'],
+        ]);
+
+        $email = $data['email'];
         if (User::query()->whereRaw('LOWER(email) = ?', [$email])->exists()) {
             return back()->withErrors(['email' => 'Voor dit e-mailadres bestaat al een gebruiker.']);
         }
@@ -49,6 +53,7 @@ class AdminUserInvitationController extends Controller
 
         Mail::to($email)->send(new UserInvitationMail($invitation));
 
-        return back()->with('status', 'Uitnodiging verstuurd.');
+        return $this->redirectAfterSave($request, config('save-redirects.admin_users'))
+            ->with('status', 'Uitnodiging verstuurd.');
     }
 }

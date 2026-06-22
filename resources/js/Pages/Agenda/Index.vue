@@ -1,5 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import AgendaEntryDetailPanel from '@/Pages/Agenda/Partials/AgendaEntryDetailPanel.vue';
 import AgendaTopControls from '@/Pages/Agenda/Partials/AgendaTopControls.vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
@@ -22,6 +23,7 @@ const canUpdateAgendaItem = computed(() => !!page.props.auth?.permissions?.event
 const weekDays = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'];
 const visibleMonth = ref(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
 const selectedDateKey = ref('');
+const expandedEntryKey = ref('');
 const agendaSearch = ref('');
 const showSearchPanel = ref(false);
 const viewMode = ref('month');
@@ -141,7 +143,6 @@ const normalizedEntries = computed(() => {
             sourceId: Number(item.id),
             title: item.theme || 'Agenda-item',
             tag: 'Agenda',
-            href: route('agenda.show', item.id),
             startAt,
             endAt,
             allDay,
@@ -160,7 +161,6 @@ const normalizedEntries = computed(() => {
             sourceId: Number(ev.id),
             title: ev.theme || ev.activity || 'Opkomst',
             tag: ev.is_shared ? 'Gezamenlijk' : 'Opkomst',
-            href: route('agenda.opkomsten.show', ev.id),
             startAt: combineDateAndMinutes(dateKey, 9 * 60),
             endAt: combineDateAndMinutes(dateKey, 12 * 60),
             allDay: true,
@@ -178,7 +178,6 @@ const normalizedEntries = computed(() => {
             sourceId: Number(task.id),
             title: task.title || `Taak #${task.id}`,
             tag: 'Taak deadline',
-            href: route('task-items.index'),
             startAt: combineDateAndMinutes(String(deadline), 10 * 60),
             endAt: combineDateAndMinutes(String(deadline), 11 * 60),
             allDay: true,
@@ -197,7 +196,6 @@ const normalizedEntries = computed(() => {
                 sourceId: Number(taskId),
                 title: task.title || `Taak #${taskId}`,
                 tag: 'Taak opkomst',
-                href: route('task-items.index'),
                 startAt: combineDateAndMinutes(String(ev.event_date), 10 * 60),
                 endAt: combineDateAndMinutes(String(ev.event_date), 11 * 60),
                 allDay: true,
@@ -454,8 +452,65 @@ const periodLabel = computed(() => {
     return monthLabel.value;
 });
 
+function entryKey(entry) {
+    return `${entry.sourceType}-${entry.sourceId}`;
+}
+
+function isEntryExpanded(entry) {
+    return expandedEntryKey.value === entryKey(entry);
+}
+
+function toggleEntry(entry, event) {
+    event?.stopPropagation?.();
+    const key = entryKey(entry);
+    expandedEntryKey.value = expandedEntryKey.value === key ? '' : key;
+    if (entry.date) {
+        selectedDateKey.value = entry.date;
+    }
+    showSearchPanel.value = false;
+}
+
+function closeExpandedEntry() {
+    expandedEntryKey.value = '';
+}
+
+function entryColorClass(entry) {
+    if (entry.sourceType === 'agenda') {
+        return 'bg-slate-100 text-slate-800 hover:bg-slate-200 dark:bg-slate-700/70 dark:text-slate-100';
+    }
+    if (entry.sourceType === 'task') {
+        return 'bg-amber-100 text-amber-900 hover:bg-amber-200 dark:bg-amber-500/30 dark:text-amber-100';
+    }
+    return opkomstColorClass(entry.section);
+}
+
+function entryExpandedClass(entry) {
+    return isEntryExpanded(entry) ? 'ring-2 ring-brand-yellow/80 ring-offset-1 ring-offset-white dark:ring-offset-app-panel-dark' : '';
+}
+
+const expandedEntry = computed(() => {
+    if (!expandedEntryKey.value) return null;
+    return normalizedEntries.value.find((entry) => entryKey(entry) === expandedEntryKey.value) || null;
+});
+
+const expandedAgendaItem = computed(() => {
+    if (expandedEntry.value?.sourceType !== 'agenda') return null;
+    return (props.items || []).find((item) => Number(item.id) === Number(expandedEntry.value.sourceId)) || null;
+});
+
+const expandedOpkomst = computed(() => {
+    if (expandedEntry.value?.sourceType !== 'opkomst') return null;
+    return (props.opkomsten || []).find((item) => Number(item.id) === Number(expandedEntry.value.sourceId)) || null;
+});
+
+const expandedTask = computed(() => {
+    if (expandedEntry.value?.sourceType !== 'task') return null;
+    return (props.tasks || []).find((item) => Number(item.id) === Number(expandedEntry.value.sourceId)) || null;
+});
+
 function selectDay(dayKey) {
     selectedDateKey.value = dayKey;
+    expandedEntryKey.value = '';
 }
 
 function selectDayAndOpenDayView(dayKey) {
@@ -613,6 +668,7 @@ function opkomstColorClass(section) {
                 @update:agenda-search="agendaSearch = $event"
                 @update:section-filter="sectionFilter = $event"
                 @update:user-filter="userFilter = $event"
+                @select-entry="toggleEntry"
             />
         </template>
 
@@ -646,22 +702,19 @@ function opkomstColorClass(section) {
                         </div>
 
                         <div class="space-y-1">
-                            <Link
+                            <button
                                 v-for="entry in cell.entries.slice(0, 3)"
                                 :key="`cal-entry-${entry.sourceType}-${entry.sourceId}`"
-                                :href="entry.href"
-                                class="block rounded-lg px-2 py-1 text-[11px] leading-tight"
-                                :class="entry.sourceType === 'agenda'
-                                    ? 'bg-slate-100 text-slate-800 hover:bg-slate-200 dark:bg-slate-700/70 dark:text-slate-100'
-                                    : entry.sourceType === 'task'
-                                        ? 'bg-amber-100 text-amber-900 hover:bg-amber-200 dark:bg-amber-500/30 dark:text-amber-100'
-                                        : opkomstColorClass(entry.section)"
+                                type="button"
+                                class="block w-full rounded-lg px-2 py-1 text-left text-[11px] leading-tight"
+                                :class="[entryColorClass(entry), entryExpandedClass(entry)]"
                                 :draggable="entry.canScheduleUpdate"
+                                @click="toggleEntry(entry, $event)"
                                 @dragstart="dragStart(entry, $event)"
                             >
                                 <span class="font-semibold">{{ entry.tag }}</span>
                                 <span class="ms-1">{{ entry.title }}</span>
-                            </Link>
+                            </button>
                             <p v-if="cell.entries.length > 3" class="px-1 text-[11px] text-app-muted dark:text-app-muted-dark">
                                 +{{ cell.entries.length - 3 }} meer
                             </p>
@@ -731,20 +784,17 @@ function opkomstColorClass(section) {
                             <div class="mb-2 h-20 overflow-y-auto">
                                 <p class="mb-1 text-sm font-semibold text-app-ink dark:text-app-ink-dark">{{ day.day }}</p>
                                 <div class="space-y-1">
-                                    <Link
+                                    <button
                                         v-for="entry in weekAllDayByDay.find((v) => v.key === day.key)?.entries || []"
                                         :key="`week-allday-${day.key}-${entry.sourceType}-${entry.sourceId}`"
-                                        :href="entry.href"
-                                        class="block rounded-lg px-2 py-1 text-[11px] leading-tight"
-                                        :class="entry.sourceType === 'agenda'
-                                            ? 'bg-slate-100 text-slate-800 hover:bg-slate-200 dark:bg-slate-700/70 dark:text-slate-100'
-                                            : entry.sourceType === 'task'
-                                                ? 'bg-amber-100 text-amber-900 hover:bg-amber-200 dark:bg-amber-500/30 dark:text-amber-100'
-                                                : opkomstColorClass(entry.section)"
+                                        type="button"
+                                        class="block w-full rounded-lg px-2 py-1 text-left text-[11px] leading-tight"
+                                        :class="[entryColorClass(entry), entryExpandedClass(entry)]"
+                                        @click="toggleEntry(entry, $event)"
                                     >
                                         <span class="font-semibold">{{ entry.tag }}</span>
                                         <span class="ms-1">{{ entry.title }}</span>
-                                    </Link>
+                                    </button>
                                 </div>
                             </div>
                             <div class="relative h-[1344px] overflow-hidden rounded-lg border border-app-border/70 bg-white dark:border-app-border-dark/70 dark:bg-app-canvas-dark">
@@ -758,21 +808,24 @@ function opkomstColorClass(section) {
                                         @dblclick="openCreateAt(day.key, slot.hour)"
                                     />
                                 </div>
-                                <Link
+                                <div
                                     v-for="entry in weekTimedByDay.find((v) => v.key === day.key)?.entries || []"
                                     :key="`week-timed-${day.key}-${entry.sourceType}-${entry.sourceId}`"
-                                    :href="entry.href"
-                                    class="absolute left-1 right-1 rounded-lg border px-2 py-1 text-[11px] shadow-sm"
-                                    :class="entry.sourceType === 'agenda'
-                                        ? 'border-slate-200 bg-slate-100 text-slate-800'
-                                        : entry.sourceType === 'task'
-                                            ? 'border-amber-200 bg-amber-100 text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/30 dark:text-amber-100'
-                                            : 'border-transparent ' + opkomstColorClass(entry.section)"
+                                    class="absolute left-1 right-1 cursor-pointer rounded-lg border px-2 py-1 text-[11px] shadow-sm"
+                                    :class="[
+                                        entry.sourceType === 'agenda'
+                                            ? 'border-slate-200 bg-slate-100 text-slate-800'
+                                            : entry.sourceType === 'task'
+                                                ? 'border-amber-200 bg-amber-100 text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/30 dark:text-amber-100'
+                                                : 'border-transparent ' + opkomstColorClass(entry.section),
+                                        entryExpandedClass(entry),
+                                    ]"
                                     :style="{
                                         top: `${minuteOffset(entry, day.key).top}px`,
                                         height: `${minuteOffset(entry, day.key).height}px`,
                                     }"
                                     :draggable="entry.canScheduleUpdate"
+                                    @click="toggleEntry(entry, $event)"
                                     @dragstart="dragStart(entry, $event)"
                                 >
                                     <div class="flex items-center justify-between gap-1">
@@ -784,9 +837,9 @@ function opkomstColorClass(section) {
                                         type="button"
                                         class="absolute right-1 bottom-1 h-2 w-8 cursor-ns-resize rounded-full bg-black/30"
                                         title="Duur aanpassen"
-                                        @mousedown="startResize(entry, day.key, $event)"
+                                        @mousedown.stop="startResize(entry, day.key, $event)"
                                     />
-                                </Link>
+                                </div>
                                 <div
                                     v-if="currentTimeLine.key === day.key"
                                     class="pointer-events-none absolute left-0 right-0 z-30 border-t border-red-500"
@@ -800,16 +853,20 @@ function opkomstColorClass(section) {
                 <div v-if="viewMode === 'day'" class="mt-2 rounded-xl border border-app-border bg-app-panel p-3 dark:border-app-border-dark dark:bg-app-panel-dark">
                     <p class="text-sm font-semibold text-app-ink dark:text-app-ink-dark">{{ selectedDateLabel }}</p>
                     <div class="mt-2 space-y-1.5">
-                        <Link
+                        <button
                             v-for="entry in dayAllDayEntries"
                             :key="`day-all-day-${entry.sourceType}-${entry.sourceId}`"
-                            :href="entry.href"
-                            class="block rounded-lg border border-brand-blue/20 bg-white px-3 py-2 text-sm text-app-ink hover:bg-brand-blue/10 dark:border-brand-blue/30 dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/15"
-                            :class="entry.sourceType === 'agenda' ? '' : (entry.sourceType === 'task' ? 'border-amber-200 bg-amber-100 text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/30 dark:text-amber-100' : opkomstColorClass(entry.section))"
+                            type="button"
+                            class="block w-full rounded-lg border border-brand-blue/20 bg-white px-3 py-2 text-left text-sm text-app-ink hover:bg-brand-blue/10 dark:border-brand-blue/30 dark:bg-app-panel-dark dark:text-app-ink-dark dark:hover:bg-brand-blue/15"
+                            :class="[
+                                entry.sourceType === 'agenda' ? '' : (entry.sourceType === 'task' ? 'border-amber-200 bg-amber-100 text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/30 dark:text-amber-100' : opkomstColorClass(entry.section)),
+                                entryExpandedClass(entry),
+                            ]"
+                            @click="toggleEntry(entry, $event)"
                         >
                             <span class="text-xs font-semibold uppercase tracking-wide text-app-muted dark:text-app-muted-dark">{{ entry.tag }}</span>
                             <p class="mt-0.5 font-medium">{{ entry.title }}</p>
-                        </Link>
+                        </button>
                     </div>
                     <div class="mt-3 grid grid-cols-[3rem_1fr] gap-2 sm:grid-cols-[3.5rem_1fr]">
                         <div class="relative h-[1344px]">
@@ -828,21 +885,24 @@ function opkomstColorClass(section) {
                                     @dblclick="openCreateAt(selectedDateKey, slot.hour)"
                                 />
                             </div>
-                            <Link
+                            <div
                                 v-for="entry in dayTimedEntries"
                                 :key="`day-timed-${entry.sourceType}-${entry.sourceId}`"
-                                :href="entry.href"
-                                class="absolute left-2 right-2 rounded-lg border px-2 py-1 text-xs shadow-sm"
-                                :class="entry.sourceType === 'agenda'
-                                    ? 'border-slate-200 bg-slate-100 text-slate-800'
-                                    : entry.sourceType === 'task'
-                                        ? 'border-amber-200 bg-amber-100 text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/30 dark:text-amber-100'
-                                        : 'border-transparent ' + opkomstColorClass(entry.section)"
+                                class="absolute left-2 right-2 cursor-pointer rounded-lg border px-2 py-1 text-xs shadow-sm"
+                                :class="[
+                                    entry.sourceType === 'agenda'
+                                        ? 'border-slate-200 bg-slate-100 text-slate-800'
+                                        : entry.sourceType === 'task'
+                                            ? 'border-amber-200 bg-amber-100 text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/30 dark:text-amber-100'
+                                            : 'border-transparent ' + opkomstColorClass(entry.section),
+                                    entryExpandedClass(entry),
+                                ]"
                                 :style="{
                                     top: `${minuteOffset(entry, selectedDateKey).top}px`,
                                     height: `${minuteOffset(entry, selectedDateKey).height}px`,
                                 }"
                                 :draggable="entry.canScheduleUpdate"
+                                @click="toggleEntry(entry, $event)"
                                 @dragstart="dragStart(entry, $event)"
                             >
                                 <div class="flex items-center justify-between gap-2">
@@ -854,9 +914,9 @@ function opkomstColorClass(section) {
                                     type="button"
                                     class="absolute right-1 bottom-1 h-2 w-8 cursor-ns-resize rounded-full bg-black/30"
                                     title="Duur aanpassen"
-                                    @mousedown="startResize(entry, selectedDateKey, $event)"
+                                    @mousedown.stop="startResize(entry, selectedDateKey, $event)"
                                 />
-                            </Link>
+                            </div>
                             <div
                                 v-if="currentTimeLine.key === selectedDateKey"
                                 class="pointer-events-none absolute left-0 right-0 z-30 border-t border-red-500"
@@ -900,6 +960,17 @@ function opkomstColorClass(section) {
                 </div>
 
             </div>
+
+            <AgendaEntryDetailPanel
+                v-if="expandedEntry"
+                :entry="expandedEntry"
+                :agenda-item="expandedAgendaItem"
+                :opkomst="expandedOpkomst"
+                :task="expandedTask"
+                :section-labels="sectionLabels"
+                :can-update-agenda-item="canUpdateAgendaItem"
+                @close="closeExpandedEntry"
+            />
 
         </div>
     </AuthenticatedLayout>

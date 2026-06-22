@@ -51,6 +51,7 @@ class TaskItemsPermissionsTest extends TestCase
                 'owner_user_ids' => [],
                 'deadlines' => [],
                 'shared_sections' => [],
+                'redirect_back' => true,
             ])
             ->assertRedirect(route('task-items.index'));
 
@@ -84,6 +85,7 @@ class TaskItemsPermissionsTest extends TestCase
                 'owner_user_ids' => [],
                 'deadlines' => [],
                 'shared_sections' => [],
+                'redirect_back' => true,
             ])
             ->assertRedirect(route('task-items.index'));
 

@@ -4,10 +4,12 @@ import { moneyDisplayValue, sanitizeMoneyInput } from '@/utils/money';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { ArrowUturnLeftIcon, DocumentCheckIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
 import { computed, ref, watch } from 'vue';
+import { useSaveRedirect } from '@/utils/saveForm';
 
 const props = defineProps({
     pots: { type: Array, default: () => [] },
 });
+const { applySaveRedirect, saveFormOptions } = useSaveRedirect();
 
 const page = usePage();
 const sectionLabelMap = {
@@ -104,13 +106,15 @@ function onReceiptChange(event) {
 
 function submit() {
     form.description_lines = buildDescriptionLinesFromRows();
-    form.post(route('finance.declarations.store'), {
+    form
+        .transform((data) => applySaveRedirect(data))
+        .post(route('finance.declarations.store'), saveFormOptions({
         forceFormData: true,
         onSuccess: () => {
             form.reset();
             receiptRows.value = [{ name: '', quantity: '1', amount: '' }];
         },
-    });
+    }));
 }
 
 watch(receiptRows, () => {

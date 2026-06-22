@@ -174,7 +174,7 @@ class CampBudgetController extends Controller
             'updated_by_user_id' => $userId,
         ]);
 
-        return to_route('camp-budgets.index');
+        return $this->redirectAfterSave($request, config('save-redirects.camp_budgets'));
     }
 
     public function update(Request $request, CampBudget $campBudget)
@@ -218,7 +218,7 @@ class CampBudgetController extends Controller
             'updated_by_user_id' => $actor?->id,
         ]);
 
-        return to_route('camp-budgets.index');
+        return $this->redirectAfterSave($request, config('save-redirects.camp_budgets'));
     }
 
     public function destroy(CampBudget $campBudget)

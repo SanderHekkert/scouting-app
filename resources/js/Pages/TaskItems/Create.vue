@@ -3,6 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ArrowUturnLeftIcon, Bars3Icon, ClipboardDocumentListIcon } from '@heroicons/vue/24/outline';
 import { computed, ref } from 'vue';
+import { useSaveRedirect } from '@/utils/saveForm';
 
 const props = defineProps({
     canCreateCategory: { type: Boolean, default: false },
@@ -11,6 +12,7 @@ const props = defineProps({
     activeSection: { type: String, default: 'dolfijnen' },
     allSections: { type: Array, default: () => [] },
 });
+const { applySaveRedirect, saveFormOptions } = useSaveRedirect();
 const sectionLabels = {
     bevers: 'Bevers',
     dolfijnen: 'Dolfijnen',
@@ -83,18 +85,19 @@ function onTaskOwnerSelectChange(event) {
 }
 
 function submitTask() {
-    taskForm.post(route('task-items.store'), {
-        preserveScroll: true,
-    });
+    taskForm
+        .transform((data) => applySaveRedirect(data))
+        .post(route('task-items.store'), saveFormOptions());
 }
 
 function submitCategory() {
-    categoryForm.post(route('task-categories.store'), {
-        preserveScroll: true,
+    categoryForm
+        .transform((data) => applySaveRedirect(data))
+        .post(route('task-categories.store'), saveFormOptions({
         onSuccess: () => {
             categoryForm.reset();
         },
-    });
+    }));
 }
 </script>
 

@@ -2,6 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
+import { useSaveRedirect } from '@/utils/saveForm';
 import { ArrowUturnLeftIcon, DocumentCheckIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
@@ -10,6 +11,7 @@ const props = defineProps({
     taskItems: { type: Array, default: () => [] },
     allSections: { type: Array, default: () => [] },
 });
+const { applySaveRedirect, saveFormOptions } = useSaveRedirect();
 
 const page = usePage();
 const activeSection = computed(() => page.props.auth?.active_section ?? 'dolfijnen');
@@ -52,17 +54,19 @@ const form = useForm({
 
 function submit() {
     if (isCreateMode.value) {
-        form.post(route('opkomsten.store'), {
+        form
+            .transform((data) => applySaveRedirect(data))
+            .post(route('opkomsten.store'), saveFormOptions({
             forceFormData: true,
-            preserveScroll: true,
-        });
+        }));
         return;
     }
 
-    form.transform((data) => ({ ...data, _method: 'patch' })).post(route('opkomsten.update', props.event.id), {
+    form
+        .transform((data) => applySaveRedirect({ ...data, _method: 'patch' }))
+        .post(route('opkomsten.update', props.event.id), saveFormOptions({
         forceFormData: true,
-        preserveScroll: true,
-    });
+    }));
 }
 
 function onAttachmentChange(event) {

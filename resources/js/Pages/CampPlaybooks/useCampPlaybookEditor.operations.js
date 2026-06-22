@@ -1,5 +1,6 @@
 import { nextTick, onMounted, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
+import { withSaveRedirect } from '@/utils/saveForm';
 
 export function createCampPlaybookEditorOperations(props, core) {
     const {
@@ -303,26 +304,26 @@ export function createCampPlaybookEditorOperations(props, core) {
 
     function submit(action = 'save') {
         const normalizedAction = action === 'submit' ? 'submit' : 'save';
-        form.transform((data) => ({
+        form.transform((data) => withSaveRedirect({
             ...data,
             camp_dates: composeCampDateRange(data.camp_date_start, data.camp_date_end),
             action: normalizedAction,
             ...(isEdit.value ? { _method: 'patch' } : {}),
-        }));
+        }, page.props.returnUrl));
+
+        const options = {
+            forceFormData: true,
+            preserveScroll: false,
+            onFinish: () => form.transform((data) => data),
+        };
 
         if (isEdit.value) {
             if (!canUpdate.value) return;
-            form.post(route('camp-playbooks.update', props.item.id), {
-                forceFormData: true,
-                onFinish: () => form.transform((data) => data),
-            });
+            form.post(route('camp-playbooks.update', props.item.id), options);
             return;
         }
         if (!canCreate.value) return;
-        form.post(route('camp-playbooks.store'), {
-            forceFormData: true,
-            onFinish: () => form.transform((data) => data),
-        });
+        form.post(route('camp-playbooks.store'), options);
     }
 
     function destroyItem() {

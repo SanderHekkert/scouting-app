@@ -4,10 +4,12 @@ import AppConfirmModal from '@/Components/AppConfirmModal.vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { ArrowUturnLeftIcon, DocumentCheckIcon, TrashIcon } from '@heroicons/vue/24/outline';
 import { computed, ref } from 'vue';
+import { useSaveRedirect } from '@/utils/saveForm';
 
 const props = defineProps({
     member: { type: Object, required: true },
 });
+const { applySaveRedirect, saveFormOptions } = useSaveRedirect();
 
 const page = usePage();
 const sectionLabelMap = {
@@ -49,9 +51,9 @@ const transferForm = useForm({
 const showDeleteModal = ref(false);
 
 function submit() {
-    form.patch(route('members.update', props.member.id), {
-        preserveScroll: true,
-    });
+    form
+        .transform((data) => applySaveRedirect(data))
+        .patch(route('members.update', props.member.id), saveFormOptions());
 }
 
 function submitTransfer() {

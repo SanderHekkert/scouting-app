@@ -164,7 +164,7 @@ class FinanceController extends Controller
             'active' => (bool) ($data['active'] ?? true),
         ]);
 
-        return back();
+        return $this->redirectAfterSave($request, config('save-redirects.finance_pots'));
     }
 
     public function updatePot(Request $request, FinancePot $pot)
@@ -231,7 +231,7 @@ class FinanceController extends Controller
             'declared_at' => $data['declared_at'],
         ]);
 
-        return back();
+        return $this->redirectAfterSave($request, config('save-redirects.finance_declarations'));
     }
 
     public function approveDeclaration(Request $request, FinanceDeclaration $declaration)

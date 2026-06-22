@@ -2,6 +2,9 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { ArrowUturnLeftIcon, PaperAirplaneIcon } from '@heroicons/vue/24/outline';
+import { useSaveRedirect } from '@/utils/saveForm';
+
+const { applySaveRedirect, saveFormOptions } = useSaveRedirect();
 
 const page = usePage();
 const destinations = [
@@ -29,9 +32,9 @@ const form = useForm({
 });
 
 function submit() {
-    form.post(route('admin.push-notifications.store'), {
-        preserveScroll: true,
-    });
+    form
+        .transform((data) => applySaveRedirect(data))
+        .post(route('admin.push-notifications.store'), saveFormOptions());
 }
 </script>
 

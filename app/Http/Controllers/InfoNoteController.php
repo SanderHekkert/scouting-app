@@ -118,7 +118,7 @@ class InfoNoteController extends Controller
             'section' => $targetSection,
         ]);
 
-        return to_route('info-notes.index');
+        return $this->redirectAfterSave($request, config('save-redirects.info_notes'));
     }
 
     /**
@@ -163,7 +163,7 @@ class InfoNoteController extends Controller
 
         $info_note->update($data);
 
-        return to_route('info-notes.index');
+        return $this->redirectAfterSave($request, config('save-redirects.info_notes'));
     }
 
     /**

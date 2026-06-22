@@ -3,10 +3,12 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { ArrowUturnLeftIcon, DocumentCheckIcon } from '@heroicons/vue/24/outline';
 import { computed } from 'vue';
+import { useSaveRedirect } from '@/utils/saveForm';
 
 const props = defineProps({
     note: { type: Object, required: true },
 });
+const { applySaveRedirect, saveFormOptions } = useSaveRedirect();
 const page = usePage();
 const sectionLabels = {
     bevers: 'Bevers',
@@ -25,9 +27,9 @@ const form = useForm({
 });
 
 function submit() {
-    form.patch(route('info-notes.update', props.note.id), {
-        preserveScroll: true,
-    });
+    form
+        .transform((data) => applySaveRedirect(data))
+        .patch(route('info-notes.update', props.note.id), saveFormOptions());
 }
 </script>
 

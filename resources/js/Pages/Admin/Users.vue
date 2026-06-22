@@ -1,12 +1,14 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { CheckBadgeIcon, PencilSquareIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     users: { type: Array, default: () => [] },
     newUsers: { type: Array, default: () => [] },
 });
+
+const page = usePage();
 
 const sectionLabel = {
     '*': 'Globaal',
@@ -39,6 +41,10 @@ function deleteUser(user) {
     if (!confirm(`Gebruiker "${user.name}" verwijderen?`)) return;
     router.delete(route('admin.users.destroy', user.id), {
         preserveScroll: true,
+        onError: (errors) => {
+            const message = errors.user || 'Gebruiker kon niet worden verwijderd.';
+            alert(message);
+        },
     });
 }
 
@@ -66,6 +72,9 @@ function roleEntries(user) {
                 </Link>
             </div>
         </template>
+
+        <p v-if="page.props.flash?.status" class="mb-4 text-sm text-emerald-700 dark:text-emerald-300">{{ page.props.flash.status }}</p>
+        <p v-if="page.props.errors?.user" class="mb-4 text-sm text-red-600 dark:text-red-400">{{ page.props.errors.user }}</p>
 
         <div
             v-if="props.newUsers?.length"

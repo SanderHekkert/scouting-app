@@ -32,6 +32,7 @@ class AdminUserSecurityTest extends TestCase
 
         $this->actingAs($actor)
             ->withSession(['active_section' => UserSectionRole::SECTION_DOLFIJNEN])
+            ->from(route('admin.users.show', $target))
             ->patch(route('admin.users.update', $target), [
                 'name' => $target->name,
                 'email' => $target->email,
@@ -41,7 +42,7 @@ class AdminUserSecurityTest extends TestCase
                     ['section' => UserSectionRole::SECTION_ALL, 'role' => UserSectionRole::ROLE_ADMIN],
                 ],
             ])
-            ->assertForbidden();
+            ->assertSessionHasErrors(['roles']);
 
         $this->assertDatabaseMissing('user_section_roles', [
             'user_id' => $target->id,
@@ -62,8 +63,10 @@ class AdminUserSecurityTest extends TestCase
 
         $this->actingAs($actor)
             ->withSession(['active_section' => UserSectionRole::SECTION_DOLFIJNEN])
+            ->from(route('admin.users.index'))
             ->delete(route('admin.users.destroy', $target))
-            ->assertForbidden();
+            ->assertRedirect()
+            ->assertSessionHasErrors(['user']);
 
         $this->assertDatabaseHas('users', ['id' => $target->id]);
     }

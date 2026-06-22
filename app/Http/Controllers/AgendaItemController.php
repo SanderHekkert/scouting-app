@@ -21,13 +21,13 @@ use Symfony\Component\HttpFoundation\Response;
 
 class AgendaItemController extends Controller
 {
-    public function create()
+    public function create(Request $request)
     {
-        $user = request()->user();
+        $user = $request->user();
         abort_unless($user instanceof User, 403);
         $activeSection = session('active_section', UserSectionRole::SECTION_DOLFIJNEN);
-        $prefillDate = request()->query('date');
-        $prefillStartTime = request()->query('start_time');
+        $prefillDate = $request->query('date');
+        $prefillStartTime = $request->query('start_time');
         $eventDate = is_string($prefillDate) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $prefillDate) === 1
             ? $prefillDate
             : '';
@@ -50,6 +50,24 @@ class AgendaItemController extends Controller
                 'notes' => '',
                 'audience_scope' => 'self',
                 'target_user_ids' => [],
+                'attachment_name' => null,
+            ],
+            'isBestuur' => $activeSection === UserSectionRole::SECTION_BESTUUR,
+            'availableUsers' => $this->agendaAudienceUsers($user),
+        ]);
+    }
+
+    public function edit(Request $request, AgendaItem $agendaItem)
+    {
+        $this->authorizeAgendaItem($agendaItem);
+        $user = request()->user();
+        abort_unless($user instanceof User, 403);
+        $activeSection = session('active_section', UserSectionRole::SECTION_DOLFIJNEN);
+
+        return Inertia::render('Agenda/Create', [
+            'item' => [
+                ...$agendaItem->toArray(),
+                'attachment_name' => $this->attachmentName($agendaItem->attachments),
             ],
             'isBestuur' => $activeSection === UserSectionRole::SECTION_BESTUUR,
             'availableUsers' => $this->agendaAudienceUsers($user),
@@ -172,6 +190,14 @@ class AgendaItemController extends Controller
                 'event_date' => (string) ($event->event_date ?? ''),
                 'event_type' => (string) ($event->event_type ?? ''),
                 'activity' => (string) ($event->activity ?? ''),
+                'program_by' => (string) ($event->program_by ?? ''),
+                'location' => (string) ($event->location ?? ''),
+                'time_slot' => (string) ($event->time_slot ?? ''),
+                'invitees' => (string) ($event->invitees ?? ''),
+                'link_url' => (string) ($event->link_url ?? ''),
+                'notes' => (string) ($event->notes ?? ''),
+                'present_names' => collect($event->present_names ?? [])->map(fn ($v): string => trim((string) $v))->filter()->values()->all(),
+                'absent' => (string) ($event->absent ?? ''),
                 'section' => (string) ($event->section ?? ''),
                 'is_shared' => count(array_intersect($sections, collect($event->shared_sections ?? [])->map(fn ($s) => (string) $s)->all())) > 0,
                 'shared_sections' => collect($event->shared_sections ?? [])->map(fn ($s) => (string) $s)->values()->all(),
@@ -345,7 +371,7 @@ class AgendaItemController extends Controller
 
         $item = AgendaItem::create($data);
 
-        return to_route('agenda.index');
+        return $this->redirectAfterSave($request, config('save-redirects.agenda'));
     }
 
     public function update(Request $request, AgendaItem $agendaItem)
@@ -387,7 +413,7 @@ class AgendaItemController extends Controller
 
         $agendaItem->update($data);
 
-        return to_route('agenda.index');
+        return $this->redirectAfterSave($request, config('save-redirects.agenda'));
     }
 
     public function updateSchedule(Request $request, AgendaItem $agendaItem)

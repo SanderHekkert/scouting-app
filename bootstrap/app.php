@@ -4,6 +4,7 @@ use App\Http\Middleware\EnsureSectionPermission;
 use App\Http\Middleware\EnsureSectionRole;
 use App\Http\Middleware\EnsureUserHasAnyRole;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\RememberInertiaReturnUrl;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetCurrentSection;
 use Illuminate\Foundation\Application;
@@ -32,6 +33,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->web(append: [
             SetCurrentSection::class,
+            RememberInertiaReturnUrl::class,
             HandleInertiaRequests::class,
             SecurityHeaders::class,
             AddLinkHeadersForPreloadedAssets::class,

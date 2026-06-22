@@ -174,6 +174,7 @@ Route::middleware(['auth', 'verified', 'has.role'])->group(function () {
     Route::get('/agenda/{agendaItem}/ics', [AgendaItemController::class, 'ics'])->middleware('section.permission:events')->name('agenda.ics');
     Route::patch('/agenda/{agendaItem}/schedule', [AgendaItemController::class, 'updateSchedule'])->middleware('section.permission:events')->name('agenda.schedule.update');
     Route::get('/agenda/opkomsten/{event}', [AgendaItemController::class, 'showOpkomst'])->middleware('section.permission:events')->name('agenda.opkomsten.show');
+    Route::get('/agenda/{agendaItem}/bewerken', [AgendaItemController::class, 'edit'])->middleware('section.permission:events')->name('agenda.edit');
     Route::get('/agenda/{agendaItem}', [AgendaItemController::class, 'show'])->middleware('section.permission:events')->name('agenda.show');
     Route::resource('agenda', AgendaItemController::class)->middleware('section.permission:events')->parameters(['agenda' => 'agendaItem'])->except(['create', 'show', 'edit']);
 

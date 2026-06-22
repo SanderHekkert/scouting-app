@@ -3,6 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { moneyDisplayValue, sanitizeMoneyInput } from '@/utils/money';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { ArrowUturnLeftIcon } from '@heroicons/vue/24/outline';
+import { useSaveRedirect } from '@/utils/saveForm';
 
 const fieldClass =
     'rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted-dark';
@@ -10,6 +11,7 @@ const fieldClass =
 const props = defineProps({
     pots: { type: Array, default: () => [] },
 });
+const { applySaveRedirect, saveFormOptions } = useSaveRedirect();
 
 const page = usePage();
 const sectionLabelMap = {
@@ -42,7 +44,9 @@ function onAmountInput(event) {
 }
 
 function submit() {
-    form.post(route('finance.declarations.store'), { forceFormData: true });
+    form
+        .transform((data) => applySaveRedirect(data))
+        .post(route('finance.declarations.store'), saveFormOptions({ forceFormData: true }));
 }
 </script>
 

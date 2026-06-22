@@ -1,19 +1,25 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { ArrowUturnLeftIcon } from '@heroicons/vue/24/outline';
+
+import { useSaveRedirect } from '@/utils/saveForm';
+
+const page = usePage();
+const { applySaveRedirect, saveFormOptions } = useSaveRedirect();
 
 const form = useForm({
     email: '',
 });
 
 function submit() {
-    form.post(route('admin.users.invite'), {
-        preserveScroll: true,
+    form
+        .transform((data) => applySaveRedirect(data))
+        .post(route('admin.users.invite'), saveFormOptions({
         onSuccess: () => {
             form.reset();
         },
-    });
+    }));
 }
 </script>
 
@@ -39,6 +45,8 @@ function submit() {
             <p class="mt-1 text-sm text-app-muted dark:text-app-muted-dark">
                 De gebruiker ontvangt een link, vult zelf gegevens in en moet daarna e-mail verifiëren.
             </p>
+
+            <p v-if="page.props.flash?.status" class="text-sm text-emerald-700 dark:text-emerald-300">{{ page.props.flash.status }}</p>
 
             <form class="mt-4 space-y-3" @submit.prevent="submit">
                 <div>

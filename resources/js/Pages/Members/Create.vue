@@ -2,6 +2,9 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { ArrowUturnLeftIcon } from '@heroicons/vue/24/outline';
+import { useSaveRedirect } from '@/utils/saveForm';
+
+const { applySaveRedirect, saveFormOptions } = useSaveRedirect();
 
 const fieldClass =
     'rounded border border-app-border bg-white px-3 py-2 text-app-ink placeholder:text-app-muted dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark dark:placeholder:text-app-muted-dark';
@@ -33,7 +36,9 @@ const form = useForm({
 });
 
 function submit() {
-    form.post(route('members.store'));
+    form
+        .transform((data) => applySaveRedirect(data))
+        .post(route('members.store'), saveFormOptions());
 }
 </script>
 

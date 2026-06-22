@@ -1,8 +1,9 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { ArrowUturnLeftIcon, DocumentCheckIcon, TrashIcon, XMarkIcon } from '@heroicons/vue/24/outline';
-import { watch } from 'vue';
+import { computed, nextTick, watch } from 'vue';
+import { useSaveRedirect } from '@/utils/saveForm';
 
 const props = defineProps({
     user: { type: Object, required: true },
@@ -10,6 +11,7 @@ const props = defineProps({
     localRolesBySection: { type: Object, default: () => ({}) },
     globalRoles: { type: Array, default: () => [] },
 });
+const { applySaveRedirect, saveFormOptions } = useSaveRedirect();
 
 const sectionLabel = {
     '*': 'Globaal',
@@ -32,15 +34,50 @@ const roleLabel = {
     lid: 'Lid',
 };
 
+function mapUserRoles(user) {
+    return Array.isArray(user?.roles) ? user.roles.map((r) => ({ section: r.section, role: r.role })) : [];
+}
+
+const page = usePage();
+
 const form = useForm({
     name: props.user.name || '',
     email: props.user.email || '',
     first_name: props.user.first_name || '',
     last_name: props.user.last_name || '',
-    roles: Array.isArray(props.user.roles) ? props.user.roles.map((r) => ({ section: r.section, role: r.role })) : [],
+    roles: mapUserRoles(props.user),
     selectedSection: 'bevers',
     selectedRole: 'leiding',
 });
+
+const roleError = computed(() => {
+    if (form.errors.roles) {
+        return form.errors.roles;
+    }
+
+    const key = Object.keys(form.errors).find((field) => field === 'roles' || field.startsWith('roles.'));
+    return key ? form.errors[key] : null;
+});
+
+watch(
+    () => props.user.id,
+    () => {
+        form.name = props.user.name || '';
+        form.email = props.user.email || '';
+        form.first_name = props.user.first_name || '';
+        form.last_name = props.user.last_name || '';
+        form.roles = mapUserRoles(props.user);
+        form.clearErrors();
+    },
+);
+
+watch(
+    () => props.user.roles,
+    () => {
+        form.roles = mapUserRoles(props.user);
+    },
+    { deep: true },
+);
 
 function rolesForSection(section) {
     return section === '*' ? props.globalRoles : (props.localRolesBySection?.[section] || []);
@@ -58,36 +95,49 @@ watch(
 );
 
 function submit() {
-    router.patch(route('admin.users.update', props.user.id), {
-        name: form.name,
-        email: form.email,
-        first_name: form.first_name || null,
-        last_name: form.last_name || null,
-        roles: form.roles.map((r) => ({ section: r.section, role: r.role })),
-    }, {
-        preserveScroll: true,
-    });
+    return form
+        .transform((data) => applySaveRedirect({
+            name: data.name,
+            email: data.email,
+            first_name: data.first_name,
+            last_name: data.last_name,
+            roles: data.roles,
+        }))
+        .patch(route('admin.users.update', props.user.id), saveFormOptions());
 }
 
-function addRole() {
+async function addRole() {
     const section = form.selectedSection;
     const role = form.selectedRole;
-    if (!section || !role) return;
-    const exists = form.roles.some((r) => r.section === section);
-    if (exists) {
-        form.roles = form.roles.map((r) => (r.section === section ? { section, role } : r));
-    } else {
-        form.roles.push({ section, role });
+    if (!section || !role) {
+        form.setError('roles', 'Kies een speltak en rol.');
+        return;
     }
+
+    form.clearErrors('roles');
+    const exists = form.roles.some((r) => r.section === section);
+    form.roles = exists
+        ? form.roles.map((r) => (r.section === section ? { section, role } : r))
+        : [...form.roles, { section, role }];
+
+    await nextTick();
+    submit();
 }
 
-function removeRole(index) {
-    form.roles.splice(index, 1);
+async function removeRole(index) {
+    form.roles = form.roles.filter((_, roleIndex) => roleIndex !== index);
+    await nextTick();
+    submit();
 }
 
 function deleteUser() {
     if (!confirm('Deze gebruiker verwijderen?')) return;
-    router.delete(route('admin.users.destroy', props.user.id));
+    router.delete(route('admin.users.destroy', props.user.id), {
+        onError: (errors) => {
+            const message = errors.user || 'Gebruiker kon niet worden verwijderd.';
+            alert(message);
+        },
+    });
 }
 </script>
 
@@ -104,21 +154,35 @@ function deleteUser() {
         </template>
 
         <form class="surface-brand-top space-y-4 rounded-xl border border-app-border bg-app-panel p-5 text-app-ink shadow-sm dark:border-brand-blue/30 dark:bg-app-panel-dark dark:text-app-ink-dark" @submit.prevent="submit">
+            <p v-if="page.props.flash?.status" class="text-sm text-emerald-700 dark:text-emerald-300">{{ page.props.flash.status }}</p>
             <div class="grid gap-4 sm:grid-cols-[11rem_1fr] sm:items-start">
                 <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Naam</label>
-                <input v-model="form.name" type="text" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
+                <div>
+                    <input v-model="form.name" type="text" class="min-w-0 w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
+                    <p v-if="form.errors.name" class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.errors.name }}</p>
+                </div>
 
                 <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">E-mail</label>
-                <input v-model="form.email" type="email" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
+                <div>
+                    <input v-model="form.email" type="email" class="min-w-0 w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
+                    <p v-if="form.errors.email" class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.errors.email }}</p>
+                </div>
 
                 <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Voornaam</label>
-                <input v-model="form.first_name" type="text" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
+                <div>
+                    <input v-model="form.first_name" type="text" class="min-w-0 w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
+                    <p v-if="form.errors.first_name" class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.errors.first_name }}</p>
+                </div>
 
                 <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Achternaam</label>
-                <input v-model="form.last_name" type="text" class="min-w-0 rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
+                <div>
+                    <input v-model="form.last_name" type="text" class="min-w-0 w-full rounded border border-app-border bg-white px-3 py-2 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark" />
+                    <p v-if="form.errors.last_name" class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.errors.last_name }}</p>
+                </div>
 
                 <label class="text-sm font-semibold tracking-wide text-app-muted dark:text-app-muted-dark sm:pt-2.5">Rollen</label>
                 <div>
+                    <p v-if="roleError" class="mb-2 text-sm text-red-600 dark:text-red-400">{{ roleError }}</p>
                     <div class="flex flex-wrap gap-2">
                     <span
                         v-for="(entry, idx) in form.roles"

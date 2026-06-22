@@ -264,7 +264,7 @@ class EventController extends Controller
         }
         $event = Event::create($data);
 
-        return to_route('opkomsten.show', $event);
+        return $this->redirectAfterSave($request, config('save-redirects.opkomsten'));
     }
 
     /**
@@ -311,7 +311,7 @@ class EventController extends Controller
         }
         $event->update($data);
 
-        return to_route('opkomsten.index');
+        return $this->redirectAfterSave($request, config('save-redirects.opkomsten'));
     }
 
     /**

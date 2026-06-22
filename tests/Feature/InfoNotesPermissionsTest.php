@@ -35,6 +35,7 @@ class InfoNotesPermissionsTest extends TestCase
                 'content' => 'Informatie voor dolfijnen',
                 'link' => 'https://example.com',
                 'target_section' => UserSectionRole::SECTION_DOLFIJNEN,
+                'redirect_back' => true,
             ])
             ->assertRedirect(route('info-notes.index'));
 
@@ -60,6 +61,7 @@ class InfoNotesPermissionsTest extends TestCase
                 'category' => 'Nieuw',
                 'content' => 'Nieuwe inhoud',
                 'link' => 'https://example.org',
+                'redirect_back' => true,
             ])
             ->assertRedirect(route('info-notes.index'));
 

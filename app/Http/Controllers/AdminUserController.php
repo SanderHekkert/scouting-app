@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\UserSectionRole;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 class AdminUserController extends Controller
@@ -128,8 +129,25 @@ class AdminUserController extends Controller
             ->exists();
         $touchesGlobalRoles = $incomingRoles
             ->contains(fn (array $row): bool => $row['section'] === UserSectionRole::SECTION_ALL);
-        if (! $actor->isGlobalAdmin() && ($targetHasGlobalRoles || $touchesGlobalRoles)) {
-            abort(403, 'Alleen globale admins mogen globale rollen beheren.');
+        if (! $actor->isGlobalAdmin()) {
+            $currentGlobalRoles = $user->sectionRoles()
+                ->where('section', UserSectionRole::SECTION_ALL)
+                ->pluck('role')
+                ->sort()
+                ->values()
+                ->all();
+            $incomingGlobalRoles = $incomingRoles
+                ->filter(fn (array $row): bool => $row['section'] === UserSectionRole::SECTION_ALL)
+                ->pluck('role')
+                ->sort()
+                ->values()
+                ->all();
+
+            if ($currentGlobalRoles !== $incomingGlobalRoles) {
+                throw ValidationException::withMessages([
+                    'roles' => 'Alleen globale admins mogen globale rollen beheren.',
+                ]);
+            }
         }
 
         foreach ($incomingRoles as $row) {
@@ -152,7 +170,7 @@ class AdminUserController extends Controller
             );
         }
 
-        return back();
+        return $this->redirectAfterSave($request, config('save-redirects.admin_users'));
     }
 
     public function destroy(Request $request, User $user)
@@ -168,7 +186,9 @@ class AdminUserController extends Controller
             ->where('section', UserSectionRole::SECTION_ALL)
             ->exists();
         if (! $actor->isGlobalAdmin() && $targetHasGlobalRoles) {
-            abort(403, 'Alleen globale admins mogen accounts met globale rollen verwijderen.');
+            return back()->withErrors([
+                'user' => 'Alleen globale admins mogen accounts met globale rollen verwijderen.',
+            ]);
         }
 
         $user->sectionRoles()->delete();
@@ -185,18 +205,34 @@ class AdminUserController extends Controller
 
         if ($section === UserSectionRole::SECTION_ALL) {
             if (! in_array($role, [UserSectionRole::ROLE_ADMIN, ...UserSectionRole::BESTUUR_ROLES], true)) {
-                abort(422, 'Alleen admin of bestuursrol is toegestaan voor Globaal.');
+                throw ValidationException::withMessages([
+                    'roles' => 'Alleen admin of bestuursrol is toegestaan voor Globaal.',
+                ]);
+            }
+
+            return;
+        }
+
+        if ($section === UserSectionRole::SECTION_BESTUUR) {
+            if (! in_array($role, SectionRoleVisibility::enabledRolesForSection($section), true)) {
+                throw ValidationException::withMessages([
+                    'roles' => 'Deze rol is uitgeschakeld voor deze speltak.',
+                ]);
             }
 
             return;
         }
 
         if (in_array($role, [UserSectionRole::ROLE_ADMIN, ...UserSectionRole::BESTUUR_ROLES], true)) {
-            abort(422, 'Admin en bestuursrollen zijn alleen toegestaan als globale rol.');
+            throw ValidationException::withMessages([
+                'roles' => 'Admin en bestuursrollen zijn alleen toegestaan als globale rol.',
+            ]);
         }
 
         if (! in_array($role, SectionRoleVisibility::enabledRolesForSection($section), true)) {
-            abort(422, 'Deze rol is uitgeschakeld voor deze speltak.');
+            throw ValidationException::withMessages([
+                'roles' => 'Deze rol is uitgeschakeld voor deze speltak.',
+            ]);
         }
     }
 }

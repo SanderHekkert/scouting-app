@@ -287,7 +287,7 @@ class CampPlaybookController extends Controller
             'updated_by_user_id' => $userId,
         ]);
 
-        return to_route('camp-playbooks.index');
+        return $this->redirectAfterSave($request, config('save-redirects.camp_playbooks'));
     }
 
     public function update(Request $request, CampPlaybook $campPlaybook)
@@ -380,7 +380,7 @@ class CampPlaybookController extends Controller
             'updated_by_user_id' => $actorId,
         ]);
 
-        return to_route('camp-playbooks.index');
+        return $this->redirectAfterSave($request, config('save-redirects.camp_playbooks'));
     }
 
     public function destroy(CampPlaybook $campPlaybook)

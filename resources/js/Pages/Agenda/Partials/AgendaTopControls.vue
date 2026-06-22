@@ -1,5 +1,4 @@
 <script setup>
-import { Link } from '@inertiajs/vue3';
 import { ChevronLeftIcon, ChevronRightIcon, MagnifyingGlassIcon, PlusIcon } from '@heroicons/vue/24/outline';
 import { computed } from 'vue';
 
@@ -30,6 +29,7 @@ const emit = defineEmits([
     'update:agenda-search',
     'update:section-filter',
     'update:user-filter',
+    'select-entry',
 ]);
 
 const sectionFilterModel = computed({
@@ -131,10 +131,10 @@ const agendaSearchModel = computed({
                         <tr v-for="entry in props.searchResults" :key="`search-${entry.sourceType}-${entry.sourceId}`">
                             <td class="py-2 pe-2 whitespace-nowrap text-xs text-app-muted dark:text-app-muted-dark">{{ entry.date || '-' }}</td>
                             <td class="py-2">
-                                <Link :href="entry.href" class="hover:underline">
+                                <button type="button" class="text-left hover:underline" @click="emit('select-entry', entry, $event)">
                                     <span class="font-semibold">{{ entry.tag }}</span>
                                     <span class="ms-1">{{ entry.title }}</span>
-                                </Link>
+                                </button>
                             </td>
                         </tr>
                     </tbody>

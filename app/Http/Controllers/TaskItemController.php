@@ -224,7 +224,7 @@ class TaskItemController extends Controller
 
         TaskItem::create($data);
 
-        return to_route('task-items.index');
+        return $this->redirectAfterSave($request, config('save-redirects.task_items'));
     }
 
     /**
@@ -261,7 +261,7 @@ class TaskItemController extends Controller
 
         $task_item->update($data);
 
-        return to_route('task-items.index');
+        return $this->redirectAfterSave($request, config('save-redirects.task_items'));
     }
 
     public function toggleComplete(Request $request, TaskItem $taskItem)

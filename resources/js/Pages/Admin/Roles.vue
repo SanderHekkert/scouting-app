@@ -42,7 +42,9 @@ const stateByUser = reactive(
             {
                 section_roles: { ...(u.section_roles || {}) },
                 selected_section: u.selected_section || 'dolfijnen',
+                selected_role: u.selected_role || 'leiding',
                 saving: false,
+                error: '',
             },
         ]),
     ),
@@ -53,22 +55,48 @@ function availableRolesForSection(section) {
     return props.rolesBySection?.[section] || [];
 }
 
+function roleForSelectedSection(userId) {
+    const state = stateByUser[userId];
+    if (!state) return 'leiding';
+
+    const section = state.selected_section;
+    const existing = state.section_roles[section];
+    if (existing) return existing;
+
+    return availableRolesForSection(section)[0] || 'leiding';
+}
+
+function setRoleForSelectedSection(userId, role) {
+    const state = stateByUser[userId];
+    if (!state) return;
+
+    state.section_roles[state.selected_section] = role;
+}
+
 function saveUser(userId) {
     const state = stateByUser[userId];
     if (!state) return;
-    const availableRoles = availableRolesForSection(state.selected_section);
-    const selectedRole = state.section_roles[state.selected_section];
+
+    const section = state.selected_section;
+    const availableRoles = availableRolesForSection(section);
+    const selectedRole = roleForSelectedSection(userId);
     const roleToSave = availableRoles.includes(selectedRole) ? selectedRole : (availableRoles[0] || 'leiding');
-    state.section_roles[state.selected_section] = roleToSave;
+
+    setRoleForSelectedSection(userId, roleToSave);
     state.saving = true;
+    state.error = '';
+
     router.patch(
         route('admin.roles.update', userId),
         {
-            selected_section: state.selected_section,
+            selected_section: section,
             selected_role: roleToSave,
         },
         {
             preserveScroll: true,
+            onError: (errors) => {
+                state.error = errors.selected_role || errors.roles || 'Rol kon niet worden opgeslagen.';
+            },
             onFinish: () => {
                 state.saving = false;
             },
@@ -115,7 +143,6 @@ function scheduleRoleSave(userId) {
                         <select
                             v-model="stateByUser[user.id].selected_section"
                             class="mt-1 w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                            @change="scheduleRoleSave(user.id)"
                         >
                             <option v-for="section in orderedSections" :key="`mob-s-${user.id}-${section}`" :value="section">
                                 {{ labels[section] || section }}
@@ -124,9 +151,9 @@ function scheduleRoleSave(userId) {
 
                         <p class="mt-2 text-xs uppercase tracking-wide text-app-muted dark:text-app-muted-dark">Rol</p>
                         <select
-                            v-model="stateByUser[user.id].section_roles[stateByUser[user.id].selected_section]"
+                            :value="roleForSelectedSection(user.id)"
                             class="mt-1 w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                            @change="scheduleRoleSave(user.id)"
+                            @change="setRoleForSelectedSection(user.id, $event.target.value); scheduleRoleSave(user.id)"
                         >
                             <option v-for="role in availableRolesForSection(stateByUser[user.id].selected_section)" :key="`mob-r-${user.id}-${role}`" :value="role">
                                 {{ labels[role] || role }}
@@ -135,6 +162,7 @@ function scheduleRoleSave(userId) {
 
                         <div class="mt-3 border-t border-brand-blue/25 pt-3 dark:border-brand-blue/35">
                             <span v-if="stateByUser[user.id].saving" class="text-xs text-app-muted dark:text-app-muted-dark">Opslaan...</span>
+                            <span v-else-if="stateByUser[user.id].error" class="text-xs text-red-600 dark:text-red-400">{{ stateByUser[user.id].error }}</span>
                         </div>
                     </div>
                 </div>
@@ -161,7 +189,6 @@ function scheduleRoleSave(userId) {
                                 <select
                                     v-model="stateByUser[user.id].selected_section"
                                     class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                                    @change="scheduleRoleSave(user.id)"
                                 >
                                     <option v-for="section in orderedSections" :key="`s-${user.id}-${section}`" :value="section">
                                         {{ labels[section] || section }}
@@ -170,9 +197,9 @@ function scheduleRoleSave(userId) {
                             </td>
                             <td class="px-3 py-2 align-top">
                                 <select
-                                    v-model="stateByUser[user.id].section_roles[stateByUser[user.id].selected_section]"
+                                    :value="roleForSelectedSection(user.id)"
                                     class="w-full rounded border border-app-border bg-white px-2 py-1.5 text-black dark:border-app-border-dark dark:bg-app-canvas-dark dark:text-app-ink-dark"
-                                    @change="scheduleRoleSave(user.id)"
+                                    @change="setRoleForSelectedSection(user.id, $event.target.value); scheduleRoleSave(user.id)"
                                 >
                                     <option v-for="role in availableRolesForSection(stateByUser[user.id].selected_section)" :key="`r-${user.id}-${role}`" :value="role">
                                         {{ labels[role] || role }}
@@ -181,6 +208,7 @@ function scheduleRoleSave(userId) {
                             </td>
                             <td class="px-3 py-2 align-top">
                                 <span v-if="stateByUser[user.id].saving" class="text-xs text-app-muted dark:text-app-muted-dark">Opslaan...</span>
+                                <span v-else-if="stateByUser[user.id].error" class="text-xs text-red-600 dark:text-red-400">{{ stateByUser[user.id].error }}</span>
                             </td>
                         </tr>
                     </tbody>

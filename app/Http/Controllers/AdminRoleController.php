@@ -6,8 +6,8 @@ use App\Models\SectionRoleVisibility;
 use App\Models\User;
 use App\Models\UserSectionRole;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 class AdminRoleController extends Controller
@@ -15,19 +15,26 @@ class AdminRoleController extends Controller
     public function index()
     {
         $users = User::query()
+            ->with('sectionRoles:id,user_id,section,role')
             ->orderBy('name', 'asc')
             ->get()
             ->map(function (User $user): array {
-                $roles = $user->sectionRoles()->get(['section', 'role']);
-
+                $roles = $user->sectionRoles;
                 $sectionRole = [];
-                foreach (UserSectionRole::ALL_SECTIONS as $section) {
-                    $match = $roles->firstWhere('section', $section);
-                    $fallback = SectionRoleVisibility::enabledRolesForSection($section)[0] ?? UserSectionRole::ROLE_LEIDING;
-                    $sectionRole[$section] = $match?->role ?? $fallback;
+
+                foreach ($roles as $row) {
+                    if ($row->section === UserSectionRole::SECTION_ALL) {
+                        continue;
+                    }
+
+                    $sectionRole[$row->section] = $row->role;
                 }
 
-                $isAdmin = $roles->contains(fn (UserSectionRole $r) => $r->section === UserSectionRole::SECTION_ALL && $r->role === UserSectionRole::ROLE_ADMIN);
+                $selectedSection = collect(UserSectionRole::ALL_SECTIONS)
+                    ->first(fn (string $section): bool => array_key_exists($section, $sectionRole))
+                    ?? UserSectionRole::SECTION_DOLFIJNEN;
+
+                $availableRoles = SectionRoleVisibility::enabledRolesForSection($selectedSection);
 
                 return [
                     'id' => $user->id,
@@ -37,10 +44,13 @@ class AdminRoleController extends Controller
                     'first_name' => $user->first_name,
                     'last_name' => $user->last_name,
                     'section_roles' => $sectionRole,
-                    'selected_section' => collect(UserSectionRole::ALL_SECTIONS)
-                        ->first(fn (string $section) => $roles->contains(fn (UserSectionRole $r) => $r->section === $section))
-                        ?? UserSectionRole::SECTION_DOLFIJNEN,
-                    'is_admin' => $isAdmin,
+                    'selected_section' => $selectedSection,
+                    'selected_role' => $sectionRole[$selectedSection]
+                        ?? ($availableRoles[0] ?? UserSectionRole::ROLE_LEIDING),
+                    'is_admin' => $roles->contains(
+                        fn (UserSectionRole $role): bool => $role->section === UserSectionRole::SECTION_ALL
+                            && $role->role === UserSectionRole::ROLE_ADMIN
+                    ),
                 ];
             })
             ->values();
@@ -57,40 +67,30 @@ class AdminRoleController extends Controller
     public function update(Request $request, User $user)
     {
         $data = $request->validate([
-            'is_admin' => ['required', 'boolean'],
             'selected_section' => ['required', 'string', Rule::in(UserSectionRole::ALL_SECTIONS)],
-            'selected_role' => ['required', 'string'],
+            'selected_role' => ['required', 'string', Rule::in(UserSectionRole::ALL_ROLES)],
         ]);
 
-        abort_unless(
-            in_array((string) $data['selected_role'], SectionRoleVisibility::enabledRolesForSection((string) $data['selected_section']), true),
-            422,
-            'Deze rol is uitgeschakeld voor deze speltak.'
+        $section = (string) $data['selected_section'];
+        $role = (string) $data['selected_role'];
+
+        if (! in_array($role, SectionRoleVisibility::enabledRolesForSection($section), true)) {
+            throw ValidationException::withMessages([
+                'selected_role' => 'Deze rol is uitgeschakeld voor deze speltak.',
+            ]);
+        }
+
+        if (in_array($role, [UserSectionRole::ROLE_ADMIN, ...UserSectionRole::BESTUUR_ROLES], true)
+            && $section !== UserSectionRole::SECTION_BESTUUR) {
+            throw ValidationException::withMessages([
+                'selected_role' => 'Admin en bestuursrollen zijn alleen toegestaan als globale rol of binnen Bestuur.',
+            ]);
+        }
+
+        $user->sectionRoles()->updateOrCreate(
+            ['section' => $section],
+            ['role' => $role],
         );
-
-        DB::transaction(function () use ($user, $data): void {
-            UserSectionRole::query()->updateOrCreate(
-                [
-                    'user_id' => $user->id,
-                    'section' => $data['selected_section'],
-                ],
-                [
-                    'role' => $data['selected_role'],
-                ],
-            );
-
-            UserSectionRole::query()
-                ->where('user_id', $user->id)
-                ->where('section', UserSectionRole::SECTION_ALL)
-                ->delete();
-            if ($data['is_admin']) {
-                UserSectionRole::query()->create([
-                    'user_id' => $user->id,
-                    'section' => UserSectionRole::SECTION_ALL,
-                    'role' => UserSectionRole::ROLE_ADMIN,
-                ]);
-            }
-        });
 
         return back();
     }

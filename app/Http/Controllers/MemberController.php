@@ -106,7 +106,7 @@ class MemberController extends Controller
 
         Member::create($data);
 
-        return back();
+        return $this->redirectAfterSave($request, config('save-redirects.members'));
     }
 
     /**
@@ -162,7 +162,7 @@ class MemberController extends Controller
 
         $member->update($data);
 
-        return back();
+        return $this->redirectAfterSave($request, config('save-redirects.members'));
     }
 
     public function updateInstalled(Request $request, Member $member)

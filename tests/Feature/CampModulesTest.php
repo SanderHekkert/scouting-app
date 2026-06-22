@@ -36,6 +36,7 @@ class CampModulesTest extends TestCase
                 'title' => 'Pinksterkamp begroting',
                 'content' => 'Inkomsten en uitgaven.',
                 'action' => 'save',
+                'redirect_back' => true,
             ])
             ->assertRedirect(route('camp-budgets.index'));
 
@@ -51,6 +52,7 @@ class CampModulesTest extends TestCase
                 'title' => 'Pinksterkamp begroting v2',
                 'content' => 'Bijgewerkte begroting.',
                 'action' => 'save',
+                'redirect_back' => true,
             ])
             ->assertRedirect(route('camp-budgets.index'));
 
@@ -153,6 +155,7 @@ class CampModulesTest extends TestCase
                 'title' => 'Pinksterkamp draaiboek',
                 'content' => 'Planning en taken.',
                 'action' => 'save',
+                'redirect_back' => true,
             ])
             ->assertRedirect(route('camp-playbooks.index'));
 
@@ -167,6 +170,7 @@ class CampModulesTest extends TestCase
                 'title' => 'Pinksterkamp draaiboek v2',
                 'content' => 'Bijgewerkte planning.',
                 'action' => 'save',
+                'redirect_back' => true,
             ])
             ->assertRedirect(route('camp-playbooks.index'));
 

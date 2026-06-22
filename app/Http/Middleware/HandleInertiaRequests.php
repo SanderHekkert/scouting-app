@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\SectionPermission;
 use App\Models\UserSectionRole;
+use App\Support\SaveFormRedirect;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -141,6 +142,7 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'csrf_token' => csrf_token(),
+            'returnUrl' => SaveFormRedirect::sharedReturnUrl($request),
             'auth' => [
                 'user' => $user ? [
                     'id' => (int) $user->id,

@@ -2,13 +2,14 @@
 import AgendaItemsTable from '@/Components/AgendaItemsTable.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
+import { withReturnUrl } from '@/utils/saveForm';
 
 const props = defineProps({
     archivedItems: { type: Array, default: () => [] },
 });
 
 function editItem(item) {
-    router.get(route('agenda.show', item.id));
+    router.get(withReturnUrl(route('agenda.edit', item.id), route('agenda.archived')));
 }
 
 function deleteItem(item) {

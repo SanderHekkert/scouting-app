@@ -2,6 +2,34 @@
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import { Link } from '@inertiajs/vue3';
 import { CheckBadgeIcon } from '@heroicons/vue/24/outline';
+import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+
+const SIDEBAR_NAV_SCROLL_KEY = 'app-sidebar-nav-scroll';
+
+const navRef = ref(null);
+
+function saveNavScroll() {
+    if (navRef.value) {
+        sessionStorage.setItem(SIDEBAR_NAV_SCROLL_KEY, String(navRef.value.scrollTop));
+    }
+}
+
+function restoreNavScroll() {
+    const saved = sessionStorage.getItem(SIDEBAR_NAV_SCROLL_KEY);
+    if (saved !== null && navRef.value) {
+        navRef.value.scrollTop = Number(saved);
+    }
+}
+
+onMounted(() => {
+    nextTick(restoreNavScroll);
+    navRef.value?.addEventListener('scroll', saveNavScroll, { passive: true });
+});
+
+onBeforeUnmount(() => {
+    saveNavScroll();
+    navRef.value?.removeEventListener('scroll', saveNavScroll);
+});
 
 const props = defineProps({
     firstAccessibleRoute: { type: String, required: true },
@@ -51,6 +79,7 @@ const emit = defineEmits(['switch-section']);
             </div>
 
             <nav
+                ref="navRef"
                 class="mt-6 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]"
                 aria-label="Hoofdnavigatie"
             >
