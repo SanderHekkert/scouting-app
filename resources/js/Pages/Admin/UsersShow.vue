@@ -94,6 +94,21 @@ watch(
     { immediate: true },
 );
 
+function saveRoles() {
+    return form
+        .transform((data) => ({
+            name: data.name,
+            email: data.email,
+            first_name: data.first_name,
+            last_name: data.last_name,
+            roles: data.roles,
+        }))
+        .patch(route('admin.users.update', props.user.id), {
+            preserveScroll: true,
+            preserveState: true,
+        });
+}
+
 function submit() {
     return form
         .transform((data) => applySaveRedirect({
@@ -121,13 +136,13 @@ async function addRole() {
         : [...form.roles, { section, role }];
 
     await nextTick();
-    submit();
+    saveRoles();
 }
 
 async function removeRole(index) {
     form.roles = form.roles.filter((_, roleIndex) => roleIndex !== index);
     await nextTick();
-    submit();
+    saveRoles();
 }
 
 function deleteUser() {
